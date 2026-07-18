@@ -33,37 +33,35 @@ export function Footer() {
           </div>
         </div>
 
-        <FooterCol title="Shop">
-          <FLink to="/products">All Products</FLink>
-          <FLink to="/category/$slug" params={{ slug: "concealed-lights" }}>Concealed Lights</FLink>
-          <FLink to="/category/$slug" params={{ slug: "panel-lights" }}>Panel Lights</FLink>
-          <FLink to="/category/$slug" params={{ slug: "ceiling-fans" }}>Ceiling Fans</FLink>
-          <FLink to="/category/$slug" params={{ slug: "heaters" }}>Heaters</FLink>
-        </FooterCol>
+        <Col title="Shop">
+          <Link to="/products" className={cls}>All Products</Link>
+          <Link to="/category/$slug" params={{ slug: "concealed-lights" }} className={cls}>Concealed Lights</Link>
+          <Link to="/category/$slug" params={{ slug: "panel-lights" }} className={cls}>Panel Lights</Link>
+          <Link to="/category/$slug" params={{ slug: "ceiling-fans" }} className={cls}>Ceiling Fans</Link>
+          <Link to="/category/$slug" params={{ slug: "heaters" }} className={cls}>Heaters</Link>
+        </Col>
 
-        <FooterCol title="Company">
-          <FLink to="/about">About Aurona</FLink>
-          <FLink to="/affiliate">Affiliate</FLink>
-          <FLink to="/careers">Careers</FLink>
-          <FLink to="/blogs">Blogs</FLink>
-          <FLink to="/contact">Contact</FLink>
-        </FooterCol>
+        <Col title="Company">
+          <Link to="/about" className={cls}>About Aurona</Link>
+          <Link to="/affiliate" className={cls}>Affiliate</Link>
+          <Link to="/careers" className={cls}>Careers</Link>
+          <Link to="/blogs" className={cls}>Blogs</Link>
+          <Link to="/contact" className={cls}>Contact</Link>
+        </Col>
 
-        <FooterCol title="Support">
-          <FLink to="/account">My Account</FLink>
-          <FLink to="/account">Track Order</FLink>
-          <FLink to="/contact">Warranty</FLink>
-          <FLink to="/contact">Retailer Enquiry</FLink>
-          <FLink to="/contact">Distributor Enquiry</FLink>
-        </FooterCol>
+        <Col title="Support">
+          <Link to="/account" className={cls}>My Account</Link>
+          <Link to="/account" className={cls}>Track Order</Link>
+          <Link to="/contact" className={cls}>Warranty</Link>
+          <Link to="/contact" className={cls}>Retailer Enquiry</Link>
+          <Link to="/contact" className={cls}>Distributor Enquiry</Link>
+        </Col>
       </div>
 
       <div className="border-t border-border">
         <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-muted-foreground sm:flex-row">
           <div>© {new Date().getFullYear()} Aurona Lighting Industries. All rights reserved.</div>
-          <div className="flex gap-4">
-            <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Shipping</a><a href="#">Returns</a>
-          </div>
+          <div className="flex gap-4"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Shipping</a><a href="#">Returns</a></div>
         </div>
       </div>
       <div className="h-16 lg:hidden" />
@@ -71,15 +69,13 @@ export function Footer() {
   );
 }
 
-function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
+const cls = "text-muted-foreground hover:text-foreground";
+
+function Col({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="text-eyebrow mb-4">{title}</div>
       <div className="flex flex-col gap-2 text-sm">{children}</div>
     </div>
   );
-}
-
-function FLink(props: React.ComponentProps<typeof Link>) {
-  return <Link {...props} className="text-muted-foreground hover:text-foreground" />;
 }
