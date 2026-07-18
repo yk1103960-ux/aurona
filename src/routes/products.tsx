@@ -76,19 +76,19 @@ function ProductsPage() {
           <div className="relative flex-1 sm:w-64">
             <Input
               value={sp.q}
-              onChange={(e) => nav({ search: (s) => ({ ...s, q: e.target.value }) })}
+              onChange={(e) => nav({ search: (s: typeof sp) => ({ ...s, q: e.target.value }) })}
               placeholder="Search products…"
               className="h-10 pr-8"
             />
             {sp.q && (
-              <button onClick={() => nav({ search: (s) => ({ ...s, q: "" }) })} className="absolute right-2 top-1/2 -translate-y-1/2">
+              <button onClick={() => nav({ search: (s: typeof sp) => ({ ...s, q: "" }) })} className="absolute right-2 top-1/2 -translate-y-1/2">
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
           </div>
           <select
             value={sp.sort}
-            onChange={(e) => nav({ search: (s) => ({ ...s, sort: e.target.value }) })}
+            onChange={(e) => nav({ search: (s: typeof sp) => ({ ...s, sort: e.target.value }) })}
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="newest">Newest</option>
