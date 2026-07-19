@@ -99,24 +99,30 @@ function Row({ label, value, valueClass = "" }: { label: string; value: string; 
 
 function EmptyCart() {
   return (
-    <div className="container-x py-24 text-center">
-      <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" strokeWidth={1.25} />
-      <h1 className="text-display mt-4 text-3xl">Your cart is empty</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Add some premium Aurona products to get started.</p>
-      <Button asChild size="lg" className="mt-6 rounded-full">
-        <Link to="/products">Explore products</Link>
-      </Button>
-    </div>
+    <EmptyState
+      icon={ShoppingBag}
+      eyebrow="Your cart"
+      title="Your cart is waiting"
+      description="Discover premium lighting, fans and appliances — add your favourites to bring them home."
+      primary={{ label: "Start shopping", to: "/products" }}
+      secondary={{ label: "Browse categories", to: "/" }}
+    />
   );
 }
 
 function SignInPrompt() {
   return (
-    <div className="container-x py-24 text-center">
-      <h1 className="text-display text-3xl">Sign in to view your cart</h1>
-      <Button asChild size="lg" className="mt-6 rounded-full">
-        <Link to="/auth">Sign in</Link>
-      </Button>
-    </div>
+    <EmptyState
+      icon={LogIn}
+      eyebrow="Sign in required"
+      title="Sign in to view your cart"
+      description="Your saved items, addresses and one-tap checkout are one step away."
+      primary={{ label: "Sign in / Register", to: "/auth" }}
+      secondary={{ label: "Continue browsing", to: "/products" }}
+    />
   );
 }
+
+// Unused imports guard
+void Link;
+
