@@ -123,6 +123,3 @@ function SignInPrompt() {
   );
 }
 
-// Unused imports guard
-void Link;
-
