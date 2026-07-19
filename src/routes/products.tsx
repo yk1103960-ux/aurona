@@ -115,12 +115,22 @@ function ProductsPage() {
         </aside>
 
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border py-24 text-center">
-            <div className="text-display text-2xl">No products found</div>
-            <p className="mt-2 text-sm text-muted-foreground">Try another keyword or category.</p>
-            <Button onClick={() => nav({ search: { q: "", cat: "", group: "", sort: "newest" } })} className="mt-6">
-              Clear filters
-            </Button>
+          <div className="rounded-2xl border border-border bg-surface py-20 text-center">
+            <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full border border-border bg-background shadow-soft">
+              <SearchX className="h-7 w-7 text-primary" strokeWidth={1.4} />
+            </div>
+            <div className="text-display text-3xl">No products found</div>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Try a different search term, or explore our collections — 150+ Aurona products across lighting, fans and appliances.
+            </p>
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button asChild size="lg" className="press h-12 rounded-full px-8">
+                <Link to="/">Browse categories</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="press h-12 rounded-full px-8" onClick={() => nav({ search: { q: "", cat: "", group: "", sort: "newest" } })}>
+                Clear filters
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
