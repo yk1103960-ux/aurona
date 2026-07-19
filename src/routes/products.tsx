@@ -47,12 +47,15 @@ function ProductsPage() {
     if (sp.group) list = list.filter((p) => cats.find((c) => c.id === p.category_id)?.parent_group === sp.group);
     if (sp.cat) list = list.filter((p) => cats.find((c) => c.id === p.category_id)?.slug === sp.cat);
     if (sp.q) list = list.filter((p) => p.name.toLowerCase().includes(sp.q.toLowerCase()));
+    if (sp.min > 0) list = list.filter((p) => Number(p.price) >= sp.min);
+    if (sp.max > 0) list = list.filter((p) => Number(p.price) <= sp.max);
     const sorted = [...list];
     if (sp.sort === "price-asc") sorted.sort((a, b) => Number(a.price) - Number(b.price));
     else if (sp.sort === "price-desc") sorted.sort((a, b) => Number(b.price) - Number(a.price));
     else if (sp.sort === "rating") sorted.sort((a, b) => Number(b.rating) - Number(a.rating));
     return sorted;
   }, [all, cats, sp]);
+
 
   const groupLabel: Record<string, string> = {
     "led-lighting": "LED Lighting",
