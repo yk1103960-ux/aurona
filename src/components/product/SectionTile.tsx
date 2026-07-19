@@ -10,12 +10,14 @@ export function SectionTile({
   title,
   subtitle,
   href,
+  params,
   products,
   accent = "bg-card",
 }: {
   title: string;
   subtitle?: string;
   href: string;
+  params?: Record<string, string>;
   products: Row[];
   accent?: string;
 }) {
@@ -28,6 +30,7 @@ export function SectionTile({
         </div>
         <Link
           to={href}
+          params={params as never}
           className="inline-flex shrink-0 items-center gap-1 rounded bg-primary px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
         >
           View All <ArrowRight className="h-3 w-3" />

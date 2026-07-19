@@ -119,6 +119,7 @@ function Home() {
             title="Best of Lighting"
             subtitle="Panel lights & downlights"
             href="/category/$slug"
+            params={{ slug: "panel-lights" }}
             products={panels}
           />
         </div>
@@ -151,6 +152,7 @@ function Home() {
             title="Cool Down with Fans"
             subtitle="Premium ceiling fans"
             href="/category/$slug"
+            params={{ slug: "ceiling-fans" }}
             products={fans}
           />
         </div>
