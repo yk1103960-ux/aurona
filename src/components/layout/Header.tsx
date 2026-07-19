@@ -119,14 +119,7 @@ export function Header() {
         </form>
 
         {/* Right: actions */}
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            onClick={() => navigate({ to: "/products", search: { q: "" } as never })}
-            className="grid h-10 w-10 place-items-center rounded-md text-primary-foreground lg:hidden"
-            aria-label="Search"
-          >
-            <Search className="h-5 w-5" />
-          </button>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Link to="/wishlist" className="relative hidden h-10 w-10 place-items-center rounded-md text-primary-foreground sm:grid" aria-label="Wishlist">
             <Heart className="h-5 w-5" />
             {wl.count > 0 && <Badge count={wl.count} />}
@@ -139,6 +132,24 @@ export function Header() {
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
         </div>
+      </div>
+
+      {/* Mobile search row */}
+      <div className="border-t border-white/10 bg-primary px-3 py-2 lg:hidden">
+        <form onSubmit={submit}>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search Aurona products…"
+              className="text-display h-10 rounded-full border-transparent bg-white pl-10 pr-20 text-sm text-foreground placeholder:text-muted-foreground"
+            />
+            <Button type="submit" size="sm" className="absolute right-1 top-1/2 h-8 -translate-y-1/2 rounded-full bg-gold px-3 text-xs font-semibold text-gold-foreground hover:bg-gold/90">
+              Search
+            </Button>
+          </div>
+        </form>
       </div>
 
       {/* Desktop nav */}
