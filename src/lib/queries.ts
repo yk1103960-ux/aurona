@@ -49,6 +49,21 @@ export const categoriesQuery = queryOptions({
   },
 });
 
+export const categoryCountsQuery = queryOptions({
+  queryKey: ["category-counts"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("products").select("category_id");
+    if (error) throw error;
+    const map: Record<string, number> = {};
+    for (const row of data ?? []) {
+      const id = (row as { category_id: string | null }).category_id;
+      if (!id) continue;
+      map[id] = (map[id] ?? 0) + 1;
+    }
+    return map;
+  },
+});
+
 export const productsQuery = (filter?: {
   categorySlug?: string;
   featured?: boolean;
