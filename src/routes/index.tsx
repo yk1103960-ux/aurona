@@ -225,7 +225,7 @@ function Home() {
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {cats.slice(0, 8).map((c, i) => {
-            const img = categoryImages[`/src/assets/categories/${c.slug}.jpg`]?.default;
+            const img = categoryImages[`../assets/categories/${c.slug}.jpg`]?.default;
             return (
               <Link
                 key={c.id}
