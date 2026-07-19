@@ -16,7 +16,10 @@ const search = z.object({
   group: fallback(z.string(), "").default(""),
   cat: fallback(z.string(), "").default(""),
   sort: fallback(z.string(), "newest").default("newest"),
+  min: fallback(z.number(), 0).default(0),
+  max: fallback(z.number(), 0).default(0),
 });
+
 
 export const Route = createFileRoute("/products")({
   validateSearch: zodValidator(search),
