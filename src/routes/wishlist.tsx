@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { createFileRoute } from "@tanstack/react-router";
+import { Heart, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProductCard } from "@/components/product/ProductCard";
+import { EmptyState } from "@/components/empty/EmptyState";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({ meta: [{ title: "Wishlist — Aurona" }] }),
@@ -16,19 +16,25 @@ function WishPage() {
   if (loading) return null;
   if (!user)
     return (
-      <div className="container-x py-24 text-center">
-        <h1 className="text-display text-3xl">Sign in to view your wishlist</h1>
-        <Button asChild size="lg" className="mt-6 rounded-full"><Link to="/auth">Sign in</Link></Button>
-      </div>
+      <EmptyState
+        icon={LogIn}
+        eyebrow="Wishlist"
+        title="Your wishlist is waiting"
+        description="Sign in to save your favourite products and access them anytime, on any device."
+        primary={{ label: "Sign in to view wishlist", to: "/auth" }}
+        secondary={{ label: "Explore products", to: "/products" }}
+      />
     );
   if (wl.items.length === 0)
     return (
-      <div className="container-x py-24 text-center">
-        <Heart className="mx-auto h-12 w-12 text-muted-foreground" strokeWidth={1.25} />
-        <h1 className="text-display mt-4 text-3xl">Your wishlist is empty</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Save products you love and find them here later.</p>
-        <Button asChild size="lg" className="mt-6 rounded-full"><Link to="/products">Explore products</Link></Button>
-      </div>
+      <EmptyState
+        icon={Heart}
+        eyebrow="Wishlist"
+        title="Start your wishlist"
+        description="Tap the heart on any product to save it here. We'll keep it ready for you."
+        primary={{ label: "Explore products", to: "/products" }}
+        secondary={{ label: "Browse categories", to: "/" }}
+      />
     );
   return (
     <div className="container-x py-8">
@@ -40,3 +46,4 @@ function WishPage() {
     </div>
   );
 }
+

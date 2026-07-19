@@ -77,9 +77,17 @@ function AccountPage() {
         {orders.isLoading ? (
           <div className="mt-6 text-sm text-muted-foreground">Loading…</div>
         ) : (orders.data ?? []).length === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
-            No orders yet.
-            <div className="mt-4"><Button asChild size="sm" className="rounded-full"><Link to="/products">Start shopping</Link></Button></div>
+          <div className="mt-6 rounded-2xl border border-border bg-surface p-10 text-center">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-border bg-background shadow-soft">
+              <Package className="h-6 w-6 text-primary" strokeWidth={1.4} />
+            </div>
+            <div className="text-display text-2xl">No orders yet</div>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+              Your orders, tracking updates and purchase history will appear here.
+            </p>
+            <Button asChild size="lg" className="mt-6 rounded-full">
+              <Link to="/products">Start shopping</Link>
+            </Button>
           </div>
         ) : (
           <div className="mt-6 space-y-4">
