@@ -184,6 +184,10 @@ function Filters({ cats, sp, nav }: { cats: any[]; sp: any; nav: any }) {
       <div>
         <div className="text-eyebrow mb-3">Categories</div>
         <div className="space-y-1">
+          <button
+            onClick={() => nav({ search: (s: any) => ({ ...s, cat: "" }) })}
+            className={cn("block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface", !sp.cat && "font-semibold text-foreground")}
+          >All Categories</button>
           {cats.filter((c) => !sp.group || c.parent_group === sp.group).map((c) => (
             <button
               key={c.id}
@@ -193,6 +197,49 @@ function Filters({ cats, sp, nav }: { cats: any[]; sp: any; nav: any }) {
           ))}
         </div>
       </div>
+      <div>
+        <div className="text-eyebrow mb-3">Price Range (₹)</div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            placeholder="Min"
+            value={sp.min || ""}
+            onChange={(e) => nav({ search: (s: any) => ({ ...s, min: Number(e.target.value) || 0 }) })}
+            className="h-10"
+          />
+          <span className="text-muted-foreground">—</span>
+          <Input
+            type="number"
+            min={0}
+            placeholder="Max"
+            value={sp.max || ""}
+            onChange={(e) => nav({ search: (s: any) => ({ ...s, max: Number(e.target.value) || 0 }) })}
+            className="h-10"
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {[[0, 1000], [1000, 3000], [3000, 7000], [7000, 0]].map(([lo, hi]) => (
+            <button
+              key={`${lo}-${hi}`}
+              onClick={() => nav({ search: (s: any) => ({ ...s, min: lo, max: hi }) })}
+              className={cn(
+                "rounded-full border border-border px-3 py-1 text-xs hover:border-primary",
+                sp.min === lo && sp.max === hi && "border-primary bg-primary text-primary-foreground",
+              )}
+            >
+              {lo === 0 ? `Under ₹${hi}` : hi === 0 ? `₹${lo}+` : `₹${lo}–₹${hi}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button
+        onClick={() => nav({ search: { q: "", cat: "", group: "", sort: "newest", min: 0, max: 0 } })}
+        className="hidden w-full rounded-md border border-border py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary lg:block"
+      >
+        Clear all filters
+      </button>
     </div>
   );
+
 }
