@@ -66,24 +66,27 @@ function Home() {
           {/* Shortcut cards */}
           <div className="px-3 pt-3">
             <div className="grid grid-cols-4 gap-2">
-              {SHORTCUTS.map((s, i) => (
-                <Link
-                  key={s.label}
-                  to={s.to}
-                  className={`flex flex-col items-center gap-1 rounded-xl border border-border/50 bg-background p-2 shadow-soft ${i === 0 ? "!bg-gold" : ""}`}
-                >
-                  <div className="grid h-9 w-9 place-items-center">
-                    {s.icon === "logo" ? (
-                      <img src={auronaLogo.url} alt="" className="h-8 w-8 object-contain" />
-                    ) : (
-                      // @ts-expect-error icon component
-                      <s.icon className="h-6 w-6 text-primary" strokeWidth={1.8} />
-                    )}
-                  </div>
-                  <div className="text-[11px] font-bold leading-none text-primary">{s.label}</div>
-                  <div className="text-[9px] font-medium leading-none text-primary/70">{s.sub}</div>
-                </Link>
-              ))}
+              {SHORTCUTS.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <Link
+                    key={s.label}
+                    to={s.to}
+                    className={`flex flex-col items-center gap-1 rounded-xl border border-border/50 bg-background p-2 shadow-soft ${i === 0 ? "!bg-gold" : ""}`}
+                  >
+                    <div className="grid h-9 w-9 place-items-center">
+                      {Icon === "logo" ? (
+                        <img src={auronaLogo.url} alt="" className="h-8 w-8 object-contain" />
+                      ) : (
+                        <Icon className="h-6 w-6 text-primary" strokeWidth={1.8} />
+                      )}
+                    </div>
+                    <div className="text-[11px] font-bold leading-none text-primary">{s.label}</div>
+                    <div className="text-[9px] font-medium leading-none text-primary/70">{s.sub}</div>
+                  </Link>
+                );
+              })}
+
             </div>
           </div>
 
