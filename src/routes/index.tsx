@@ -267,24 +267,29 @@ function Home() {
       </section>
 
       {/* ============ BEST SELLERS ============ */}
-      <section className="container-x py-16 lg:py-24">
-        <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <div className="text-eyebrow text-gold">03 · The favourites</div>
-            <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
-              Loved by <span className="italic">India</span>.
-            </h2>
+      <section className="relative overflow-hidden bg-background">
+        <div className="pointer-events-none absolute inset-0 light-halo opacity-70" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px rule-editorial" aria-hidden />
+        <div className="container-x relative py-16 lg:py-24">
+          <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+            <div className="min-w-0">
+              <div className="text-eyebrow text-gold">03 · The favourites</div>
+              <h2 className="text-display mt-3 text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
+                Loved by <span className="italic">India</span>.
+              </h2>
+            </div>
+            <Link to="/bestsellers" className="hidden shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+              All bestsellers →
+            </Link>
           </div>
-          <Link to="/bestsellers" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
-            All bestsellers →
-          </Link>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {best.slice(0, 8).map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {best.slice(0, 8).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         </div>
       </section>
+
 
       {/* ============ DEALS BAND — dark ============ */}
       <section className="bg-primary py-16 text-primary-foreground lg:py-24">
