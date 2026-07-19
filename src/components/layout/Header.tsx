@@ -204,10 +204,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           <img src={auronaLogo.url} alt="Aurona" className="h-9 w-9 object-contain" />
           <span className="text-display text-lg font-semibold text-primary">AURONA</span>
         </div>
-        <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-md" aria-label="Close">
-          <X className="h-5 w-5" />
-        </button>
       </div>
+
       <div className="flex-1 overflow-y-auto p-2">
         <MobileLink to="/">Home</MobileLink>
         <MobileLink to="/products">All Products</MobileLink>
