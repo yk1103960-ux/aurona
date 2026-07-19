@@ -108,9 +108,19 @@ function ProductsPage() {
                 <SlidersHorizontal className="h-4 w-4" /> Filters
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto p-6">
+            <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto p-6 pt-14">
+              <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+                <h2 className="text-display text-xl">Filters</h2>
+                <button
+                  onClick={() => nav({ search: { q: "", cat: "", group: "", sort: "newest", min: 0, max: 0 } })}
+                  className="text-xs font-semibold uppercase tracking-wider text-primary hover:text-gold"
+                >
+                  Clear all
+                </button>
+              </div>
               <Filters cats={cats} sp={sp} nav={nav} />
             </SheetContent>
+
           </Sheet>
         </div>
       </div>
