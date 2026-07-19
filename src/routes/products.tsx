@@ -16,7 +16,10 @@ const search = z.object({
   group: fallback(z.string(), "").default(""),
   cat: fallback(z.string(), "").default(""),
   sort: fallback(z.string(), "newest").default("newest"),
+  min: fallback(z.number(), 0).default(0),
+  max: fallback(z.number(), 0).default(0),
 });
+
 
 export const Route = createFileRoute("/products")({
   validateSearch: zodValidator(search),
@@ -44,12 +47,15 @@ function ProductsPage() {
     if (sp.group) list = list.filter((p) => cats.find((c) => c.id === p.category_id)?.parent_group === sp.group);
     if (sp.cat) list = list.filter((p) => cats.find((c) => c.id === p.category_id)?.slug === sp.cat);
     if (sp.q) list = list.filter((p) => p.name.toLowerCase().includes(sp.q.toLowerCase()));
+    if (sp.min > 0) list = list.filter((p) => Number(p.price) >= sp.min);
+    if (sp.max > 0) list = list.filter((p) => Number(p.price) <= sp.max);
     const sorted = [...list];
     if (sp.sort === "price-asc") sorted.sort((a, b) => Number(a.price) - Number(b.price));
     else if (sp.sort === "price-desc") sorted.sort((a, b) => Number(b.price) - Number(a.price));
     else if (sp.sort === "rating") sorted.sort((a, b) => Number(b.rating) - Number(a.rating));
     return sorted;
   }, [all, cats, sp]);
+
 
   const groupLabel: Record<string, string> = {
     "led-lighting": "LED Lighting",
@@ -102,9 +108,19 @@ function ProductsPage() {
                 <SlidersHorizontal className="h-4 w-4" /> Filters
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto p-6">
+            <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto p-6 pt-14">
+              <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+                <h2 className="text-display text-xl">Filters</h2>
+                <button
+                  onClick={() => nav({ search: { q: "", cat: "", group: "", sort: "newest", min: 0, max: 0 } })}
+                  className="text-xs font-semibold uppercase tracking-wider text-primary hover:text-gold"
+                >
+                  Clear all
+                </button>
+              </div>
               <Filters cats={cats} sp={sp} nav={nav} />
             </SheetContent>
+
           </Sheet>
         </div>
       </div>
@@ -168,6 +184,10 @@ function Filters({ cats, sp, nav }: { cats: any[]; sp: any; nav: any }) {
       <div>
         <div className="text-eyebrow mb-3">Categories</div>
         <div className="space-y-1">
+          <button
+            onClick={() => nav({ search: (s: any) => ({ ...s, cat: "" }) })}
+            className={cn("block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface", !sp.cat && "font-semibold text-foreground")}
+          >All Categories</button>
           {cats.filter((c) => !sp.group || c.parent_group === sp.group).map((c) => (
             <button
               key={c.id}
@@ -177,6 +197,49 @@ function Filters({ cats, sp, nav }: { cats: any[]; sp: any; nav: any }) {
           ))}
         </div>
       </div>
+      <div>
+        <div className="text-eyebrow mb-3">Price Range (₹)</div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            placeholder="Min"
+            value={sp.min || ""}
+            onChange={(e) => nav({ search: (s: any) => ({ ...s, min: Number(e.target.value) || 0 }) })}
+            className="h-10"
+          />
+          <span className="text-muted-foreground">—</span>
+          <Input
+            type="number"
+            min={0}
+            placeholder="Max"
+            value={sp.max || ""}
+            onChange={(e) => nav({ search: (s: any) => ({ ...s, max: Number(e.target.value) || 0 }) })}
+            className="h-10"
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {[[0, 1000], [1000, 3000], [3000, 7000], [7000, 0]].map(([lo, hi]) => (
+            <button
+              key={`${lo}-${hi}`}
+              onClick={() => nav({ search: (s: any) => ({ ...s, min: lo, max: hi }) })}
+              className={cn(
+                "rounded-full border border-border px-3 py-1 text-xs hover:border-primary",
+                sp.min === lo && sp.max === hi && "border-primary bg-primary text-primary-foreground",
+              )}
+            >
+              {lo === 0 ? `Under ₹${hi}` : hi === 0 ? `₹${lo}+` : `₹${lo}–₹${hi}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button
+        onClick={() => nav({ search: { q: "", cat: "", group: "", sort: "newest", min: 0, max: 0 } })}
+        className="hidden w-full rounded-md border border-border py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary lg:block"
+      >
+        Clear all filters
+      </button>
     </div>
   );
+
 }
