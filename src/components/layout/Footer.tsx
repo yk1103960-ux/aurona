@@ -1,17 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { Facebook, Instagram, Youtube, Linkedin, MapPin, Mail, Phone } from "lucide-react";
+import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-border bg-surface">
       <div className="container-x grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <div className="flex items-center gap-2">
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-primary text-primary-foreground">
-              <span className="text-display text-lg font-semibold">A</span>
-            </div>
+          <div className="flex items-center gap-3">
+            <img src={auronaLogo.url} alt="Aurona" className="h-12 w-12 object-contain" />
             <div>
-              <div className="text-display text-xl font-semibold">AURONA</div>
+              <div className="text-display text-xl font-semibold text-primary">AURONA</div>
               <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Innovating the way</div>
             </div>
           </div>

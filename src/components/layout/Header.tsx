@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 const NAV = [
   { label: "Home", to: "/" },
@@ -71,11 +72,9 @@ export function Header() {
             </SheetContent>
           </Sheet>
           <Link to="/" className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-primary text-primary-foreground">
-              <span className="text-display text-lg font-semibold">A</span>
-            </div>
+            <img src={auronaLogo.url} alt="Aurona" className="h-10 w-10 object-contain lg:h-12 lg:w-12" />
             <div className="leading-tight">
-              <div className="text-display text-xl font-semibold tracking-tight">AURONA</div>
+              <div className="text-display text-xl font-semibold tracking-tight text-primary">AURONA</div>
               <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">Innovating the way</div>
             </div>
           </Link>
@@ -162,10 +161,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
-            <span className="text-display text-base font-semibold">A</span>
-          </div>
-          <span className="text-display text-lg font-semibold">AURONA</span>
+          <img src={auronaLogo.url} alt="Aurona" className="h-9 w-9 object-contain" />
+          <span className="text-display text-lg font-semibold text-primary">AURONA</span>
         </div>
         <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-md" aria-label="Close">
           <X className="h-5 w-5" />
