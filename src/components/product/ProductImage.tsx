@@ -44,21 +44,25 @@ export function ProductImage({
     return (
       <div
         className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-lg bg-white",
+          "product-tile relative flex items-center justify-center overflow-hidden rounded-lg p-2",
           className,
         )}
       >
-        <img
-          src={photo}
-          alt={product.name}
-          loading="lazy"
-          width={1024}
-          height={1024}
-          className="h-full w-full object-contain p-2"
-        />
+        <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-md bg-white">
+          <img
+            src={photo}
+            alt={product.name}
+            loading="lazy"
+            width={1024}
+            height={1024}
+            className="h-full w-full object-contain p-2"
+          />
+        </div>
       </div>
     );
   }
+
+
 
   const Icon = (categoryIcon && iconMap[categoryIcon]) || Lightbulb;
   const grad = gradClass[product.image_seed ?? "amber"] ?? "product-gradient-amber";
