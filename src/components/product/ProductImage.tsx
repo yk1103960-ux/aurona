@@ -44,7 +44,7 @@ export function ProductImage({
     return (
       <div
         className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-lg bg-white",
+          "product-tile relative flex items-center justify-center overflow-hidden rounded-lg",
           className,
         )}
       >
@@ -54,11 +54,12 @@ export function ProductImage({
           loading="lazy"
           width={1024}
           height={1024}
-          className="h-full w-full object-contain p-2"
+          className="relative z-10 h-full w-full object-contain p-3 mix-blend-screen"
         />
       </div>
     );
   }
+
 
   const Icon = (categoryIcon && iconMap[categoryIcon]) || Lightbulb;
   const grad = gradClass[product.image_seed ?? "amber"] ?? "product-gradient-amber";
