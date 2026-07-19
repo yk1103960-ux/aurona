@@ -213,7 +213,7 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -222,4 +222,58 @@
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+  /* Global premium easing for utility-driven transitions */
+  a, button, [role="button"], input, select, textarea, .transition, .transition-all, .transition-colors, .transition-transform, .transition-opacity {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Accessible focus ring — clearly visible on light + dark surfaces */
+  :where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
+
+/* Micro-interaction: subtle press feedback */
+@utility press {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.press:active { transform: scale(0.97); }
+
+/* Skeleton shimmer */
+@utility shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--muted) 60%, transparent) 0%,
+    color-mix(in oklab, var(--muted) 20%, transparent) 50%,
+    color-mix(in oklab, var(--muted) 60%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-slide 1.4s ease-in-out infinite;
+}
+@keyframes shimmer-slide {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Cart / wishlist badge pop */
+@keyframes badge-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.badge-pop { animation: badge-pop 380ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Reduced motion — kill all non-essential motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .marquee { animation: none !important; }
+}
+

@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, Search, Heart, ShoppingCart, User, X, ChevronDown, Phone, Truck, ShieldCheck, Factory } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 const NAV = [
@@ -31,6 +32,7 @@ export function Header() {
   const [openMobile, setOpenMobile] = useState(false);
   const { data: cats = [] } = useQuery(categoriesQuery);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const scrolled = useScrolled(12);
 
   useEffect(() => setOpenMobile(false), [pathname]);
 
@@ -41,9 +43,19 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-      {/* Utility bar (desktop) */}
-      <div className="hidden border-b border-border bg-surface text-xs text-muted-foreground lg:block">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md transition-[box-shadow,background-color,border-color] duration-300",
+        scrolled && "border-border bg-background/95 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.15)]",
+      )}
+    >
+      {/* Utility bar (desktop) — collapses on scroll */}
+      <div
+        className={cn(
+          "hidden overflow-hidden border-b border-border bg-surface text-xs text-muted-foreground transition-[max-height,opacity] duration-300 ease-out lg:block",
+          scrolled ? "max-h-0 opacity-0 border-b-0" : "max-h-10 opacity-100",
+        )}
+      >
         <div className="container-x flex h-9 items-center justify-between">
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> PAN India Delivery</span>
@@ -57,13 +69,18 @@ export function Header() {
         </div>
       </div>
 
-      {/* Main bar */}
-      <div className="container-x grid h-16 grid-cols-[auto_1fr_auto] items-center gap-3 lg:h-20 lg:gap-6">
+      {/* Main bar — shrinks on scroll */}
+      <div
+        className={cn(
+          "container-x grid grid-cols-[auto_1fr_auto] items-center gap-3 transition-[height] duration-300 ease-out lg:gap-6",
+          scrolled ? "h-14 lg:h-16" : "h-16 lg:h-20",
+        )}
+      >
         {/* Left: hamburger + logo */}
         <div className="flex items-center gap-2">
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
-              <button className="grid h-10 w-10 place-items-center rounded-md lg:hidden" aria-label="Menu">
+              <button className="press grid h-10 w-10 place-items-center rounded-md lg:hidden" aria-label="Menu">
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
@@ -72,7 +89,14 @@ export function Header() {
             </SheetContent>
           </Sheet>
           <Link to="/" className="flex items-center gap-2">
-            <img src={auronaLogo.url} alt="Aurona" className="h-10 w-10 object-contain lg:h-12 lg:w-12" />
+            <img
+              src={auronaLogo.url}
+              alt="Aurona"
+              className={cn(
+                "object-contain transition-[height,width] duration-300 ease-out",
+                scrolled ? "h-9 w-9 lg:h-10 lg:w-10" : "h-10 w-10 lg:h-12 lg:w-12",
+              )}
+            />
             <div className="leading-tight">
               <div className="text-display text-xl font-semibold tracking-tight text-primary">AURONA</div>
               <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">Innovating the way</div>
@@ -141,8 +165,24 @@ export function Header() {
 }
 
 function Badge({ count }: { count: number }) {
+  const prev = useRef(count);
+  const [pop, setPop] = useState(false);
+  useEffect(() => {
+    if (count !== prev.current && count > 0) {
+      setPop(true);
+      const t = window.setTimeout(() => setPop(false), 420);
+      return () => window.clearTimeout(t);
+    }
+    prev.current = count;
+  }, [count]);
   return (
-    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
+    <span
+      key={count}
+      className={cn(
+        "absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground",
+        pop && "badge-pop",
+      )}
+    >
       {count > 99 ? "99+" : count}
     </span>
   );

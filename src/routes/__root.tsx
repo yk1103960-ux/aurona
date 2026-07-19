@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { PageTransition } from "@/components/motion/PageTransition";
 import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
@@ -110,7 +111,9 @@ function RootComponent() {
       <div className="flex min-h-screen flex-col">
         <Header />
         <main className="flex-1 pb-16 lg:pb-0">
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </main>
         <Footer />
         <MobileBottomNav />
