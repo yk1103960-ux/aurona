@@ -61,7 +61,7 @@ export const productsQuery = (filter?: {
   queryOptions({
     queryKey: ["products", filter ?? {}],
     queryFn: async () => {
-      let q = supabase.from("products").select("*, categories(slug, name)");
+      let q = supabase.from("products").select("*, categories(slug, name, icon)");
       if (filter?.categorySlug) {
         const { data: cat } = await supabase
           .from("categories")
@@ -79,7 +79,7 @@ export const productsQuery = (filter?: {
       if (filter?.limit) q = q.limit(filter.limit);
       const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as (Product & { categories: { slug: string; name: string } | null })[];
+      return (data ?? []) as (Product & { categories: { slug: string; name: string; icon: string | null } | null })[];
     },
   });
 
@@ -89,10 +89,10 @@ export const productQuery = (slug: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(slug, name)")
+        .select("*, categories(slug, name, icon)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
-      return data as (Product & { categories: { slug: string; name: string } | null }) | null;
+      return data as (Product & { categories: { slug: string; name: string; icon: string | null } | null }) | null;
     },
   });

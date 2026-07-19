@@ -198,6 +198,16 @@
 @utility product-gradient-gold  { background: var(--grad-gold); }
 @utility product-gradient-charcoal { background: var(--grad-charcoal); }
 
+@utility marquee {
+  animation: marquee-scroll 32s linear infinite;
+  will-change: transform;
+}
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-33.3333%); }
+}
+
+
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
 @utility shadow-lift { box-shadow: var(--shadow-lift); }
 
