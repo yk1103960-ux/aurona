@@ -72,7 +72,7 @@ export function Header() {
       {/* Main bar — shrinks on scroll */}
       <div
         className={cn(
-          "container-x grid grid-cols-[auto_1fr_auto] items-center gap-2 transition-[height] duration-300 ease-out lg:gap-6",
+          "container-x flex items-center justify-between gap-2 transition-[height] duration-300 ease-out lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-6",
           scrolled ? "h-14 lg:h-16" : "h-16 lg:h-20",
         )}
       >
@@ -118,8 +118,8 @@ export function Header() {
           </div>
         </form>
 
-        {/* Right: actions */}
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        {/* Right: actions — cart pinned to far right on mobile */}
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
           <Link to="/wishlist" className="relative hidden h-10 w-10 place-items-center rounded-md text-primary-foreground sm:grid" aria-label="Wishlist">
             <Heart className="h-5 w-5" />
             {wl.count > 0 && <Badge count={wl.count} />}
@@ -127,7 +127,7 @@ export function Header() {
           <Link to={user ? "/account" : "/auth"} className="hidden h-10 w-10 place-items-center rounded-md text-primary-foreground sm:grid" aria-label="Account">
             <User className="h-5 w-5" />
           </Link>
-          <Link to="/cart" className="relative grid h-10 w-10 place-items-center rounded-md text-primary-foreground" aria-label="Cart">
+          <Link to="/cart" className="relative -mr-2 grid h-10 w-10 place-items-center rounded-md text-primary-foreground sm:-mr-1" aria-label="Cart">
             <ShoppingCart className="h-5 w-5" />
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
