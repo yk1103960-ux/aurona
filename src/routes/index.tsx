@@ -13,6 +13,11 @@ import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
+const categoryImages = import.meta.glob<{ default: string }>(
+  "@/assets/categories/*.jpg",
+  { eager: true }
+);
+
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(categoriesQuery);
