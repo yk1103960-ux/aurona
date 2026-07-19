@@ -69,13 +69,18 @@ export function Header() {
         </div>
       </div>
 
-      {/* Main bar */}
-      <div className="container-x grid h-16 grid-cols-[auto_1fr_auto] items-center gap-3 lg:h-20 lg:gap-6">
+      {/* Main bar — shrinks on scroll */}
+      <div
+        className={cn(
+          "container-x grid grid-cols-[auto_1fr_auto] items-center gap-3 transition-[height] duration-300 ease-out lg:gap-6",
+          scrolled ? "h-14 lg:h-16" : "h-16 lg:h-20",
+        )}
+      >
         {/* Left: hamburger + logo */}
         <div className="flex items-center gap-2">
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
-              <button className="grid h-10 w-10 place-items-center rounded-md lg:hidden" aria-label="Menu">
+              <button className="press grid h-10 w-10 place-items-center rounded-md lg:hidden" aria-label="Menu">
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
@@ -84,7 +89,14 @@ export function Header() {
             </SheetContent>
           </Sheet>
           <Link to="/" className="flex items-center gap-2">
-            <img src={auronaLogo.url} alt="Aurona" className="h-10 w-10 object-contain lg:h-12 lg:w-12" />
+            <img
+              src={auronaLogo.url}
+              alt="Aurona"
+              className={cn(
+                "object-contain transition-[height,width] duration-300 ease-out",
+                scrolled ? "h-9 w-9 lg:h-10 lg:w-10" : "h-10 w-10 lg:h-12 lg:w-12",
+              )}
+            />
             <div className="leading-tight">
               <div className="text-display text-xl font-semibold tracking-tight text-primary">AURONA</div>
               <div className="hidden text-[10px] uppercase tracking-[0.22em] text-muted-foreground sm:block">Innovating the way</div>
