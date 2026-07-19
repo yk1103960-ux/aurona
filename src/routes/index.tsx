@@ -221,8 +221,11 @@ function Home() {
 
 
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
-      <section className="bg-surface py-16 lg:py-24">
-        <div className="container-x grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+      <section className="relative overflow-hidden bg-surface py-16 lg:py-24">
+        <div className="pointer-events-none absolute inset-0 editorial-grid opacity-30" aria-hidden />
+        <div className="pointer-events-none absolute -left-40 top-1/4 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_16%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+        <div className="container-x relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+
           <div className="relative overflow-hidden rounded-2xl">
             <img
               src={luxInterior.url}
