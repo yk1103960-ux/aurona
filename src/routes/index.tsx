@@ -1,55 +1,47 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, Truck, ShieldCheck, Factory, PackageCheck, Search, MapPin, Camera, Mic, Zap, Sparkles, Percent, Package, ChevronRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Search, Sparkles, Star } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
-import { CategoryTile } from "@/components/product/ProductImage";
-import { SectionTile } from "@/components/product/SectionTile";
 import { ProductCard } from "@/components/product/ProductCard";
-import heroImg from "@/assets/hero-lighting.jpg";
-import promoLed from "@/assets/promo-led.jpg";
-import promoFan from "@/assets/promo-fan.jpg";
-import promoChandelier from "@/assets/promo-chandelier.jpg";
+import { Counter } from "@/components/marketing/Counter";
+import { inr, discountPct } from "@/lib/format";
+import { ProductImage } from "@/components/product/ProductImage";
+import heroLux from "@/assets/hero-lux.jpg.asset.json";
+import luxFan from "@/assets/lux-fan.jpg.asset.json";
+import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(categoriesQuery);
     context.queryClient.ensureQueryData(productsQuery({ sale: true, limit: 6 }));
-    context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 4 }));
-    context.queryClient.ensureQueryData(productsQuery({ bestseller: true, limit: 6 }));
-    context.queryClient.ensureQueryData(productsQuery({ isNew: true, limit: 4 }));
-    context.queryClient.ensureQueryData(productsQuery({ categorySlug: "ceiling-fans", limit: 4 }));
-    context.queryClient.ensureQueryData(productsQuery({ categorySlug: "panel-lights", limit: 4 }));
+    context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 6 }));
+    context.queryClient.ensureQueryData(productsQuery({ bestseller: true, limit: 8 }));
+    context.queryClient.ensureQueryData(productsQuery({ isNew: true, limit: 6 }));
   },
   component: Home,
+  head: () => ({
+    meta: [
+      { title: "Aurona — Sculpted light, engineered in India" },
+      {
+        name: "description",
+        content:
+          "Aurona crafts sculptural lighting, ceiling fans and home appliances — 17 years of manufacturing, delivered across India.",
+      },
+    ],
+  }),
 });
-
-const SHORTCUTS = [
-  { label: "Aurona", sub: "Store", icon: "logo", bg: "bg-gold", to: "/products" },
-  { label: "Quick", sub: "30 min", icon: Zap, bg: "bg-background", to: "/deals" },
-  { label: "Deals", sub: "60% off", icon: Percent, bg: "bg-background", to: "/deals" },
-  { label: "New", sub: "Arrivals", icon: Sparkles, bg: "bg-background", to: "/new-arrivals" },
-] as const;
 
 function Home() {
   const navigate = useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
   const sale = useSuspenseQuery(productsQuery({ sale: true, limit: 6 })).data;
-  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
-  const best = useSuspenseQuery(productsQuery({ bestseller: true, limit: 6 })).data;
-  const news = useSuspenseQuery(productsQuery({ isNew: true, limit: 4 })).data;
-  const fans = useSuspenseQuery(productsQuery({ categorySlug: "ceiling-fans", limit: 4 })).data;
-  const panels = useSuspenseQuery(productsQuery({ categorySlug: "panel-lights", limit: 4 })).data;
+  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 6 })).data;
+  const best = useSuspenseQuery(productsQuery({ bestseller: true, limit: 8 })).data;
+  const news = useSuspenseQuery(productsQuery({ isNew: true, limit: 6 })).data;
   const [q, setQ] = useState("");
-  const [heroIdx, setHeroIdx] = useState(0);
-
-  const banners = [
-    { img: promoLed, tag: "Smart LED Sale", copy: "Up to 60% off", href: "/deals" },
-    { img: promoChandelier, tag: "Luxury Lighting", copy: "New chandeliers", href: "/category/$slug", slug: "panel-lights" },
-    { img: promoFan, tag: "Cool Season", copy: "Premium fans", href: "/category/$slug", slug: "ceiling-fans" },
-  ];
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,357 +49,407 @@ function Home() {
     navigate({ to: "/products", search: { q: q.trim() } as never });
   };
 
+  const marqueeItems = [
+    "PAN India Delivery",
+    "Genuine Products",
+    "Manufacturer Direct",
+    "17+ Years",
+    "150+ SKUs",
+    "1,000+ Partners",
+  ];
+
+  const hero = featured[0] ?? best[0];
+
   return (
-    <div className="bg-surface">
-      {/* ============ MOBILE FLIPKART-STYLE TOP (mobile only) ============ */}
-      <div className="lg:hidden">
-        {/* Blue gradient wash */}
-        <section className="relative bg-gradient-to-b from-[oklch(0.85_0.08_240)] via-[oklch(0.92_0.05_235)] to-surface pb-3">
-          {/* Shortcut cards */}
-          <div className="px-3 pt-3">
-            <div className="grid grid-cols-4 gap-2">
-              {SHORTCUTS.map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <Link
-                    key={s.label}
-                    to={s.to}
-                    className={`flex flex-col items-center gap-1 rounded-xl border border-border/50 bg-background p-2 shadow-soft ${i === 0 ? "!bg-gold" : ""}`}
-                  >
-                    <div className="grid h-9 w-9 place-items-center">
-                      {Icon === "logo" ? (
-                        <img src={auronaLogo.url} alt="" className="h-8 w-8 object-contain" />
-                      ) : (
-                        <Icon className="h-6 w-6 text-primary" strokeWidth={1.8} />
-                      )}
-                    </div>
-                    <div className="text-[11px] font-bold leading-none text-primary">{s.label}</div>
-                    <div className="text-[9px] font-medium leading-none text-primary/70">{s.sub}</div>
-                  </Link>
-                );
-              })}
+    <div className="bg-background">
+      {/* ============ CINEMATIC HERO ============ */}
+      <section className="relative overflow-hidden bg-[oklch(0.11_0.015_260)] text-primary-foreground">
+        {/* backdrop image */}
+        <div className="absolute inset-0">
+          <img
+            src={heroLux.url}
+            alt=""
+            className="h-full w-full object-cover object-center opacity-90"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.10_0.015_260)] via-[oklch(0.10_0.015_260/0.7)] to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.10_0.015_260)] via-transparent to-transparent" />
+        </div>
 
+        <div className="container-x relative">
+          {/* top row */}
+          <div className="flex items-center justify-between pt-8 lg:pt-12">
+            <div className="flex items-center gap-2">
+              <img src={auronaLogo.url} alt="" className="h-9 w-9 object-contain brightness-0 invert lg:h-10 lg:w-10" />
+              <div className="text-[10px] uppercase tracking-[0.28em] text-primary-foreground/70">Est. 2007</div>
             </div>
-          </div>
-
-          {/* Location bar */}
-          <div className="mt-3 px-3">
-            <div className="flex items-center gap-2 rounded-lg bg-background/80 px-3 py-2 backdrop-blur">
-              <MapPin className="h-4 w-4 shrink-0 text-primary" />
-              <div className="min-w-0 flex-1 truncate text-xs font-semibold text-primary">
-                Deliver to <span className="font-normal text-muted-foreground">Ground Floor, 2nd Main Road…</span>
-              </div>
-              <div className="flex items-center gap-1 rounded-md bg-gold/20 px-2 py-1">
-                <Zap className="h-3 w-3 text-gold" strokeWidth={2.5} />
-                <span className="text-[10px] font-bold text-primary">0</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Search */}
-          <form onSubmit={submit} className="mt-3 px-3">
-            <div className="relative flex items-center rounded-xl border-2 border-gold/60 bg-background px-3">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search LEDs, fans, appliances…"
-                className="flex-1 bg-transparent px-2 py-2.5 text-sm outline-none"
-              />
-              <button type="button" aria-label="Camera" className="grid h-8 w-8 place-items-center text-muted-foreground">
-                <Camera className="h-4 w-4" />
-              </button>
-              <button type="button" aria-label="Voice" className="grid h-8 w-8 place-items-center text-muted-foreground">
-                <Mic className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
-
-          {/* Category icons scroller */}
-          <div className="mt-3">
-            <div className="scrollbar-hide flex gap-1 overflow-x-auto px-3 pb-1">
-              {cats.slice(0, 12).map((c) => (
-                <Link
-                  key={c.id}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className="flex min-w-[68px] shrink-0 flex-col items-center gap-1.5 rounded-lg p-1"
-                >
-                  <CategoryTile categoryIcon={c.icon} className="h-12 w-12" />
-                  <div className="max-w-[64px] truncate text-center text-[10px] font-semibold text-primary">{c.name}</div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Hero banner carousel */}
-        <section className="px-3 pt-3">
-          <div className="overflow-hidden rounded-xl border border-border bg-primary shadow-soft">
             <Link
-              to={banners[heroIdx].href}
-              params={banners[heroIdx].slug ? { slug: banners[heroIdx].slug } : undefined as never}
-              className="relative block aspect-[16/9]"
+              to="/about"
+              className="group hidden items-center gap-1.5 text-[11px] uppercase tracking-[0.24em] text-primary-foreground/70 hover:text-gold sm:flex"
             >
-              <img src={banners[heroIdx].img} alt={banners[heroIdx].tag} className="h-full w-full object-cover" />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary/80 to-transparent p-3">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-gold">{banners[heroIdx].tag}</div>
-                <div className="text-sm font-bold text-primary-foreground">{banners[heroIdx].copy}</div>
+              The Aurona story
+              <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+
+          {/* headline */}
+          <div className="relative min-h-[560px] py-14 sm:py-20 lg:min-h-[720px] lg:py-32">
+            <div className="max-w-2xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1 backdrop-blur-sm">
+                <Sparkles className="h-3 w-3 text-gold" />
+                <span className="text-[10px] uppercase tracking-[0.22em] text-primary-foreground/80">
+                  Winter Collection · 2026
+                </span>
               </div>
-              <div className="absolute right-2 top-2 rounded-md bg-background/80 px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground">
-                AD
+              <h1 className="text-display text-[44px] leading-[0.95] tracking-tight sm:text-6xl lg:text-[112px]">
+                Light,
+                <br />
+                <span className="italic text-gold">sculpted</span>
+                <br />
+                for India.
+              </h1>
+              <p className="mt-6 max-w-md text-sm text-primary-foreground/75 sm:text-base">
+                Seventeen years of manufacturing, distilled into fixtures, fans and
+                appliances that feel considered from the first click to the ceiling.
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="group h-12 rounded-full bg-gold px-6 text-gold-foreground hover:bg-gold/90"
+                >
+                  <Link to="/products">
+                    Explore the collection
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 rounded-full border-primary-foreground/25 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  <Link to="/deals">Season deals</Link>
+                </Button>
+              </div>
+
+              {/* inline search */}
+              <form onSubmit={submit} className="mt-8 max-w-md">
+                <div className="flex items-center gap-3 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-4 py-2 backdrop-blur">
+                  <Search className="h-4 w-4 text-primary-foreground/60" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search chandeliers, fans, panel lights…"
+                    className="flex-1 bg-transparent text-sm text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full bg-gold px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gold-foreground"
+                  >
+                    Go
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* featured floating card */}
+            {hero && (
+              <Link
+                to="/products/$slug"
+                params={{ slug: hero.slug }}
+                className="group absolute bottom-6 right-0 hidden w-[280px] rounded-2xl border border-primary-foreground/15 bg-[oklch(0.14_0.02_260/0.7)] p-4 backdrop-blur-xl transition hover:border-gold/50 lg:block"
+              >
+                <div className="text-[10px] uppercase tracking-[0.2em] text-gold">Featured</div>
+                <div className="mt-2 flex items-start gap-3">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                    <ProductImage product={hero} categoryIcon={hero.categories?.icon} className="h-full w-full" iconClassName="h-8 w-8" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="line-clamp-2 text-sm font-semibold text-primary-foreground">
+                      {hero.name}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-primary-foreground/60">
+                      <Star className="h-3 w-3 fill-gold text-gold" /> {Number(hero.rating).toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-primary-foreground/10 pt-3">
+                  <div className="text-base font-semibold text-primary-foreground">{inr(hero.price)}</div>
+                  <ArrowUpRight className="h-4 w-4 text-gold transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </div>
+              </Link>
+            )}
+          </div>
+
+          {/* counters */}
+          <div className="grid grid-cols-2 gap-6 border-t border-primary-foreground/15 py-8 lg:grid-cols-4 lg:py-10">
+            <Counter to={17} suffix="+" label="Years crafting" />
+            <Counter to={150} suffix="+" label="Products shipped" />
+            <Counter to={1000} suffix="+" label="Retail partners" />
+            <Counter to={28} label="States delivered" />
+          </div>
+        </div>
+      </section>
+
+      {/* ============ MARQUEE ============ */}
+      <div className="border-y border-border bg-primary py-3 text-primary-foreground">
+        <div className="marquee flex gap-12 whitespace-nowrap">
+          {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((t, i) => (
+            <span key={i} className="flex items-center gap-3 text-[11px] uppercase tracking-[0.32em]">
+              <span className="h-1 w-1 rounded-full bg-gold" />
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ============ CATEGORY EDITORIAL ============ */}
+      <section className="container-x py-16 lg:py-24">
+        <div className="mb-10 flex items-end justify-between gap-4">
+          <div>
+            <div className="text-eyebrow text-gold">01 · Collections</div>
+            <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+              A room for <span className="italic">every</span> light.
+            </h2>
+          </div>
+          <Link to="/products" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+            View catalogue →
+          </Link>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {cats.slice(0, 8).map((c, i) => (
+            <Link
+              key={c.id}
+              to="/category/$slug"
+              params={{ slug: c.slug }}
+              className="group relative flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-2xl bg-surface p-5 transition hover:shadow-lift"
+            >
+              <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <div>
+                <div className="text-display text-2xl leading-tight text-primary lg:text-3xl">
+                  {c.name}
+                </div>
+                <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold">
+                  Discover <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </div>
+              </div>
+              <div className="pointer-events-none absolute inset-0 -z-0 opacity-0 transition group-hover:opacity-100">
+                <div className="absolute inset-0 bg-gradient-to-br from-gold/10 to-transparent" />
               </div>
             </Link>
-            <div className="flex justify-center gap-1.5 bg-background py-2">
-              {banners.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setHeroIdx(i)}
-                  aria-label={`Slide ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${i === heroIdx ? "w-6 bg-primary" : "w-1.5 bg-border-strong"}`}
-                />
-              ))}
+          ))}
+        </div>
+      </section>
+
+      {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
+      <section className="bg-surface py-16 lg:py-24">
+        <div className="container-x grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <div className="relative overflow-hidden rounded-2xl">
+            <img
+              src={luxInterior.url}
+              alt="Warm cinematic interior lit by Aurona fixtures"
+              className="aspect-[4/5] w-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-background/95 p-4 backdrop-blur">
+              <div className="text-[10px] uppercase tracking-[0.24em] text-gold">Case Study</div>
+              <div className="mt-1 text-sm font-semibold text-primary">
+                Bengaluru residence · lit entirely by Aurona
+              </div>
             </div>
           </div>
-        </section>
+          <div>
+            <div className="text-eyebrow text-gold">02 · Craft</div>
+            <h3 className="text-display mt-3 text-3xl leading-tight sm:text-4xl lg:text-5xl">
+              We don't manufacture lights. We compose <span className="italic">rooms</span>.
+            </h3>
+            <p className="mt-5 max-w-md text-sm text-muted-foreground sm:text-base">
+              Every fixture is engineered at our Karnataka facility — copper drivers,
+              anti-glare optics, and finishes chosen to age with your home. Warmth by
+              design, not by accident.
+            </p>
+            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-8">
+              {[
+                { k: "3.5K", l: "Warm CCT" },
+                { k: "R9>95", l: "Colour render" },
+                { k: "5yr", l: "Warranty" },
+              ].map((s) => (
+                <div key={s.l}>
+                  <div className="text-display text-2xl text-primary">{s.k}</div>
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{s.l}</div>
+                </div>
+              ))}
+            </div>
+            <Button asChild variant="outline" className="mt-8 h-11 rounded-full border-primary/20 px-6">
+              <Link to="/about">Inside the Aurona factory <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
+          </div>
+        </div>
+      </section>
 
-        {/* "Still browsing?" horizontal cards */}
-        <section className="mt-3">
-          <div className="rounded-xl bg-[oklch(0.95_0.03_240)] px-3 py-4">
-            <h3 className="mb-3 text-base font-bold text-primary">Still browsing?</h3>
-            <div className="scrollbar-hide -mx-3 flex gap-3 overflow-x-auto px-3 pb-1">
-              {sale.slice(0, 6).map((p) => (
+      {/* ============ BEST SELLERS ============ */}
+      <section className="container-x py-16 lg:py-24">
+        <div className="mb-10 flex items-end justify-between gap-4">
+          <div>
+            <div className="text-eyebrow text-gold">03 · The favourites</div>
+            <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+              Loved by <span className="italic">India</span>.
+            </h2>
+          </div>
+          <Link to="/bestsellers" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+            All bestsellers →
+          </Link>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {best.slice(0, 8).map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      {/* ============ DEALS BAND — dark ============ */}
+      <section className="bg-primary py-16 text-primary-foreground lg:py-24">
+        <div className="container-x">
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="text-eyebrow text-gold">04 · Season sale</div>
+              <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+                Up to <span className="italic text-gold">60% off</span>.
+              </h2>
+              <p className="mt-3 max-w-sm text-sm text-primary-foreground/70">
+                Curated pieces from the current run — reduced for a limited window.
+              </p>
+            </div>
+            <Link to="/deals" className="group inline-flex w-fit items-center gap-2 rounded-full border border-primary-foreground/20 px-5 py-2.5 text-sm font-semibold hover:border-gold hover:text-gold">
+              Shop all deals <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sale.slice(0, 6).map((p) => {
+              const off = discountPct(p.mrp, p.price);
+              return (
                 <Link
                   key={p.id}
                   to="/products/$slug"
                   params={{ slug: p.slug }}
-                  className="flex w-[130px] shrink-0 flex-col overflow-hidden rounded-lg bg-background shadow-soft"
+                  className="group relative flex overflow-hidden rounded-2xl border border-primary-foreground/10 bg-[oklch(0.16_0.02_260)] transition hover:border-gold/40"
                 >
-                  <div className="product-gradient-amber aspect-square" />
-                  <div className="p-2">
-                    <div className="line-clamp-1 text-xs font-semibold text-primary">{p.name}</div>
-                    <div className="mt-0.5 text-[11px] font-bold text-gold">View →</div>
+                  <div className="h-32 w-32 shrink-0 sm:h-36 sm:w-36">
+                    <ProductImage product={p} categoryIcon={p.categories?.icon} className="h-full w-full rounded-none" iconClassName="h-12 w-12" />
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between p-4">
+                    <div>
+                      <div className="line-clamp-2 text-sm font-semibold text-primary-foreground">{p.name}</div>
+                      <div className="mt-1 text-[10px] uppercase tracking-wider text-primary-foreground/50">{p.categories?.name}</div>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <div className="text-lg font-semibold text-gold">{inr(p.price)}</div>
+                        <div className="text-[11px] text-primary-foreground/50 line-through">{inr(p.mrp)}</div>
+                      </div>
+                      {off > 0 && (
+                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
+                          {off}% off
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Suggested for you grid */}
-        <section className="mt-3 bg-background px-3 pt-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-base font-bold text-primary">Suggested for you</h3>
-            <Link to="/products" aria-label="See all" className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground">
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {best.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-
-        {/* Deals band */}
-        <section className="mt-3 bg-background px-3 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <div className="text-eyebrow text-gold">Limited time</div>
-              <h3 className="text-base font-bold text-primary">Deals of the Day</h3>
-            </div>
-            <Link to="/deals" className="flex items-center gap-1 text-xs font-bold text-gold">
-              All <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="scrollbar-hide -mx-3 flex gap-3 overflow-x-auto px-3">
-            {sale.slice(0, 6).map((p) => (
-              <div key={p.id} className="w-[150px] shrink-0">
-                <ProductCard product={p} />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* New arrivals band */}
-        <section className="mt-3 bg-background px-3 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <div className="text-eyebrow text-gold">Just launched</div>
-              <h3 className="text-base font-bold text-primary">New Arrivals</h3>
-            </div>
-            <Link to="/new-arrivals" className="flex items-center gap-1 text-xs font-bold text-gold">
-              All <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {news.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-
-        {/* Trust strip mobile */}
-        <section className="mt-3 border-y border-border bg-background">
-          <div className="grid grid-cols-2 gap-3 px-3 py-4">
-            {[
-              { Icon: Truck, k: "PAN India", l: "Delivery" },
-              { Icon: ShieldCheck, k: "Genuine", l: "Products" },
-              { Icon: Factory, k: "Since 2007", l: "Manufacturer" },
-              { Icon: PackageCheck, k: "150+", l: "Products" },
-            ].map(({ Icon, k, l }) => (
-              <div key={l} className="flex items-center gap-2">
-                <Icon className="h-5 w-5 shrink-0 text-gold" strokeWidth={1.5} />
-                <div className="min-w-0">
-                  <div className="truncate text-xs font-bold leading-tight text-primary">{k}</div>
-                  <div className="truncate text-[10px] text-muted-foreground">{l}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Brand story mobile */}
-        <section className="mt-3 px-3 pb-6">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <img src={auronaLogo.url} alt="Aurona" className="h-14 w-14 object-contain" />
-            <div className="text-eyebrow mt-3">Our story</div>
-            <h2 className="text-display mt-1 text-xl text-primary">Manufacturing that moves India forward.</h2>
-            <p className="mt-2 text-xs text-muted-foreground">
-              17+ years · 150+ products · 1000+ retail partners · PAN India delivery.
+      {/* ============ FAN EDITORIAL SPLIT ============ */}
+      <section className="container-x py-16 lg:py-24">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-center lg:gap-16">
+          <div className="order-2 lg:order-1">
+            <div className="text-eyebrow text-gold">05 · Air, refined</div>
+            <h3 className="text-display mt-3 text-3xl leading-tight sm:text-4xl lg:text-5xl">
+              Silent motors. <br />
+              <span className="italic">Statement</span> blades.
+            </h3>
+            <p className="mt-5 max-w-md text-sm text-muted-foreground sm:text-base">
+              Aurona fans move air the way a good tailor cuts a suit — quiet, precise,
+              built to sit at the centre of the room.
             </p>
-            <div className="mt-3 flex gap-2">
-              <Button asChild size="sm" className="rounded-full">
-                <Link to="/about">About</Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild className="h-11 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90">
+                <Link to="/category/$slug" params={{ slug: "ceiling-fans" }}>Browse fans <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="rounded-full">
-                <Link to="/affiliate">Partner</Link>
+              <Button asChild variant="outline" className="h-11 rounded-full border-primary/20 px-6">
+                <Link to="/new-arrivals">New this season</Link>
               </Button>
             </div>
           </div>
-        </section>
-      </div>
-
-      {/* ============ DESKTOP LAYOUT (unchanged core) ============ */}
-      <div className="hidden lg:block">
-        {/* CATEGORY STRIP */}
-        <section className="border-b border-border bg-background">
-          <div className="container-x">
-            <div className="flex justify-between gap-4 py-5">
-              {cats.slice(0, 10).map((c) => (
-                <Link
-                  key={c.id}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  className="group flex min-w-[100px] shrink-0 flex-col items-center gap-2 rounded-lg p-2 transition hover:bg-surface"
-                >
-                  <CategoryTile categoryIcon={c.icon} className="h-16 w-16 transition group-hover:scale-105" />
-                  <div className="text-center text-xs font-semibold leading-tight">{c.name}</div>
-                </Link>
-              ))}
-            </div>
+          <div className="order-1 overflow-hidden rounded-2xl lg:order-2">
+            <img
+              src={luxFan.url}
+              alt="Aurona matte-black ceiling fan with brushed gold accents"
+              className="aspect-[4/5] w-full object-cover lg:aspect-[5/6]"
+              loading="lazy"
+            />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* HERO */}
-        <section className="container-x py-5">
-          <div className="relative overflow-hidden rounded-lg border border-border bg-primary text-primary-foreground shadow-soft">
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-              <div className="flex flex-col justify-center px-12 py-14">
-                <div className="flex items-center gap-3">
-                  <img src={auronaLogo.url} alt="" className="h-12 w-12 object-contain brightness-0 invert" />
-                  <div className="text-eyebrow text-primary-foreground/70">Aurona · Est. 2007</div>
-                </div>
-                <h1 className="text-display mt-4 text-6xl leading-[1.05]">
-                  Innovating <span className="italic text-gold">the way</span> we light India.
-                </h1>
-                <p className="mt-4 max-w-lg text-base text-primary-foreground/70">
-                  Smart lighting, fans and home appliances — manufactured and delivered across India.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Button asChild size="lg" className="rounded-full bg-gold text-gold-foreground hover:bg-gold/90">
-                    <Link to="/products">Shop All <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="rounded-full border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10">
-                    <Link to="/deals">View Deals</Link>
-                  </Button>
-                </div>
-              </div>
-              <div className="relative">
-                <img src={heroImg} alt="Aurona premium lighting" className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/60 via-transparent to-transparent" />
-              </div>
+      {/* ============ NEW ARRIVALS ============ */}
+      <section className="bg-surface py-16 lg:py-24">
+        <div className="container-x">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <div className="text-eyebrow text-gold">06 · Just landed</div>
+              <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+                New <span className="italic">arrivals</span>.
+              </h2>
             </div>
+            <Link to="/new-arrivals" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+              See everything →
+            </Link>
           </div>
-        </section>
-
-        {/* TRUST STRIP */}
-        <section className="border-y border-border bg-background">
-          <div className="container-x grid grid-cols-4 gap-4 py-4">
-            {[
-              { Icon: Truck, k: "PAN India", l: "Delivery" },
-              { Icon: ShieldCheck, k: "Genuine", l: "Products" },
-              { Icon: Factory, k: "Since 2007", l: "Manufacturer" },
-              { Icon: PackageCheck, k: "150+", l: "Products" },
-            ].map(({ Icon, k, l }) => (
-              <div key={l} className="flex items-center gap-3">
-                <Icon className="h-6 w-6 shrink-0 text-gold" strokeWidth={1.5} />
-                <div>
-                  <div className="text-sm font-bold leading-tight">{k}</div>
-                  <div className="text-[11px] text-muted-foreground">{l}</div>
-                </div>
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {news.slice(0, 6).map((p) => (
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="container-x space-y-4 py-5">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <SectionTile title="Deals of the Day" subtitle="Up to 60% off — hurry" href="/deals" products={sale.slice(0, 4)} />
-            <SectionTile title="Best of Lighting" subtitle="Panel lights & downlights" href="/category/$slug" params={{ slug: "panel-lights" }} products={panels} />
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <SectionTile title="Best Sellers" subtitle="India's most loved picks" href="/bestsellers" products={best.slice(0, 4)} />
-            <SectionTile title="New Arrivals" subtitle="Just launched" href="/new-arrivals" products={news} />
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <SectionTile title="Featured Products" subtitle="Editor's picks" href="/featured" products={featured} />
-            <SectionTile title="Cool Down with Fans" subtitle="Premium ceiling fans" href="/category/$slug" params={{ slug: "ceiling-fans" }} products={fans} />
-          </div>
-        </section>
-
-        <section className="container-x pb-4">
-          <div className="rounded-lg border border-border bg-card p-6">
-            <div className="mb-4 flex items-end justify-between">
-              <h2 className="text-2xl font-bold">Shop by Category</h2>
-              <Link to="/products" className="text-sm font-semibold text-gold hover:underline">View all →</Link>
-            </div>
-            <div className="grid grid-cols-6 gap-3">
-              {cats.slice(0, 12).map((c) => (
-                <Link key={c.id} to="/category/$slug" params={{ slug: c.slug }} className="group flex flex-col items-center gap-2 rounded-lg border border-border bg-background p-3 transition hover:border-gold hover:shadow-soft">
-                  <CategoryTile categoryIcon={c.icon} className="h-16 w-16" />
-                  <div className="text-center text-xs font-semibold leading-tight">{c.name}</div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="container-x pb-8">
-          <div className="grid gap-8 rounded-lg border border-border bg-card p-10 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-            <img src={auronaLogo.url} alt="Aurona" className="h-24 w-24 object-contain" />
+      {/* ============ CTA — partner ============ */}
+      <section className="container-x py-16 lg:py-24">
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground sm:p-14 lg:p-20">
+          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
+          <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
             <div>
-              <div className="text-eyebrow">Our story</div>
-              <h2 className="text-display mt-2 text-3xl">Manufacturing that moves India forward.</h2>
-              <p className="mt-2 text-sm text-muted-foreground">17+ years · 150+ products · 1000+ retail partners · PAN India delivery.</p>
+              <div className="text-eyebrow text-gold">07 · Stock Aurona</div>
+              <h2 className="text-display mt-3 text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
+                Retail with the brand
+                <br />
+                India is <span className="italic text-gold">wiring</span> its homes to.
+              </h2>
+              <p className="mt-5 max-w-lg text-sm text-primary-foreground/70 sm:text-base">
+                1,000+ partners across 28 states. Margin, marketing kits and next-day
+                dispatch from the factory.
+              </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <Button asChild className="rounded-full"><Link to="/about">About Aurona <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-              <Button asChild variant="outline" className="rounded-full"><Link to="/affiliate">Become a Partner</Link></Button>
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <Button asChild size="lg" className="h-12 rounded-full bg-gold px-6 text-gold-foreground hover:bg-gold/90">
+                <Link to="/affiliate">Become a partner <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="h-12 rounded-full border-primary-foreground/25 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to="/contact">Talk to sales</Link>
+              </Button>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
