@@ -44,21 +44,24 @@ export function ProductImage({
     return (
       <div
         className={cn(
-          "product-tile relative flex items-center justify-center overflow-hidden rounded-lg",
+          "product-tile relative flex items-center justify-center overflow-hidden rounded-lg p-2",
           className,
         )}
       >
-        <img
-          src={photo}
-          alt={product.name}
-          loading="lazy"
-          width={1024}
-          height={1024}
-          className="relative z-10 h-full w-full object-contain p-3 mix-blend-screen"
-        />
+        <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-md bg-white">
+          <img
+            src={photo}
+            alt={product.name}
+            loading="lazy"
+            width={1024}
+            height={1024}
+            className="h-full w-full object-contain p-2"
+          />
+        </div>
       </div>
     );
   }
+
 
 
   const Icon = (categoryIcon && iconMap[categoryIcon]) || Lightbulb;
