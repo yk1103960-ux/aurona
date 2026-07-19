@@ -14,7 +14,7 @@ import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 const categoryImages = import.meta.glob<{ default: string }>(
-  "@/assets/categories/*.jpg",
+  "../assets/categories/*.jpg",
   { eager: true }
 );
 
