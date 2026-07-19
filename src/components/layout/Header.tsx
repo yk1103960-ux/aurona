@@ -32,6 +32,7 @@ export function Header() {
   const [openMobile, setOpenMobile] = useState(false);
   const { data: cats = [] } = useQuery(categoriesQuery);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const scrolled = useScrolled(12);
 
   useEffect(() => setOpenMobile(false), [pathname]);
 
@@ -42,9 +43,19 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-      {/* Utility bar (desktop) */}
-      <div className="hidden border-b border-border bg-surface text-xs text-muted-foreground lg:block">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md transition-[box-shadow,background-color,border-color] duration-300",
+        scrolled && "border-border bg-background/95 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.15)]",
+      )}
+    >
+      {/* Utility bar (desktop) — collapses on scroll */}
+      <div
+        className={cn(
+          "hidden overflow-hidden border-b border-border bg-surface text-xs text-muted-foreground transition-[max-height,opacity] duration-300 ease-out lg:block",
+          scrolled ? "max-h-0 opacity-0 border-b-0" : "max-h-10 opacity-100",
+        )}
+      >
         <div className="container-x flex h-9 items-center justify-between">
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> PAN India Delivery</span>
