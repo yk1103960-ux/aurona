@@ -165,8 +165,24 @@ export function Header() {
 }
 
 function Badge({ count }: { count: number }) {
+  const prev = useRef(count);
+  const [pop, setPop] = useState(false);
+  useEffect(() => {
+    if (count !== prev.current && count > 0) {
+      setPop(true);
+      const t = window.setTimeout(() => setPop(false), 420);
+      return () => window.clearTimeout(t);
+    }
+    prev.current = count;
+  }, [count]);
   return (
-    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
+    <span
+      key={count}
+      className={cn(
+        "absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground",
+        pop && "badge-pop",
+      )}
+    >
       {count > 99 ? "99+" : count}
     </span>
   );
