@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, Search, Heart, ShoppingCart, User, X, ChevronDown, Phone, Truck, ShieldCheck, Factory } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 const NAV = [
