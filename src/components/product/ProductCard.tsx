@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, ShoppingCart, Star, Check } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { discountPct, inr } from "@/lib/format";
@@ -21,53 +24,81 @@ export function ProductCard({
 }) {
   const cart = useCart();
   const wl = useWishlist();
+  const reduce = useReducedMotion();
   const off = discountPct(product.mrp, product.price);
   const icon = categoryIcon ?? product.categories?.icon ?? null;
+  const [added, setAdded] = useState(false);
+  const inWishlist = wl.has(product.id);
+
+  const handleAdd = () => {
+    cart.add.mutate(
+      { productId: product.id },
+      {
+        onSuccess: () => {
+          setAdded(true);
+          toast.success("Added to cart", { description: product.name, duration: 1800 });
+          window.setTimeout(() => setAdded(false), 1400);
+        },
+      },
+    );
+  };
+
+  const handleWishlist = () => {
+    wl.toggle.mutate(product.id);
+    toast(inWishlist ? "Removed from wishlist" : "Added to wishlist", { duration: 1200 });
+  };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-border-strong hover:shadow-lift">
+    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-lift">
       <Link
         to="/products/$slug"
         params={{ slug: product.slug }}
-        className="block"
+        className="block overflow-hidden"
         aria-label={product.name}
       >
         <ProductImage
           product={product}
           categoryIcon={icon}
-          className={cn("aspect-square w-full", compact && "aspect-[5/4]")}
+          className={cn(
+            "aspect-square w-full transform-gpu transition-transform duration-500 ease-out will-change-transform group-hover:scale-[1.04]",
+            compact && "aspect-[5/4]",
+          )}
           iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
         />
       </Link>
 
       {off > 0 && (
-        <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
+        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
           {off}% OFF
         </span>
       )}
       {product.is_bestseller && (
-        <span className="absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold-foreground">
+        <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold-foreground">
           Bestseller
         </span>
       )}
 
-      <button
-        onClick={() => wl.toggle.mutate(product.id)}
+      <motion.button
+        onClick={handleWishlist}
+        whileTap={reduce ? undefined : { scale: 0.88 }}
+        animate={inWishlist && !reduce ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "absolute right-3 top-12 grid h-9 w-9 place-items-center rounded-full bg-card/90 backdrop-blur transition hover:bg-card",
-          wl.has(product.id) && "text-destructive",
+          "press absolute right-3 top-12 grid h-9 w-9 place-items-center rounded-full bg-card/90 backdrop-blur transition hover:bg-card",
+          inWishlist && "text-destructive",
         )}
-        aria-label="Toggle wishlist"
+        aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+        aria-pressed={inWishlist}
       >
-        <Heart className={cn("h-4 w-4", wl.has(product.id) && "fill-current")} />
-      </button>
+        <Heart className={cn("h-4 w-4 transition", inWishlist && "fill-current")} />
+      </motion.button>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="text-eyebrow">{product.categories?.name ?? "Aurona"}</div>
         <Link
           to="/products/$slug"
           params={{ slug: product.slug }}
-          className="line-clamp-2 text-sm font-semibold leading-snug text-foreground hover:text-gold"
+          className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors hover:text-gold"
         >
           {product.name}
         </Link>
@@ -85,12 +116,39 @@ export function ProductCard({
         </div>
         <Button
           size="sm"
-          className="mt-2 w-full gap-2"
-          onClick={() => cart.add.mutate({ productId: product.id })}
+          className={cn(
+            "press mt-2 w-full gap-2 overflow-hidden",
+            added && "bg-success text-success-foreground hover:bg-success",
+          )}
+          onClick={handleAdd}
           disabled={cart.add.isPending}
+          aria-live="polite"
         >
-          <ShoppingCart className="h-4 w-4" />
-          Add to Cart
+          <AnimatePresence mode="wait" initial={false}>
+            {added ? (
+              <motion.span
+                key="added"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-2"
+              >
+                <Check className="h-4 w-4" /> Added
+              </motion.span>
+            ) : (
+              <motion.span
+                key="add"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-2"
+              >
+                <ShoppingCart className="h-4 w-4" /> Add to Cart
+              </motion.span>
+            )}
+          </AnimatePresence>
         </Button>
       </div>
     </div>
