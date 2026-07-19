@@ -278,6 +278,83 @@
               0 10px 24px -18px rgba(10, 14, 30, 0.55);
 }
 
+/* ============ AMBIENT DEPTH — for premium editorial sections ============ */
+
+/* Very fine noise/grain — adds tactile paper feel to flat surfaces */
+@utility grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.09  0 0 0 0 0.15  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Editorial hairline grid — architectural blueprint feel */
+@utility editorial-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-foreground) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-foreground) 4%, transparent) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Soft warm light halo — like sunlight through a window */
+@utility light-halo {
+  background:
+    radial-gradient(60% 45% at 20% 0%, color-mix(in oklab, var(--color-gold) 10%, transparent), transparent 70%),
+    radial-gradient(50% 40% at 90% 100%, color-mix(in oklab, var(--color-gold) 6%, transparent), transparent 70%);
+}
+
+/* Slow breathing glow — animated ambient light */
+@utility ambient-glow {
+  position: relative;
+}
+.ambient-glow::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-gold) 22%, transparent), transparent 70%);
+  filter: blur(60px);
+  opacity: 0.6;
+  animation: ambient-breathe 9s ease-in-out infinite;
+}
+@keyframes ambient-breathe {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+  50%      { transform: scale(1.08) translate(2%, -2%); opacity: 0.75; }
+}
+
+/* Ken-burns — very slow cinematic image drift for hero */
+@utility ken-burns {
+  animation: ken-burns 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes ken-burns {
+  0%   { transform: scale(1.05) translate(0, 0); }
+  100% { transform: scale(1.12) translate(-1.5%, -1%); }
+}
+
+/* Floating orb — for hero decoration */
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(2%, -3%); }
+}
+.orb-float { animation: orb-float 11s ease-in-out infinite; }
+.orb-float-slow { animation: orb-float 16s ease-in-out infinite reverse; }
+
+/* Hairline editorial divider between sections */
+@utility rule-editorial {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-foreground) 14%, transparent) 20%, color-mix(in oklab, var(--color-foreground) 14%, transparent) 80%, transparent);
+}
 
 /* Reduced motion — kill all non-essential motion */
 @media (prefers-reduced-motion: reduce) {
@@ -287,6 +364,8 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .marquee { animation: none !important; }
+  .marquee, .ken-burns, .orb-float, .orb-float-slow { animation: none !important; }
+  .ambient-glow::before { animation: none !important; }
 }
+
 

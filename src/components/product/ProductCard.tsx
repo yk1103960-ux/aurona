@@ -49,7 +49,7 @@ export function ProductCard({
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-lift">
+    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-500 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_20px_50px_-20px_color-mix(in_oklab,var(--color-gold)_38%,transparent)]">
       <Link
         to="/products/$slug"
         params={{ slug: product.slug }}

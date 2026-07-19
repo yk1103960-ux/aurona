@@ -70,16 +70,22 @@ function Home() {
     <div className="bg-background">
       {/* ============ CINEMATIC HERO ============ */}
       <section className="relative overflow-hidden bg-[oklch(0.11_0.015_260)] text-primary-foreground">
-        {/* backdrop image */}
+        {/* backdrop image — slow cinematic drift */}
         <div className="absolute inset-0">
           <img
             src={heroLux.url}
             alt=""
-            className="h-full w-full object-cover object-center opacity-90"
+            className="ken-burns h-full w-full object-cover object-center opacity-90"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.10_0.015_260)] via-[oklch(0.10_0.015_260/0.7)] to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.10_0.015_260)] via-transparent to-transparent" />
+          {/* ambient light orbs */}
+          <div className="orb-float absolute -left-24 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_28%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+          <div className="orb-float-slow absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_14%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+          {/* fine noise for filmic grain */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
         </div>
+
 
         <div className="container-x relative">
           {/* top row */}
@@ -215,8 +221,11 @@ function Home() {
 
 
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
-      <section className="bg-surface py-16 lg:py-24">
-        <div className="container-x grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+      <section className="relative overflow-hidden bg-surface py-16 lg:py-24">
+        <div className="pointer-events-none absolute inset-0 editorial-grid opacity-30" aria-hidden />
+        <div className="pointer-events-none absolute -left-40 top-1/4 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_16%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+        <div className="container-x relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+
           <div className="relative overflow-hidden rounded-2xl">
             <img
               src={luxInterior.url}
@@ -261,24 +270,29 @@ function Home() {
       </section>
 
       {/* ============ BEST SELLERS ============ */}
-      <section className="container-x py-16 lg:py-24">
-        <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <div className="text-eyebrow text-gold">03 · The favourites</div>
-            <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
-              Loved by <span className="italic">India</span>.
-            </h2>
+      <section className="relative overflow-hidden bg-background">
+        <div className="pointer-events-none absolute inset-0 light-halo opacity-70" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px rule-editorial" aria-hidden />
+        <div className="container-x relative py-16 lg:py-24">
+          <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+            <div className="min-w-0">
+              <div className="text-eyebrow text-gold">03 · The favourites</div>
+              <h2 className="text-display mt-3 text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
+                Loved by <span className="italic">India</span>.
+              </h2>
+            </div>
+            <Link to="/bestsellers" className="hidden shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+              All bestsellers →
+            </Link>
           </div>
-          <Link to="/bestsellers" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
-            All bestsellers →
-          </Link>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {best.slice(0, 8).map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {best.slice(0, 8).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         </div>
       </section>
+
 
       {/* ============ DEALS BAND — dark ============ */}
       <section className="bg-primary py-16 text-primary-foreground lg:py-24">
@@ -369,16 +383,18 @@ function Home() {
       </section>
 
       {/* ============ NEW ARRIVALS ============ */}
-      <section className="bg-surface py-16 lg:py-24">
-        <div className="container-x">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
+      <section className="relative overflow-hidden bg-surface grain py-16 lg:py-24">
+        <div className="pointer-events-none absolute inset-0 editorial-grid opacity-40" aria-hidden />
+        <div className="pointer-events-none absolute -right-24 top-10 h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_18%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+        <div className="container-x relative">
+          <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+            <div className="min-w-0">
               <div className="text-eyebrow text-gold">06 · Just landed</div>
-              <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+              <h2 className="text-display mt-3 text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
                 New <span className="italic">arrivals</span>.
               </h2>
             </div>
-            <Link to="/new-arrivals" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+            <Link to="/new-arrivals" className="hidden shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
               See everything →
             </Link>
           </div>
@@ -387,14 +403,16 @@ function Home() {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
+
         </div>
       </section>
 
       {/* ============ CTA — partner ============ */}
       <section className="container-x py-16 lg:py-24">
         <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground sm:p-14 lg:p-20">
-          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
+          <div className="orb-float absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/25 blur-3xl" aria-hidden />
+          <div className="orb-float-slow absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl" aria-hidden />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
           <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
             <div>
               <div className="text-eyebrow text-gold">07 · Stock Aurona</div>
