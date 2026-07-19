@@ -14,17 +14,52 @@ const gradClass: Record<string, string> = {
   charcoal: "product-gradient-charcoal",
 };
 
+// Eagerly import every generated product photo; key by slug (filename minus .jpg)
+const productPhotoModules = import.meta.glob("/src/assets/products/*.jpg", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+const productPhotos: Record<string, string> = Object.fromEntries(
+  Object.entries(productPhotoModules).map(([path, url]) => {
+    const slug = path.split("/").pop()!.replace(/\.jpg$/, "");
+    return [slug, url];
+  }),
+);
+
 export function ProductImage({
   product,
   className,
   iconClassName,
   categoryIcon,
 }: {
-  product: Pick<Product, "image_seed" | "name">;
+  product: Pick<Product, "image_seed" | "name" | "slug">;
   className?: string;
   iconClassName?: string;
   categoryIcon?: string | null;
 }) {
+  const photo = product.slug ? productPhotos[product.slug] : undefined;
+
+  if (photo) {
+    return (
+      <div
+        className={cn(
+          "relative flex items-center justify-center overflow-hidden rounded-lg bg-white",
+          className,
+        )}
+      >
+        <img
+          src={photo}
+          alt={product.name}
+          loading="lazy"
+          width={1024}
+          height={1024}
+          className="h-full w-full object-contain p-2"
+        />
+      </div>
+    );
+  }
+
   const Icon = (categoryIcon && iconMap[categoryIcon]) || Lightbulb;
   const grad = gradClass[product.image_seed ?? "amber"] ?? "product-gradient-amber";
   return (
