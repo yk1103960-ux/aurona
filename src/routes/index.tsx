@@ -13,6 +13,11 @@ import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
+const categoryImages = import.meta.glob<{ default: string }>(
+  "../assets/categories/*.jpg",
+  { eager: true }
+);
+
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(categoriesQuery);
@@ -219,29 +224,38 @@ function Home() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {cats.slice(0, 8).map((c, i) => (
-            <Link
-              key={c.id}
-              to="/category/$slug"
-              params={{ slug: c.slug }}
-              className="group relative flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-2xl bg-surface p-5 transition hover:shadow-lift"
-            >
-              <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                {String(i + 1).padStart(2, "0")}
-              </div>
-              <div>
-                <div className="text-display text-2xl leading-tight text-primary lg:text-3xl">
-                  {c.name}
+          {cats.slice(0, 8).map((c, i) => {
+            const img = categoryImages[`../assets/categories/${c.slug}.jpg`]?.default;
+            return (
+              <Link
+                key={c.id}
+                to="/category/$slug"
+                params={{ slug: c.slug }}
+                className="group relative flex aspect-[4/5] flex-col justify-between overflow-hidden rounded-2xl bg-surface p-5 transition hover:shadow-lift"
+              >
+                {img && (
+                  <img
+                    src={img}
+                    alt={c.name}
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
+                <div className="relative text-[11px] uppercase tracking-[0.24em] text-white/70">
+                  {String(i + 1).padStart(2, "0")}
                 </div>
-                <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold">
-                  Discover <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                <div className="relative">
+                  <div className="text-display text-2xl leading-tight text-white lg:text-3xl">
+                    {c.name}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-gold">
+                    Discover <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </div>
                 </div>
-              </div>
-              <div className="pointer-events-none absolute inset-0 -z-0 opacity-0 transition group-hover:opacity-100">
-                <div className="absolute inset-0 bg-gradient-to-br from-gold/10 to-transparent" />
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
