@@ -380,16 +380,18 @@ function Home() {
       </section>
 
       {/* ============ NEW ARRIVALS ============ */}
-      <section className="bg-surface py-16 lg:py-24">
-        <div className="container-x">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
+      <section className="relative overflow-hidden bg-surface grain py-16 lg:py-24">
+        <div className="pointer-events-none absolute inset-0 editorial-grid opacity-40" aria-hidden />
+        <div className="pointer-events-none absolute -right-24 top-10 h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_18%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+        <div className="container-x relative">
+          <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+            <div className="min-w-0">
               <div className="text-eyebrow text-gold">06 · Just landed</div>
-              <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+              <h2 className="text-display mt-3 text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
                 New <span className="italic">arrivals</span>.
               </h2>
             </div>
-            <Link to="/new-arrivals" className="hidden text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
+            <Link to="/new-arrivals" className="hidden shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
               See everything →
             </Link>
           </div>
@@ -398,6 +400,7 @@ function Home() {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
+
         </div>
       </section>
 
