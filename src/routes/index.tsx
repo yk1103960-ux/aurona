@@ -70,16 +70,22 @@ function Home() {
     <div className="bg-background">
       {/* ============ CINEMATIC HERO ============ */}
       <section className="relative overflow-hidden bg-[oklch(0.11_0.015_260)] text-primary-foreground">
-        {/* backdrop image */}
+        {/* backdrop image — slow cinematic drift */}
         <div className="absolute inset-0">
           <img
             src={heroLux.url}
             alt=""
-            className="h-full w-full object-cover object-center opacity-90"
+            className="ken-burns h-full w-full object-cover object-center opacity-90"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.10_0.015_260)] via-[oklch(0.10_0.015_260/0.7)] to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.10_0.015_260)] via-transparent to-transparent" />
+          {/* ambient light orbs */}
+          <div className="orb-float absolute -left-24 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_28%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+          <div className="orb-float-slow absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_14%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+          {/* fine noise for filmic grain */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
         </div>
+
 
         <div className="container-x relative">
           {/* top row */}
