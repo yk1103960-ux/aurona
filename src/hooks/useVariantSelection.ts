@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import type { ProductFamily, ProductVariant } from "@/lib/queries";
 
-export function useVariantSelection(family: ProductFamily) {
+export function useVariantSelection(family: ProductFamily, initialSku?: string) {
   const initial = useMemo(() => {
-    const first = family.variants[0]?.attributes ?? {};
+    const seed =
+      (initialSku && family.variants.find((v) => v.sku === initialSku)?.attributes) ||
+      family.variants[0]?.attributes ||
+      {};
     const sel: Record<string, string> = {};
-    for (const a of family.axes) sel[a.axis_key] = (first[a.axis_key] as string) ?? a.values[0];
+    for (const a of family.axes) sel[a.axis_key] = (seed[a.axis_key] as string) ?? a.values[0];
     return sel;
-  }, [family]);
+  }, [family, initialSku]);
 
   const [selection, setSelection] = useState<Record<string, string>>(initial);
 
