@@ -41,6 +41,7 @@ function ProductsPage() {
   const nav = Route.useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
   const all = useSuspenseQuery(productsQuery({})).data as (Product & { categories: any })[];
+  const [visible, setVisible] = useState(48);
 
   const filtered = useMemo(() => {
     let list = all;
@@ -55,6 +56,9 @@ function ProductsPage() {
     else if (sp.sort === "rating") sorted.sort((a, b) => Number(b.rating) - Number(a.rating));
     return sorted;
   }, [all, cats, sp]);
+
+  const shown = filtered.slice(0, visible);
+
 
 
   const groupLabel: Record<string, string> = {
@@ -149,14 +153,25 @@ function ProductsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((p) => <ProductCard key={p.id} product={p} categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />)}
+          <div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
+              {shown.map((p) => <ProductCard key={p.id} product={p} categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />)}
+            </div>
+            {visible < filtered.length && (
+              <div className="mt-10 flex justify-center">
+                <Button size="lg" variant="outline" className="press h-12 rounded-full px-8" onClick={() => setVisible((v) => v + 48)}>
+                  Load more ({filtered.length - visible} remaining)
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 }
+
+
 
 function Filters({ cats, sp, nav }: { cats: any[]; sp: any; nav: any }) {
   const groups = ["led-lighting", "fans", "home-appliances"];

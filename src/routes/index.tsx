@@ -92,11 +92,11 @@ function Home() {
           <div className="flex items-center justify-between pt-8 lg:pt-12">
             <div className="flex items-center gap-2">
               <img src={auronaLogo.url} alt="" className="h-9 w-9 object-contain brightness-0 invert lg:h-10 lg:w-10" />
-              <div className="text-[10px] uppercase tracking-[0.28em] text-primary-foreground/70">Est. 2007</div>
+              <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/70">Est. 2007</div>
             </div>
             <Link
               to="/about"
-              className="group hidden items-center gap-1.5 text-[11px] uppercase tracking-[0.24em] text-primary-foreground/70 hover:text-gold sm:flex"
+              className="group hidden items-center gap-1.5 text-[11px] uppercase tracking-[0.24em] text-foreground/70 hover:text-gold sm:flex"
             >
               The Aurona story
               <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -106,9 +106,9 @@ function Home() {
           {/* headline */}
           <div className="relative min-h-[560px] py-14 sm:py-20 lg:min-h-[720px] lg:py-32">
             <div className="max-w-2xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1 backdrop-blur-sm">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 backdrop-blur-sm">
                 <Sparkles className="h-3 w-3 text-gold" />
-                <span className="text-[10px] uppercase tracking-[0.22em] text-primary-foreground/80">
+                <span className="text-[10px] uppercase tracking-[0.22em] text-foreground/80">
                   Winter Collection · 2026
                 </span>
               </div>
@@ -119,7 +119,7 @@ function Home() {
                 <br />
                 for India.
               </h1>
-              <p className="mt-6 max-w-md text-sm text-primary-foreground/75 sm:text-base">
+              <p className="mt-6 max-w-md text-sm text-foreground/75 sm:text-base">
                 Seventeen years of manufacturing, distilled into fixtures, fans and
                 appliances that feel considered from the first click to the ceiling.
               </p>
@@ -139,7 +139,7 @@ function Home() {
                   asChild
                   size="lg"
                   variant="outline"
-                  className="h-12 rounded-full border-primary-foreground/25 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10"
+                  className="h-12 rounded-full border-foreground/25 bg-transparent px-6 text-foreground hover:bg-foreground/10"
                 >
                   <Link to="/deals">Season deals</Link>
                 </Button>
@@ -147,13 +147,13 @@ function Home() {
 
               {/* inline search */}
               <form onSubmit={submit} className="mt-8 max-w-md">
-                <div className="flex items-center gap-3 rounded-full border border-primary-foreground/20 bg-primary-foreground/5 px-4 py-2 backdrop-blur">
-                  <Search className="h-4 w-4 text-primary-foreground/60" />
+                <div className="flex items-center gap-3 rounded-full border border-foreground/20 bg-foreground/5 px-4 py-2 backdrop-blur">
+                  <Search className="h-4 w-4 text-foreground/60" />
                   <input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Search chandeliers, fans, panel lights…"
-                    className="flex-1 bg-transparent text-sm text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none"
+                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-foreground/50 focus:outline-none"
                   />
                   <button
                     type="submit"
@@ -170,7 +170,7 @@ function Home() {
               <Link
                 to="/products/$slug"
                 params={{ slug: hero.slug }}
-                className="group absolute bottom-6 right-0 hidden w-[280px] rounded-2xl border border-primary-foreground/15 bg-[oklch(0.14_0.02_260/0.7)] p-4 backdrop-blur-xl transition hover:border-gold/50 lg:block"
+                className="group absolute bottom-6 right-0 hidden w-[280px] rounded-2xl border border-foreground/15 bg-[oklch(0.14_0.02_260/0.7)] p-4 backdrop-blur-xl transition hover:border-gold/50 lg:block"
               >
                 <div className="text-[10px] uppercase tracking-[0.2em] text-gold">Featured</div>
                 <div className="mt-2 flex items-start gap-3">
@@ -178,16 +178,16 @@ function Home() {
                     <ProductImage product={hero} categoryIcon={hero.categories?.icon} className="h-full w-full" iconClassName="h-8 w-8" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="line-clamp-2 text-sm font-semibold text-primary-foreground">
+                    <div className="line-clamp-2 text-sm font-semibold text-foreground">
                       {hero.name}
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] text-primary-foreground/60">
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-foreground/60">
                       <Star className="h-3 w-3 fill-gold text-gold" /> {Number(hero.rating).toFixed(1)}
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-primary-foreground/10 pt-3">
-                  <div className="text-base font-semibold text-primary-foreground">{inr(hero.price)}</div>
+                <div className="mt-3 flex items-center justify-between border-t border-foreground/10 pt-3">
+                  <div className="text-base font-semibold text-foreground">{inr(hero.price)}</div>
                   <ArrowUpRight className="h-4 w-4 text-gold transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </div>
               </Link>
@@ -195,7 +195,7 @@ function Home() {
           </div>
 
           {/* counters */}
-          <div className="grid grid-cols-2 gap-6 border-t border-primary-foreground/15 py-8 lg:grid-cols-4 lg:py-10">
+          <div className="grid grid-cols-2 gap-6 border-t border-foreground/15 py-8 lg:grid-cols-4 lg:py-10">
             <Counter to={17} suffix="+" label="Years crafting" />
             <Counter to={150} suffix="+" label="Products shipped" />
             <Counter to={1000} suffix="+" label="Retail partners" />
