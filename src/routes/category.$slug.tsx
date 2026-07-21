@@ -1,13 +1,26 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { categoriesQuery, productsQuery } from "@/lib/queries";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { categoriesQuery, productsPageQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/product/ProductCard";
+import { Pagination, PER_PAGE_OPTIONS } from "@/components/product/Pagination";
+
+const search = z.object({
+  page: fallback(z.number(), 1).default(1),
+  perPage: fallback(z.number(), 24).default(24),
+});
 
 export const Route = createFileRoute("/category/$slug")({
-  loader: async ({ context, params }) => {
+  validateSearch: zodValidator(search),
+  loaderDeps: ({ search: s }) => s,
+  loader: async ({ context, params, deps }) => {
     const cats = await context.queryClient.ensureQueryData(categoriesQuery);
     if (!cats.find((c) => c.slug === params.slug)) throw notFound();
-    context.queryClient.ensureQueryData(productsQuery({ categorySlug: params.slug }));
+    const perPage = PER_PAGE_OPTIONS.includes(deps.perPage as 12) ? deps.perPage : 24;
+    context.queryClient.ensureQueryData(
+      productsPageQuery({ categorySlug: params.slug, page: Math.max(1, deps.page), perPage, sort: "newest" }),
+    );
   },
   head: ({ params }) => ({
     meta: [
@@ -20,9 +33,16 @@ export const Route = createFileRoute("/category/$slug")({
 
 function CategoryPage() {
   const { slug } = Route.useParams();
+  const sp = Route.useSearch();
+  const nav = Route.useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
-  const products = useSuspenseQuery(productsQuery({ categorySlug: slug })).data;
+  const perPage = PER_PAGE_OPTIONS.includes(sp.perPage as 12) ? sp.perPage : 24;
+  const page = Math.max(1, sp.page);
+  const { rows, total } = useSuspenseQuery(
+    productsPageQuery({ categorySlug: slug, page, perPage, sort: "newest" }),
+  ).data;
   const cat = cats.find((c) => c.slug === slug)!;
+
   return (
     <div className="container-x py-8">
       <div className="mb-6 text-xs text-muted-foreground">
@@ -31,16 +51,28 @@ function CategoryPage() {
         <span className="text-foreground">{cat.name}</span>
       </div>
       <h1 className="text-display text-4xl sm:text-5xl">{cat.name}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{products.length} products</p>
+      <p className="mt-2 text-sm text-muted-foreground">{total} products</p>
 
-      {products.length === 0 ? (
+      {total === 0 ? (
         <div className="mt-12 rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground">
           No products in this category yet.
         </div>
       ) : (
-        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {products.map((p) => <ProductCard key={p.id} product={p} categoryIcon={cat.icon} />)}
-        </div>
+        <>
+          <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {rows.map((p) => <ProductCard key={p.id} product={p} categoryIcon={cat.icon} />)}
+          </div>
+          <Pagination
+            page={page}
+            perPage={perPage}
+            total={total}
+            onPage={(p) => {
+              nav({ search: (s: any) => ({ ...s, page: p }) });
+              if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            onPerPage={(n) => nav({ search: (s: any) => ({ ...s, perPage: n, page: 1 }) })}
+          />
+        </>
       )}
     </div>
   );

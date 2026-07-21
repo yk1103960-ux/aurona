@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Lightbulb, Fan, Flame, LayoutGrid, Zap, Lamp, Minus, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/queries";
@@ -15,15 +14,16 @@ const gradClass: Record<string, string> = {
   charcoal: "product-gradient-charcoal",
 };
 
-// Lazily import generated product photos; key by slug (filename minus .jpg)
+// Eagerly resolve product photo URLs so cards paint instantly (URLs only, tiny).
 const productPhotoModules = import.meta.glob("/src/assets/products/*.jpg", {
   import: "default",
-}) as Record<string, () => Promise<string>>;
+  eager: true,
+}) as Record<string, string>;
 
-const productPhotoLoaders: Record<string, () => Promise<string>> = Object.fromEntries(
-  Object.entries(productPhotoModules).map(([path, loader]) => {
+const productPhotos: Record<string, string> = Object.fromEntries(
+  Object.entries(productPhotoModules).map(([path, url]) => {
     const slug = path.split("/").pop()!.replace(/\.jpg$/, "");
-    return [slug, loader];
+    return [slug, url];
   }),
 );
 
@@ -32,30 +32,18 @@ export function ProductImage({
   className,
   iconClassName,
   categoryIcon,
+  eager,
 }: {
   product: Pick<Product, "image_seed" | "name" | "slug">;
   className?: string;
   iconClassName?: string;
   categoryIcon?: string | null;
+  eager?: boolean;
 }) {
-  const photoKey =
-    (product.slug && productPhotoLoaders[product.slug] ? product.slug : undefined) ??
-    (product.image_seed && productPhotoLoaders[product.image_seed] ? product.image_seed : undefined);
-  const [photo, setPhoto] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    setPhoto(null);
-    if (!photoKey) return () => { active = false; };
-
-    productPhotoLoaders[photoKey]().then((url) => {
-      if (active) setPhoto(url);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [photoKey]);
+  const photo =
+    (product.slug && productPhotos[product.slug]) ||
+    (product.image_seed && productPhotos[product.image_seed]) ||
+    null;
 
   if (photo) {
     return (
@@ -69,7 +57,9 @@ export function ProductImage({
           <img
             src={photo}
             alt={product.name}
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={eager ? "high" : "auto"}
             width={1024}
             height={1024}
             className="h-full w-full object-contain p-2"
@@ -78,6 +68,7 @@ export function ProductImage({
       </div>
     );
   }
+
 
 
 
