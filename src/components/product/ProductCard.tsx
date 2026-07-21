@@ -29,6 +29,8 @@ export function ProductCard({
   const icon = categoryIcon ?? product.categories?.icon ?? null;
   const [added, setAdded] = useState(false);
   const inWishlist = wl.has(product.id);
+  const detailSlug = product.family_slug ?? product.slug;
+  const detailSearch = product.family_slug ? { v: product.sku } : {};
 
   const handleAdd = () => {
     cart.add.mutate(
@@ -52,7 +54,8 @@ export function ProductCard({
     <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-500 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_20px_50px_-20px_color-mix(in_oklab,var(--color-gold)_38%,transparent)]">
       <Link
         to="/products/$slug"
-        params={{ slug: product.slug }}
+        params={{ slug: detailSlug }}
+        search={detailSearch}
         className="block overflow-hidden"
         aria-label={product.name}
       >
@@ -97,7 +100,8 @@ export function ProductCard({
         <div className="text-eyebrow">{product.categories?.name ?? "Aurona"}</div>
         <Link
           to="/products/$slug"
-          params={{ slug: product.slug }}
+          params={{ slug: detailSlug }}
+          search={detailSearch}
           className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors hover:text-gold"
         >
           {product.name}

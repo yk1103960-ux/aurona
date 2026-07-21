@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight } from "lucide-react";
+import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight, MessageCircle, Repeat2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { productQuery, productsQuery, categoriesQuery, familyQuery } from "@/lib/queries";
@@ -67,19 +67,15 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const cart = useCart();
   const wl = useWishlist();
   const nav = useNavigate();
-
-  // Resolve variant → matching legacy `products.id` (cart uses product_id)
-  const { data: productId } = useQuery({
-    queryKey: ["variant-product-id", variant?.sku],
-    enabled: !!variant?.sku,
-    queryFn: async () => {
-      const { data } = await supabase.from("products").select("id").eq("sku", variant!.sku).maybeSingle();
-      return data?.id ?? null;
-    },
-  });
+  const productId = variant.product_id ?? null;
 
   const off = discountPct(variant.mrp, variant.price);
   const inStock = variant.stock > 0;
+  const packSize = variant.pack_size ?? variant.moq ?? 1;
+  const discountAmount = Math.max(0, Number(variant.mrp) - Number(variant.price));
+  const pricePerPack = Number(variant.price) * packSize;
+  const totalOrderValue = pricePerPack * qty;
+  const totalSaved = discountAmount * packSize * qty;
 
   const buyNow = async () => {
     if (!productId) return;
@@ -120,30 +116,37 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
           <h1 className="text-display mt-2 text-4xl">{family.name}</h1>
-          <div className="mt-2 text-sm text-muted-foreground">
-            SKU: {variant.sku} · Brand: {family.brand} · Main: {family.main_sku}
-          </div>
+          <div className="mt-2 text-sm text-muted-foreground">Brand: {family.brand} · Model: {family.main_sku}</div>
 
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-xs">
-              <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-              <span className="font-semibold">{Number(family.rating).toFixed(1)}</span>
+          <div className="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
+            <div className="flex items-center justify-between gap-4 bg-primary px-4 py-3 text-primary-foreground">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider">Starting price</div>
+                <div className="text-[11px] opacity-80">Base price for this selected product model</div>
+              </div>
+              <div className="text-right">
+                <div className="text-display text-2xl">{inr(variant.price)}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">per {productId ? "unit" : "sku"}</div>
+              </div>
             </div>
-            <span className="text-xs text-muted-foreground">{family.review_count} reviews</span>
-            <span className={cn("text-xs font-semibold", inStock ? "text-success" : "text-destructive")}>
-              {inStock ? "In stock" : "Out of stock"}
-            </span>
-          </div>
-
-          <div className="mt-6 flex items-baseline gap-3">
-            <span className="text-display text-4xl">{inr(variant.price)}</span>
-            {Number(variant.mrp) > Number(variant.price) && (
-              <>
-                <span className="text-lg text-muted-foreground line-through">{inr(variant.mrp)}</span>
-                <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">{off}% OFF</span>
-              </>
-            )}
-            <span className="ml-auto text-sm text-muted-foreground">/ piece</span>
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Star key={i} className={cn("h-3.5 w-3.5", i < Math.round(Number(family.rating)) ? "fill-gold text-gold" : "text-border")} />
+                ))}
+                <span className="ml-1">({family.review_count} reviews)</span>
+              </div>
+              <span className={cn("font-semibold", inStock ? "text-success" : "text-destructive")}>{inStock ? `${variant.stock} available` : "Out of stock"}</span>
+              <button className="inline-flex items-center gap-1 hover:text-foreground">
+                <MessageCircle className="h-3.5 w-3.5" /> Product enquiry
+              </button>
+              <button onClick={() => productId && wl.toggle.mutate(productId)} className="inline-flex items-center gap-1 hover:text-foreground">
+                <Heart className={cn("h-3.5 w-3.5", productId && wl.has(productId) && "fill-current text-destructive")} /> Wishlist
+              </button>
+              <button className="inline-flex items-center gap-1 hover:text-foreground">
+                <Repeat2 className="h-3.5 w-3.5" /> Compare
+              </button>
+            </div>
           </div>
 
           {family.short_description && (
@@ -152,12 +155,13 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
 
           {/* Axis pickers */}
           {family.axes.length > 0 && (
-            <div className="mt-8 space-y-5">
+            <div className="mt-8 space-y-4 border-t border-border pt-6">
+              <div className="text-eyebrow text-foreground">Select variants</div>
               {family.axes.map((axis) => (
-                <div key={axis.axis_key}>
-                  <div className="mb-2 flex items-center gap-2 text-xs">
-                    <span className="text-eyebrow">{axis.label}</span>
-                    <span className="font-medium text-foreground">{selection[axis.axis_key]}</span>
+                <div key={axis.axis_key} className="grid gap-2 sm:grid-cols-[140px_1fr] sm:items-start">
+                  <div className="pt-2 text-xs text-muted-foreground">
+                    {axis.label}
+                    <span className="ml-1 text-foreground">{selection[axis.axis_key]}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {axis.values.map((val) => {
@@ -169,7 +173,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                           onClick={() => setAxis(axis.axis_key, val)}
                           disabled={!avail}
                           className={cn(
-                            "rounded-full border px-4 py-2 text-xs font-medium transition",
+                            "min-h-9 rounded-none border px-4 py-2 text-xs font-medium transition",
                             active
                               ? "border-foreground bg-foreground text-background"
                               : "border-border hover:border-foreground",
@@ -186,51 +190,53 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             </div>
           )}
 
-          <div className="mt-8 grid gap-3 rounded-2xl border border-border p-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-2 sm:grid-cols-[140px_1fr] sm:items-center">
+            <div className="text-xs text-muted-foreground">Quantity of packs</div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center border border-border">
+                <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-10 w-10 place-items-center hover:bg-surface">
+                  <Minus className="h-4 w-4" />
+                </button>
+                <div className="w-12 text-center text-sm font-semibold">{qty}</div>
+                <button onClick={() => setQty(qty + 1)} className="grid h-10 w-10 place-items-center hover:bg-surface">
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <span className="text-xs text-muted-foreground">Pack of {packSize}</span>
+            </div>
+          </div>
+
+          <div className="mt-7 divide-y divide-border border-y border-border">
+            <PriceRow label="M.R.P." value={`${inr(variant.mrp)} /Pc`} muted />
+            <PriceRow label="Discount %" value={`${off}%`} highlight />
+            <PriceRow label="Discount amount" value={`${inr(discountAmount)} /Pc`} highlight />
+            <PriceRow label="Price per unit" value={`${inr(variant.price)} /Pc`} />
+            <PriceRow label="Price per pack" value={`${inr(pricePerPack)} /Pack`} />
+            <PriceRow label="Total order value" value={inr(totalOrderValue)} />
+            <PriceRow label="You save on this order" value={inr(totalSaved)} highlight />
+            <PriceRow label="SKU" value={variant.sku} mono />
+          </div>
+
+          <div className="mt-8 grid gap-3 border border-border p-4 sm:grid-cols-2">
             <Spec label="MOQ" value={String(variant.moq)} />
             <Spec label="Weight" value={variant.weight_g ? `${variant.weight_g} g` : null} />
             <Spec label="Pack size" value={variant.pack_size ? String(variant.pack_size) : null} />
-            <Spec
-              label="Dimensions (LxWxH)"
-              value={variant.dim_l ? `${variant.dim_l} × ${variant.dim_w} × ${variant.dim_h} cm` : null}
-            />
+            <Spec label="Dimensions (LxWxH)" value={variant.dim_l ? `${variant.dim_l} × ${variant.dim_w} × ${variant.dim_h} cm` : null} />
             <Spec label="Warranty" value={family.warranty} />
             <Spec label="Country of origin" value="India" />
-          </div>
-
-          <div className="mt-8 flex items-center gap-4">
-            <div className="flex items-center rounded-full border border-border">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-11 w-11 place-items-center">
-                <Minus className="h-4 w-4" />
-              </button>
-              <div className="w-10 text-center text-sm font-semibold">{qty}</div>
-              <button onClick={() => setQty(qty + 1)} className="grid h-11 w-11 place-items-center">
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            <button
-              onClick={() => productId && wl.toggle.mutate(productId)}
-              className={cn(
-                "grid h-11 w-11 place-items-center rounded-full border border-border hover:bg-surface",
-                productId && wl.has(productId) && "text-destructive",
-              )}
-              aria-label="Wishlist"
-            >
-              <Heart className={cn("h-4 w-4", productId && wl.has(productId) && "fill-current")} />
-            </button>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Button
               size="lg"
               variant="outline"
-              className="h-12 gap-2 rounded-full"
+              className="h-12 gap-2 rounded-none"
               onClick={() => productId && cart.add.mutate({ productId, quantity: qty })}
               disabled={!productId || !inStock || cart.add.isPending}
             >
               <ShoppingCart className="h-4 w-4" /> Add to cart
             </Button>
-            <Button size="lg" className="h-12 rounded-full" onClick={buyNow} disabled={!productId || !inStock}>
+            <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!productId || !inStock}>
               Buy now
             </Button>
           </div>
@@ -407,6 +413,36 @@ function Spec({ label, value }: { label: string; value: string | null }) {
     <div>
       <div className="text-eyebrow">{label}</div>
       <div className="mt-0.5 text-sm font-medium">{value || "—"}</div>
+    </div>
+  );
+}
+
+function PriceRow({
+  label,
+  value,
+  muted,
+  highlight,
+  mono,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+  highlight?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-[minmax(118px,0.8fr)_1.2fr] gap-4 px-4 py-3 text-sm sm:grid-cols-[150px_1fr]">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          "font-semibold text-foreground",
+          muted && "text-muted-foreground line-through",
+          highlight && "text-success",
+          mono && "font-mono text-xs font-medium",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
