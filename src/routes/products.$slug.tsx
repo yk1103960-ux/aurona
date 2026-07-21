@@ -123,14 +123,31 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           <h1 className="text-display mt-2 text-4xl">{family.name}</h1>
           <div className="mt-2 text-sm text-muted-foreground">Brand: {family.brand} · Model: {family.main_sku}</div>
 
+          <PartnerVerificationBanner />
+
           <div className="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
-            <div className="flex items-center justify-between gap-4 bg-primary px-4 py-3 text-primary-foreground">
+            <div className={cn(
+              "flex items-center justify-between gap-4 px-4 py-3 text-primary-foreground",
+              role.role === "distributor" ? "bg-gradient-to-r from-primary to-accent" : "bg-primary",
+            )}>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider">Starting price</div>
-                <div className="text-[11px] opacity-80">Base price for this selected product model</div>
+                <div className="text-xs font-semibold uppercase tracking-wider">
+                  {role.isPartnerPending ? "Awaiting approval"
+                    : role.role === "retailer" ? "Retailer price"
+                    : role.role === "distributor" ? "Distributor price"
+                    : "Starting price"}
+                </div>
+                <div className="text-[11px] opacity-80">
+                  {role.isPartnerPending ? "Your account is under verification"
+                    : role.role === "retailer" ? "Trade wholesale rate"
+                    : role.role === "distributor" ? "Enterprise channel — contact sales to order"
+                    : "Base price for this selected product model"}
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-display text-2xl">{inr(variant.price)}</div>
+                <div className="text-display text-2xl">
+                  {role.isPartnerPending ? "Hidden" : inr(effectivePrice)}
+                </div>
                 <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">per {productId ? "unit" : "sku"}</div>
               </div>
             </div>
