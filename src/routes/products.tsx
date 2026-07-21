@@ -171,10 +171,7 @@ function ProductsPage() {
   );
 }
 
-      </div>
-    </div>
-  );
-}
+
 
 function Filters({ cats, sp, nav }: { cats: any[]; sp: any; nav: any }) {
   const groups = ["led-lighting", "fans", "home-appliances"];
