@@ -15,6 +15,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
+import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
 import type { ProductFamily } from "@/lib/queries";
 
@@ -84,11 +86,17 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
 
-  const off = discountPct(variant.mrp, variant.price);
+  const role = useMyRole();
+  const { data: priceMap } = useVisiblePrices([variant.sku]);
+  const rp = priceMap?.[variant.sku];
+  const effectivePrice = rp?.price ?? Number(variant.price);
+  const effectiveMrp = rp?.mrp ?? Number(variant.mrp);
+
+  const off = discountPct(effectiveMrp, effectivePrice);
   const inStock = variant.stock > 0;
   const packSize = variant.pack_size ?? variant.moq ?? 1;
-  const discountAmount = Math.max(0, Number(variant.mrp) - Number(variant.price));
-  const pricePerPack = Number(variant.price) * packSize;
+  const discountAmount = Math.max(0, effectiveMrp - effectivePrice);
+  const pricePerPack = effectivePrice * packSize;
   const totalOrderValue = pricePerPack * qty;
   const totalSaved = discountAmount * packSize * qty;
 
@@ -115,14 +123,31 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           <h1 className="text-display mt-2 text-4xl">{family.name}</h1>
           <div className="mt-2 text-sm text-muted-foreground">Brand: {family.brand} · Model: {family.main_sku}</div>
 
+          <PartnerVerificationBanner />
+
           <div className="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
-            <div className="flex items-center justify-between gap-4 bg-primary px-4 py-3 text-primary-foreground">
+            <div className={cn(
+              "flex items-center justify-between gap-4 px-4 py-3 text-primary-foreground",
+              role.role === "distributor" ? "bg-gradient-to-r from-primary to-accent" : "bg-primary",
+            )}>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider">Starting price</div>
-                <div className="text-[11px] opacity-80">Base price for this selected product model</div>
+                <div className="text-xs font-semibold uppercase tracking-wider">
+                  {role.isPartnerPending ? "Awaiting approval"
+                    : role.role === "retailer" ? "Retailer price"
+                    : role.role === "distributor" ? "Distributor price"
+                    : "Starting price"}
+                </div>
+                <div className="text-[11px] opacity-80">
+                  {role.isPartnerPending ? "Your account is under verification"
+                    : role.role === "retailer" ? "Trade wholesale rate"
+                    : role.role === "distributor" ? "Enterprise channel — contact sales to order"
+                    : "Base price for this selected product model"}
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-display text-2xl">{inr(variant.price)}</div>
+                <div className="text-display text-2xl">
+                  {role.isPartnerPending ? "Hidden" : inr(effectivePrice)}
+                </div>
                 <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">per {productId ? "unit" : "sku"}</div>
               </div>
             </div>
@@ -204,10 +229,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </div>
 
           <div className="mt-7 divide-y divide-border border-y border-border">
-            <PriceRow label="M.R.P." value={`${inr(variant.mrp)} /Pc`} muted />
+            <PriceRow label="M.R.P." value={`${inr(effectiveMrp)} /Pc`} muted />
             <PriceRow label="Discount %" value={`${off}%`} highlight />
             <PriceRow label="Discount amount" value={`${inr(discountAmount)} /Pc`} highlight />
-            <PriceRow label="Price per unit" value={`${inr(variant.price)} /Pc`} />
+            <PriceRow label={role.role === "retailer" ? "Retailer price / unit" : role.role === "distributor" ? "Distributor price / unit" : "Price per unit"} value={`${inr(effectivePrice)} /Pc`} />
             <PriceRow label="Price per pack" value={`${inr(pricePerPack)} /Pack`} />
             <PriceRow label="Total order value" value={inr(totalOrderValue)} />
             <PriceRow label="You save on this order" value={inr(totalSaved)} highlight />
@@ -223,20 +248,24 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <Spec label="Country of origin" value="India" />
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 gap-2 rounded-none"
-              onClick={() => productId && cart.add.mutate({ productId, quantity: qty })}
-              disabled={!productId || !inStock || cart.add.isPending}
-            >
-              <ShoppingCart className="h-4 w-4" /> Add to cart
-            </Button>
-            <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!productId || !inStock}>
-              Buy now
-            </Button>
-          </div>
+          {role.role === "distributor" ? (
+            <ContactSalesCard className="mt-4" productName={family.name} sku={variant.sku} />
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 gap-2 rounded-none"
+                onClick={() => productId && cart.add.mutate({ productId, quantity: qty })}
+                disabled={!productId || !inStock || cart.add.isPending}
+              >
+                <ShoppingCart className="h-4 w-4" /> Add to cart
+              </Button>
+              <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!productId || !inStock}>
+                Buy now
+              </Button>
+            </div>
+          )}
 
           <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
             <div className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center">

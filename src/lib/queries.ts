@@ -256,6 +256,8 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at";
+
 export const familyQuery = (slug: string) =>
   queryOptions({
     queryKey: ["family", slug],
@@ -265,7 +267,7 @@ export const familyQuery = (slug: string) =>
       const { data, error } = await supabase
         .from("product_families")
         .select(
-          "*, categories(slug, name, icon), variants:product_variants(*), axes:product_variant_axes(axis_key, label, values, sort_order)",
+          `*, categories(slug, name, icon), variants:product_variants(${VARIANT_COLS}), axes:product_variant_axes(axis_key, label, values, sort_order)`,
         )
         .eq("slug", slug)
         .maybeSingle();

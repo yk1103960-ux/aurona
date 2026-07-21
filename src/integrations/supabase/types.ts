@@ -891,12 +891,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_partner: {
+        Args: { _app_id: string; _decision: string }
+        Returns: undefined
+      }
+      current_pricing_role: { Args: never; Returns: string }
+      get_visible_prices: {
+        Args: { _skus: string[] }
+        Returns: {
+          mrp: number
+          price: number
+          role: string
+          sku: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_partner_approved: {
+        Args: {
+          _type: Database["public"]["Enums"]["partner_type"]
+          _uid: string
+        }
+        Returns: boolean
+      }
+      my_role_status: {
+        Args: never
+        Returns: {
+          intended_role: string
+          role: string
+          status: string
+        }[]
       }
     }
     Enums: {

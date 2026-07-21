@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingCart, Star, Check } from "lucide-react";
+import { Heart, ShoppingCart, Star, Check, Phone } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import type { Product } from "@/lib/queries";
 import { ProductImage } from "./ProductImage";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 
 type Row = Product & { categories: { slug: string; name: string; icon?: string | null } | null };
 
@@ -25,12 +26,18 @@ export function ProductCard({
   const cart = useCart();
   const wl = useWishlist();
   const reduce = useReducedMotion();
-  const off = discountPct(product.mrp, product.price);
+  const role = useMyRole();
+  const { data: priceMap } = useVisiblePrices(product.sku ? [product.sku] : []);
+  const rp = product.sku ? priceMap?.[product.sku] : undefined;
+  const shownPrice = rp?.price ?? Number(product.price);
+  const shownMrp = rp?.mrp ?? Number(product.mrp);
+  const off = discountPct(shownMrp, shownPrice);
   const icon = categoryIcon ?? product.categories?.icon ?? null;
   const [added, setAdded] = useState(false);
   const inWishlist = wl.has(product.id);
   const detailSlug = product.family_slug ?? product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
+  const isDistributor = role.role === "distributor";
 
   const handleAdd = () => {
     cart.add.mutate(
@@ -116,48 +123,59 @@ export function ProductCard({
           <span>· {product.review_count} reviews</span>
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          <span className="text-xl font-bold tracking-tight text-foreground">{inr(product.price)}</span>
-          {Number(product.mrp) > Number(product.price) && (
-            <span className="text-xs text-muted-foreground line-through">{inr(product.mrp)}</span>
+          <span className="text-xl font-bold tracking-tight text-foreground">{inr(shownPrice)}</span>
+          {shownMrp > shownPrice && (
+            <span className="text-xs text-muted-foreground line-through">{inr(shownMrp)}</span>
           )}
           <span className="ml-auto text-[11px] text-muted-foreground">/ {product.unit}</span>
         </div>
-        <Button
-          size="sm"
-          className={cn(
-            "press mt-2 w-full gap-2 overflow-hidden",
-            added && "bg-success text-success-foreground hover:bg-success",
-          )}
-          onClick={handleAdd}
-          disabled={cart.add.isPending}
-          aria-live="polite"
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            {added ? (
-              <motion.span
-                key="added"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18 }}
-                className="flex items-center gap-2"
-              >
-                <Check className="h-4 w-4" /> Added
-              </motion.span>
-            ) : (
-              <motion.span
-                key="add"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18 }}
-                className="flex items-center gap-2"
-              >
-                <ShoppingCart className="h-4 w-4" /> Add to Cart
-              </motion.span>
+        {role.role === "retailer" && (
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Retailer price</div>
+        )}
+        {isDistributor ? (
+          <Button asChild size="sm" className="mt-2 w-full gap-2 rounded-full">
+            <a href="tel:+919602570026">
+              <Phone className="h-4 w-4" /> Contact Sales
+            </a>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className={cn(
+              "press mt-2 w-full gap-2 overflow-hidden",
+              added && "bg-success text-success-foreground hover:bg-success",
             )}
-          </AnimatePresence>
-        </Button>
+            onClick={handleAdd}
+            disabled={cart.add.isPending}
+            aria-live="polite"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {added ? (
+                <motion.span
+                  key="added"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="h-4 w-4" /> Added
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="add"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                  className="flex items-center gap-2"
+                >
+                  <ShoppingCart className="h-4 w-4" /> Add to Cart
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+        )}
       </div>
     </div>
   );
