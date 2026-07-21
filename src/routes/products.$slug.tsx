@@ -56,11 +56,19 @@ function PDPRoute() {
   return <LegacyPDP slug={slug} />;
 }
 
-function FamilyPDP({ family }: { family: ProductFamily }) {
+function PDPRoute() {
+  const { slug } = Route.useParams();
+  const { v } = Route.useSearch();
+  const fam = useSuspenseQuery(familyQuery(slug)).data;
+  if (fam) return <FamilyPDP family={fam} initialSku={v} />;
+  return <LegacyPDP slug={slug} />;
+}
+
+function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?: string }) {
   const cats = useSuspenseQuery(categoriesQuery).data;
   const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === family.category_id);
-  const { selection, setAxis, variant, isAvailable } = useVariantSelection(family);
+  const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
   const [qty, setQty] = useState(1);
   const cart = useCart();
   const wl = useWishlist();
