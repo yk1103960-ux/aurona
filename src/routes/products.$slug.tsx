@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight, MessageCircle, Repeat2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { productQuery, productsQuery, categoriesQuery, familyQuery } from "@/lib/queries";
+import { productQuery, productsQuery, categoriesQuery, familyQuery, familyProductsQuery } from "@/lib/queries";
 import { productImagesQuery } from "@/lib/product-images";
 import { supabase } from "@/integrations/supabase/client";
 import { discountPct, inr } from "@/lib/format";
