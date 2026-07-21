@@ -119,6 +119,77 @@ export const productsQuery = (filter?: {
     },
   });
 
+export type ProductRow = Product & { categories: { slug: string; name: string; icon: string | null } | null };
+export type ProductsPage = { rows: ProductRow[]; total: number };
+
+export type ProductsPageFilter = {
+  categorySlug?: string;
+  categoryIds?: string[];
+  search?: string;
+  min?: number;
+  max?: number;
+  sort?: "newest" | "price-asc" | "price-desc" | "rating";
+  page: number;
+  perPage: number;
+};
+
+export const productsPageQuery = (filter: ProductsPageFilter) =>
+  queryOptions({
+    queryKey: ["products-page", filter],
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    queryFn: async (): Promise<ProductsPage> => {
+      const sel = (s: string): string => s;
+      const cols = sel(
+        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
+      );
+
+      let categoryIds = filter.categoryIds;
+      if (filter.categorySlug) {
+        const { data: cat } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("slug", filter.categorySlug)
+          .maybeSingle();
+        if (!cat?.id) return { rows: [], total: 0 };
+        categoryIds = [cat.id];
+      }
+
+      let q = supabase.from("products").select(cols, { count: "exact" });
+      if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
+      if (filter.search) q = q.ilike("name", `%${filter.search}%`);
+      if (filter.min && filter.min > 0) q = q.gte("price", filter.min);
+      if (filter.max && filter.max > 0) q = q.lte("price", filter.max);
+
+      if (filter.sort === "price-asc") q = q.order("price", { ascending: true });
+      else if (filter.sort === "price-desc") q = q.order("price", { ascending: false });
+      else if (filter.sort === "rating") q = q.order("rating", { ascending: false });
+      else q = q.order("created_at", { ascending: false });
+
+      const from = (filter.page - 1) * filter.perPage;
+      const to = from + filter.perPage - 1;
+      q = q.range(from, to);
+
+      const { data, error, count } = await q;
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as ProductRow[];
+      const skus = [...new Set(rows.map((r) => r.sku).filter(Boolean))];
+      if (skus.length === 0) return { rows, total: count ?? 0 };
+      const { data: links } = await supabase
+        .from("product_variants")
+        .select(sel("sku, product_families(slug)"))
+        .in("sku", skus);
+      const familyBySku = new Map<string, string>();
+      for (const link of (links ?? []) as unknown as { sku: string; product_families?: { slug: string } | null }[]) {
+        if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
+      }
+      return {
+        rows: rows.map((r) => ({ ...r, family_slug: familyBySku.get(r.sku) ?? null })),
+        total: count ?? rows.length,
+      };
+    },
+  });
+
 export const productQuery = (slug: string) =>
   queryOptions({
     queryKey: ["product", slug],
