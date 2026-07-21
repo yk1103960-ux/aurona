@@ -203,17 +203,23 @@ export const familyQuery = (slug: string) =>
       const f = data as unknown as ProductFamily;
       f.variants = [...(f.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
       f.axes = [...(f.axes ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-      const skus = [...new Set(f.variants.map((variant) => variant.sku).filter(Boolean))];
-      if (skus.length > 0) {
-        const { data: products } = await supabase.from("products").select("id, sku, slug").in("sku", skus);
-        const productBySku = new Map(
-          ((products ?? []) as { id: string; sku: string; slug: string }[]).map((product) => [product.sku, product]),
-        );
-        f.variants = f.variants.map((variant) => {
-          const product = productBySku.get(variant.sku);
-          return { ...variant, product_id: product?.id ?? null, product_slug: product?.slug ?? null };
-        });
-      }
       return f;
+    },
+  });
+
+export const familyProductsQuery = (skus: string[]) =>
+  queryOptions({
+    queryKey: ["family-products", [...skus].sort().join(",")],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    enabled: skus.length > 0,
+    queryFn: async (): Promise<Record<string, { id: string; slug: string }>> => {
+      if (skus.length === 0) return {};
+      const { data } = await supabase.from("products").select("id, sku, slug").in("sku", skus);
+      const map: Record<string, { id: string; slug: string }> = {};
+      for (const r of (data ?? []) as { id: string; sku: string; slug: string }[]) {
+        map[r.sku] = { id: r.id, slug: r.slug };
+      }
+      return map;
     },
   });

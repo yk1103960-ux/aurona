@@ -1,10 +1,10 @@
 import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight, MessageCircle, Repeat2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { productQuery, productsQuery, categoriesQuery, familyQuery } from "@/lib/queries";
+import { productQuery, productsQuery, categoriesQuery, familyQuery, familyProductsQuery } from "@/lib/queries";
 import { productImagesQuery } from "@/lib/product-images";
 import { supabase } from "@/integrations/supabase/client";
 import { discountPct, inr } from "@/lib/format";
@@ -20,12 +20,14 @@ import type { ProductFamily } from "@/lib/queries";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
-    // Kick off family + related in parallel; only await the family for the redirect check
+    // Fire everything in parallel — only await family for redirect check.
     const famPromise = context.queryClient.ensureQueryData(familyQuery(params.slug));
     context.queryClient.ensureQueryData(categoriesQuery);
     context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 4 }));
     const fam = await famPromise;
     if (fam) {
+      const skus = fam.variants.map((v) => v.sku).filter(Boolean);
+      context.queryClient.ensureQueryData(familyProductsQuery(skus));
       context.queryClient.ensureQueryData(productImagesQuery({ familyId: fam.id }));
       return;
     }
@@ -78,7 +80,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const cart = useCart();
   const wl = useWishlist();
   const nav = useNavigate();
-  const productId = variant.product_id ?? null;
+  const skus = useMemo(() => family.variants.map((v) => v.sku).filter(Boolean), [family]);
+  const { data: productMap } = useQuery(familyProductsQuery(skus));
+  const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
 
   const off = discountPct(variant.mrp, variant.price);
   const inStock = variant.stock > 0;
