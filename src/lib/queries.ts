@@ -155,7 +155,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         categoryIds = [cat.id];
       }
 
-      let q = supabase.from("products").select(cols, { count: "exact" });
+      let q = supabase.from("products").select(cols, { count: "exact" }).gt("price", 0);
       if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
       if (filter.search) q = q.ilike("name", `%${filter.search}%`);
       if (filter.min && filter.min > 0) q = q.gte("price", filter.min);
