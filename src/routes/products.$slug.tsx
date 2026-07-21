@@ -437,3 +437,32 @@ function PriceRow({
     </div>
   );
 }
+
+function FamilyGallery({ family, variantSku, variantImageSeed, categoryIcon }: {
+  family: ProductFamily; variantSku: string; variantImageSeed: string | null; categoryIcon?: string | null;
+}) {
+  const { data: all = [] } = useQuery(productImagesQuery({ familyId: family.id }));
+  const filtered = all.filter((i) => !i.variant_sku || i.variant_sku === variantSku);
+  const images = filtered.length ? filtered : all;
+  return (
+    <ProductGallery
+      images={images}
+      fallback={{ image_seed: variantImageSeed ?? family.image_seed, name: family.name, slug: family.slug }}
+      categoryIcon={categoryIcon}
+    />
+  );
+}
+
+function LegacyGallery({ product, categoryIcon }: {
+  product: { id: string; name: string; slug: string; image_seed: string | null };
+  categoryIcon?: string | null;
+}) {
+  const { data: images = [] } = useQuery(productImagesQuery({ productId: product.id }));
+  return (
+    <ProductGallery
+      images={images}
+      fallback={{ image_seed: product.image_seed, name: product.name, slug: product.slug }}
+      categoryIcon={categoryIcon}
+    />
+  );
+}
