@@ -34,15 +34,14 @@ export function Header() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-40 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-500",
-        scrolled
-          ? "border-b border-border bg-background/80 shadow-soft backdrop-blur-xl"
-          : "border-b border-transparent bg-background/40 backdrop-blur-md",
+        "border-b border-primary/20 bg-primary shadow-soft",
+        scrolled && "backdrop-blur-xl",
       )}
     >
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between gap-2 text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
+          "container-x flex items-center justify-between gap-2 text-primary-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
           scrolled ? "h-14 lg:h-16" : "h-16 lg:h-20",
         )}
       >
