@@ -327,13 +327,13 @@ function Home() {
                   </div>
                   <div className="flex flex-1 flex-col justify-between p-4">
                     <div>
-                      <div className="line-clamp-2 text-sm font-semibold text-primary-foreground">{p.name}</div>
-                      <div className="mt-1 text-[10px] uppercase tracking-wider text-primary-foreground/50">{p.categories?.name}</div>
+                      <div className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</div>
+                      <div className="mt-1 text-[10px] uppercase tracking-wider text-foreground/60">{p.categories?.name}</div>
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
                         <div className="text-lg font-semibold text-gold">{inr(p.price)}</div>
-                        <div className="text-[11px] text-primary-foreground/50 line-through">{inr(p.mrp)}</div>
+                        <div className="text-[11px] text-foreground/50 line-through">{inr(p.mrp)}</div>
                       </div>
                       {off > 0 && (
                         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
