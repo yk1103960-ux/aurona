@@ -49,12 +49,6 @@ export const Route = createFileRoute("/products/$slug")({
   ),
 });
 
-function PDPRoute() {
-  const { slug } = Route.useParams();
-  const fam = useSuspenseQuery(familyQuery(slug)).data;
-  if (fam) return <FamilyPDP family={fam} />;
-  return <LegacyPDP slug={slug} />;
-}
 
 function PDPRoute() {
   const { slug } = Route.useParams();
