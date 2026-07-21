@@ -237,7 +237,12 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.015em; font-weight: 500; }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; font-weight: 500; }
+  h1 { line-height: 1.02; }
+  h2 { line-height: 1.08; }
+  h3 { line-height: 1.15; }
+  p  { line-height: 1.65; }
+  ::selection { background: color-mix(in oklab, var(--color-primary) 20%, transparent); color: var(--color-foreground); }
 
   a, button, [role="button"], input, select, textarea, .transition, .transition-all, .transition-colors, .transition-transform, .transition-opacity {
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
