@@ -110,7 +110,7 @@ function RootComponent() {
       <AuthListener />
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1 pb-16 lg:pb-0">
+        <main className="flex-1 pt-16 pb-16 lg:pt-20 lg:pb-0">
           <PageTransition>
             <Outlet />
           </PageTransition>
