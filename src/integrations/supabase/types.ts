@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          city: string
+          created_at: string
+          full_name: string
+          id: string
+          is_default: boolean
+          label: string | null
+          line1: string
+          line2: string | null
+          phone: string
+          pincode: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          full_name: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          line1: string
+          line2?: string | null
+          phone: string
+          pincode: string
+          state: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_default?: boolean
+          label?: string | null
+          line1?: string
+          line2?: string | null
+          phone?: string
+          pincode?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -181,6 +229,120 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_applications: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          business_name: string | null
+          business_type: string | null
+          cin: string | null
+          city: string | null
+          company_registration_url: string | null
+          created_at: string
+          distribution_area: string | null
+          email: string
+          existing_brands: string | null
+          expected_monthly_purchase: string | null
+          extra: Json | null
+          full_name: string
+          gst_certificate_url: string | null
+          gstin: string | null
+          id: string
+          mobile: string
+          monthly_purchase_volume: string | null
+          owner_name: string | null
+          pan: string | null
+          partner_type: Database["public"]["Enums"]["partner_type"]
+          pincode: string | null
+          product_categories: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sales_team_size: string | null
+          shop_license_url: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          trade_license_url: string | null
+          updated_at: string
+          user_id: string | null
+          warehouse_capacity: string | null
+          years_in_business: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          cin?: string | null
+          city?: string | null
+          company_registration_url?: string | null
+          created_at?: string
+          distribution_area?: string | null
+          email: string
+          existing_brands?: string | null
+          expected_monthly_purchase?: string | null
+          extra?: Json | null
+          full_name: string
+          gst_certificate_url?: string | null
+          gstin?: string | null
+          id?: string
+          mobile: string
+          monthly_purchase_volume?: string | null
+          owner_name?: string | null
+          pan?: string | null
+          partner_type: Database["public"]["Enums"]["partner_type"]
+          pincode?: string | null
+          product_categories?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sales_team_size?: string | null
+          shop_license_url?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          trade_license_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+          warehouse_capacity?: string | null
+          years_in_business?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          cin?: string | null
+          city?: string | null
+          company_registration_url?: string | null
+          created_at?: string
+          distribution_area?: string | null
+          email?: string
+          existing_brands?: string | null
+          expected_monthly_purchase?: string | null
+          extra?: Json | null
+          full_name?: string
+          gst_certificate_url?: string | null
+          gstin?: string | null
+          id?: string
+          mobile?: string
+          monthly_purchase_volume?: string | null
+          owner_name?: string | null
+          pan?: string | null
+          partner_type?: Database["public"]["Enums"]["partner_type"]
+          pincode?: string | null
+          product_categories?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sales_team_size?: string | null
+          shop_license_url?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          trade_license_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+          warehouse_capacity?: string | null
+          years_in_business?: string | null
+        }
+        Relationships: []
+      }
       product_families: {
         Row: {
           brand: string
@@ -266,6 +428,57 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          family_id: string | null
+          id: string
+          image_url: string
+          is_primary: boolean
+          product_id: string | null
+          sort_order: number
+          variant_sku: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          image_url: string
+          is_primary?: boolean
+          product_id?: string | null
+          sort_order?: number
+          variant_sku?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          image_url?: string
+          is_primary?: boolean
+          product_id?: string | null
+          sort_order?: number
+          variant_sku?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -525,6 +738,107 @@ export type Database = {
         }
         Relationships: []
       }
+      recently_viewed: {
+        Row: {
+          id: string
+          product_slug: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          product_slug: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          product_slug?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          order_id: string | null
+          phone: string | null
+          priority: string
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          order_id?: string | null
+          phone?: string | null
+          priority?: string
+          status?: string
+          subject: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          order_id?: string | null
+          phone?: string | null
+          priority?: string
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -586,7 +900,22 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer"
+      app_role: "admin" | "customer" | "retailer" | "distributor" | "staff"
+      application_status: "pending" | "under_review" | "approved" | "rejected"
+      partner_type:
+        | "retailer"
+        | "distributor"
+        | "sales"
+        | "reseller"
+        | "referral"
+        | "affiliate"
+        | "corporate"
+        | "government"
+        | "architect"
+        | "contractor"
+        | "oem"
+        | "builder"
+        | "career"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -714,7 +1043,23 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer"],
+      app_role: ["admin", "customer", "retailer", "distributor", "staff"],
+      application_status: ["pending", "under_review", "approved", "rejected"],
+      partner_type: [
+        "retailer",
+        "distributor",
+        "sales",
+        "reseller",
+        "referral",
+        "affiliate",
+        "corporate",
+        "government",
+        "architect",
+        "contractor",
+        "oem",
+        "builder",
+        "career",
+      ],
     },
   },
 } as const
