@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ProductFamily, ProductVariant } from "@/lib/queries";
 
 export function useVariantSelection(family: ProductFamily, initialSku?: string) {
@@ -13,6 +13,10 @@ export function useVariantSelection(family: ProductFamily, initialSku?: string) 
   }, [family, initialSku]);
 
   const [selection, setSelection] = useState<Record<string, string>>(initial);
+
+  useEffect(() => {
+    setSelection(initial);
+  }, [initial]);
 
   const variant: ProductVariant = useMemo(() => {
     if (family.axes.length === 0) return family.variants[0];

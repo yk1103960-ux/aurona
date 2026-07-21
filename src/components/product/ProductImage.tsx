@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Lightbulb, Fan, Flame, LayoutGrid, Zap, Lamp, Minus, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/queries";
@@ -14,16 +15,15 @@ const gradClass: Record<string, string> = {
   charcoal: "product-gradient-charcoal",
 };
 
-// Eagerly import every generated product photo; key by slug (filename minus .jpg)
+// Lazily import generated product photos; key by slug (filename minus .jpg)
 const productPhotoModules = import.meta.glob("/src/assets/products/*.jpg", {
-  eager: true,
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
-const productPhotos: Record<string, string> = Object.fromEntries(
-  Object.entries(productPhotoModules).map(([path, url]) => {
+const productPhotoLoaders: Record<string, () => Promise<string>> = Object.fromEntries(
+  Object.entries(productPhotoModules).map(([path, loader]) => {
     const slug = path.split("/").pop()!.replace(/\.jpg$/, "");
-    return [slug, url];
+    return [slug, loader];
   }),
 );
 
@@ -38,9 +38,24 @@ export function ProductImage({
   iconClassName?: string;
   categoryIcon?: string | null;
 }) {
-  const photo =
-    (product.slug ? productPhotos[product.slug] : undefined) ??
-    (product.image_seed ? productPhotos[product.image_seed] : undefined);
+  const photoKey =
+    (product.slug && productPhotoLoaders[product.slug] ? product.slug : undefined) ??
+    (product.image_seed && productPhotoLoaders[product.image_seed] ? product.image_seed : undefined);
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setPhoto(null);
+    if (!photoKey) return () => { active = false; };
+
+    productPhotoLoaders[photoKey]().then((url) => {
+      if (active) setPhoto(url);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [photoKey]);
 
   if (photo) {
     return (
