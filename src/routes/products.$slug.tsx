@@ -15,6 +15,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
+import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
 import type { ProductFamily } from "@/lib/queries";
 
@@ -84,11 +86,17 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
 
-  const off = discountPct(variant.mrp, variant.price);
+  const role = useMyRole();
+  const { data: priceMap } = useVisiblePrices([variant.sku]);
+  const rp = priceMap?.[variant.sku];
+  const effectivePrice = rp?.price ?? Number(variant.price);
+  const effectiveMrp = rp?.mrp ?? Number(variant.mrp);
+
+  const off = discountPct(effectiveMrp, effectivePrice);
   const inStock = variant.stock > 0;
   const packSize = variant.pack_size ?? variant.moq ?? 1;
-  const discountAmount = Math.max(0, Number(variant.mrp) - Number(variant.price));
-  const pricePerPack = Number(variant.price) * packSize;
+  const discountAmount = Math.max(0, effectiveMrp - effectivePrice);
+  const pricePerPack = effectivePrice * packSize;
   const totalOrderValue = pricePerPack * qty;
   const totalSaved = discountAmount * packSize * qty;
 
