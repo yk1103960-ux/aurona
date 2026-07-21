@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight } from "lucide-react";
@@ -22,10 +22,21 @@ export const Route = createFileRoute("/products/$slug")({
     if (!fam) {
       const p = await context.queryClient.ensureQueryData(productQuery(params.slug));
       if (!p) throw notFound();
+      // If this product's SKU belongs to a family, redirect to family PDP with SKU hint
+      const { data: v } = await supabase
+        .from("product_variants")
+        .select("family_id, product_families!inner(slug)")
+        .eq("sku", p.sku)
+        .maybeSingle();
+      const familySlug = (v as { product_families?: { slug: string } } | null)?.product_families?.slug;
+      if (familySlug && familySlug !== params.slug) {
+        throw redirect({ to: "/products/$slug", params: { slug: familySlug }, search: { v: p.sku } });
+      }
     }
     context.queryClient.ensureQueryData(categoriesQuery);
     context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 4 }));
   },
+  validateSearch: (s: Record<string, unknown>) => ({ v: typeof s.v === "string" ? s.v : undefined }),
   head: ({ params }) => ({
     meta: [{ title: `${params.slug.replace(/-/g, " ")} — Aurona` }],
   }),
