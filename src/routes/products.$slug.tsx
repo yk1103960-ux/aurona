@@ -104,25 +104,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="grid gap-10 lg:grid-cols-[1.05fr_1fr]">
-        <div>
-          <ProductImage
-            product={{ image_seed: variant.image_seed ?? family.image_seed, name: family.name, slug: family.slug }}
-            categoryIcon={cat?.icon}
-            className="aspect-square w-full"
-            iconClassName="h-40 w-40"
-          />
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {[0, 1, 2, 3].map((i) => (
-              <ProductImage
-                key={i}
-                product={{ image_seed: family.image_seed, name: family.name, slug: family.slug }}
-                categoryIcon={cat?.icon}
-                className={cn("aspect-square", i === 0 && "ring-2 ring-gold")}
-                iconClassName="h-8 w-8"
-              />
-            ))}
-          </div>
-        </div>
+        <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} categoryIcon={cat?.icon} />
 
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
