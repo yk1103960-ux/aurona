@@ -1,0 +1,48 @@
+import { queryOptions } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export type SiteSettings = {
+  support_phone: string;
+  support_email: string;
+  notification_email: string;
+  notification_mobile: string;
+  social_facebook: string;
+  social_instagram: string;
+  social_linkedin: string;
+  social_youtube: string;
+  social_twitter: string;
+  social_whatsapp: string;
+  business_hours: string;
+  address_line: string;
+  [key: string]: string;
+};
+
+const DEFAULTS: SiteSettings = {
+  support_phone: "+91 96025 70026",
+  support_email: "support@auronalighting.com",
+  notification_email: "info@auronalighting.com",
+  notification_mobile: "+91 96025 70026",
+  social_facebook: "https://facebook.com/auronalighting",
+  social_instagram: "https://instagram.com/auronalighting",
+  social_linkedin: "https://linkedin.com/company/auronalighting",
+  social_youtube: "https://youtube.com/@auronalighting",
+  social_twitter: "https://twitter.com/auronalighting",
+  social_whatsapp: "https://wa.me/919602570026",
+  business_hours: "Mon-Sat 9:30 AM – 6:30 PM IST",
+  address_line: "Aurona Lighting Industries, Jaipur, Rajasthan, India",
+};
+
+export const siteSettingsQuery = queryOptions({
+  queryKey: ["site-settings"],
+  staleTime: 10 * 60 * 1000,
+  gcTime: 30 * 60 * 1000,
+  queryFn: async (): Promise<SiteSettings> => {
+    const { data, error } = await supabase.from("site_settings").select("key, value");
+    if (error) return DEFAULTS;
+    const map: Record<string, string> = { ...DEFAULTS };
+    for (const row of (data ?? []) as { key: string; value: string }[]) {
+      map[row.key] = row.value;
+    }
+    return map as SiteSettings;
+  },
+});
