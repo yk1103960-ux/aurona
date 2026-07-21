@@ -42,7 +42,7 @@ export function PartnerVerificationBanner() {
 }
 
 /** Card shown to distributors instead of add-to-cart / buy-now */
-export function ContactSalesCard({ productName, sku }: { productName?: string; sku?: string }) {
+export function ContactSalesCard({ productName, sku, className }: { productName?: string; sku?: string; className?: string }) {
   const { data: s } = useContactSettings();
   const phone = s?.support_phone ?? "+91 96025 70026";
   const email = s?.support_email ?? "support@auronalighting.com";
@@ -50,7 +50,7 @@ export function ContactSalesCard({ productName, sku }: { productName?: string; s
   const subject = encodeURIComponent(`Distributor enquiry: ${productName ?? sku ?? "Aurona product"}`);
   const body = encodeURIComponent(`Hello Aurona Sales,\n\nI would like a distributor quote for:\nProduct: ${productName ?? ""}\nSKU: ${sku ?? ""}\n\nQuantity:\nRegion:\nCompany:\n\nRegards,`);
   return (
-    <div className="rounded-2xl border-2 border-primary/25 bg-gradient-to-br from-primary/5 to-accent/10 p-5 shadow-sky">
+    <div className={"rounded-2xl border-2 border-primary/25 bg-gradient-to-br from-primary/5 to-accent/10 p-5 shadow-sky " + (className ?? "")}>
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
         <ShieldCheck className="h-4 w-4" /> Distributor Channel
       </div>
