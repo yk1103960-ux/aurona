@@ -38,7 +38,9 @@ export function ProductImage({
   iconClassName?: string;
   categoryIcon?: string | null;
 }) {
-  const photo = product.slug ? productPhotos[product.slug] : undefined;
+  const photo =
+    (product.slug ? productPhotos[product.slug] : undefined) ??
+    (product.image_seed ? productPhotos[product.image_seed] : undefined);
 
   if (photo) {
     return (
