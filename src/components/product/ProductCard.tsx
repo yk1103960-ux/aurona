@@ -51,32 +51,34 @@ export function ProductCard({
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-500 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_20px_50px_-20px_color-mix(in_oklab,var(--color-gold)_38%,transparent)]">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-primary/35 hover:shadow-sky">
       <Link
         to="/products/$slug"
         params={{ slug: detailSlug }}
         search={detailSearch}
-        className="block overflow-hidden"
+        className="relative block overflow-hidden"
         aria-label={product.name}
       >
         <ProductImage
           product={product}
           categoryIcon={icon}
           className={cn(
-            "aspect-square w-full transform-gpu transition-transform duration-500 ease-out will-change-transform group-hover:scale-[1.04]",
+            "aspect-square w-full transform-gpu transition-transform duration-[700ms] ease-out will-change-transform group-hover:scale-[1.06]",
             compact && "aspect-[5/4]",
           )}
           iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
         />
+        {/* subtle top sheen on hover */}
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
       </Link>
 
       {off > 0 && (
-        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
+        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-[0_4px_12px_-4px_color-mix(in_oklab,var(--color-primary)_60%,transparent)]">
           {off}% OFF
         </span>
       )}
       {product.is_bestseller && (
-        <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold-foreground">
+        <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-foreground shadow-[0_4px_12px_-4px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]">
           Bestseller
         </span>
       )}
@@ -87,8 +89,8 @@ export function ProductCard({
         animate={inWishlist && !reduce ? { scale: [1, 1.25, 1] } : { scale: 1 }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "press absolute right-3 top-12 grid h-9 w-9 place-items-center rounded-full bg-card/90 backdrop-blur transition hover:bg-card",
-          inWishlist && "text-destructive",
+          "press absolute right-3 top-12 grid h-10 w-10 place-items-center rounded-full bg-card/90 shadow-soft ring-1 ring-border backdrop-blur transition hover:bg-card hover:ring-primary/40",
+          inWishlist && "text-destructive ring-destructive/30",
         )}
         aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
         aria-pressed={inWishlist}
@@ -96,23 +98,25 @@ export function ProductCard({
         <Heart className={cn("h-4 w-4 transition", inWishlist && "fill-current")} />
       </motion.button>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="text-eyebrow">{product.categories?.name ?? "Aurona"}</div>
+      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
+        <div className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</div>
         <Link
           to="/products/$slug"
           params={{ slug: detailSlug }}
           search={detailSearch}
-          className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors hover:text-gold"
+          className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-primary"
         >
           {product.name}
         </Link>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span>{Number(product.rating).toFixed(1)}</span>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/8 px-2 py-0.5 text-primary">
+            <Star className="h-3 w-3 fill-primary text-primary" />
+            <span className="font-semibold">{Number(product.rating).toFixed(1)}</span>
+          </span>
           <span>· {product.review_count} reviews</span>
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          <span className="text-lg font-semibold text-foreground">{inr(product.price)}</span>
+          <span className="text-xl font-bold tracking-tight text-foreground">{inr(product.price)}</span>
           {Number(product.mrp) > Number(product.price) && (
             <span className="text-xs text-muted-foreground line-through">{inr(product.mrp)}</span>
           )}
