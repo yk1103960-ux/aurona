@@ -82,49 +82,64 @@ function Home() {
           {/* ambient sky orbs */}
           <div className="orb-float absolute -left-24 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-sky)_55%,transparent),transparent_70%)] blur-3xl" aria-hidden />
           <div className="orb-float-slow absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-primary)_28%,transparent),transparent_70%)] blur-3xl" aria-hidden />
-          {/* subtle grain */}
           <div className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
         </div>
 
-
-        <div className="container-x relative">
-          {/* top row */}
-          <div className="flex items-center justify-between pt-8 lg:pt-12">
-            <div className="flex items-center gap-2">
-              <img src={auronaLogo.url} alt="" className="h-9 w-9 object-contain lg:h-10 lg:w-10" />
-              <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/60">Est. 2007</div>
-            </div>
-            <Link
-              to="/about"
-              className="group hidden items-center gap-1.5 text-[11px] uppercase tracking-[0.24em] text-foreground/70 hover:text-gold sm:flex"
-            >
-              The Aurona story
-              <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-
+        <div className="container-x relative pt-20 lg:pt-24">
           {/* headline */}
-          <div className="relative min-h-[560px] py-14 sm:py-20 lg:min-h-[720px] lg:py-32">
-            <div className="max-w-2xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 backdrop-blur-sm">
+          <div className="relative min-h-[460px] py-8 sm:min-h-[520px] sm:py-12 lg:min-h-[600px] lg:py-16">
+            <motion.div
+              className="max-w-2xl"
+              initial="hidden"
+              animate="show"
+              variants={{
+                hidden: {},
+                show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+              }}
+            >
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } } }}
+                className="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 backdrop-blur-sm"
+              >
                 <Sparkles className="h-3 w-3 text-gold" />
                 <span className="text-[10px] uppercase tracking-[0.22em] text-foreground/80">
                   Winter Collection · 2026
                 </span>
-              </div>
-              <h1 className="text-display text-[44px] leading-[0.95] tracking-tight sm:text-6xl lg:text-[112px]">
-                Light,
-                <br />
-                <span className="italic text-primary">sculpted</span>
-                <br />
-                for India.
+              </motion.div>
+
+              <h1 className="text-display text-[38px] leading-[0.98] tracking-tight sm:text-6xl lg:text-[96px]">
+                <motion.span
+                  className="block"
+                  variants={{ hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } } }}
+                >
+                  Light,
+                </motion.span>
+                <motion.span
+                  className="block italic text-primary"
+                  variants={{ hidden: { opacity: 0, y: 24, filter: "blur(8px)" }, show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } } }}
+                >
+                  sculpted
+                </motion.span>
+                <motion.span
+                  className="block"
+                  variants={{ hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } } }}
+                >
+                  for India.
+                </motion.span>
               </h1>
-              <p className="mt-6 max-w-md text-sm text-foreground/75 sm:text-base">
+
+              <motion.p
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.7 } } }}
+                className="mt-5 max-w-md text-sm text-foreground/75 sm:text-base"
+              >
                 Seventeen years of manufacturing, distilled into fixtures, fans and
                 appliances that feel considered from the first click to the ceiling.
-              </p>
+              </motion.p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.7 } } }}
+                className="mt-6 flex flex-wrap items-center gap-3"
+              >
                 <Button
                   asChild
                   size="lg"
@@ -143,10 +158,14 @@ function Home() {
                 >
                   <Link to="/deals">Season deals</Link>
                 </Button>
-              </div>
+              </motion.div>
 
               {/* inline search */}
-              <form onSubmit={submit} className="mt-8 max-w-md">
+              <motion.form
+                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.7 } } }}
+                onSubmit={submit}
+                className="mt-6 max-w-md"
+              >
                 <div className="flex items-center gap-3 rounded-full border border-foreground/20 bg-foreground/5 px-4 py-2 backdrop-blur">
                   <Search className="h-4 w-4 text-foreground/60" />
                   <input
@@ -162,35 +181,42 @@ function Home() {
                     Go
                   </button>
                 </div>
-              </form>
-            </div>
+              </motion.form>
+            </motion.div>
 
             {/* featured floating card */}
             {hero && (
-              <Link
-                to="/products/$slug"
-                params={{ slug: hero.slug }}
-                className="group absolute bottom-6 right-0 hidden w-[280px] rounded-2xl border border-border bg-card/90 p-4 shadow-lift backdrop-blur-xl transition hover:border-primary/50 hover:shadow-sky lg:block"
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.9, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute bottom-6 right-0 hidden lg:block"
               >
-                <div className="text-[10px] uppercase tracking-[0.2em] text-primary">Featured</div>
-                <div className="mt-2 flex items-start gap-3">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
-                    <ProductImage product={hero} categoryIcon={hero.categories?.icon} className="h-full w-full" iconClassName="h-8 w-8" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="line-clamp-2 text-sm font-semibold text-foreground">
-                      {hero.name}
+                <Link
+                  to="/products/$slug"
+                  params={{ slug: hero.slug }}
+                  className="group block w-[280px] rounded-2xl border border-border bg-card/90 p-4 shadow-lift backdrop-blur-xl transition hover:border-primary/50 hover:shadow-sky"
+                >
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-primary">Featured</div>
+                  <div className="mt-2 flex items-start gap-3">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                      <ProductImage product={hero} categoryIcon={hero.categories?.icon} className="h-full w-full" iconClassName="h-8 w-8" />
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Star className="h-3 w-3 fill-primary text-primary" /> {Number(hero.rating).toFixed(1)}
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-2 text-sm font-semibold text-foreground">
+                        {hero.name}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Star className="h-3 w-3 fill-primary text-primary" /> {Number(hero.rating).toFixed(1)}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                  <div className="text-base font-semibold text-foreground">{inr(hero.price)}</div>
-                  <ArrowUpRight className="h-4 w-4 text-primary transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                </div>
-              </Link>
+                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                    <div className="text-base font-semibold text-foreground">{inr(hero.price)}</div>
+                    <ArrowUpRight className="h-4 w-4 text-primary transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </div>
+                </Link>
+              </motion.div>
             )}
           </div>
 
@@ -203,6 +229,7 @@ function Home() {
           </div>
         </div>
       </section>
+
 
       {/* ============ MARQUEE ============ */}
       <div className="border-y border-border bg-primary py-3 text-primary-foreground">
