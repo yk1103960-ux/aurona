@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as FeaturedRouteImport } from './routes/featured'
 import { Route as DealsRouteImport } from './routes/deals'
+import { Route as CustomerServiceRouteImport } from './routes/customer-service'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
@@ -26,7 +28,10 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
+import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
+import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
+import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -37,6 +42,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerRoute = PartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewArrivalsRoute = NewArrivalsRouteImport.update({
@@ -52,6 +62,11 @@ const FeaturedRoute = FeaturedRouteImport.update({
 const DealsRoute = DealsRouteImport.update({
   id: '/deals',
   path: '/deals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerServiceRoute = CustomerServiceRouteImport.update({
+  id: '/customer-service',
+  path: '/customer-service',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -114,10 +129,25 @@ const ProductsIndexRoute = ProductsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProductsRoute,
 } as any)
+const PartnerIndexRoute = PartnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const ProductsSlugRoute = ProductsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => ProductsRoute,
+} as any)
+const PoliciesSlugRoute = PoliciesSlugRouteImport.update({
+  id: '/policies/$slug',
+  path: '/policies/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerTypeRoute = PartnerTypeRouteImport.update({
+  id: '/$type',
+  path: '/$type',
+  getParentRoute: () => PartnerRoute,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
@@ -137,13 +167,18 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
   '/featured': typeof FeaturedRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/partner': typeof PartnerRouteWithChildren
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/partner/$type': typeof PartnerTypeRoute
+  '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -158,12 +193,16 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
   '/featured': typeof FeaturedRoute
   '/new-arrivals': typeof NewArrivalsRoute
   '/wishlist': typeof WishlistRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/partner/$type': typeof PartnerTypeRoute
+  '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/partner': typeof PartnerIndexRoute
   '/products': typeof ProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -179,13 +218,18 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
   '/featured': typeof FeaturedRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/partner': typeof PartnerRouteWithChildren
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/partner/$type': typeof PartnerTypeRoute
+  '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
 }
 export interface FileRouteTypes {
@@ -202,13 +246,18 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/customer-service'
     | '/deals'
     | '/featured'
     | '/new-arrivals'
+    | '/partner'
     | '/products'
     | '/wishlist'
     | '/category/$slug'
+    | '/partner/$type'
+    | '/policies/$slug'
     | '/products/$slug'
+    | '/partner/'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -223,12 +272,16 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/customer-service'
     | '/deals'
     | '/featured'
     | '/new-arrivals'
     | '/wishlist'
     | '/category/$slug'
+    | '/partner/$type'
+    | '/policies/$slug'
     | '/products/$slug'
+    | '/partner'
     | '/products'
   id:
     | '__root__'
@@ -243,13 +296,18 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/customer-service'
     | '/deals'
     | '/featured'
     | '/new-arrivals'
+    | '/partner'
     | '/products'
     | '/wishlist'
     | '/category/$slug'
+    | '/partner/$type'
+    | '/policies/$slug'
     | '/products/$slug'
+    | '/partner/'
     | '/products/'
   fileRoutesById: FileRoutesById
 }
@@ -265,12 +323,15 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
+  CustomerServiceRoute: typeof CustomerServiceRoute
   DealsRoute: typeof DealsRoute
   FeaturedRoute: typeof FeaturedRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
+  PartnerRoute: typeof PartnerRouteWithChildren
   ProductsRoute: typeof ProductsRouteWithChildren
   WishlistRoute: typeof WishlistRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  PoliciesSlugRoute: typeof PoliciesSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -287,6 +348,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner': {
+      id: '/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof PartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-arrivals': {
@@ -308,6 +376,13 @@ declare module '@tanstack/react-router' {
       path: '/deals'
       fullPath: '/deals'
       preLoaderRoute: typeof DealsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer-service': {
+      id: '/customer-service'
+      path: '/customer-service'
+      fullPath: '/customer-service'
+      preLoaderRoute: typeof CustomerServiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -394,12 +469,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsIndexRouteImport
       parentRoute: typeof ProductsRoute
     }
+    '/partner/': {
+      id: '/partner/'
+      path: '/'
+      fullPath: '/partner/'
+      preLoaderRoute: typeof PartnerIndexRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/products/$slug': {
       id: '/products/$slug'
       path: '/$slug'
       fullPath: '/products/$slug'
       preLoaderRoute: typeof ProductsSlugRouteImport
       parentRoute: typeof ProductsRoute
+    }
+    '/policies/$slug': {
+      id: '/policies/$slug'
+      path: '/policies/$slug'
+      fullPath: '/policies/$slug'
+      preLoaderRoute: typeof PoliciesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner/$type': {
+      id: '/partner/$type'
+      path: '/$type'
+      fullPath: '/partner/$type'
+      preLoaderRoute: typeof PartnerTypeRouteImport
+      parentRoute: typeof PartnerRoute
     }
     '/category/$slug': {
       id: '/category/$slug'
@@ -410,6 +506,19 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface PartnerRouteChildren {
+  PartnerTypeRoute: typeof PartnerTypeRoute
+  PartnerIndexRoute: typeof PartnerIndexRoute
+}
+
+const PartnerRouteChildren: PartnerRouteChildren = {
+  PartnerTypeRoute: PartnerTypeRoute,
+  PartnerIndexRoute: PartnerIndexRoute,
+}
+
+const PartnerRouteWithChildren =
+  PartnerRoute._addFileChildren(PartnerRouteChildren)
 
 interface ProductsRouteChildren {
   ProductsSlugRoute: typeof ProductsSlugRoute
@@ -437,12 +546,15 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
+  CustomerServiceRoute: CustomerServiceRoute,
   DealsRoute: DealsRoute,
   FeaturedRoute: FeaturedRoute,
   NewArrivalsRoute: NewArrivalsRoute,
+  PartnerRoute: PartnerRouteWithChildren,
   ProductsRoute: ProductsRouteWithChildren,
   WishlistRoute: WishlistRoute,
   CategorySlugRoute: CategorySlugRoute,
+  PoliciesSlugRoute: PoliciesSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
