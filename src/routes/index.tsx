@@ -69,7 +69,7 @@ function Home() {
   return (
     <div className="bg-background">
       {/* ============ CINEMATIC HERO ============ */}
-      <section className="relative overflow-hidden bg-[oklch(0.11_0.015_260)] text-primary-foreground">
+      <section className="relative -mt-16 overflow-hidden bg-[oklch(0.11_0.003_60)] text-[oklch(0.955_0.008_85)] lg:-mt-20">
         {/* backdrop image — slow cinematic drift */}
         <div className="absolute inset-0">
           <img
