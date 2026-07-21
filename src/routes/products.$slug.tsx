@@ -1,13 +1,16 @@
 import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight, MessageCircle, Repeat2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { productQuery, productsQuery, categoriesQuery, familyQuery } from "@/lib/queries";
+import { productImagesQuery } from "@/lib/product-images";
 import { supabase } from "@/integrations/supabase/client";
 import { discountPct, inr } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
+import { ProductGallery } from "@/components/product/ProductGallery";
+import { PDPSkeleton } from "@/components/product/PDPSkeleton";
 import { ProductCard } from "@/components/product/ProductCard";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -17,29 +20,37 @@ import type { ProductFamily } from "@/lib/queries";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
-    // Try family first
-    const fam = await context.queryClient.ensureQueryData(familyQuery(params.slug));
-    if (!fam) {
-      const p = await context.queryClient.ensureQueryData(productQuery(params.slug));
-      if (!p) throw notFound();
-      // If this product's SKU belongs to a family, redirect to family PDP with SKU hint
-      const { data: v } = await supabase
-        .from("product_variants")
-        .select("family_id, product_families!inner(slug)")
-        .eq("sku", p.sku)
-        .maybeSingle();
-      const familySlug = (v as { product_families?: { slug: string } } | null)?.product_families?.slug;
-      if (familySlug && familySlug !== params.slug) {
-        throw redirect({ to: "/products/$slug", params: { slug: familySlug }, search: { v: p.sku } });
-      }
-    }
+    // Kick off family + related in parallel; only await the family for the redirect check
+    const famPromise = context.queryClient.ensureQueryData(familyQuery(params.slug));
     context.queryClient.ensureQueryData(categoriesQuery);
     context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 4 }));
+    const fam = await famPromise;
+    if (fam) {
+      context.queryClient.ensureQueryData(productImagesQuery({ familyId: fam.id }));
+      return;
+    }
+    const p = await context.queryClient.ensureQueryData(productQuery(params.slug));
+    if (!p) throw notFound();
+    const { data: v } = await supabase
+      .from("product_variants")
+      .select("family_id, product_families!inner(slug)")
+      .eq("sku", p.sku)
+      .maybeSingle();
+    const familySlug = (v as { product_families?: { slug: string } } | null)?.product_families?.slug;
+    if (familySlug && familySlug !== params.slug) {
+      throw redirect({ to: "/products/$slug", params: { slug: familySlug }, search: { v: p.sku } });
+    }
+    context.queryClient.ensureQueryData(productImagesQuery({ productId: p.id }));
   },
   validateSearch: (s: Record<string, unknown>) => ({ v: typeof s.v === "string" ? s.v : undefined }),
   head: ({ params }) => ({
-    meta: [{ title: `${params.slug.replace(/-/g, " ")} — Aurona` }],
+    meta: [
+      { title: `${params.slug.replace(/-/g, " ")} — Aurona` },
+      { name: "description", content: `Buy ${params.slug.replace(/-/g, " ")} at Aurona — manufacturer-direct pricing with warranty and PAN India shipping.` },
+    ],
   }),
+  pendingComponent: PDPSkeleton,
+  pendingMs: 100,
   component: PDPRoute,
   notFoundComponent: () => (
     <div className="container-x py-24 text-center">
