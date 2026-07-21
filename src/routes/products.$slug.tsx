@@ -20,12 +20,14 @@ import type { ProductFamily } from "@/lib/queries";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
-    // Kick off family + related in parallel; only await the family for the redirect check
+    // Fire everything in parallel — only await family for redirect check.
     const famPromise = context.queryClient.ensureQueryData(familyQuery(params.slug));
     context.queryClient.ensureQueryData(categoriesQuery);
     context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 4 }));
     const fam = await famPromise;
     if (fam) {
+      const skus = fam.variants.map((v) => v.sku).filter(Boolean);
+      context.queryClient.ensureQueryData(familyProductsQuery(skus));
       context.queryClient.ensureQueryData(productImagesQuery({ familyId: fam.id }));
       return;
     }
