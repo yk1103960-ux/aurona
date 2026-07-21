@@ -229,10 +229,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </div>
 
           <div className="mt-7 divide-y divide-border border-y border-border">
-            <PriceRow label="M.R.P." value={`${inr(variant.mrp)} /Pc`} muted />
+            <PriceRow label="M.R.P." value={`${inr(effectiveMrp)} /Pc`} muted />
             <PriceRow label="Discount %" value={`${off}%`} highlight />
             <PriceRow label="Discount amount" value={`${inr(discountAmount)} /Pc`} highlight />
-            <PriceRow label="Price per unit" value={`${inr(variant.price)} /Pc`} />
+            <PriceRow label={role.role === "retailer" ? "Retailer price / unit" : role.role === "distributor" ? "Distributor price / unit" : "Price per unit"} value={`${inr(effectivePrice)} /Pc`} />
             <PriceRow label="Price per pack" value={`${inr(pricePerPack)} /Pack`} />
             <PriceRow label="Total order value" value={inr(totalOrderValue)} />
             <PriceRow label="You save on this order" value={inr(totalSaved)} highlight />
@@ -248,20 +248,24 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <Spec label="Country of origin" value="India" />
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 gap-2 rounded-none"
-              onClick={() => productId && cart.add.mutate({ productId, quantity: qty })}
-              disabled={!productId || !inStock || cart.add.isPending}
-            >
-              <ShoppingCart className="h-4 w-4" /> Add to cart
-            </Button>
-            <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!productId || !inStock}>
-              Buy now
-            </Button>
-          </div>
+          {role.role === "distributor" ? (
+            <ContactSalesCard className="mt-4" productName={family.name} sku={variant.sku} />
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 gap-2 rounded-none"
+                onClick={() => productId && cart.add.mutate({ productId, quantity: qty })}
+                disabled={!productId || !inStock || cart.add.isPending}
+              >
+                <ShoppingCart className="h-4 w-4" /> Add to cart
+              </Button>
+              <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!productId || !inStock}>
+                Buy now
+              </Button>
+            </div>
+          )}
 
           <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
             <div className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center">
