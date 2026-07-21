@@ -67,10 +67,10 @@ function CategoryPage() {
             perPage={perPage}
             total={total}
             onPage={(p) => {
-              nav({ search: (s) => ({ ...s, page: p }) });
+              nav({ search: (s: any) => ({ ...s, page: p }) });
               if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            onPerPage={(n) => nav({ search: (s) => ({ ...s, perPage: n, page: 1 }) })}
+            onPerPage={(n) => nav({ search: (s: any) => ({ ...s, perPage: n, page: 1 }) })}
           />
         </>
       )}

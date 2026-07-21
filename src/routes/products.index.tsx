@@ -73,7 +73,7 @@ function ProductsPage() {
   const { rows, total } = useSuspenseQuery(productsPageQuery(filter)).data;
 
   const setSearch = (patch: Partial<SP>, resetPage = true) =>
-    nav({ search: (s) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }) });
+    nav({ search: (s: any) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }) });
 
   const groupLabel: Record<string, string> = {
     "led-lighting": "LED Lighting",
@@ -181,7 +181,7 @@ function ProductsPage() {
               perPage={filter.perPage}
               total={total}
               onPage={(p) => {
-                nav({ search: (s) => ({ ...s, page: p }) });
+                nav({ search: (s: any) => ({ ...s, page: p }) });
                 if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               onPerPage={(n) => setSearch({ perPage: n })}
