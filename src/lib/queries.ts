@@ -136,13 +136,13 @@ export type ProductsPageFilter = {
 
 export const productsPageQuery = (filter: ProductsPageFilter) =>
   queryOptions({
-    queryKey: ["products-page", filter],
+    queryKey: ["families-page", filter],
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     queryFn: async (): Promise<ProductsPage> => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
+        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
       );
 
       let categoryIds = filter.categoryIds;
@@ -156,14 +156,14 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         categoryIds = [cat.id];
       }
 
-      let q = supabase.from("products").select(cols, { count: "exact" }).gt("price", 0);
+      let q = supabase.from("product_families").select(cols, { count: "exact" }).gt("min_price", 0);
       if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
       if (filter.search) q = q.ilike("name", `%${filter.search}%`);
-      if (filter.min && filter.min > 0) q = q.gte("price", filter.min);
-      if (filter.max && filter.max > 0) q = q.lte("price", filter.max);
+      if (filter.min && filter.min > 0) q = q.gte("min_price", filter.min);
+      if (filter.max && filter.max > 0) q = q.lte("max_price", filter.max);
 
-      if (filter.sort === "price-asc") q = q.order("price", { ascending: true });
-      else if (filter.sort === "price-desc") q = q.order("price", { ascending: false });
+      if (filter.sort === "price-asc") q = q.order("min_price", { ascending: true });
+      else if (filter.sort === "price-desc") q = q.order("max_price", { ascending: false });
       else if (filter.sort === "rating") q = q.order("rating", { ascending: false });
       else q = q.order("created_at", { ascending: false });
 
@@ -173,23 +173,42 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
 
       const { data, error, count } = await q;
       if (error) throw error;
-      const rows = (data ?? []) as unknown as ProductRow[];
-      const skus = [...new Set(rows.map((r) => r.sku).filter(Boolean))];
-      if (skus.length === 0) return { rows, total: count ?? 0 };
-      const { data: links } = await supabase
-        .from("product_variants")
-        .select(sel("sku, product_families(slug)"))
-        .in("sku", skus);
-      const familyBySku = new Map<string, string>();
-      for (const link of (links ?? []) as unknown as { sku: string; product_families?: { slug: string } | null }[]) {
-        if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
-      }
-      return {
-        rows: rows.map((r) => ({ ...r, family_slug: familyBySku.get(r.sku) ?? null })),
-        total: count ?? rows.length,
+      type FamRow = {
+        id: string; slug: string; main_sku: string; name: string; category_id: string | null;
+        brand: string; short_description: string | null;
+        min_price: number | null; max_price: number | null; min_mrp: number | null; max_mrp: number | null;
+        total_stock: number; rating: number; review_count: number;
+        is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
+        image_seed: string | null;
+        categories: { slug: string; name: string; icon: string | null } | null;
       };
+      const fams = (data ?? []) as unknown as FamRow[];
+      const rows: ProductRow[] = fams.map((f) => ({
+        id: f.id,
+        slug: f.slug,
+        sku: f.main_sku,
+        name: f.name,
+        category_id: f.category_id,
+        brand: f.brand,
+        short_description: f.short_description,
+        description: null,
+        mrp: Number(f.min_mrp ?? f.min_price ?? 0),
+        price: Number(f.min_price ?? 0),
+        unit: "unit",
+        stock: f.total_stock,
+        rating: Number(f.rating ?? 0),
+        review_count: f.review_count ?? 0,
+        wattage: null, size: null, color_temp: null, material: null, warranty: null,
+        is_featured: f.is_featured, is_bestseller: f.is_bestseller, is_new: f.is_new, is_sale: f.is_sale,
+        image_seed: f.image_seed,
+        categories: f.categories,
+        family_slug: f.slug,
+        price_from: (f.min_price ?? 0) !== (f.max_price ?? 0),
+      }));
+      return { rows, total: count ?? rows.length };
     },
   });
+
 
 export const productQuery = (slug: string) =>
   queryOptions({
