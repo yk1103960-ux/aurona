@@ -1,7 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, Phone, Truck, ShieldCheck, Factory } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
@@ -13,16 +12,6 @@ import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
-const NAV = [
-  { label: "Home", to: "/" },
-  { label: "All Products", to: "/products" },
-  { label: "LED Lighting", to: "/products", group: "led-lighting" },
-  { label: "Fans", to: "/products", group: "fans" },
-  { label: "Home Appliances", to: "/products", group: "home-appliances" },
-  { label: "About", to: "/about" },
-  { label: "Blogs", to: "/blogs" },
-];
-
 export function Header() {
   const navigate = useNavigate();
   const cart = useCart();
@@ -30,7 +19,6 @@ export function Header() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [openMobile, setOpenMobile] = useState(false);
-  const { data: cats = [] } = useQuery(categoriesQuery);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
 
