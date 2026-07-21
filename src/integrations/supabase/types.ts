@@ -206,6 +206,7 @@ export type Database = {
           slug: string
           stock: number
           unit: string
+          variations: Json | null
           warranty: string | null
           wattage: string | null
         }
@@ -233,6 +234,7 @@ export type Database = {
           slug: string
           stock?: number
           unit?: string
+          variations?: Json | null
           warranty?: string | null
           wattage?: string | null
         }
@@ -260,6 +262,7 @@ export type Database = {
           slug?: string
           stock?: number
           unit?: string
+          variations?: Json | null
           warranty?: string | null
           wattage?: string | null
         }
