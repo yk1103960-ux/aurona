@@ -181,6 +181,222 @@ export type Database = {
         }
         Relationships: []
       }
+      product_families: {
+        Row: {
+          brand: string
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_seed: string | null
+          is_bestseller: boolean
+          is_featured: boolean
+          is_new: boolean
+          is_sale: boolean
+          main_sku: string
+          material: string | null
+          max_mrp: number | null
+          max_price: number | null
+          min_mrp: number | null
+          min_price: number | null
+          name: string
+          rating: number
+          review_count: number
+          short_description: string | null
+          slug: string
+          total_stock: number
+          updated_at: string
+          warranty: string | null
+        }
+        Insert: {
+          brand?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_seed?: string | null
+          is_bestseller?: boolean
+          is_featured?: boolean
+          is_new?: boolean
+          is_sale?: boolean
+          main_sku: string
+          material?: string | null
+          max_mrp?: number | null
+          max_price?: number | null
+          min_mrp?: number | null
+          min_price?: number | null
+          name: string
+          rating?: number
+          review_count?: number
+          short_description?: string | null
+          slug: string
+          total_stock?: number
+          updated_at?: string
+          warranty?: string | null
+        }
+        Update: {
+          brand?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_seed?: string | null
+          is_bestseller?: boolean
+          is_featured?: boolean
+          is_new?: boolean
+          is_sale?: boolean
+          main_sku?: string
+          material?: string | null
+          max_mrp?: number | null
+          max_price?: number | null
+          min_mrp?: number | null
+          min_price?: number | null
+          name?: string
+          rating?: number
+          review_count?: number
+          short_description?: string | null
+          slug?: string
+          total_stock?: number
+          updated_at?: string
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_families_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variant_axes: {
+        Row: {
+          axis_key: string
+          family_id: string
+          id: string
+          label: string
+          sort_order: number
+          values: Json
+        }
+        Insert: {
+          axis_key: string
+          family_id: string
+          id?: string
+          label: string
+          sort_order?: number
+          values?: Json
+        }
+        Update: {
+          axis_key?: string
+          family_id?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          values?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_axes_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          attributes: Json
+          created_at: string
+          dim_h: number | null
+          dim_l: number | null
+          dim_w: number | null
+          discount_pct: number | null
+          distributor_moq: number | null
+          distributor_price: number | null
+          family_id: string
+          id: string
+          image_seed: string | null
+          moq: number
+          mrp: number
+          pack_h: number | null
+          pack_l: number | null
+          pack_size: number | null
+          pack_w: number | null
+          pack_weight_g: number | null
+          price: number
+          retailer_moq: number | null
+          retailer_price: number | null
+          sku: string
+          sort_order: number
+          stock: number
+          weight_g: number | null
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          dim_h?: number | null
+          dim_l?: number | null
+          dim_w?: number | null
+          discount_pct?: number | null
+          distributor_moq?: number | null
+          distributor_price?: number | null
+          family_id: string
+          id?: string
+          image_seed?: string | null
+          moq?: number
+          mrp: number
+          pack_h?: number | null
+          pack_l?: number | null
+          pack_size?: number | null
+          pack_w?: number | null
+          pack_weight_g?: number | null
+          price: number
+          retailer_moq?: number | null
+          retailer_price?: number | null
+          sku: string
+          sort_order?: number
+          stock?: number
+          weight_g?: number | null
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          dim_h?: number | null
+          dim_l?: number | null
+          dim_w?: number | null
+          discount_pct?: number | null
+          distributor_moq?: number | null
+          distributor_price?: number | null
+          family_id?: string
+          id?: string
+          image_seed?: string | null
+          moq?: number
+          mrp?: number
+          pack_h?: number | null
+          pack_l?: number | null
+          pack_size?: number | null
+          pack_w?: number | null
+          pack_weight_g?: number | null
+          price?: number
+          retailer_moq?: number | null
+          retailer_price?: number | null
+          sku?: string
+          sort_order?: number
+          stock?: number
+          weight_g?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand: string
