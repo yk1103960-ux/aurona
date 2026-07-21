@@ -45,132 +45,110 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b border-primary/40 bg-primary text-primary-foreground backdrop-blur-md transition-[box-shadow,background-color,border-color] duration-300",
-        scrolled && "shadow-[0_6px_24px_-12px_rgba(0,0,0,0.45)]",
+        "fixed inset-x-0 top-0 z-40 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-500",
+        scrolled
+          ? "border-b border-white/10 bg-[oklch(0.13_0.003_60/0.72)] backdrop-blur-xl"
+          : "border-b border-transparent bg-transparent",
       )}
     >
-      {/* Utility bar (desktop) — collapses on scroll */}
+      {/* Main bar */}
       <div
         className={cn(
-          "hidden overflow-hidden border-b border-white/10 bg-primary/90 text-xs text-primary-foreground/70 transition-[max-height,opacity] duration-300 ease-out lg:block",
-          scrolled ? "max-h-0 opacity-0 border-b-0" : "max-h-10 opacity-100",
-        )}
-      >
-        <div className="container-x flex h-9 items-center justify-between">
-          <div className="flex items-center gap-5">
-            <span className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5" /> PAN India Delivery</span>
-            <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Genuine Products</span>
-            <span className="flex items-center gap-1.5"><Factory className="h-3.5 w-3.5" /> Manufacturer Direct</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <a href="tel:+919999999999" className="flex items-center gap-1.5 hover:text-gold"><Phone className="h-3.5 w-3.5" /> +91 99999 99999</a>
-            <Link to="/account" className="hover:text-gold">Track Order</Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Main bar — shrinks on scroll */}
-      <div
-        className={cn(
-          "container-x flex items-center justify-between gap-2 transition-[height] duration-300 ease-out lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-6",
+          "container-x flex items-center justify-between gap-2 text-[oklch(0.955_0.008_85)] transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
           scrolled ? "h-14 lg:h-16" : "h-16 lg:h-20",
         )}
       >
         {/* Left: hamburger + logo */}
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
-              <button className="press grid h-10 w-10 shrink-0 place-items-center rounded-md text-primary-foreground lg:hidden" aria-label="Menu">
+              <button className="press grid h-10 w-10 shrink-0 place-items-center text-current lg:hidden" aria-label="Menu">
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[86vw] max-w-sm p-0">
+            <SheetContent side="left" className="w-[86vw] max-w-sm border-white/10 bg-[oklch(0.14_0.003_60)] p-0 text-[oklch(0.955_0.008_85)]">
               <MobileMenu onClose={() => setOpenMobile(false)} />
             </SheetContent>
           </Sheet>
-          <Link to="/" className="flex min-w-0 items-center gap-2">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5">
             <img
               src={auronaLogo.url}
               alt="Aurona"
               className={cn(
-                "shrink-0 rounded-md bg-white/95 object-contain p-0.5 transition-[height,width] duration-300 ease-out",
-                scrolled ? "h-8 w-8 lg:h-10 lg:w-10" : "h-9 w-9 lg:h-12 lg:w-12",
+                "shrink-0 object-contain brightness-0 invert transition-[height,width] duration-500",
+                scrolled ? "h-7 w-7 lg:h-8 lg:w-8" : "h-8 w-8 lg:h-9 lg:w-9",
               )}
             />
-            <div className="min-w-0 leading-tight">
-              <div className="text-display truncate text-lg font-semibold tracking-tight text-primary-foreground lg:text-xl">AURONA</div>
-              <div className="hidden text-[10px] uppercase tracking-[0.22em] text-primary-foreground/60 sm:block">Innovating the way</div>
-            </div>
+            <span className="text-display text-[15px] font-medium uppercase tracking-[0.32em] text-current lg:text-base">
+              Aurona
+            </span>
           </Link>
         </div>
 
-        {/* Center: search (desktop) */}
-        <form onSubmit={submit} className="hidden lg:block">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search products, categories, models and more"
-              className="h-11 rounded-full border-transparent bg-white pl-10 pr-24 text-sm text-foreground placeholder:text-muted-foreground"
-            />
-            <Button type="submit" size="sm" className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full bg-gold px-4 text-gold-foreground hover:bg-gold/90">Search</Button>
-          </div>
-        </form>
+        {/* Center: minimal editorial nav */}
+        <nav className="hidden items-center justify-center gap-8 lg:flex">
+          {[
+            { label: "Shop", to: "/products" },
+            { label: "Collections", to: "/products" },
+            { label: "Interior Lighting", to: "/category/$slug", params: { slug: "interior-lights" } },
+            { label: "Mirror Lights", to: "/category/$slug", params: { slug: "mirror-lights" } },
+            { label: "About", to: "/about" },
+          ].map((n) => (
+            <Link
+              key={n.label}
+              to={n.to as never}
+              params={n.params as never}
+              className="text-[11px] font-medium uppercase tracking-[0.24em] text-current/85 transition-colors hover:text-[oklch(0.85_0.09_82)]"
+              activeProps={{ className: "text-[oklch(0.85_0.09_82)]" }}
+            >
+              {n.label}
+            </Link>
+          ))}
+        </nav>
 
-        {/* Right: actions — cart pinned to far right on mobile */}
-        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
-          <Link to="/wishlist" className="relative hidden h-10 w-10 place-items-center rounded-md text-primary-foreground sm:grid" aria-label="Wishlist">
-            <Heart className="h-5 w-5" />
+        {/* Right: actions */}
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+          <button
+            onClick={() => document.getElementById("aurona-search-input")?.focus()}
+            className="hidden h-10 w-10 place-items-center text-current transition hover:text-[oklch(0.85_0.09_82)] sm:grid"
+            aria-label="Search"
+          >
+            <Search className="h-[18px] w-[18px]" />
+          </button>
+          <Link to="/wishlist" className="relative hidden h-10 w-10 place-items-center text-current transition hover:text-[oklch(0.85_0.09_82)] sm:grid" aria-label="Wishlist">
+            <Heart className="h-[18px] w-[18px]" />
             {wl.count > 0 && <Badge count={wl.count} />}
           </Link>
-          <Link to={user ? "/account" : "/auth"} className="hidden h-10 w-10 place-items-center rounded-md text-primary-foreground sm:grid" aria-label="Account">
-            <User className="h-5 w-5" />
+          <Link to={user ? "/account" : "/auth"} className="hidden h-10 w-10 place-items-center text-current transition hover:text-[oklch(0.85_0.09_82)] sm:grid" aria-label="Account">
+            <User className="h-[18px] w-[18px]" />
           </Link>
-          <Link to="/cart" className="relative -mr-2 grid h-10 w-10 place-items-center rounded-md text-primary-foreground sm:-mr-1" aria-label="Cart">
-            <ShoppingCart className="h-5 w-5" />
+          <Link to="/cart" className="relative -mr-2 grid h-10 w-10 place-items-center text-current transition hover:text-[oklch(0.85_0.09_82)] sm:-mr-1" aria-label="Cart">
+            <ShoppingCart className="h-[18px] w-[18px]" />
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
         </div>
       </div>
 
-      {/* Mobile search row */}
-      <div className="border-t border-white/10 bg-primary px-3 py-2 lg:hidden">
-        <form onSubmit={submit}>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search Aurona products…"
-              className="text-display h-10 rounded-full border-transparent bg-white pl-10 pr-20 text-sm text-foreground placeholder:text-muted-foreground"
-            />
-            <Button type="submit" size="sm" className="absolute right-1 top-1/2 h-8 -translate-y-1/2 rounded-full bg-gold px-3 text-xs font-semibold text-gold-foreground hover:bg-gold/90">
-              Search
-            </Button>
-          </div>
-        </form>
-      </div>
-
-      {/* Desktop nav */}
-      <nav className="hidden border-t border-white/10 bg-primary lg:block">
-        <div className="container-x flex h-11 items-center gap-1">
-          {NAV.map((n) => (
-            <Link
-              key={n.label}
-              to={n.to}
-              search={n.group ? ({ group: n.group } as never) : undefined}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-primary-foreground/80 transition hover:bg-white/10 hover:text-gold"
-              activeProps={{ className: "text-gold" }}
-            >
-              {n.label}
-            </Link>
-          ))}
-          <div className="ml-auto flex items-center gap-2 text-xs text-primary-foreground/60">
-            <span>17+ Years</span><span>·</span><span>150+ Products</span><span>·</span><span>1000+ Partners</span>
-          </div>
+      {/* Mobile inline search — hidden until scrolled to reduce clutter over hero */}
+      {scrolled && (
+        <div className="border-t border-white/10 px-3 py-2 lg:hidden">
+          <form onSubmit={submit}>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[oklch(0.66_0.008_70)]" />
+              <Input
+                id="aurona-search-input"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search Aurona"
+                className="h-10 rounded-none border-white/15 bg-transparent pl-10 pr-16 text-sm text-[oklch(0.955_0.008_85)] placeholder:text-[oklch(0.66_0.008_70)] focus-visible:ring-[oklch(0.77_0.09_82)]"
+              />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[oklch(0.85_0.09_82)]">
+                Go
+              </button>
+            </div>
+          </form>
         </div>
-      </nav>
+      )}
 
     </header>
   );
