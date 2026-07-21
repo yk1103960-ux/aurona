@@ -35,14 +35,14 @@ export function Header() {
       className={cn(
         "fixed inset-x-0 top-0 z-40 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-500",
         scrolled
-          ? "border-b border-white/10 bg-[oklch(0.13_0.003_60/0.72)] backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent",
+          ? "border-b border-border bg-background/80 shadow-soft backdrop-blur-xl"
+          : "border-b border-transparent bg-background/40 backdrop-blur-md",
       )}
     >
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between gap-2 text-[oklch(0.955_0.008_85)] transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
+          "container-x flex items-center justify-between gap-2 text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
           scrolled ? "h-14 lg:h-16" : "h-16 lg:h-20",
         )}
       >
@@ -54,7 +54,7 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[86vw] max-w-sm border-white/10 bg-[oklch(0.14_0.003_60)] p-0 text-[oklch(0.955_0.008_85)]">
+            <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
               <MobileMenu onClose={() => setOpenMobile(false)} />
             </SheetContent>
           </Sheet>
@@ -63,7 +63,7 @@ export function Header() {
               src={auronaLogo.url}
               alt="Aurona"
               className={cn(
-                "shrink-0 object-contain brightness-0 invert transition-[height,width] duration-500",
+                "shrink-0 object-contain transition-[height,width] duration-500",
                 scrolled ? "h-7 w-7 lg:h-8 lg:w-8" : "h-8 w-8 lg:h-9 lg:w-9",
               )}
             />

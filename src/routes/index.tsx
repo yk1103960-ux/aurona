@@ -68,22 +68,22 @@ function Home() {
 
   return (
     <div className="bg-background">
-      {/* ============ CINEMATIC HERO ============ */}
-      <section className="relative -mt-16 overflow-hidden bg-[oklch(0.11_0.003_60)] text-[oklch(0.955_0.008_85)] lg:-mt-20">
-        {/* backdrop image — slow cinematic drift */}
+      {/* ============ SKY HERO ============ */}
+      <section className="relative -mt-16 overflow-hidden product-gradient-hero text-foreground lg:-mt-20">
+        {/* backdrop image — very soft, blended into sky wash */}
         <div className="absolute inset-0">
           <img
             src={heroLux.url}
             alt=""
-            className="ken-burns h-full w-full object-cover object-center opacity-90"
+            className="ken-burns h-full w-full object-cover object-center opacity-25 mix-blend-luminosity"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.10_0.015_260)] via-[oklch(0.10_0.015_260/0.7)] to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.10_0.015_260)] via-transparent to-transparent" />
-          {/* ambient light orbs */}
-          <div className="orb-float absolute -left-24 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_28%,transparent),transparent_70%)] blur-3xl" aria-hidden />
-          <div className="orb-float-slow absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_14%,transparent),transparent_70%)] blur-3xl" aria-hidden />
-          {/* fine noise for filmic grain */}
-          <div className="pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/55 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          {/* ambient sky orbs */}
+          <div className="orb-float absolute -left-24 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-sky)_55%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+          <div className="orb-float-slow absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-primary)_28%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+          {/* subtle grain */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
         </div>
 
 
@@ -91,8 +91,8 @@ function Home() {
           {/* top row */}
           <div className="flex items-center justify-between pt-8 lg:pt-12">
             <div className="flex items-center gap-2">
-              <img src={auronaLogo.url} alt="" className="h-9 w-9 object-contain brightness-0 invert lg:h-10 lg:w-10" />
-              <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/70">Est. 2007</div>
+              <img src={auronaLogo.url} alt="" className="h-9 w-9 object-contain lg:h-10 lg:w-10" />
+              <div className="text-[10px] uppercase tracking-[0.28em] text-foreground/60">Est. 2007</div>
             </div>
             <Link
               to="/about"
@@ -115,7 +115,7 @@ function Home() {
               <h1 className="text-display text-[44px] leading-[0.95] tracking-tight sm:text-6xl lg:text-[112px]">
                 Light,
                 <br />
-                <span className="italic text-gold">sculpted</span>
+                <span className="italic text-primary">sculpted</span>
                 <br />
                 for India.
               </h1>
@@ -170,9 +170,9 @@ function Home() {
               <Link
                 to="/products/$slug"
                 params={{ slug: hero.slug }}
-                className="group absolute bottom-6 right-0 hidden w-[280px] rounded-2xl border border-foreground/15 bg-[oklch(0.14_0.02_260/0.7)] p-4 backdrop-blur-xl transition hover:border-gold/50 lg:block"
+                className="group absolute bottom-6 right-0 hidden w-[280px] rounded-2xl border border-border bg-card/90 p-4 shadow-lift backdrop-blur-xl transition hover:border-primary/50 hover:shadow-sky lg:block"
               >
-                <div className="text-[10px] uppercase tracking-[0.2em] text-gold">Featured</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-primary">Featured</div>
                 <div className="mt-2 flex items-start gap-3">
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
                     <ProductImage product={hero} categoryIcon={hero.categories?.icon} className="h-full w-full" iconClassName="h-8 w-8" />
@@ -181,14 +181,14 @@ function Home() {
                     <div className="line-clamp-2 text-sm font-semibold text-foreground">
                       {hero.name}
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] text-foreground/60">
-                      <Star className="h-3 w-3 fill-gold text-gold" /> {Number(hero.rating).toFixed(1)}
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Star className="h-3 w-3 fill-primary text-primary" /> {Number(hero.rating).toFixed(1)}
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-foreground/10 pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                   <div className="text-base font-semibold text-foreground">{inr(hero.price)}</div>
-                  <ArrowUpRight className="h-4 w-4 text-gold transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  <ArrowUpRight className="h-4 w-4 text-primary transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </div>
               </Link>
             )}
@@ -320,23 +320,23 @@ function Home() {
                   key={p.id}
                   to="/products/$slug"
                   params={{ slug: p.slug }}
-                  className="group relative flex overflow-hidden rounded-2xl border border-primary-foreground/10 bg-[oklch(0.16_0.02_260)] transition hover:border-gold/40"
+                  className="group relative flex overflow-hidden rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur transition hover:border-primary-foreground/40 hover:bg-primary-foreground/15"
                 >
                   <div className="h-32 w-32 shrink-0 sm:h-36 sm:w-36">
                     <ProductImage product={p} categoryIcon={p.categories?.icon} className="h-full w-full rounded-none" iconClassName="h-12 w-12" />
                   </div>
                   <div className="flex flex-1 flex-col justify-between p-4">
                     <div>
-                      <div className="line-clamp-2 text-sm font-semibold text-foreground">{p.name}</div>
-                      <div className="mt-1 text-[10px] uppercase tracking-wider text-foreground/60">{p.categories?.name}</div>
+                      <div className="line-clamp-2 text-sm font-semibold text-primary-foreground">{p.name}</div>
+                      <div className="mt-1 text-[10px] uppercase tracking-wider text-primary-foreground/60">{p.categories?.name}</div>
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
-                        <div className="text-lg font-semibold text-gold">{inr(p.price)}</div>
-                        <div className="text-[11px] text-foreground/50 line-through">{inr(p.mrp)}</div>
+                        <div className="text-lg font-semibold text-primary-foreground">{inr(p.price)}</div>
+                        <div className="text-[11px] text-primary-foreground/50 line-through">{inr(p.mrp)}</div>
                       </div>
                       {off > 0 && (
-                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
+                        <span className="rounded-full bg-primary-foreground/20 px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                           {off}% off
                         </span>
                       )}

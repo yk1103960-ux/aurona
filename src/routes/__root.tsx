@@ -16,6 +16,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { PageTransition } from "@/components/motion/PageTransition";
+import { OffersModal } from "@/components/marketing/OffersModal";
 import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
@@ -81,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@300;400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Karla:wght@300;400;500;600;700&display=swap",
       },
     ],
   }),
@@ -118,6 +119,7 @@ function RootComponent() {
         <Footer />
         <MobileBottomNav />
       </div>
+      <OffersModal />
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );

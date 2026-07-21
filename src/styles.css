@@ -5,14 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * AURONA — Premium lighting & appliances design system.
- * White-first, warm neutrals, deep charcoal typography, warm amber accent.
- * Editorial serif display (Fraunces) + clean sans (Manrope).
+ * AURONA — Sky-blue editorial design system.
+ * Airy whites, dceaf7 surfaces, 7cc4f5 accent sky, 0a84d1 primary.
+ * Cormorant Garamond (display) + Karla (body).
  */
 
 @theme inline {
-  --font-display: "Fraunces", "Instrument Serif", ui-serif, Georgia, serif;
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -39,6 +39,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-sky: var(--sky);
+  --color-sky-foreground: var(--sky-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-destructive: var(--destructive);
@@ -64,107 +66,119 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Product gradient tokens */
-  --grad-amber: linear-gradient(135deg, oklch(0.96 0.04 85) 0%, oklch(0.86 0.09 75) 100%);
-  --grad-warm:  linear-gradient(135deg, oklch(0.97 0.03 60) 0%, oklch(0.84 0.10 45) 100%);
-  --grad-cool:  linear-gradient(135deg, oklch(0.97 0.02 230) 0%, oklch(0.86 0.05 240) 100%);
-  --grad-gold:  linear-gradient(135deg, oklch(0.94 0.06 90) 0%, oklch(0.78 0.13 75) 100%);
-  --grad-charcoal: linear-gradient(135deg, oklch(0.28 0.02 260) 0%, oklch(0.14 0.02 260) 100%);
+  /* Product gradient tokens — sky/cloud family */
+  --grad-sky:    linear-gradient(135deg, oklch(0.97 0.02 240) 0%, oklch(0.82 0.11 240) 100%);
+  --grad-cloud:  linear-gradient(135deg, oklch(0.99 0.005 240) 0%, oklch(0.90 0.05 235) 100%);
+  --grad-cool:   linear-gradient(135deg, oklch(0.97 0.02 230) 0%, oklch(0.86 0.05 240) 100%);
+  --grad-warm:   linear-gradient(135deg, oklch(0.98 0.02 240) 0%, oklch(0.86 0.09 220) 100%);
+  --grad-hero:   linear-gradient(160deg, oklch(0.985 0.006 240) 0%, oklch(0.93 0.045 235) 55%, oklch(0.85 0.10 235) 100%);
+  --grad-charcoal: linear-gradient(135deg, oklch(0.30 0.03 240) 0%, oklch(0.18 0.03 240) 100%);
+  --grad-gold:   linear-gradient(135deg, oklch(0.94 0.06 90) 0%, oklch(0.78 0.13 75) 100%);
+  --grad-amber:  linear-gradient(135deg, oklch(0.96 0.04 85) 0%, oklch(0.86 0.09 75) 100%);
 
-  --shadow-soft: 0 1px 2px oklch(0.15 0.02 260 / 4%), 0 4px 20px -4px oklch(0.15 0.02 260 / 6%);
-  --shadow-lift: 0 1px 2px oklch(0.15 0.02 260 / 5%), 0 14px 30px -10px oklch(0.15 0.02 260 / 12%);
+  --shadow-soft: 0 1px 2px oklch(0.55 0.14 240 / 8%), 0 4px 20px -4px oklch(0.55 0.14 240 / 10%);
+  --shadow-lift: 0 1px 2px oklch(0.55 0.14 240 / 10%), 0 18px 34px -12px oklch(0.55 0.14 240 / 20%);
+  --shadow-sky:  0 24px 60px -24px oklch(0.60 0.16 240 / 45%);
 }
 
 :root {
-  --radius: 0.125rem;
-  /* Surfaces — cinematic near-black */
-  --background: oklch(0.15 0.003 60);
-  --surface: oklch(0.19 0.003 60);
-  --surface-warm: oklch(0.23 0.004 60);
-  --foreground: oklch(0.955 0.008 85);
+  --radius: 0.5rem;
 
-  --card: oklch(0.19 0.003 60);
-  --card-foreground: oklch(0.955 0.008 85);
-  --popover: oklch(0.19 0.003 60);
-  --popover-foreground: oklch(0.955 0.008 85);
+  /* Cloud & Sky palette — light, airy, editorial */
+  --background: oklch(0.99 0.005 240);          /* #f8fbff cloud white */
+  --surface: oklch(0.955 0.018 235);            /* #dceaf7 soft sky */
+  --surface-warm: oklch(0.97 0.010 240);
+  --foreground: oklch(0.24 0.05 245);           /* deep ink navy — high contrast */
 
-  --primary: oklch(0.955 0.008 85);
-  --primary-foreground: oklch(0.14 0.003 60);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.05 245);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.05 245);
 
-  --secondary: oklch(0.23 0.004 60);
-  --secondary-foreground: oklch(0.955 0.008 85);
+  --primary: oklch(0.58 0.16 240);              /* #0a84d1 vivid sky */
+  --primary-foreground: oklch(0.99 0.005 240);
 
-  --muted: oklch(0.23 0.004 60);
-  --muted-foreground: oklch(0.66 0.008 70);
+  --secondary: oklch(0.955 0.018 235);
+  --secondary-foreground: oklch(0.28 0.06 245);
 
-  --accent: oklch(0.26 0.005 60);
-  --accent-foreground: oklch(0.955 0.008 85);
+  --muted: oklch(0.955 0.018 235);
+  --muted-foreground: oklch(0.48 0.04 240);
 
-  --gold: oklch(0.77 0.09 82);
-  --gold-foreground: oklch(0.14 0.003 60);
+  --accent: oklch(0.79 0.13 235);               /* #7cc4f5 bright sky */
+  --accent-foreground: oklch(0.22 0.06 245);
 
-  --success: oklch(0.7 0.14 155);
-  --success-foreground: oklch(0.14 0.003 60);
+  /* Retain 'gold' token for legacy tiles — remap to accent sky so nothing feels amber */
+  --gold: oklch(0.79 0.13 235);
+  --gold-foreground: oklch(0.22 0.06 245);
 
-  --destructive: oklch(0.62 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
+  --sky: oklch(0.79 0.13 235);
+  --sky-foreground: oklch(0.22 0.06 245);
 
-  --border: oklch(1 0 0 / 8%);
-  --border-strong: oklch(1 0 0 / 16%);
-  --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.77 0.09 82);
+  --success: oklch(0.68 0.15 155);
+  --success-foreground: oklch(0.99 0 0);
 
-  --chart-1: oklch(0.77 0.09 82);
-  --chart-2: oklch(0.65 0.10 240);
-  --chart-3: oklch(0.7 0.14 155);
-  --chart-4: oklch(0.75 0.14 40);
-  --chart-5: oklch(0.6 0.08 300);
+  --destructive: oklch(0.60 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
 
-  --sidebar: oklch(0.17 0.003 60);
-  --sidebar-foreground: oklch(0.955 0.008 85);
-  --sidebar-primary: oklch(0.77 0.09 82);
-  --sidebar-primary-foreground: oklch(0.14 0.003 60);
-  --sidebar-accent: oklch(0.23 0.004 60);
-  --sidebar-accent-foreground: oklch(0.955 0.008 85);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.77 0.09 82);
+  --border: oklch(0.55 0.10 240 / 14%);
+  --border-strong: oklch(0.55 0.12 240 / 26%);
+  --input: oklch(0.55 0.10 240 / 18%);
+  --ring: oklch(0.58 0.16 240);
+
+  --chart-1: oklch(0.58 0.16 240);
+  --chart-2: oklch(0.72 0.14 210);
+  --chart-3: oklch(0.68 0.15 155);
+  --chart-4: oklch(0.79 0.13 235);
+  --chart-5: oklch(0.55 0.14 260);
+
+  --sidebar: oklch(0.99 0.005 240);
+  --sidebar-foreground: oklch(0.24 0.05 245);
+  --sidebar-primary: oklch(0.58 0.16 240);
+  --sidebar-primary-foreground: oklch(0.99 0.005 240);
+  --sidebar-accent: oklch(0.955 0.018 235);
+  --sidebar-accent-foreground: oklch(0.28 0.06 245);
+  --sidebar-border: oklch(0.55 0.10 240 / 14%);
+  --sidebar-ring: oklch(0.58 0.16 240);
 }
 
 .dark {
-  --background: oklch(0.14 0.015 260);
-  --surface: oklch(0.18 0.02 260);
-  --surface-warm: oklch(0.20 0.02 260);
-  --foreground: oklch(0.97 0.005 85);
-  --card: oklch(0.18 0.02 260);
-  --card-foreground: oklch(0.97 0.005 85);
-  --popover: oklch(0.18 0.02 260);
-  --popover-foreground: oklch(0.97 0.005 85);
-  --primary: oklch(0.95 0.01 85);
-  --primary-foreground: oklch(0.16 0.02 260);
-  --secondary: oklch(0.24 0.02 260);
-  --secondary-foreground: oklch(0.97 0.005 85);
-  --muted: oklch(0.24 0.02 260);
-  --muted-foreground: oklch(0.72 0.02 260);
-  --accent: oklch(0.24 0.02 260);
-  --accent-foreground: oklch(0.97 0.005 85);
-  --gold: oklch(0.75 0.14 68);
-  --gold-foreground: oklch(0.16 0.02 260);
-  --success: oklch(0.7 0.15 155);
-  --success-foreground: oklch(0.14 0.015 260);
+  /* Kept for shadcn compatibility — deep navy variant of the sky palette */
+  --background: oklch(0.16 0.04 245);
+  --surface: oklch(0.22 0.05 245);
+  --surface-warm: oklch(0.24 0.05 245);
+  --foreground: oklch(0.97 0.008 240);
+  --card: oklch(0.22 0.05 245);
+  --card-foreground: oklch(0.97 0.008 240);
+  --popover: oklch(0.22 0.05 245);
+  --popover-foreground: oklch(0.97 0.008 240);
+  --primary: oklch(0.79 0.13 235);
+  --primary-foreground: oklch(0.16 0.04 245);
+  --secondary: oklch(0.26 0.05 245);
+  --secondary-foreground: oklch(0.97 0.008 240);
+  --muted: oklch(0.26 0.05 245);
+  --muted-foreground: oklch(0.75 0.03 240);
+  --accent: oklch(0.79 0.13 235);
+  --accent-foreground: oklch(0.16 0.04 245);
+  --gold: oklch(0.79 0.13 235);
+  --gold-foreground: oklch(0.16 0.04 245);
+  --sky: oklch(0.79 0.13 235);
+  --sky-foreground: oklch(0.16 0.04 245);
+  --success: oklch(0.72 0.15 155);
+  --success-foreground: oklch(0.16 0.04 245);
   --destructive: oklch(0.65 0.22 27);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(1 0 0 / 10%);
   --border-strong: oklch(1 0 0 / 18%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.72 0.14 68);
-  --sidebar: oklch(0.18 0.02 260);
-  --sidebar-foreground: oklch(0.97 0.005 85);
-  --sidebar-primary: oklch(0.72 0.14 68);
-  --sidebar-primary-foreground: oklch(0.14 0.015 260);
-  --sidebar-accent: oklch(0.24 0.02 260);
-  --sidebar-accent-foreground: oklch(0.97 0.005 85);
+  --ring: oklch(0.79 0.13 235);
+  --sidebar: oklch(0.22 0.05 245);
+  --sidebar-foreground: oklch(0.97 0.008 240);
+  --sidebar-primary: oklch(0.79 0.13 235);
+  --sidebar-primary-foreground: oklch(0.16 0.04 245);
+  --sidebar-accent: oklch(0.26 0.05 245);
+  --sidebar-accent-foreground: oklch(0.97 0.008 240);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.14 68);
+  --sidebar-ring: oklch(0.79 0.13 235);
 }
 
 @utility container-x {
@@ -178,14 +192,14 @@
 @utility text-display {
   font-family: var(--font-display);
   font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.02;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
 }
 
 @utility text-eyebrow {
   font-family: var(--font-sans);
   font-size: 0.72rem;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 600;
   color: var(--muted-foreground);
@@ -195,6 +209,9 @@
 @utility product-gradient-warm  { background: var(--grad-warm); }
 @utility product-gradient-cool  { background: var(--grad-cool); }
 @utility product-gradient-gold  { background: var(--grad-gold); }
+@utility product-gradient-sky   { background: var(--grad-sky); }
+@utility product-gradient-cloud { background: var(--grad-cloud); }
+@utility product-gradient-hero  { background: var(--grad-hero); }
 @utility product-gradient-charcoal { background: var(--grad-charcoal); }
 
 @utility marquee {
@@ -209,6 +226,7 @@
 
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
 @utility shadow-lift { box-shadow: var(--shadow-lift); }
+@utility shadow-sky  { box-shadow: var(--shadow-sky); }
 
 @layer base {
   * { border-color: var(--color-border); }
@@ -217,17 +235,14 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.015em; font-weight: 500; }
 
-  /* Global premium easing for utility-driven transitions */
   a, button, [role="button"], input, select, textarea, .transition, .transition-all, .transition-colors, .transition-transform, .transition-opacity {
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Accessible focus ring — clearly visible on light + dark surfaces */
   :where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
@@ -235,13 +250,11 @@
   }
 }
 
-/* Micro-interaction: subtle press feedback */
 @utility press {
   transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .press:active { transform: scale(0.97); }
 
-/* Skeleton shimmer */
 @utility shimmer {
   background: linear-gradient(
     90deg,
@@ -257,7 +270,6 @@
   to   { background-position: -200% 0; }
 }
 
-/* Cart / wishlist badge pop */
 @keyframes badge-pop {
   0%   { transform: scale(1); }
   40%  { transform: scale(1.35); }
@@ -265,21 +277,17 @@
 }
 .badge-pop { animation: badge-pop 380ms cubic-bezier(0.22, 1, 0.36, 1); }
 
-/* Product tile — deep navy frame with subtle grid so white product photos pop on white pages */
+/* Product tile — soft sky wash so product photos read cleanly on light pages */
 @utility product-tile {
-  background-color: oklch(0.18 0.04 260);
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, white 6%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, white 6%, transparent) 1px, transparent 1px),
-    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--color-gold) 14%, transparent), transparent 60%);
-  background-size: 22px 22px, 22px 22px, 100% 100%;
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, white 8%, transparent),
-              0 10px 24px -18px rgba(10, 14, 30, 0.55);
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--color-sky) 24%, transparent), transparent 60%),
+    linear-gradient(180deg, oklch(0.985 0.008 240) 0%, oklch(0.93 0.03 235) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--color-sky) 22%, transparent),
+    0 10px 24px -18px oklch(0.55 0.14 240 / 45%);
 }
 
-/* ============ AMBIENT DEPTH — for premium editorial sections ============ */
-
-/* Very fine noise/grain — adds tactile paper feel to flat surfaces */
+/* Ambient depth */
 @utility grain {
   position: relative;
   isolation: isolate;
@@ -290,27 +298,24 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.03;
   mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.09  0 0 0 0 0.15  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.20  0 0 0 0 0.40  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
-/* Editorial hairline grid — architectural blueprint feel */
 @utility editorial-grid {
   background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--color-foreground) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--color-foreground) 4%, transparent) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in oklab, var(--color-primary) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-primary) 5%, transparent) 1px, transparent 1px);
   background-size: 80px 80px;
 }
 
-/* Soft warm light halo — like sunlight through a window */
 @utility light-halo {
   background:
-    radial-gradient(60% 45% at 20% 0%, color-mix(in oklab, var(--color-gold) 10%, transparent), transparent 70%),
-    radial-gradient(50% 40% at 90% 100%, color-mix(in oklab, var(--color-gold) 6%, transparent), transparent 70%);
+    radial-gradient(60% 45% at 20% 0%, color-mix(in oklab, var(--color-sky) 22%, transparent), transparent 70%),
+    radial-gradient(50% 40% at 90% 100%, color-mix(in oklab, var(--color-primary) 10%, transparent), transparent 70%);
 }
 
-/* Slow breathing glow — animated ambient light */
 @utility ambient-glow {
   position: relative;
 }
@@ -320,17 +325,16 @@
   inset: -20% -10%;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-gold) 22%, transparent), transparent 70%);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-sky) 30%, transparent), transparent 70%);
   filter: blur(60px);
-  opacity: 0.6;
+  opacity: 0.55;
   animation: ambient-breathe 9s ease-in-out infinite;
 }
 @keyframes ambient-breathe {
-  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.5; }
-  50%      { transform: scale(1.08) translate(2%, -2%); opacity: 0.75; }
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.45; }
+  50%      { transform: scale(1.08) translate(2%, -2%); opacity: 0.7; }
 }
 
-/* Ken-burns — very slow cinematic image drift for hero */
 @utility ken-burns {
   animation: ken-burns 22s ease-in-out infinite alternate;
   will-change: transform;
@@ -340,7 +344,6 @@
   100% { transform: scale(1.12) translate(-1.5%, -1%); }
 }
 
-/* Floating orb — for hero decoration */
 @keyframes orb-float {
   0%, 100% { transform: translate(0, 0); }
   50%      { transform: translate(2%, -3%); }
@@ -348,14 +351,29 @@
 .orb-float { animation: orb-float 11s ease-in-out infinite; }
 .orb-float-slow { animation: orb-float 16s ease-in-out infinite reverse; }
 
-/* Hairline editorial divider between sections */
 @utility rule-editorial {
   position: relative;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-foreground) 14%, transparent) 20%, color-mix(in oklab, var(--color-foreground) 14%, transparent) 80%, transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-primary) 22%, transparent) 20%, color-mix(in oklab, var(--color-primary) 22%, transparent) 80%, transparent);
 }
 
-/* Reduced motion — kill all non-essential motion */
+/* Offers modal — pop and confetti-shimmer feel */
+@keyframes offer-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes offer-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes offer-shine {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(220%)  skewX(-18deg); }
+}
+.offer-enter { animation: offer-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.offer-backdrop-enter { animation: offer-backdrop-in 320ms ease-out both; }
+.offer-shine { animation: offer-shine 2.6s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -363,8 +381,6 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .marquee, .ken-burns, .orb-float, .orb-float-slow { animation: none !important; }
+  .marquee, .ken-burns, .orb-float, .orb-float-slow, .offer-shine { animation: none !important; }
   .ambient-glow::before { animation: none !important; }
 }
-
-
