@@ -26,6 +26,7 @@ export type Product = {
   is_new: boolean;
   is_sale: boolean;
   image_seed: string | null;
+  variations?: { sku: string; attrs: string[]; mrp: number | null; price: number | null }[] | null;
 };
 
 export type Category = {
