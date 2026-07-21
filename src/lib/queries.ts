@@ -28,6 +28,7 @@ export type Product = {
   image_seed: string | null;
   family_slug?: string | null;
   variations?: { sku: string; attrs: string[]; mrp: number | null; price: number | null }[] | null;
+  price_from?: boolean;
 };
 
 export type Category = {
