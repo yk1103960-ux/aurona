@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowRight, ArrowUpRight, Search, Sparkles, Star } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -12,7 +13,6 @@ import { CollectionsGrid } from "@/components/collections/CollectionsGrid";
 import heroLux from "@/assets/hero-lux.jpg.asset.json";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
-import auronaLogo from "@/assets/aurona-logo.png.asset.json";
 
 const categoryImages = import.meta.glob<{ default: string }>(
   "../assets/categories/*.jpg",
