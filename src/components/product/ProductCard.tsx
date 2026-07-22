@@ -58,25 +58,27 @@ export function ProductCard({
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-primary/35 hover:shadow-sky">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-18px_rgba(10,132,209,0.35)]">
       <Link
         to="/products/$slug"
         params={{ slug: detailSlug }}
         search={detailSearch}
-        className="relative block overflow-hidden"
+        className="relative block overflow-hidden bg-gradient-to-b from-white via-white to-sky-50/40"
         aria-label={product.name}
       >
         <ProductImage
           product={product}
           categoryIcon={icon}
           className={cn(
-            "aspect-square w-full transform-gpu transition-transform duration-[700ms] ease-out will-change-transform group-hover:scale-[1.06]",
+            "aspect-square w-full transform-gpu transition-transform duration-[800ms] ease-out will-change-transform group-hover:scale-[1.07]",
             compact && "aspect-[5/4]",
           )}
           iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
         />
+        {/* soft ambient glow under product */}
+        <span className="pointer-events-none absolute inset-x-6 bottom-2 h-6 rounded-full bg-primary/15 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
         {/* subtle top sheen on hover */}
-        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
       </Link>
 
       {off > 0 && (
