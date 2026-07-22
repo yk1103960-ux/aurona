@@ -10,6 +10,7 @@ import { Counter } from "@/components/marketing/Counter";
 import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { CollectionsGrid } from "@/components/collections/CollectionsGrid";
+import { CategoryCircles } from "@/components/collections/CategoryCircles";
 import heroLux from "@/assets/hero-lux.jpg.asset.json";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
