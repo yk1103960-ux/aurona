@@ -244,6 +244,9 @@ function Home() {
         </div>
       </div>
 
+      {/* ============ CATEGORY CIRCLES — premium round tiles ============ */}
+      <CategoryCircles categories={cats} />
+
       {/* ============ CATEGORY EDITORIAL — bento collections ============ */}
       <CollectionsGrid categories={cats} />
 
