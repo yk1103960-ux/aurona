@@ -1,8 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, ArrowUpRight, Search, Sparkles, Star } from "lucide-react";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -43,19 +41,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const navigate = useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
   const sale = useSuspenseQuery(productsQuery({ sale: true, limit: 6 })).data;
   const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 6 })).data;
   const best = useSuspenseQuery(productsQuery({ bestseller: true, limit: 8 })).data;
   const news = useSuspenseQuery(productsQuery({ isNew: true, limit: 6 })).data;
-  const [q, setQ] = useState("");
+  void featured;
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!q.trim()) return;
-    navigate({ to: "/products", search: { q: q.trim() } as never });
-  };
 
   const marqueeItems = [
     "PAN India Delivery",
