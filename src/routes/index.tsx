@@ -100,8 +100,12 @@ function Home() {
       {/* ============ CATEGORY CIRCLES — premium round tiles ============ */}
       <CategoryCircles categories={cats} />
 
+      {/* ============ SALES OF THE DAY ============ */}
+      <SalesOfTheDay products={sale} />
+
       {/* ============ CATEGORY EDITORIAL — bento collections ============ */}
       <CollectionsGrid categories={cats} />
+
 
 
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
