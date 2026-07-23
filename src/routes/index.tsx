@@ -1,8 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, ArrowUpRight, Search, Sparkles, Star } from "lucide-react";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categoriesQuery, productsQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -11,7 +9,8 @@ import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { CollectionsGrid } from "@/components/collections/CollectionsGrid";
 import { CategoryCircles } from "@/components/collections/CategoryCircles";
-import heroLux from "@/assets/hero-lux.jpg.asset.json";
+import { HeroSlider } from "@/components/marketing/HeroSlider";
+import { SalesOfTheDay } from "@/components/marketing/SalesOfTheDay";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 
@@ -42,19 +41,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const navigate = useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
   const sale = useSuspenseQuery(productsQuery({ sale: true, limit: 6 })).data;
   const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 6 })).data;
   const best = useSuspenseQuery(productsQuery({ bestseller: true, limit: 8 })).data;
   const news = useSuspenseQuery(productsQuery({ isNew: true, limit: 6 })).data;
-  const [q, setQ] = useState("");
+  void featured;
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!q.trim()) return;
-    navigate({ to: "/products", search: { q: q.trim() } as never });
-  };
 
   const marqueeItems = [
     "PAN India Delivery",
@@ -69,167 +62,19 @@ function Home() {
 
   return (
     <div className="bg-background">
-      {/* ============ SKY HERO ============ */}
-      <section className="relative -mt-16 overflow-hidden product-gradient-hero text-foreground lg:-mt-20">
-        {/* backdrop image — very soft, blended into sky wash */}
-        <div className="absolute inset-0">
-          <img
-            src={heroLux.url}
-            alt=""
-            className="ken-burns h-full w-full object-cover object-center opacity-25 mix-blend-luminosity"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/55 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-          {/* ambient sky orbs */}
-          <div className="orb-float absolute -left-24 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-sky)_55%,transparent),transparent_70%)] blur-3xl" aria-hidden />
-          <div className="orb-float-slow absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-primary)_28%,transparent),transparent_70%)] blur-3xl" aria-hidden />
-          <div className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
-        </div>
+      {/* ============ HERO BANNER SLIDER ============ */}
+      <HeroSlider />
 
-        <div className="container-x relative pt-20 lg:pt-24">
-          {/* headline */}
-          <div className="relative min-h-[460px] py-8 sm:min-h-[520px] sm:py-12 lg:min-h-[600px] lg:py-16">
-            <motion.div
-              className="max-w-2xl"
-              initial="hidden"
-              animate="show"
-              variants={{
-                hidden: {},
-                show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
-              }}
-            >
-              <motion.div
-                variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } } }}
-                className="mb-4 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-3 py-1 backdrop-blur-sm"
-              >
-                <Sparkles className="h-3 w-3 text-gold" />
-                <span className="text-[10px] uppercase tracking-[0.22em] text-foreground/80">
-                  Winter Collection · 2026
-                </span>
-              </motion.div>
-
-              <h1 className="text-display text-[38px] leading-[0.98] tracking-tight sm:text-6xl lg:text-[96px]">
-                <motion.span
-                  className="block"
-                  variants={{ hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } } }}
-                >
-                  Light,
-                </motion.span>
-                <motion.span
-                  className="block italic text-primary"
-                  variants={{ hidden: { opacity: 0, y: 24, filter: "blur(8px)" }, show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } } }}
-                >
-                  sculpted
-                </motion.span>
-                <motion.span
-                  className="block"
-                  variants={{ hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } } }}
-                >
-                  for India.
-                </motion.span>
-              </h1>
-
-              <motion.p
-                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.7 } } }}
-                className="mt-5 max-w-md text-sm text-foreground/75 sm:text-base"
-              >
-                Seventeen years of manufacturing, distilled into fixtures, fans and
-                appliances that feel considered from the first click to the ceiling.
-              </motion.p>
-
-              <motion.div
-                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.7 } } }}
-                className="mt-6 flex flex-wrap items-center gap-3"
-              >
-                <Button
-                  asChild
-                  size="lg"
-                  className="group h-12 rounded-full bg-gold px-6 text-gold-foreground hover:bg-gold/90"
-                >
-                  <Link to="/products">
-                    Explore the collection
-                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="h-12 rounded-full border-foreground/25 bg-transparent px-6 text-foreground hover:bg-foreground/10"
-                >
-                  <Link to="/deals">Season deals</Link>
-                </Button>
-              </motion.div>
-
-              {/* inline search */}
-              <motion.form
-                variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.7 } } }}
-                onSubmit={submit}
-                className="mt-6 max-w-md"
-              >
-                <div className="flex items-center gap-3 rounded-full border border-foreground/20 bg-foreground/5 px-4 py-2 backdrop-blur">
-                  <Search className="h-4 w-4 text-foreground/60" />
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search chandeliers, fans, panel lights…"
-                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-foreground/50 focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-full bg-gold px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gold-foreground"
-                  >
-                    Go
-                  </button>
-                </div>
-              </motion.form>
-            </motion.div>
-
-            {/* featured floating card */}
-            {hero && (
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.9, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute bottom-6 right-0 hidden lg:block"
-              >
-                <Link
-                  to="/products/$slug"
-                  params={{ slug: hero.slug }}
-                  className="group block w-[280px] rounded-2xl border border-border bg-card/90 p-4 shadow-lift backdrop-blur-xl transition hover:border-primary/50 hover:shadow-sky"
-                >
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-primary">Featured</div>
-                  <div className="mt-2 flex items-start gap-3">
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
-                      <ProductImage product={hero} categoryIcon={hero.categories?.icon} className="h-full w-full" iconClassName="h-8 w-8" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="line-clamp-2 text-sm font-semibold text-foreground">
-                        {hero.name}
-                      </div>
-                      <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <Star className="h-3 w-3 fill-primary text-primary" /> {Number(hero.rating).toFixed(1)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                    <div className="text-base font-semibold text-foreground">{inr(hero.price)}</div>
-                    <ArrowUpRight className="h-4 w-4 text-primary transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                  </div>
-                </Link>
-              </motion.div>
-            )}
-          </div>
-
-          {/* counters */}
-          <div className="grid grid-cols-2 gap-6 border-t border-foreground/15 py-8 lg:grid-cols-4 lg:py-10">
-            <Counter to={17} suffix="+" label="Years crafting" />
-            <Counter to={150} suffix="+" label="Products shipped" />
-            <Counter to={1000} suffix="+" label="Retail partners" />
-            <Counter to={28} label="States delivered" />
-          </div>
+      {/* ============ COUNTERS ============ */}
+      <section className="border-b border-border bg-background">
+        <div className="container-x grid grid-cols-2 gap-6 py-8 lg:grid-cols-4 lg:py-10">
+          <Counter to={17} suffix="+" label="Years crafting" />
+          <Counter to={150} suffix="+" label="Products shipped" />
+          <Counter to={1000} suffix="+" label="Retail partners" />
+          <Counter to={28} label="States delivered" />
         </div>
       </section>
+
 
 
       {/* ============ MARQUEE ============ */}
@@ -247,8 +92,12 @@ function Home() {
       {/* ============ CATEGORY CIRCLES — premium round tiles ============ */}
       <CategoryCircles categories={cats} />
 
+      {/* ============ SALES OF THE DAY ============ */}
+      <SalesOfTheDay products={sale} />
+
       {/* ============ CATEGORY EDITORIAL — bento collections ============ */}
       <CollectionsGrid categories={cats} />
+
 
 
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}

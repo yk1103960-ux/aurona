@@ -7,10 +7,35 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { categoriesQuery } from "@/lib/queries";
+import { categoriesQuery, type Category } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-logo.png.asset.json";
+import auronaLogo from "@/assets/aurona-mark.png.asset.json";
+
+// Mega menu column layout (based on client's reference)
+const LED_COLUMNS: { title: string; slug: string }[][] = [
+  [
+    { title: "LED Bulbs", slug: "led-bulbs" },
+    { title: "Surface Panel", slug: "surface-panel" },
+  ],
+  [
+    { title: "Street Lights", slug: "street-lights" },
+    { title: "Panel Lights", slug: "panel-lights" },
+  ],
+  [
+    { title: "Interior Lights", slug: "interior-lights" },
+    { title: "Deep Lights", slug: "deep-lights" },
+  ],
+  [
+    { title: "Flood Lights", slug: "flood-lights" },
+    { title: "Decorative Lights", slug: "decorative-lights" },
+  ],
+  [
+    { title: "Tubelight", slug: "tube-lights" },
+    { title: "Outdoor Lights", slug: "outdoor-lights" },
+    { title: "Concealed Lights", slug: "concealed-lights" },
+  ],
+];
 
 export function Header() {
   const navigate = useNavigate();
@@ -19,10 +44,13 @@ export function Header() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [openMobile, setOpenMobile] = useState(false);
+  const [megaOpen, setMegaOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
+  const { data: cats = [] } = useQuery(categoriesQuery);
 
   useEffect(() => setOpenMobile(false), [pathname]);
+  useEffect(() => setMegaOpen(false), [pathname]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,20 +58,23 @@ export function Header() {
     navigate({ to: "/products", search: { q: q.trim() } as never });
   };
 
+  const catBySlug = (slug: string) => cats.find((c) => c.slug === slug);
+
   return (
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-40 transition-[background-color,backdrop-filter,border-color,box-shadow,height] duration-500",
-        "border-b bg-white/85 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70",
+        "border-b bg-white/90 backdrop-blur-xl supports-[backdrop-filter]:bg-white/75",
         scrolled
           ? "border-primary/10 shadow-[0_8px_28px_-16px_oklch(0.55_0.14_240/0.35)]"
           : "border-primary/8 shadow-[0_1px_0_0_oklch(0.55_0.14_240/0.06)]",
       )}
+      onMouseLeave={() => setMegaOpen(false)}
     >
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between gap-3 text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-10",
+          "container-x flex items-center justify-between gap-3 text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
           scrolled ? "h-16 lg:h-[72px]" : "h-[68px] lg:h-[84px]",
         )}
       >
@@ -59,46 +90,61 @@ export function Header() {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
-              <MobileMenu onClose={() => setOpenMobile(false)} />
+              <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
             </SheetContent>
           </Sheet>
-          <Link to="/" className="group flex min-w-0 items-center gap-3">
+          <Link to="/" className="group flex min-w-0 items-center gap-2.5">
             <img
               src={auronaLogo.url}
               alt="Aurona"
               className={cn(
-                "shrink-0 object-contain drop-shadow-[0_2px_6px_oklch(0.55_0.14_240/0.18)] transition-[height,width] duration-500",
-                scrolled ? "h-9 w-9 lg:h-10 lg:w-10" : "h-10 w-10 lg:h-[46px] lg:w-[46px]",
+                "shrink-0 object-contain drop-shadow-[0_2px_6px_oklch(0.55_0.14_240/0.20)] transition-[height,width] duration-500",
+                scrolled ? "h-9 w-9 lg:h-10 lg:w-10" : "h-10 w-10 lg:h-[48px] lg:w-[48px]",
               )}
             />
-            <span className="text-display text-[17px] font-semibold uppercase tracking-[0.34em] text-primary lg:text-[19px]">
+            <span className="text-display hidden text-[17px] font-semibold uppercase tracking-[0.32em] text-primary sm:block lg:text-[19px]">
               Aurona
             </span>
           </Link>
         </div>
 
-        {/* Center: premium nav */}
-        <nav className="hidden items-center justify-center gap-1 lg:flex">
-          {[
-            { label: "Shop", to: "/products" },
-            { label: "Collections", to: "/products" },
-            { label: "Interior Lighting", to: "/category/$slug", params: { slug: "interior-lights" } },
-            { label: "Mirror Lights", to: "/category/$slug", params: { slug: "mirror-lights" } },
-            { label: "About", to: "/about" },
-          ].map((n) => (
-            <Link
-              key={n.label}
-              to={n.to as never}
-              params={n.params as never}
-              className="group relative px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-foreground/72 transition-colors hover:text-primary"
-              activeProps={{ className: "text-primary" }}
+        {/* Center: primary nav */}
+        <nav className="hidden items-center justify-center gap-0.5 lg:flex">
+          <NavItem to="/">Home</NavItem>
+          <NavItem to="/products">All Products</NavItem>
+          <NavItem to="/products">Home Appliances</NavItem>
+
+          {/* LED Lightings mega trigger */}
+          <div
+            className="relative"
+            onMouseEnter={() => setMegaOpen(true)}
+          >
+            <button
+              type="button"
+              onClick={() => setMegaOpen((v) => !v)}
+              className={cn(
+                "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
+                megaOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
+              )}
+              aria-expanded={megaOpen}
+              aria-haspopup="true"
             >
               <span className="relative">
-                {n.label}
-                <span className="pointer-events-none absolute -bottom-1 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 group-hover:w-full" />
+                LED Lightings
+                <span className={cn(
+                  "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
+                  megaOpen ? "w-full" : "w-0 group-hover:w-full",
+                )} />
               </span>
-            </Link>
-          ))}
+              <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
+            </button>
+          </div>
+
+          <NavItem to="/affiliate">Affiliate With Us</NavItem>
+          <NavItem to="/careers">Career With Us</NavItem>
+          <NavItem to="/blogs">Blogs</NavItem>
+          <NavItem to="/about">About Us</NavItem>
+          <NavItem to="/contact">Contact Us</NavItem>
         </nav>
 
         {/* Right: actions */}
@@ -136,7 +182,59 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile inline search — hidden until scrolled to reduce clutter over hero */}
+      {/* LED Lightings Mega Menu — desktop */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_24px_50px_-24px_rgba(15,23,42,0.25)] backdrop-blur-xl transition-all duration-300 lg:block",
+          megaOpen ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
+        )}
+        onMouseEnter={() => setMegaOpen(true)}
+        onMouseLeave={() => setMegaOpen(false)}
+      >
+        <div className="container-x grid grid-cols-6 gap-6 py-8">
+          {LED_COLUMNS.map((col, ci) => (
+            <div key={ci} className="min-w-0">
+              {col.map((item) => {
+                const c = catBySlug(item.slug);
+                return (
+                  <div key={item.slug} className="mb-5 last:mb-0">
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: item.slug }}
+                      className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition hover:text-gold"
+                    >
+                      {item.title}
+                    </Link>
+                    <div className="mt-2 space-y-1.5">
+                      {c ? (
+                        <Link
+                          to="/category/$slug"
+                          params={{ slug: c.slug }}
+                          className="block text-[13px] text-foreground/75 transition hover:text-primary"
+                        >
+                          Shop all →
+                        </Link>
+                      ) : (
+                        <span className="block text-[12px] text-muted-foreground italic">Coming soon</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          <div className="col-span-1 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/8 via-white to-gold/10 p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold">Featured</div>
+            <div className="mt-2 text-display text-lg leading-tight text-primary">Winter Collection</div>
+            <p className="mt-2 text-[12px] text-muted-foreground">Ambient panels &amp; concealed lighting for warm interiors.</p>
+            <Link to="/featured" className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary hover:text-gold">
+              Explore →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile inline search — appears once scrolled */}
       {scrolled && (
         <div className="border-t border-primary/8 bg-white/60 px-3 py-2 backdrop-blur-xl lg:hidden">
           <form onSubmit={submit}>
@@ -159,8 +257,22 @@ export function Header() {
           </form>
         </div>
       )}
-
     </header>
+  );
+}
+
+function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <Link
+      to={to as never}
+      className="group relative px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-foreground/72 transition-colors hover:text-primary"
+      activeProps={{ className: "text-primary" }}
+    >
+      <span className="relative">
+        {children}
+        <span className="pointer-events-none absolute -bottom-1 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 group-hover:w-full" />
+      </span>
+    </Link>
   );
 }
 
@@ -188,11 +300,10 @@ function Badge({ count }: { count: number }) {
   );
 }
 
-function MobileMenu({ onClose }: { onClose: () => void }) {
-  const { data: cats = [] } = useQuery(categoriesQuery);
+function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }) {
   const groups = ["led-lighting", "fans", "home-appliances"] as const;
   const groupLabel: Record<string, string> = {
-    "led-lighting": "LED Lighting",
+    "led-lighting": "LED Lightings",
     fans: "Fans",
     "home-appliances": "Home Appliances",
   };
@@ -207,8 +318,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
-        <MobileLink to="/">Home</MobileLink>
-        <MobileLink to="/products">All Products</MobileLink>
+        <MobileLink to="/" onClose={onClose}>Home</MobileLink>
+        <MobileLink to="/products" onClose={onClose}>All Products</MobileLink>
         {groups.map((g) => (
           <details key={g} className="group border-t border-border">
             <summary className="flex cursor-pointer items-center justify-between px-3 py-3 text-sm font-semibold">
@@ -231,21 +342,21 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           </details>
         ))}
         <div className="mt-2 border-t border-border">
-          <MobileLink to="/about">About Us</MobileLink>
-          <MobileLink to="/affiliate">Affiliate</MobileLink>
-          <MobileLink to="/careers">Careers</MobileLink>
-          <MobileLink to="/blogs">Blogs</MobileLink>
-          <MobileLink to="/contact">Contact</MobileLink>
-          <MobileLink to={user ? "/account" : "/auth"}>{user ? "My Account" : "Sign In / Register"}</MobileLink>
+          <MobileLink to="/affiliate" onClose={onClose}>Affiliate With Us</MobileLink>
+          <MobileLink to="/careers" onClose={onClose}>Career With Us</MobileLink>
+          <MobileLink to="/blogs" onClose={onClose}>Blogs</MobileLink>
+          <MobileLink to="/about" onClose={onClose}>About Us</MobileLink>
+          <MobileLink to="/contact" onClose={onClose}>Contact Us</MobileLink>
+          <MobileLink to={user ? "/account" : "/auth"} onClose={onClose}>{user ? "My Account" : "Sign In / Register"}</MobileLink>
         </div>
       </div>
     </div>
   );
 }
 
-function MobileLink({ to, children }: { to: string; children: React.ReactNode }) {
+function MobileLink({ to, children, onClose }: { to: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <Link to={to} className="block border-t border-border px-3 py-3 text-sm font-semibold">
+    <Link to={to as never} onClick={onClose} className="block border-t border-border px-3 py-3 text-sm font-semibold">
       {children}
     </Link>
   );
