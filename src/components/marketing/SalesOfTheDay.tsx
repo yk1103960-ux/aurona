@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Clock, Flame } from "lucide-react";
 import type { Product } from "@/lib/queries";
+
+type SaleItem = Product & { categories?: { slug: string; name: string; icon: string | null } | null };
 import { ProductImage } from "@/components/product/ProductImage";
 import { inr, discountPct } from "@/lib/format";
 import { useEffect, useState } from "react";
@@ -27,7 +29,7 @@ function useCountdown(endHour = 23) {
   return `${pad(t.h)} : ${pad(t.m)} : ${pad(t.s)}`;
 }
 
-export function SalesOfTheDay({ products }: { products: Product[] }) {
+export function SalesOfTheDay({ products }: { products: SaleItem[] }) {
   const reduce = useReducedMotion();
   const timeLeft = useCountdown();
   if (products.length === 0) return null;
