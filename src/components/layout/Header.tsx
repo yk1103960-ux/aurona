@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery, type Category } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-mark.png.asset.json";
+import auronaLogo from "@/assets/aurona-wordmark.png.asset.json";
 
 // Mega menu column layout (based on client's reference)
 const LED_COLUMNS: { title: string; slug: string }[][] = [
@@ -93,18 +93,15 @@ export function Header() {
               <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
             </SheetContent>
           </Sheet>
-          <Link to="/" className="group flex min-w-0 items-center gap-2.5">
+          <Link to="/" className="group flex min-w-0 items-center" aria-label="Aurona — Go Fearless in the Dark">
             <img
               src={auronaLogo.url}
-              alt="Aurona"
+              alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "shrink-0 object-contain drop-shadow-[0_2px_6px_oklch(0.55_0.14_240/0.20)] transition-[height,width] duration-500",
-                scrolled ? "h-9 w-9 lg:h-10 lg:w-10" : "h-10 w-10 lg:h-[48px] lg:w-[48px]",
+                "w-auto shrink-0 object-contain drop-shadow-[0_2px_6px_oklch(0.55_0.14_240/0.18)] transition-[height] duration-500",
+                scrolled ? "h-8 lg:h-9" : "h-9 lg:h-11",
               )}
             />
-            <span className="text-display hidden text-[17px] font-semibold uppercase tracking-[0.32em] text-primary sm:block lg:text-[19px]">
-              Aurona
-            </span>
           </Link>
         </div>
 
@@ -311,10 +308,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border p-4">
-        <div className="flex items-center gap-3">
-          <img src={auronaLogo.url} alt="Aurona" className="h-10 w-10 object-contain" />
-          <span className="text-display text-lg font-semibold uppercase tracking-[0.32em] text-primary">Aurona</span>
-        </div>
+        <img src={auronaLogo.url} alt="Aurona — Go Fearless in the Dark" className="h-9 w-auto object-contain" />
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
