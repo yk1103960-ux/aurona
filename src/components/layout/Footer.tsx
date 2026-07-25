@@ -54,6 +54,8 @@ export function Footer() {
 
         <Col title="Company">
           <Link to="/about" className={cls}>About Aurona</Link>
+          <Link to="/leadership" className={cls}>Leadership Team</Link>
+          <Link to="/company-information" className={cls}>Company Information</Link>
           <Link to="/partner" className={cls}>Partner With Us</Link>
           <Link to="/careers" className={cls}>Careers</Link>
           <Link to="/blogs" className={cls}>Blogs</Link>
