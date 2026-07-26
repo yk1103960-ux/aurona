@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery, type Category } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-logo-new.png.asset.json";
+import auronaLogo from "@/assets/aurona-logo-2026.png.asset.json";
 
 // Mega menu column layout (based on client's reference)
 const LED_COLUMNS: { title: string; slug: string }[][] = [
@@ -100,10 +100,10 @@ export function Header() {
           >
             <img
               src={auronaLogo.url}
-              alt="Aurona"
+              alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto shrink-0 object-contain transition-[height] duration-500",
-                scrolled ? "h-10 lg:h-9" : "h-11 lg:h-11",
+                "w-auto max-w-[180px] shrink-0 object-contain mix-blend-multiply transition-[height] duration-500 sm:max-w-none",
+                scrolled ? "h-9 lg:h-9" : "h-11 lg:h-11",
               )}
             />
           </Link>
@@ -312,7 +312,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border p-4">
-        <img src={auronaLogo.url} alt="Aurona" className="h-10 w-auto object-contain" />
+        <img src={auronaLogo.url} alt="Aurona" className="h-9 w-auto object-contain mix-blend-multiply" />
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">

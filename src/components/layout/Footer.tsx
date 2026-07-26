@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Facebook, Instagram, Youtube, Linkedin, Twitter, MessageCircle, MapPin, Mail, Phone } from "lucide-react";
-import auronaLogo from "@/assets/aurona-logo-new.png.asset.json";
+import auronaLogo from "@/assets/aurona-logo-2026.png.asset.json";
 import { siteSettingsQuery } from "@/lib/settings";
 
 export function Footer() {
@@ -20,11 +20,7 @@ export function Footer() {
       <div className="container-x grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3">
-            <img src={auronaLogo.url} alt="Aurona" className="h-12 w-12 object-contain" />
-            <div>
-              <div className="text-display text-xl font-semibold text-primary">AURONA</div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Innovating the way</div>
-            </div>
+            <img src={auronaLogo.url} alt="Aurona — Go Fearless in the Dark" className="h-12 w-auto object-contain" />
           </div>
           <p className="mt-4 max-w-md text-sm text-muted-foreground">
             Aurona Lighting Industries manufactures premium LED lighting, fans and home appliances for
