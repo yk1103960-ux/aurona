@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery, type Category } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-wordmark.png.asset.json";
+import auronaLogo from "@/assets/aurona-logo-new.png.asset.json";
 
 // Mega menu column layout (based on client's reference)
 const LED_COLUMNS: { title: string; slug: string }[][] = [
@@ -74,32 +74,36 @@ export function Header() {
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between gap-3 text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
-          scrolled ? "h-16 lg:h-[72px]" : "h-[68px] lg:h-[84px]",
+          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
+          scrolled ? "h-[60px] lg:h-[72px]" : "h-[66px] lg:h-[84px]",
         )}
       >
-        {/* Left: hamburger + logo */}
-        <div className="flex min-w-0 items-center gap-3">
+        {/* Left: hamburger (mobile) + logo cluster */}
+        <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none lg:gap-3">
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
               <button
-                className="press grid h-11 w-11 shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-primary/8 lg:hidden"
+                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-primary/8 lg:hidden"
                 aria-label="Menu"
               >
-                <Menu className="h-[22px] w-[22px]" strokeWidth={1.75} />
+                <Menu className="h-6 w-6" strokeWidth={1.75} />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
               <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
             </SheetContent>
           </Sheet>
-          <Link to="/" className="group flex min-w-0 items-center" aria-label="Aurona — Go Fearless in the Dark">
+          <Link
+            to="/"
+            className="flex min-w-0 flex-1 items-center justify-center lg:flex-none lg:justify-start"
+            aria-label="Aurona — Go Fearless in the Dark"
+          >
             <img
               src={auronaLogo.url}
-              alt="Aurona — Go Fearless in the Dark"
+              alt="Aurona"
               className={cn(
-                "w-auto shrink-0 object-contain drop-shadow-[0_2px_6px_oklch(0.55_0.14_240/0.18)] transition-[height] duration-500",
-                scrolled ? "h-8 lg:h-9" : "h-9 lg:h-11",
+                "w-auto shrink-0 object-contain transition-[height] duration-500",
+                scrolled ? "h-10 lg:h-9" : "h-11 lg:h-11",
               )}
             />
           </Link>
@@ -170,10 +174,10 @@ export function Header() {
           </Link>
           <Link
             to="/cart"
-            className="relative grid h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105"
+            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
             aria-label="Cart"
           >
-            <ShoppingCart className="h-[19px] w-[19px]" strokeWidth={1.75} />
+            <ShoppingCart className="h-6 w-6 lg:h-[19px] lg:w-[19px]" strokeWidth={1.75} />
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
         </div>
@@ -308,7 +312,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border p-4">
-        <img src={auronaLogo.url} alt="Aurona — Go Fearless in the Dark" className="h-9 w-auto object-contain" />
+        <img src={auronaLogo.url} alt="Aurona" className="h-10 w-auto object-contain" />
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
