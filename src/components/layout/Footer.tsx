@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Facebook, Instagram, Youtube, Linkedin, Twitter, MessageCircle, MapPin, Mail, Phone } from "lucide-react";
-import auronaLogo from "@/assets/aurona-logo.png.asset.json";
+import auronaLogo from "@/assets/aurona-logo-new.png.asset.json";
 import { siteSettingsQuery } from "@/lib/settings";
 
 export function Footer() {
