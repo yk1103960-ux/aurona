@@ -21,7 +21,7 @@ type Slide = {
   ctaParams?: Record<string, string>;
 };
 
-const SLIDES: Slide[] = [
+const DEFAULT_SLIDES: Slide[] = [
   {
     image: b1,
     eyebrow: "Signature Collection",
