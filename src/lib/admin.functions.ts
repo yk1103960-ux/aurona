@@ -195,7 +195,7 @@ async function getShiprocketToken(): Promise<string> {
 
   const stillValid = row.auth_token_ciphertext && row.auth_token_expires_at &&
     new Date(row.auth_token_expires_at).getTime() > Date.now() + 60_000;
-  if (stillValid) return decryptJSON<{ token: string }>(row.auth_token_ciphertext).token;
+  if (stillValid) return decryptJSON<{ token: string }>(row.auth_token_ciphertext!).token;
 
   const creds = decryptJSON<{ email: string; password: string }>(row.credentials_ciphertext);
   const r = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
