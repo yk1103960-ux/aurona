@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /aurona-console-9f2x7k
+Disallow: /aurona-console-9f2x7k/
