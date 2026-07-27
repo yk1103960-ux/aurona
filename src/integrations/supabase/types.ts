@@ -124,6 +124,39 @@ export type Database = {
         }
         Relationships: []
       }
+      media_assets: {
+        Row: {
+          created_at: string
+          folder: string
+          id: string
+          mime_type: string | null
+          name: string
+          path: string
+          size_bytes: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          folder?: string
+          id?: string
+          mime_type?: string | null
+          name: string
+          path: string
+          size_bytes?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          folder?: string
+          id?: string
+          mime_type?: string | null
+          name?: string
+          path?: string
+          size_bytes?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -622,6 +655,7 @@ export type Database = {
           is_bestseller: boolean
           is_featured: boolean
           is_new: boolean
+          is_published: boolean
           is_sale: boolean
           material: string | null
           mrp: number
@@ -650,6 +684,7 @@ export type Database = {
           is_bestseller?: boolean
           is_featured?: boolean
           is_new?: boolean
+          is_published?: boolean
           is_sale?: boolean
           material?: string | null
           mrp: number
@@ -678,6 +713,7 @@ export type Database = {
           is_bestseller?: boolean
           is_featured?: boolean
           is_new?: boolean
+          is_published?: boolean
           is_sale?: boolean
           material?: string | null
           mrp?: number
