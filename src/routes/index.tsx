@@ -11,6 +11,7 @@ import { CollectionsGrid } from "@/components/collections/CollectionsGrid";
 import { CategoryCircles } from "@/components/collections/CategoryCircles";
 import { HeroSlider } from "@/components/marketing/HeroSlider";
 import { SalesOfTheDay } from "@/components/marketing/SalesOfTheDay";
+import { GoogleReviews } from "@/components/marketing/GoogleReviews";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 
