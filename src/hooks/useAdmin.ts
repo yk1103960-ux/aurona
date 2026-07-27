@@ -13,21 +13,22 @@ export function useAdmin() {
       return;
     }
     let cancel = false;
+    setIsAdmin(null);
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
-      if (!cancel) setIsAdmin(!!data);
+      if (!cancel) setIsAdmin(!error && !!data);
     })();
     return () => {
       cancel = true;
     };
   }, [user, authLoading]);
 
-  return { user, isAdmin, loading: authLoading || isAdmin === null };
+  return { user, isAdmin, loading: authLoading || (!!user && isAdmin === null) };
 }
 
 /** Subscribe to realtime changes for one or more tables. */
