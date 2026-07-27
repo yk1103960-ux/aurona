@@ -18,6 +18,8 @@ const FLOW = ["placed", "confirmed", "packed", "shipped", "out_for_delivery", "d
 function OrderDetailAdmin() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/orders/$id" });
   const qc = useQueryClient();
+  const pushShiprocket = useServerFn(pushOrderToShiprocket);
+  const [pushing, setPushing] = useState(false);
 
   const q = useQuery({
     queryKey: ["admin-order", id],
@@ -33,6 +35,16 @@ function OrderDetailAdmin() {
     if (error) return toast.error(error.message);
     toast.success(`Status → ${s}`);
     qc.invalidateQueries({ queryKey: ["admin-order", id] });
+  };
+
+  const doPush = async () => {
+    setPushing(true);
+    try {
+      const r = await pushShiprocket({ data: { orderId: id } });
+      toast.success(`Pushed to Shiprocket · AWB ${r.awb || "pending"}`);
+      qc.invalidateQueries({ queryKey: ["admin-order", id] });
+    } catch (e: any) { toast.error(e.message); }
+    setPushing(false);
   };
 
   const o = q.data;
