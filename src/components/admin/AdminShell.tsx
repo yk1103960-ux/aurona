@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -13,9 +13,14 @@ import {
   Settings,
   Shield,
   LogOut,
+  LockKeyhole,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/aurona-console-9f2x7k", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -36,8 +41,7 @@ export function AdminShell() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) nav({ to: "/auth", replace: true });
-    else if (!isAdmin) nav({ to: "/", replace: true });
+    if (user && !isAdmin) nav({ to: "/", replace: true });
   }, [user, isAdmin, loading, nav]);
 
   if (loading) {
@@ -47,11 +51,12 @@ export function AdminShell() {
       </div>
     );
   }
-  if (!user || !isAdmin) return null;
+  if (!user) return <AdminLogin />;
+  if (!isAdmin) return null;
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    nav({ to: "/auth", replace: true });
+    nav({ to: "/aurona-console-9f2x7k", replace: true });
   };
 
   return (
@@ -101,6 +106,119 @@ export function AdminShell() {
           <Outlet />
         </div>
       </main>
+    </div>
+  );
+}
+
+function AdminLogin() {
+  const nav = useNavigate();
+  const [email, setEmail] = useState("admin@aurona.in");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy(true);
+
+    const loginEmail = email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+
+    if (error || !data.user) {
+      setBusy(false);
+      toast.error("Invalid admin login details");
+      return;
+    }
+
+    const { data: role, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError || !role) {
+      await supabase.auth.signOut();
+      setBusy(false);
+      toast.error("This account is not authorized for admin access");
+      return;
+    }
+
+    setBusy(false);
+    toast.success("Admin access verified");
+    nav({ to: "/aurona-console-9f2x7k", replace: true });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-5 py-10 lg:grid-cols-[1fr_440px]">
+        <section className="hidden space-y-6 lg:block">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-sky-200">
+            <Shield className="h-4 w-4" /> Confidential Access
+          </div>
+          <div>
+            <h1 className="max-w-2xl text-5xl font-semibold leading-tight text-white">
+              Aurona Admin Console
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">
+              A separate secure entry point for managing products, orders, customers, media and storefront settings.
+            </p>
+          </div>
+          <div className="grid max-w-xl grid-cols-3 gap-3 text-xs text-slate-300">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Role verified</div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">No public signup</div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">Noindex route</div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-white/[0.07] p-6 shadow-2xl backdrop-blur sm:p-8">
+          <div className="mb-7 text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-sky-400 text-slate-950 shadow-lg shadow-sky-500/20">
+              <LockKeyhole className="h-6 w-6" />
+            </div>
+            <h2 className="mt-4 text-2xl font-semibold text-white">Admin Login</h2>
+            <p className="mt-1 text-sm text-slate-300">Enter the admin password to continue.</p>
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <Label htmlFor="admin-email" className="text-xs text-slate-200">Username / Email</Label>
+              <div className="relative mt-1.5">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="admin-email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="username"
+                  className="h-12 border-white/10 bg-white/10 pl-10 text-white placeholder:text-slate-400"
+                  placeholder="admin"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="admin-password" className="text-xs text-slate-200">Password</Label>
+              <div className="relative mt-1.5">
+                <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="admin-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  autoComplete="current-password"
+                  className="h-12 border-white/10 bg-white/10 pl-10 text-white placeholder:text-slate-400"
+                  placeholder="Admin password"
+                  required
+                />
+              </div>
+            </div>
+
+            <Button type="submit" disabled={busy} className="h-12 w-full rounded-xl bg-sky-400 font-semibold text-slate-950 hover:bg-sky-300">
+              {busy ? "Verifying…" : "Open Admin Panel"}
+            </Button>
+          </form>
+        </section>
+      </div>
     </div>
   );
 }

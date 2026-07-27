@@ -3,6 +3,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useLocation,
   useRouter,
   HeadContent,
   Scripts,
@@ -106,20 +107,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const isAdminConsole = location.pathname.startsWith("/aurona-console-9f2x7k");
   return (
     <QueryClientProvider client={queryClient}>
       <AuthListener />
       <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1 pt-16 pb-16 lg:pt-20 lg:pb-0">
+        {!isAdminConsole && <Header />}
+        <main className={isAdminConsole ? "flex-1" : "flex-1 pt-16 pb-16 lg:pt-20 lg:pb-0"}>
           <PageTransition>
             <Outlet />
           </PageTransition>
         </main>
-        <Footer />
-        <MobileBottomNav />
+        {!isAdminConsole && <Footer />}
+        {!isAdminConsole && <MobileBottomNav />}
       </div>
-      <OffersModal />
+      {!isAdminConsole && <OffersModal />}
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
