@@ -102,8 +102,9 @@ export function HeroSlider() {
             {...(i === 0 ? { fetchpriority: "high" as const } : { loading: "lazy" as const })}
             decoding="async"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40" />
+          <div className="absolute inset-y-0 left-0 w-[65%] bg-gradient-to-r from-black/70 to-transparent" />
         </motion.div>
       </AnimatePresence>
 
@@ -121,12 +122,25 @@ export function HeroSlider() {
               <span className="h-1 w-1 rounded-full bg-[color:var(--color-gold)]" />
               <span className="text-[10px] uppercase tracking-[0.24em] text-white/90">{s.eyebrow}</span>
             </div>
-            <h1 className="text-display text-[42px] leading-[0.98] tracking-tight sm:text-6xl lg:text-[92px]">
-              <span className="block">{s.title}</span>
-              <span className="block italic text-[color:var(--color-gold)]">{s.italic}</span>
-              {s.suffix && <span className="block">{s.suffix}</span>}
+            <h1
+              className="text-display text-[42px] leading-[0.98] tracking-tight sm:text-6xl lg:text-[92px]"
+              style={{ textShadow: "0 2px 24px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.8)" }}
+            >
+              <span className="block text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">{s.title}</span>
+              <span
+                className="block italic text-[color:var(--color-gold)]"
+                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 0 40px rgba(212,175,55,0.35)" }}
+              >
+                {s.italic}
+              </span>
+              {s.suffix && <span className="block text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">{s.suffix}</span>}
             </h1>
-            <p className="mt-5 max-w-md text-sm text-white/80 sm:text-base">{s.copy}</p>
+            <p
+              className="mt-5 max-w-md text-sm font-medium text-white sm:text-base"
+              style={{ textShadow: "0 1px 12px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8)" }}
+            >
+              {s.copy}
+            </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 to={s.ctaTo as never}
