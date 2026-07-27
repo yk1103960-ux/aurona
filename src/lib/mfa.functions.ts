@@ -18,14 +18,14 @@ export const mfaStatus = createServerFn({ method: "GET" })
 export const mfaBegin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { authenticator } = await import("otplib");
+    const { generateSecret, generateURI } = await import("otplib");
     const QRCode = (await import("qrcode")).default;
     const { encryptString } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const secret = authenticator.generateSecret();
+    const secret = generateSecret();
     const email = (context.claims?.email as string) ?? "admin";
-    const otpauth = authenticator.keyuri(email, ISSUER, secret);
+    const otpauth = generateURI({ issuer: ISSUER, label: email, secret });
     const qrDataUrl = await QRCode.toDataURL(otpauth);
 
     await supabaseAdmin.from("user_mfa").upsert({
@@ -43,16 +43,16 @@ export const mfaConfirm = createServerFn({ method: "POST" })
     z.object({ token: z.string().regex(/^\d{6}$/) }).parse(input)
   )
   .handler(async ({ data, context }) => {
-    const { authenticator } = await import("otplib");
+    const { verify } = await import("otplib");
     const { decryptString, encryptJSON } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
       .from("user_mfa").select("secret_ciphertext").eq("user_id", context.userId).maybeSingle();
     if (!row?.secret_ciphertext) throw new Error("Start enrolment first");
     const secret = decryptString(row.secret_ciphertext);
-    if (!authenticator.check(data.token, secret)) throw new Error("Incorrect code");
+    const result = await verify({ token: data.token, secret });
+    if (!result?.valid) throw new Error("Incorrect code");
 
-    // Generate 8 backup codes
     const codes = Array.from({ length: 8 }, () =>
       Math.random().toString(36).slice(2, 6).toUpperCase() + "-" +
       Math.random().toString(36).slice(2, 6).toUpperCase()
@@ -71,7 +71,7 @@ export const mfaVerify = createServerFn({ method: "POST" })
     z.object({ token: z.string().min(6).max(12) }).parse(input)
   )
   .handler(async ({ data, context }) => {
-    const { authenticator } = await import("otplib");
+    const { verify } = await import("otplib");
     const { decryptString, decryptJSON, encryptJSON } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin.from("user_mfa")
@@ -79,8 +79,12 @@ export const mfaVerify = createServerFn({ method: "POST" })
       .eq("user_id", context.userId).maybeSingle();
     if (!row?.verified_at) throw new Error("MFA not enrolled");
     const secret = decryptString(row.secret_ciphertext);
-    const clean = data.token.replace(/[\s-]/g, "").toUpperCase();
-    let ok = /^\d{6}$/.test(clean) && authenticator.check(clean, secret);
+    const clean = data.token.replace(/[\s-]/g, "");
+    let ok = false;
+    if (/^\d{6}$/.test(clean)) {
+      const r = await verify({ token: clean, secret });
+      ok = !!r?.valid;
+    }
     if (!ok && row.backup_codes_ciphertext) {
       const store = decryptJSON<{ codes: string[]; used: string[] }>(row.backup_codes_ciphertext);
       const codeUpper = data.token.trim().toUpperCase();
@@ -102,19 +106,17 @@ export const mfaVerify = createServerFn({ method: "POST" })
 export const mfaDisable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ token: z.string().min(6).max(12) }).parse(input)
+    z.object({ token: z.string().regex(/^\d{6}$/) }).parse(input)
   )
   .handler(async ({ data, context }) => {
-    // Require a valid current code before disabling — call verify inline
-    const { authenticator } = await import("otplib");
+    const { verify } = await import("otplib");
     const { decryptString } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin.from("user_mfa")
       .select("secret_ciphertext").eq("user_id", context.userId).maybeSingle();
     if (!row?.secret_ciphertext) throw new Error("MFA not enrolled");
-    if (!authenticator.check(data.token, decryptString(row.secret_ciphertext))) {
-      throw new Error("Incorrect code");
-    }
+    const r = await verify({ token: data.token, secret: decryptString(row.secret_ciphertext) });
+    if (!r?.valid) throw new Error("Incorrect code");
     await supabaseAdmin.from("user_mfa").delete().eq("user_id", context.userId);
     return { ok: true };
   });
