@@ -7,7 +7,7 @@ import { inr } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-export const Route = createFileRoute("/admin/orders")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/orders")({
   component: OrdersAdmin,
 });
 
@@ -69,7 +69,7 @@ function OrdersAdmin() {
             {(q.data ?? []).map((o) => (
               <tr key={o.id} className="hover:bg-slate-50 cursor-pointer">
                 <td className="p-3">
-                  <Link to="/admin/orders/$id" params={{ id: o.id }} className="font-medium hover:text-sky-600">{o.order_number}</Link>
+                  <Link to="/aurona-console-9f2x7k/orders/$id" params={{ id: o.id }} className="font-medium hover:text-sky-600">{o.order_number}</Link>
                 </td>
                 <td className="p-3">
                   <div>{o.full_name}</div>

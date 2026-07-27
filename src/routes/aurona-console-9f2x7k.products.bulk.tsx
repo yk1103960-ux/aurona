@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, Download, ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/admin/products/bulk")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/products/bulk")({
   component: BulkUpload,
 });
 
@@ -56,7 +56,7 @@ function BulkUpload() {
 
   return (
     <div className="space-y-4 max-w-4xl">
-      <Link to="/admin/products" className="text-sm text-slate-500 inline-flex items-center gap-1 hover:text-slate-900"><ArrowLeft className="w-4 h-4" /> Back</Link>
+      <Link to="/aurona-console-9f2x7k/products" className="text-sm text-slate-500 inline-flex items-center gap-1 hover:text-slate-900"><ArrowLeft className="w-4 h-4" /> Back</Link>
       <h1 className="text-2xl font-semibold">Bulk Upload Products</h1>
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
