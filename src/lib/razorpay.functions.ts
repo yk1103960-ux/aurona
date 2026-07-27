@@ -51,7 +51,6 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("orders").update({
       payment_provider_order_id: j.id,
-      payment_provider: "razorpay",
     }).eq("id", order.id);
 
     return {
