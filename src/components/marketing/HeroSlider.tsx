@@ -67,17 +67,38 @@ const SLIDES: Slide[] = [
 ];
 
 export function HeroSlider() {
+  const { data: cmsSlides } = useCmsBlocks("hero_slide");
+  const SLIDES = useMemo<Slide[]>(() => {
+    if (cmsSlides && cmsSlides.length > 0) {
+      return cmsSlides.map((b) => {
+        const p = (b.payload ?? {}) as Record<string, any>;
+        return {
+          image: p.image || b1,
+          eyebrow: p.eyebrow || "",
+          title: p.title || (b.title ?? ""),
+          italic: p.italic || "",
+          suffix: p.suffix,
+          copy: p.copy || "",
+          ctaLabel: p.ctaLabel || "Explore",
+          ctaTo: p.ctaTo || "/products",
+        } as Slide;
+      });
+    }
+    return DEFAULT_SLIDES;
+  }, [cmsSlides]);
+
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
-  const go = useCallback((n: number) => setI((n + SLIDES.length) % SLIDES.length), []);
+  const go = useCallback((n: number) => setI((n + SLIDES.length) % SLIDES.length), [SLIDES.length]);
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || SLIDES.length <= 1) return;
     const t = window.setInterval(() => setI((v) => (v + 1) % SLIDES.length), 5500);
     return () => window.clearInterval(t);
-  }, [paused]);
+  }, [paused, SLIDES.length]);
 
-  const s = SLIDES[i];
+  const s = SLIDES[Math.min(i, SLIDES.length - 1)];
+  if (!s) return null;
 
   return (
     <section
