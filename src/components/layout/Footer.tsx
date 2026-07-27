@@ -16,25 +16,26 @@ export function Footer() {
   ];
 
   return (
-    <footer className="mt-24 border-t border-border bg-surface">
-      <div className="container-x grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-5">
+    <footer className="relative mt-24 border-t border-primary/10 bg-gradient-to-b from-white via-surface/60 to-surface">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" aria-hidden />
+      <div className="container-x grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3">
-            <img src={auronaLogo.url} alt="Aurona — Go Fearless in the Dark" className="h-12 w-auto object-contain" />
+            <img src={auronaLogo.url} alt="Aurona — Go Fearless in the Dark" className="h-12 w-auto object-contain mix-blend-multiply" />
           </div>
-          <p className="mt-4 max-w-md text-sm text-muted-foreground">
+          <p className="mt-5 max-w-md text-[14px] leading-[1.75] text-muted-foreground">
             Aurona Lighting Industries manufactures premium LED lighting, fans and home appliances for
             modern India — trusted by 1000+ retailers and distributors nationwide since 2007.
           </p>
-          <div className="mt-5 space-y-2 text-sm text-muted-foreground">
-            <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {s?.address_line ?? "Aurona Lighting Industries, Jaipur, Rajasthan, India"}</div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> <a href={`tel:${(s?.support_phone ?? "").replace(/\s/g,"")}`} className="hover:text-foreground">{s?.support_phone ?? "+91 96025 70026"}</a></div>
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> <a href={`mailto:${s?.support_email ?? ""}`} className="hover:text-foreground">{s?.support_email ?? "support@auronalighting.com"}</a></div>
+          <div className="mt-6 space-y-3 text-[13.5px] text-muted-foreground">
+            <div className="flex items-start gap-3"><span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/8 text-primary"><MapPin className="h-3.5 w-3.5" /></span> <span className="pt-1">{s?.address_line ?? "Aurona Lighting Industries, Jaipur, Rajasthan, India"}</span></div>
+            <div className="flex items-center gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/8 text-primary"><Phone className="h-3.5 w-3.5" /></span> <a href={`tel:${(s?.support_phone ?? "").replace(/\s/g,"")}`} className="transition-colors hover:text-primary">{s?.support_phone ?? "+91 96025 70026"}</a></div>
+            <div className="flex items-center gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/8 text-primary"><Mail className="h-3.5 w-3.5" /></span> <a href={`mailto:${s?.support_email ?? ""}`} className="transition-colors hover:text-primary">{s?.support_email ?? "support@auronalighting.com"}</a></div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-7 flex flex-wrap gap-2">
             {socials.map(([href, Icn, label]) => (
-              <a key={label} href={href} target="_blank" rel="noreferrer" className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-background hover:text-gold" aria-label={label}>
-                <Icn className="h-4 w-4" />
+              <a key={label} href={href} target="_blank" rel="noreferrer" className="group grid h-10 w-10 place-items-center rounded-full border border-primary/15 bg-white text-muted-foreground shadow-[0_1px_2px_rgba(10,132,209,0.05)] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_10px_22px_-10px_rgba(10,132,209,0.5)]" aria-label={label}>
+                <Icn className="h-4 w-4 transition-transform group-hover:scale-110" />
               </a>
             ))}
           </div>
