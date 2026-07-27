@@ -28,8 +28,8 @@ async function writeAudit(params: {
     action: params.action,
     entity_type: params.entityType ?? null,
     entity_id: params.entityId ?? null,
-    before: params.before ?? null,
-    after: params.after ?? null,
+    before: (params.before ?? null) as any,
+    after: (params.after ?? null) as any,
   });
 }
 
