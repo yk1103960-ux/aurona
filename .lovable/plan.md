@@ -1,68 +1,58 @@
+# Phase 3 — Admin Panel Deferred Modules
 
-# Aurona — Parent/Child SKUs + PDP Variation Switching (Part 1)
+Building all six inside the existing `/aurona-console-9f2x7k` shell. Confidential-by-design: no credentials shown in UI, all writes go through server functions verifying `admin` role, secrets stored in Lovable Cloud secrets (never in DB).
 
-The current site keeps every SKU as an independent product. The uploaded workbook actually has 70 parent products with up to 9 variation axes (Watt, Output Colour, Body Colour, Shape, Pack Size, Oscillation, Tank Capacity, Size, Reflector Colour) → ~427 child SKUs. This plan wires that structure in without changing the current UI/UX, then adds the highest-value enhancements from your brief. Deeper items (admin dashboard, downloads library, reviews, brand pages, blogs CMS, etc.) are called out at the end as follow-up passes.
+## 1. Coupons & Offers
+- New tables: `coupons` (code, type flat/pct, value, min_order, max_discount, starts_at, expires_at, usage_limit, per_user_limit, eligible_roles[], active) and `coupon_redemptions` (coupon_id, user_id, order_id, amount).
+- Admin CRUD page `/aurona-console-9f2x7k/coupons`.
+- Server fn `validateCoupon({ code, subtotal, role, userId })` used at checkout — returns discount or reason.
+- Checkout gains coupon input; on order placement, `redeemCoupon` writes redemption row + increments usage.
 
-## 1. Data model (migration)
+## 2. Content / Banners CMS
+- New table: `cms_blocks` (key unique, type: hero_slide|promo_strip|sales_of_day|homepage_section, payload jsonb, sort_order, active, starts_at, ends_at).
+- Admin page `/aurona-console-9f2x7k/cms` — reorderable list, live JSON payload editor with typed forms per block type, media picker from existing `media_assets`.
+- Refactor `HeroSlider`, `SalesOfTheDay`, promo strips to read from `cms_blocks` (fallback to current hard-coded content if empty).
 
-New tables — additive, existing `products` untouched:
+## 3. Payment Gateway Settings (Razorpay BYOK, confidential)
+- New table: `payment_gateways` (provider unique, enabled, mode test|live, config_public jsonb — non-secret only like key_id, updated_at, updated_by). Never store secrets in DB.
+- Server fn `savePaymentGatewaySecret({ provider, keyId, keySecret, webhookSecret, mode })` — admin-only, writes `keyId` to `payment_gateways.config_public`, stores `RAZORPAY_KEY_SECRET` + `RAZORPAY_WEBHOOK_SECRET` via Lovable Cloud secrets (using set_secret internally). Client only sees masked "•••• last4" after save.
+- Admin page `/aurona-console-9f2x7k/payments` — Connect button opens modal, fields cleared on submit, values never re-displayed.
+- Checkout: server fn `createRazorpayOrder({ orderId })` → returns Razorpay order_id + public key_id. Client uses Razorpay checkout.js. Webhook route `/api/public/razorpay-webhook` verifies HMAC, marks order paid.
 
-- `product_families` — parent record. Columns: `slug`, `name`, `category_id`, `brand`, `main_sku`, `description`, `image_seed`, `is_featured/bestseller/new/sale`, aggregates (`min_price`, `max_price`, `total_stock`).
-- `product_variants` — one row per real SKU. Columns: `family_id`, `sku`, `attributes jsonb` (e.g. `{watt:"9W", body_colour:"White"}`), `mrp`, `price`, `retailer_price`, `distributor_price`, `moq`, `stock`, `weight_g`, `dims jsonb`, `pack_dims jsonb`, `image_seed`, `barcode`.
-- `variant_axes` — per-family axis metadata: `family_id`, `axis_key`, `label`, `sort_order` (drives the option pickers).
+## 4. Shiprocket Integration (BYOK, confidential)
+- Reuse `payment_gateways` pattern → new `shipping_providers` table with same shape.
+- Admin page `/aurona-console-9f2x7k/shipping` — Connect modal captures email + password (or API token), stored as `SHIPROCKET_EMAIL` / `SHIPROCKET_PASSWORD` secrets. UI shows "Connected · last verified …" only.
+- Server fns: `shiprocketAuth` (cached token in `site_settings` with expiry), `pushOrderToShiprocket({ orderId })`, `getTracking({ awb })`, `syncShiprocketStatuses` (cron-friendly).
+- Orders admin gains "Push to Shiprocket" button + AWB/tracking column.
+- Customer order tracking page reads AWB/status.
 
-GRANT SELECT to anon+authenticated (public catalog); writes via service role only. RLS on.
+## 5. Audit Logs
+- New table: `audit_logs` (actor_user_id, actor_email, action text, entity_type, entity_id, before jsonb, after jsonb, ip, user_agent, created_at). Append-only (RLS: admins select; only service_role insert).
+- Helper `logAudit()` called from every admin write server fn (products, categories, orders, coupons, cms, payments, shipping, roles).
+- Admin page `/aurona-console-9f2x7k/audit` — filter by actor/action/entity/date range, JSON diff viewer.
 
-Data load: parse `/mnt/user-uploads/SKU_Latest-3.xlsx` in a one-shot migration/insert — group rows by `Main SKU`, derive axes from the "Variations N / Value" pairs, keep SKUs verbatim. Existing `products` rows stay so nothing else breaks.
+## 6. Two-Factor Authentication (TOTP)
+- New table: `user_mfa` (user_id pk, secret_ciphertext, verified_at, backup_codes_ciphertext[], last_used_at). AES-256-GCM using `MFA_ENCRYPTION_KEY` (generated secret).
+- Server fns: `mfaBegin` (generate secret + QR otpauth URL), `mfaConfirm({ token })` (verify + mark verified + issue backup codes once), `mfaVerify({ token })` (login step), `mfaDisable`.
+- Admin-only enforcement: after password login, if user has admin role and no verified MFA, force enrolment before granting `/aurona-console-9f2x7k` access. If verified, require TOTP on every fresh session.
+- Account page for admins to view/regenerate backup codes.
 
-## 2. Queries + hook
+## Architecture / order
 
-- `familyQuery(slug)` → family + `variants[]` + `axes[]`.
-- `familyListQuery(filter)` → card data (min/max price, cover image, badges).
-- `useVariantSelection(family)` client hook — holds selected axis values, resolves the matching variant, exposes price/stock/sku/image without a page reload.
+Migration 1 — coupons, coupon_redemptions, cms_blocks, payment_gateways, shipping_providers, audit_logs, user_mfa (+ RLS + grants).
+Migration 2 — helper SQL fns: `log_admin_action`, `redeem_coupon`, MFA-required flag on profile view.
+Code pass A — Coupons + CMS + Audit Logs (no external creds).
+Code pass B — Payments (Razorpay) + Shiprocket admin UIs, secret-write server fns, webhook + checkout wiring.
+Code pass C — 2FA enrolment + enforcement, backup codes.
 
-## 3. PDP variation switching (existing route `src/routes/products.$slug.tsx`)
+Generated secrets I'll auto-create up front: `MFA_ENCRYPTION_KEY` (64 chars). Razorpay/Shiprocket secrets are captured only when you press Connect in the admin UI — nothing to paste in chat.
 
-Route resolves `slug` against `product_families` first, falls back to legacy `products` so old links keep working. When a family is loaded:
+## Notes / assumptions
 
-- Render axis pickers (chips for colour/watt, dropdown for pack size, etc.) above the qty/CTA block — same tokens, borders and typography already used on the PDP.
-- Selecting a chip updates SKU line, price, MRP strike-through, stock badge, image, and specs live (no refresh).
-- Cart/Buy-Now/Wishlist actions use the resolved variant id.
-- Spec table extended with weight, packed dims, MOQ, retailer/distributor pricing (shown only if user role warrants it — hidden for guests).
+- Existing checkout UI stays; Razorpay is added as a second payment method alongside COD. Admin can toggle either.
+- Cron for Shiprocket status sync: exposed as `/api/public/cron/sync-shipments` with HMAC-guarded token; wire actual schedule later.
+- All admin server fns wrapped with an `assertAdmin(context)` helper that also writes an audit row on success.
+- Audit logs are immutable (no UPDATE/DELETE policy).
+- If Cloud restricts programmatic secret writes from server fns, I'll fall back to storing secrets AES-encrypted in `payment_gateways.config_secret_ciphertext` using `MFA_ENCRYPTION_KEY` — still invisible to any DB reader.
 
-## 4. Listing + search + filters
-
-- `products` listing and category pages switch to family cards ("from ₹X" when variants differ). Card click → family PDP.
-- Filter panel gains: Brand, Series (parent product name prefix), Wattage, Colour, Pack Size, Availability, Price range, "Has offer". Filters query variant attributes via jsonb.
-- Search: extend existing search to match family name, main SKU, any variant SKU, and axis values; keep the current input + results UI.
-
-## 5. Related / bought-together / recently viewed
-
-- Related = same category, other families (already partially there — swap to families).
-- "Recently viewed" — `localStorage` list of family slugs, rendered in the existing tile grid on PDP + home.
-- "Frequently bought together" — same-category top 2 families, additive UI block on PDP.
-
-## 6. SEO polish (existing head() blocks only)
-
-- Family PDP `head()` fills real title/description/og:title/og:description from family data; `og:image` uses the resolved variant image.
-- Add JSON-LD `Product` + `Offer` (per selected variant, price range for family) inline in the PDP.
-- `robots.txt` + `sitemap.xml` regenerated from families.
-
-## 7. Not in this pass (called out so nothing is silently dropped)
-
-These are large modules on top of the current storefront — I'll do them as follow-up plans once the SKU model is live and you confirm scope:
-
-- Admin dashboard (bulk upload/edit, downloads uploads, offers, SEO fields, inventory).
-- Downloads library per product (datasheet/manual/warranty PDFs) — needs storage bucket + admin upload UI.
-- Reviews & Q&A, Notify-when-available, Request Quote / Bulk Enquiry forms + email.
-- Brand pages, Blogs/Resources CMS, Video library.
-- Compare tray, Save-for-later, product share sheet.
-- Part 2 items (retailer/distributor portal, Shiprocket, RBAC, analytics) — separate plan.
-
-## Technical notes
-
-- Migration is additive; legacy `products` rows remain readable so cart/order history doesn't break. New orders reference `variant_id`; old ones keep `product_id`.
-- Parsing runs server-side from the workbook I already have at `/mnt/user-uploads/SKU_Latest-3.xlsx`; SKUs preserved exactly.
-- All new UI reuses existing components (`Button`, `Tabs`, `ProductImage`, chips) so the visual language is unchanged.
-
-Approve and I'll ship steps 1–6 in one go, then queue the follow-up plan for the admin/CMS/portal work.
+Proceeding when you approve.
