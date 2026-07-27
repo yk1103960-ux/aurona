@@ -11,6 +11,7 @@ import { CollectionsGrid } from "@/components/collections/CollectionsGrid";
 import { CategoryCircles } from "@/components/collections/CategoryCircles";
 import { HeroSlider } from "@/components/marketing/HeroSlider";
 import { SalesOfTheDay } from "@/components/marketing/SalesOfTheDay";
+import { GoogleReviews } from "@/components/marketing/GoogleReviews";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 
@@ -287,8 +288,12 @@ function Home() {
         </div>
       </section>
 
+      {/* ============ Google Reviews ============ */}
+      <GoogleReviews />
+
       {/* ============ CTA — partner ============ */}
       <section className="container-x py-16 lg:py-24">
+
         <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground sm:p-14 lg:p-20">
           <div className="orb-float absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/25 blur-3xl" aria-hidden />
           <div className="orb-float-slow absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl" aria-hidden />
