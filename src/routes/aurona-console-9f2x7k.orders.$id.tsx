@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, Truck } from "lucide-react";
+import { pushOrderToShiprocket } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/orders/$id")({
   component: OrderDetailAdmin,
