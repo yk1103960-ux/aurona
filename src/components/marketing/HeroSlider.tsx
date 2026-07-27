@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useCmsBlocks } from "@/hooks/useCmsBlocks";
 import b1 from "@/assets/banners/banner-1.jpg";
 import b2 from "@/assets/banners/banner-2.jpg";
 import b3 from "@/assets/banners/banner-3.jpg";
