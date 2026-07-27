@@ -102,8 +102,9 @@ export function HeroSlider() {
             {...(i === 0 ? { fetchpriority: "high" as const } : { loading: "lazy" as const })}
             decoding="async"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40" />
+          <div className="absolute inset-y-0 left-0 w-[65%] bg-gradient-to-r from-black/70 to-transparent" />
         </motion.div>
       </AnimatePresence>
 
