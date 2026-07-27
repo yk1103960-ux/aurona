@@ -59,8 +59,17 @@ function OrderDetailAdmin() {
           <h1 className="text-2xl font-semibold">{o.order_number}</h1>
           <p className="text-sm text-slate-500">Placed {new Date(o.created_at).toLocaleString()}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> Print / Invoice</Button>
+          {!o.awb_code ? (
+            <Button variant="outline" onClick={doPush} disabled={pushing}>
+              <Truck className="w-4 h-4 mr-1" /> {pushing ? "Pushing…" : "Push to Shiprocket"}
+            </Button>
+          ) : (
+            <span className="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-md border border-emerald-200">
+              AWB {o.awb_code} · {o.courier_name}
+            </span>
+          )}
           <select value={o.status} onChange={(e) => setStatus(e.target.value)} className="h-10 border rounded-md px-3 text-sm bg-white">
             {FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
             <option value="cancelled">cancelled</option>
