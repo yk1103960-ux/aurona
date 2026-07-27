@@ -62,6 +62,48 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -121,6 +163,153 @@ export type Database = {
           parent_group?: string
           slug?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      cms_blocks: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_at: string | null
+          id: string
+          key: string
+          payload: Json
+          sort_order: number
+          starts_at: string | null
+          title: string | null
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          key: string
+          payload?: Json
+          sort_order?: number
+          starts_at?: string | null
+          title?: string | null
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          key?: string
+          payload?: Json
+          sort_order?: number
+          starts_at?: string | null
+          title?: string | null
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          discount_amount: number
+          id: string
+          order_id: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          discount_amount: number
+          id?: string
+          order_id?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          eligible_roles: string[]
+          expires_at: string | null
+          id: string
+          max_discount: number | null
+          min_order_value: number
+          per_user_limit: number
+          starts_at: string | null
+          times_used: number
+          type: Database["public"]["Enums"]["coupon_type"]
+          updated_at: string
+          usage_limit: number | null
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          eligible_roles?: string[]
+          expires_at?: string | null
+          id?: string
+          max_discount?: number | null
+          min_order_value?: number
+          per_user_limit?: number
+          starts_at?: string | null
+          times_used?: number
+          type: Database["public"]["Enums"]["coupon_type"]
+          updated_at?: string
+          usage_limit?: number | null
+          value: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          eligible_roles?: string[]
+          expires_at?: string | null
+          id?: string
+          max_discount?: number | null
+          min_order_value?: number
+          per_user_limit?: number
+          starts_at?: string | null
+          times_used?: number
+          type?: Database["public"]["Enums"]["coupon_type"]
+          updated_at?: string
+          usage_limit?: number | null
+          value?: number
         }
         Relationships: []
       }
@@ -205,59 +394,92 @@ export type Database = {
       orders: {
         Row: {
           address: string
+          awb_code: string | null
           city: string
+          courier_name: string | null
           created_at: string
           discount: number
+          discount_code: string | null
           email: string | null
           full_name: string
           id: string
           order_number: string
           payment_method: string
+          payment_provider_order_id: string | null
+          payment_provider_payment_id: string | null
+          payment_status: string
           phone: string
           pincode: string
+          shipment_id: string | null
+          shipment_provider: string | null
+          shipment_status: string | null
+          shipment_synced_at: string | null
           shipping: number
           state: string
           status: string
           subtotal: number
           total: number
+          tracking_url: string | null
           user_id: string
         }
         Insert: {
           address: string
+          awb_code?: string | null
           city: string
+          courier_name?: string | null
           created_at?: string
           discount?: number
+          discount_code?: string | null
           email?: string | null
           full_name: string
           id?: string
           order_number?: string
           payment_method?: string
+          payment_provider_order_id?: string | null
+          payment_provider_payment_id?: string | null
+          payment_status?: string
           phone: string
           pincode: string
+          shipment_id?: string | null
+          shipment_provider?: string | null
+          shipment_status?: string | null
+          shipment_synced_at?: string | null
           shipping?: number
           state: string
           status?: string
           subtotal: number
           total: number
+          tracking_url?: string | null
           user_id: string
         }
         Update: {
           address?: string
+          awb_code?: string | null
           city?: string
+          courier_name?: string | null
           created_at?: string
           discount?: number
+          discount_code?: string | null
           email?: string | null
           full_name?: string
           id?: string
           order_number?: string
           payment_method?: string
+          payment_provider_order_id?: string | null
+          payment_provider_payment_id?: string | null
+          payment_status?: string
           phone?: string
           pincode?: string
+          shipment_id?: string | null
+          shipment_provider?: string | null
+          shipment_status?: string | null
+          shipment_synced_at?: string | null
           shipping?: number
           state?: string
           status?: string
           subtotal?: number
           total?: number
+          tracking_url?: string | null
           user_id?: string
         }
         Relationships: []
@@ -373,6 +595,42 @@ export type Database = {
           user_id?: string | null
           warehouse_capacity?: string | null
           years_in_business?: string | null
+        }
+        Relationships: []
+      }
+      payment_gateways: {
+        Row: {
+          config_public: Json
+          config_secret_ciphertext: string | null
+          connected_at: string | null
+          enabled: boolean
+          mode: string
+          provider: string
+          secret_last4: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_public?: Json
+          config_secret_ciphertext?: string | null
+          connected_at?: string | null
+          enabled?: boolean
+          mode?: string
+          provider: string
+          secret_last4?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_public?: Json
+          config_secret_ciphertext?: string | null
+          connected_at?: string | null
+          enabled?: boolean
+          mode?: string
+          provider?: string
+          secret_last4?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -795,6 +1053,48 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_providers: {
+        Row: {
+          auth_token_ciphertext: string | null
+          auth_token_expires_at: string | null
+          config_public: Json
+          connected_at: string | null
+          credential_masked: string | null
+          credentials_ciphertext: string | null
+          enabled: boolean
+          last_verified_at: string | null
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auth_token_ciphertext?: string | null
+          auth_token_expires_at?: string | null
+          config_public?: Json
+          connected_at?: string | null
+          credential_masked?: string | null
+          credentials_ciphertext?: string | null
+          enabled?: boolean
+          last_verified_at?: string | null
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auth_token_ciphertext?: string | null
+          auth_token_expires_at?: string | null
+          config_public?: Json
+          connected_at?: string | null
+          credential_masked?: string | null
+          credentials_ciphertext?: string | null
+          enabled?: boolean
+          last_verified_at?: string | null
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           key: string
@@ -875,6 +1175,36 @@ export type Database = {
           },
         ]
       }
+      user_mfa: {
+        Row: {
+          backup_codes_ciphertext: string | null
+          created_at: string
+          last_used_at: string | null
+          secret_ciphertext: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          backup_codes_ciphertext?: string | null
+          created_at?: string
+          last_used_at?: string | null
+          secret_ciphertext: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          backup_codes_ciphertext?: string | null
+          created_at?: string
+          last_used_at?: string | null
+          secret_ciphertext?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -924,7 +1254,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      payment_gateways_public: {
+        Row: {
+          config_public: Json | null
+          connected_at: string | null
+          enabled: boolean | null
+          mode: string | null
+          provider: string | null
+          secret_last4: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config_public?: Json | null
+          connected_at?: string | null
+          enabled?: boolean | null
+          mode?: string | null
+          provider?: string | null
+          secret_last4?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config_public?: Json | null
+          connected_at?: string | null
+          enabled?: boolean | null
+          mode?: string | null
+          provider?: string | null
+          secret_last4?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_partner: {
@@ -948,6 +1307,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_mfa_enrolled: { Args: { _uid: string }; Returns: boolean }
       is_partner_approved: {
         Args: {
           _type: Database["public"]["Enums"]["partner_type"]
@@ -963,10 +1323,23 @@ export type Database = {
           status: string
         }[]
       }
+      redeem_coupon: {
+        Args: { _amount: number; _coupon_id: string; _order_id: string }
+        Returns: undefined
+      }
+      validate_coupon: {
+        Args: { _code: string; _subtotal: number }
+        Returns: {
+          coupon_id: string
+          discount: number
+          reason: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "customer" | "retailer" | "distributor" | "staff"
       application_status: "pending" | "under_review" | "approved" | "rejected"
+      coupon_type: "flat" | "percentage"
       partner_type:
         | "retailer"
         | "distributor"
@@ -1110,6 +1483,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "customer", "retailer", "distributor", "staff"],
       application_status: ["pending", "under_review", "approved", "rejected"],
+      coupon_type: ["flat", "percentage"],
       partner_type: [
         "retailer",
         "distributor",

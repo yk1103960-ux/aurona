@@ -79,9 +79,9 @@ function SettingsAdmin() {
         ))}
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
-        <div className="font-semibold mb-1">Payment & Shipping Providers</div>
-        Payment gateways (Razorpay, PhonePe, Stripe) and Shiprocket configuration will live in Phase 3 alongside audit logs and 2FA.
+      <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 text-sm text-sky-900">
+        <div className="font-semibold mb-1">Provider settings moved</div>
+        Payment gateways live under <b>Payments</b>, shipping under <b>Shipping</b>, and 2FA under <b>Security & 2FA</b>. All actions are recorded in <b>Audit Logs</b>.
       </div>
     </div>
   );
