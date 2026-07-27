@@ -18,15 +18,15 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/products", label: "Products", icon: Package },
-  { to: "/admin/categories", label: "Categories", icon: FolderTree },
-  { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { to: "/admin/customers", label: "Customers", icon: Users },
-  { to: "/admin/media", label: "Media", icon: ImageIcon },
-  { to: "/admin/coupons", label: "Coupons", icon: Ticket },
-  { to: "/admin/content", label: "Content", icon: Megaphone },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/aurona-console-9f2x7k", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/aurona-console-9f2x7k/products", label: "Products", icon: Package },
+  { to: "/aurona-console-9f2x7k/categories", label: "Categories", icon: FolderTree },
+  { to: "/aurona-console-9f2x7k/orders", label: "Orders", icon: ShoppingCart },
+  { to: "/aurona-console-9f2x7k/customers", label: "Customers", icon: Users },
+  { to: "/aurona-console-9f2x7k/media", label: "Media", icon: ImageIcon },
+  { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
+  { to: "/aurona-console-9f2x7k/content", label: "Content", icon: Megaphone },
+  { to: "/aurona-console-9f2x7k/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminShell() {

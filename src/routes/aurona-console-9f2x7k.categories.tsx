@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil } from "lucide-react";
 
-export const Route = createFileRoute("/admin/categories")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/categories")({
   component: CategoriesAdmin,
 });
 

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/admin/products/$id")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ProductEditor,
 });
 
@@ -31,7 +31,7 @@ const EMPTY: ProductForm = {
 };
 
 function ProductEditor() {
-  const { id } = useParams({ from: "/admin/products/$id" });
+  const { id } = useParams({ from: "/aurona-console-9f2x7k/products/$id" });
   const isNew = id === "new";
   const nav = useNavigate();
   const [f, setF] = useState<ProductForm>(EMPTY);
@@ -72,12 +72,12 @@ function ProductEditor() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(isNew ? "Product created" : "Saved");
-    if (isNew && data) nav({ to: "/admin/products/$id", params: { id: data.id } });
+    if (isNew && data) nav({ to: "/aurona-console-9f2x7k/products/$id", params: { id: data.id } });
   };
 
   return (
     <div className="space-y-4 max-w-4xl">
-      <Link to="/admin/products" className="text-sm text-slate-500 inline-flex items-center gap-1 hover:text-slate-900">
+      <Link to="/aurona-console-9f2x7k/products" className="text-sm text-slate-500 inline-flex items-center gap-1 hover:text-slate-900">
         <ArrowLeft className="w-4 h-4" /> Back to products
       </Link>
       <div className="flex items-center justify-between">

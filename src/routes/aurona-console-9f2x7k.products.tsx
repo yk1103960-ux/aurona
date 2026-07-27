@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, Copy, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/products")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/products")({
   component: ProductsAdmin,
 });
 
@@ -104,8 +104,8 @@ function ProductsAdmin() {
           <p className="text-sm text-slate-500">{q.data?.count ?? "…"} total</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => nav({ to: "/admin/products/bulk" })}>Bulk Upload</Button>
-          <Button onClick={() => nav({ to: "/admin/products/new" })}>
+          <Button variant="outline" onClick={() => nav({ to: "/aurona-console-9f2x7k/products/bulk" })}>Bulk Upload</Button>
+          <Button onClick={() => nav({ to: "/aurona-console-9f2x7k/products/new" })}>
             <Plus className="w-4 h-4 mr-1" /> New Product
           </Button>
         </div>
@@ -144,7 +144,7 @@ function ProductsAdmin() {
               <tr key={p.id} className="hover:bg-slate-50">
                 <td className="p-3"><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} /></td>
                 <td className="p-3">
-                  <Link to="/admin/products/$id" params={{ id: p.id }} className="font-medium hover:text-sky-600">{p.name}</Link>
+                  <Link to="/aurona-console-9f2x7k/products/$id" params={{ id: p.id }} className="font-medium hover:text-sky-600">{p.name}</Link>
                   <div className="text-xs text-slate-500">{p.slug}</div>
                 </td>
                 <td className="p-3 text-xs font-mono text-slate-600">{p.sku}</td>
@@ -160,7 +160,7 @@ function ProductsAdmin() {
                 </td>
                 <td className="p-3">
                   <div className="flex justify-end gap-1">
-                    <Link to="/admin/products/$id" params={{ id: p.id }} className="p-1.5 hover:bg-slate-100 rounded" title="Edit"><Pencil className="w-4 h-4" /></Link>
+                    <Link to="/aurona-console-9f2x7k/products/$id" params={{ id: p.id }} className="p-1.5 hover:bg-slate-100 rounded" title="Edit"><Pencil className="w-4 h-4" /></Link>
                     <button onClick={() => togglePublish(p.id, p.is_published)} className="p-1.5 hover:bg-slate-100 rounded" title={p.is_published ? "Hide" : "Publish"}>
                       {p.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>

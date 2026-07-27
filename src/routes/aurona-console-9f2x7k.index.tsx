@@ -8,7 +8,7 @@ import {
   Clock, CheckCircle2, XCircle, TrendingUp, FolderTree,
 } from "lucide-react";
 
-export const Route = createFileRoute("/admin/")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/")({
   component: AdminDashboard,
 });
 
@@ -86,11 +86,11 @@ function AdminDashboard() {
         <div className="bg-white rounded-xl border border-slate-200 lg:col-span-2">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <div className="font-semibold">Recent Orders</div>
-            <Link to="/admin/orders" className="text-xs text-sky-600 hover:underline">View all →</Link>
+            <Link to="/aurona-console-9f2x7k/orders" className="text-xs text-sky-600 hover:underline">View all →</Link>
           </div>
           <div className="divide-y">
             {(d?.recentOrders ?? []).map((o) => (
-              <Link key={o.id} to="/admin/orders/$id" params={{ id: o.id }} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
+              <Link key={o.id} to="/aurona-console-9f2x7k/orders/$id" params={{ id: o.id }} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
                 <div>
                   <div className="text-sm font-medium">{o.order_number}</div>
                   <div className="text-xs text-slate-500">{o.full_name} • {new Date(o.created_at).toLocaleDateString()}</div>
@@ -112,7 +112,7 @@ function AdminDashboard() {
           </div>
           <div className="divide-y">
             {(d?.lowStock ?? []).map((p) => (
-              <Link key={p.id} to="/admin/products/$id" params={{ id: p.id }} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
+              <Link key={p.id} to="/aurona-console-9f2x7k/products/$id" params={{ id: p.id }} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
                 <div className="text-sm truncate max-w-[70%]">{p.name}</div>
                 <div className="text-xs font-semibold text-rose-600">{p.stock} left</div>
               </Link>

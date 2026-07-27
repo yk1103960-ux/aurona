@@ -6,7 +6,7 @@ import { useRealtime } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-export const Route = createFileRoute("/admin/customers")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/customers")({
   component: CustomersAdmin,
 });
 

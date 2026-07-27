@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Printer } from "lucide-react";
 
-export const Route = createFileRoute("/admin/orders/$id")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/orders/$id")({
   component: OrderDetailAdmin,
 });
 
 const FLOW = ["placed", "confirmed", "packed", "shipped", "out_for_delivery", "delivered"] as const;
 
 function OrderDetailAdmin() {
-  const { id } = useParams({ from: "/admin/orders/$id" });
+  const { id } = useParams({ from: "/aurona-console-9f2x7k/orders/$id" });
   const qc = useQueryClient();
 
   const q = useQuery({
@@ -37,7 +37,7 @@ function OrderDetailAdmin() {
 
   return (
     <div className="space-y-4">
-      <Link to="/admin/orders" className="text-sm text-slate-500 inline-flex items-center gap-1 hover:text-slate-900"><ArrowLeft className="w-4 h-4" /> Back to orders</Link>
+      <Link to="/aurona-console-9f2x7k/orders" className="text-sm text-slate-500 inline-flex items-center gap-1 hover:text-slate-900"><ArrowLeft className="w-4 h-4" /> Back to orders</Link>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

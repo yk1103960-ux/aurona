@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, Trash2, Copy } from "lucide-react";
 
-export const Route = createFileRoute("/admin/media")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/media")({
   component: MediaLibrary,
 });
 
