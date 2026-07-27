@@ -85,7 +85,7 @@ export function Footer() {
   );
 }
 
-const cls = "text-muted-foreground hover:text-foreground";
+const cls = "text-muted-foreground transition-colors hover:text-primary hover:translate-x-0.5 inline-block duration-300";
 
 function Col({ title, children }: { title: string; children: React.ReactNode }) {
   return (

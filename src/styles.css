@@ -76,9 +76,10 @@
   --grad-gold:   linear-gradient(135deg, oklch(0.94 0.06 90) 0%, oklch(0.78 0.13 75) 100%);
   --grad-amber:  linear-gradient(135deg, oklch(0.96 0.04 85) 0%, oklch(0.86 0.09 75) 100%);
 
-  --shadow-soft: 0 1px 2px oklch(0.55 0.14 240 / 8%), 0 4px 20px -4px oklch(0.55 0.14 240 / 10%);
-  --shadow-lift: 0 1px 2px oklch(0.55 0.14 240 / 10%), 0 18px 34px -12px oklch(0.55 0.14 240 / 20%);
-  --shadow-sky:  0 24px 60px -24px oklch(0.60 0.16 240 / 45%);
+  --shadow-soft: 0 1px 2px oklch(0.55 0.14 240 / 6%), 0 6px 22px -6px oklch(0.55 0.14 240 / 12%);
+  --shadow-lift: 0 2px 4px oklch(0.55 0.14 240 / 8%), 0 22px 44px -14px oklch(0.55 0.14 240 / 22%);
+  --shadow-sky:  0 28px 70px -28px oklch(0.60 0.16 240 / 48%);
+  --shadow-premium: 0 1px 2px oklch(0.55 0.14 240 / 5%), 0 12px 30px -12px oklch(0.55 0.14 240 / 18%), inset 0 1px 0 oklch(1 0 0 / 60%);
 }
 
 :root {
@@ -227,6 +228,19 @@
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
 @utility shadow-lift { box-shadow: var(--shadow-lift); }
 @utility shadow-sky  { box-shadow: var(--shadow-sky); }
+@utility shadow-premium { box-shadow: var(--shadow-premium); }
+
+@utility card-premium {
+  background: linear-gradient(180deg, #ffffff 0%, oklch(0.985 0.008 240) 100%);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 10%, transparent);
+  box-shadow: var(--shadow-premium);
+  border-radius: 20px;
+}
+
+@utility hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-primary) 18%, transparent), transparent);
+}
 
 @layer base {
   * { border-color: var(--color-border); }
@@ -237,11 +251,11 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; font-weight: 500; }
-  h1 { line-height: 1.02; }
-  h2 { line-height: 1.08; }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.022em; font-weight: 500; color: var(--color-foreground); }
+  h1 { line-height: 1.02; letter-spacing: -0.03em; }
+  h2 { line-height: 1.08; letter-spacing: -0.025em; }
   h3 { line-height: 1.15; }
-  p  { line-height: 1.65; }
+  p  { line-height: 1.7; }
   ::selection { background: color-mix(in oklab, var(--color-primary) 20%, transparent); color: var(--color-foreground); }
 
   a, button, [role="button"], input, select, textarea, .transition, .transition-all, .transition-colors, .transition-transform, .transition-opacity {
