@@ -136,6 +136,12 @@ export function Header() {
 
         {/* Center: primary nav */}
         <nav className="hidden items-center justify-center gap-0.5 lg:flex">
+          <BrowseTrigger
+            isOpen={openMenu === "browse"}
+            onOpen={() => setOpenMenu("browse")}
+            onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
+          />
+          <span className="mx-1 h-4 w-px bg-primary/15" aria-hidden />
           <NavItem to="/">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
