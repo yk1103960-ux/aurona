@@ -97,16 +97,17 @@ export function Header() {
           </Sheet>
           <Link
             to="/"
-            className="flex min-w-0 flex-1 items-center justify-center lg:flex-none lg:justify-start"
+            className="flex min-w-0 flex-1 items-center justify-center px-2 py-1 lg:flex-none lg:justify-start lg:px-3 lg:py-1.5"
             aria-label="Aurona — Go Fearless in the Dark"
           >
             <img
               src={auronaLogo.url}
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto max-w-[180px] shrink-0 object-contain mix-blend-multiply transition-[height] duration-500 sm:max-w-none",
-                scrolled ? "h-9 lg:h-9" : "h-11 lg:h-11",
+                "w-auto shrink-0 object-contain mix-blend-multiply transition-[height] duration-500",
+                scrolled ? "h-10 lg:h-11" : "h-12 lg:h-14",
               )}
+              style={{ maxWidth: "none" }}
             />
           </Link>
         </div>
