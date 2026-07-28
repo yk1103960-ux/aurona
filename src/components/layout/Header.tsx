@@ -1,6 +1,28 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+const BROWSE_ICONS: Record<string, LucideIcon> = {
+  "led-bulbs": Lightbulb,
+  "street-lights": Lamp,
+  "panel-lights": LayoutPanelTop,
+  "interior-lights": LampDesk,
+  "deep-lights": Sun,
+  "flood-lights": Zap,
+  "decorative-lights": Sparkles,
+  "tube-lights": Grid3x3,
+  "outdoor-lights": TreePine,
+  "concealed-lights": LampCeiling,
+  "pedestal-fans": Fan,
+  "immersion-water-heater": Droplets,
+  "ceiling-fans": Fan,
+  "water-geysers": Bath,
+  "exhaust-fans": Wind,
+  heaters: Flame,
+  madhani: LampFloor,
+  "table-fans": Fan,
+};
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
@@ -292,7 +314,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
         <img src={auronaLogo.url} alt="Aurona" className="h-9 w-auto object-contain mix-blend-multiply" />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="scrollbar-visible flex-1 overflow-y-auto p-2">
         <MobileLink to="/" onClose={onClose}>Home</MobileLink>
         <MobileLink to="/products" onClose={onClose}>All Products</MobileLink>
         {groups.map((g) => (
@@ -504,32 +526,38 @@ function BrowsePanel({
       onMouseLeave={onLeave}
     >
       <div className="container-x grid grid-cols-[260px_1fr_320px] gap-0 py-0">
-        {/* Left: category list grouped */}
-        <div className="max-h-[70vh] overflow-y-auto border-r border-primary/10 bg-surface/40 py-4">
+        {/* Left: category list with icons */}
+        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-primary/10 bg-surface/40 py-3">
           {BROWSE_GROUPS.map((g) => (
-            <div key={g.group} className="mb-2">
-              <div className="px-5 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+            <div key={g.group} className="mb-1">
+              <div className="px-5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/70">
                 {g.label}
               </div>
-              {g.items.map((it) => (
-                <button
-                  key={it.slug}
-                  type="button"
-                  onMouseEnter={() => { setActiveSlug(it.slug); setHoverItem(null); }}
-                  className={cn(
-                    "flex w-full items-center justify-between gap-2 px-5 py-2.5 text-left text-[13px] font-semibold uppercase tracking-[0.12em] transition-colors",
-                    activeSlug === it.slug
-                      ? "bg-white text-primary"
-                      : "text-foreground/75 hover:bg-white hover:text-primary",
-                  )}
-                >
-                  <span className="truncate">{it.heading}</span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                </button>
-              ))}
+              {g.items.map((it) => {
+                const Icon = BROWSE_ICONS[it.slug] ?? Lightbulb;
+                const isActive = activeSlug === it.slug;
+                return (
+                  <button
+                    key={it.slug}
+                    type="button"
+                    onMouseEnter={() => { setActiveSlug(it.slug); setHoverItem(null); }}
+                    className={cn(
+                      "flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-left text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                      isActive
+                        ? "border-primary bg-white text-primary"
+                        : "border-transparent text-foreground/75 hover:bg-white hover:text-primary",
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-foreground/50")} strokeWidth={1.6} />
+                    <span className="flex-1 truncate">{it.heading}</span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                  </button>
+                );
+              })}
             </div>
           ))}
         </div>
+
 
         {/* Middle: subcategory items */}
         <div className="max-h-[70vh] overflow-y-auto px-8 py-6">
