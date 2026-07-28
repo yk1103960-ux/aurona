@@ -49,9 +49,9 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
         <div className="-mx-4 overflow-x-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex gap-5 px-4 pb-2 sm:gap-6 md:justify-center md:flex-wrap">
             {tiles.map((t, i) => {
-              const linkProps = t.hasCategory
-                ? ({ to: "/category/$slug", params: { slug: t.slug } } as const)
-                : ({ to: "/products", search: { q: t.name } as never } as const);
+              const linkProps: Record<string, unknown> = t.hasCategory
+                ? { to: "/category/$slug", params: { slug: t.slug } }
+                : { to: "/products", search: { q: t.name } };
               return (
                 <motion.div
                   key={t.slug}
