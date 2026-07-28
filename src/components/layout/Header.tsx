@@ -68,13 +68,14 @@ export function Header() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [openMobile, setOpenMobile] = useState(false);
-  const [megaOpen, setMegaOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<null | "led" | "appliance">(null);
+  const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
   const { data: cats = [] } = useQuery(categoriesQuery);
 
   useEffect(() => setOpenMobile(false), [pathname]);
-  useEffect(() => setMegaOpen(false), [pathname]);
+  useEffect(() => setOpenMenu(null), [pathname]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
