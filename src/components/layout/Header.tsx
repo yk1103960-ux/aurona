@@ -325,3 +325,101 @@ function MobileLink({ to, children, onClose }: { to: string; children: React.Rea
     </Link>
   );
 }
+
+function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpen: boolean; onOpen: () => void; onToggle: () => void }) {
+  return (
+    <div className="relative" onMouseEnter={onOpen}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
+          isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
+        )}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
+        <span className="relative">
+          {label}
+          <span className={cn(
+            "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
+            isOpen ? "w-full" : "w-0 group-hover:w-full",
+          )} />
+        </span>
+        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+      </button>
+    </div>
+  );
+}
+
+function MegaPanel({
+  open,
+  columns,
+  gridCols = 6,
+  onEnter,
+  onLeave,
+  catBySlug,
+}: {
+  open: boolean;
+  columns: { heading: string; slug: string; items: string[] }[][];
+  gridCols?: 5 | 6;
+  onEnter: () => void;
+  onLeave: () => void;
+  catBySlug: (slug: string) => Category | undefined;
+}) {
+  const colsClass = gridCols === 5 ? "grid-cols-5" : "grid-cols-6";
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
+        open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
+      )}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      <div className={cn("container-x grid gap-x-8 gap-y-6 py-10", colsClass)}>
+        {columns.map((col, ci) => (
+          <div key={ci} className="min-w-0 space-y-6">
+            {col.map((group) => {
+              const cat = catBySlug(group.slug);
+              return (
+                <div key={group.heading}>
+                  {cat ? (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: group.slug }}
+                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                    >
+                      {group.heading}
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/products"
+                      search={{ q: group.heading } as never}
+                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                    >
+                      {group.heading}
+                    </Link>
+                  )}
+                  <ul className="mt-3 space-y-2">
+                    {group.items.map((item) => (
+                      <li key={item}>
+                        <Link
+                          to="/products"
+                          search={{ q: item, cat: cat?.slug ?? "" } as never}
+                          className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
+                        >
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
