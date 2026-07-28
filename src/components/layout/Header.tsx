@@ -205,6 +205,12 @@ export function Header() {
         onLeave={() => setOpenMenu(null)}
         catBySlug={catBySlug}
       />
+      <BrowsePanel
+        open={openMenu === "browse"}
+        onEnter={() => setOpenMenu("browse")}
+        onLeave={() => setOpenMenu(null)}
+        cats={cats}
+      />
 
       {/* Mobile inline search — appears once scrolled */}
       {scrolled && (
