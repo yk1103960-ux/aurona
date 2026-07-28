@@ -12,28 +12,30 @@ import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogo from "@/assets/aurona-logo-2026.png.asset.json";
 
-// Mega menu column layout (based on client's reference)
-const LED_COLUMNS: { title: string; slug: string }[][] = [
+// Mega menu — matches client reference (6 columns, family names under each heading)
+type MegaGroup = { heading: string; slug: string; items: string[] };
+const LED_COLUMNS: MegaGroup[][] = [
   [
-    { title: "LED Bulbs", slug: "led-bulbs" },
-    { title: "Surface Panel", slug: "surface-panel" },
+    { heading: "LED Bulbs", slug: "led-bulbs", items: ["Power+ Night Bulb", "High Glow", "Hammer", "Inverter Bulbs"] },
   ],
   [
-    { title: "Street Lights", slug: "street-lights" },
-    { title: "Panel Lights", slug: "panel-lights" },
+    { heading: "Street Lights", slug: "street-lights", items: ["Lens", "Glass", "Slim Lens"] },
+    { heading: "Panel Lights", slug: "panel-lights", items: ["Slim Panel", "Backlit Panel", "Adjustable Panel"] },
   ],
   [
-    { title: "Interior Lights", slug: "interior-lights" },
-    { title: "Deep Lights", slug: "deep-lights" },
+    { heading: "Interior Lights", slug: "interior-lights", items: ["Delta COB", "Surface COB Cylinder", "Half Moon", "Mr. Four", "Mr. Four Small", "Mr. One", "Mr. Two", "Track Light"] },
   ],
   [
-    { title: "Flood Lights", slug: "flood-lights" },
-    { title: "Decorative Lights", slug: "decorative-lights" },
+    { heading: "Deep Light", slug: "deep-lights", items: ["Mini Junction", "Royal", "Hexa"] },
+    { heading: "Flood Light", slug: "flood-lights", items: ["Nova", "AuraLUX"] },
   ],
   [
-    { title: "Tubelight", slug: "tube-lights" },
-    { title: "Outdoor Lights", slug: "outdoor-lights" },
-    { title: "Concealed Lights", slug: "concealed-lights" },
+    { heading: "Decorative", slug: "decorative-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
+    { heading: "Tubelight", slug: "tube-lights", items: ["Batten"] },
+    { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden"] },
+  ],
+  [
+    { heading: "Concealed", slug: "concealed-lights", items: ["Razer", "Zio", "Cob", "Joy", "Nexa", "Zelly", "Zade", "Happy", "Aura"] },
   ],
 ];
 
