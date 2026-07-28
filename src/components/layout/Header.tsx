@@ -184,46 +184,22 @@ export function Header() {
         </div>
       </div>
 
-      {/* LED Lightings Mega Menu — desktop (matches client reference) */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
-          megaOpen ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
-        )}
-        onMouseEnter={() => setMegaOpen(true)}
-        onMouseLeave={() => setMegaOpen(false)}
-      >
-        <div className="container-x grid grid-cols-6 gap-x-8 gap-y-6 py-10">
-          {LED_COLUMNS.map((col, ci) => (
-            <div key={ci} className="min-w-0 space-y-6">
-              {col.map((group) => (
-                <div key={group.heading}>
-                  <Link
-                    to="/category/$slug"
-                    params={{ slug: group.slug }}
-                    className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
-                  >
-                    {group.heading}
-                  </Link>
-                  <ul className="mt-3 space-y-2">
-                    {group.items.map((item) => (
-                      <li key={item}>
-                        <Link
-                          to="/products"
-                          search={{ q: item, cat: catBySlug(group.slug)?.slug ?? "" } as never}
-                          className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
-                        >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Mega menu panels — desktop */}
+      <MegaPanel
+        open={openMenu === "led"}
+        columns={LED_COLUMNS}
+        onEnter={() => setOpenMenu("led")}
+        onLeave={() => setOpenMenu(null)}
+        catBySlug={catBySlug}
+      />
+      <MegaPanel
+        open={openMenu === "appliance"}
+        columns={APPLIANCE_COLUMNS}
+        gridCols={5}
+        onEnter={() => setOpenMenu("appliance")}
+        onLeave={() => setOpenMenu(null)}
+        catBySlug={catBySlug}
+      />
 
       {/* Mobile inline search — appears once scrolled */}
       {scrolled && (
