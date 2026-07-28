@@ -480,24 +480,6 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
   );
 }
 
-// Flattened catalog for browse panel — grouped by parent group
-const BROWSE_GROUPS: { group: string; label: string; items: { heading: string; slug: string; sub: string[] }[] }[] = [
-  {
-    group: "led-lighting",
-    label: "LED Lightings",
-    items: [
-      ...LED_COLUMNS.flat().map((g) => ({ heading: g.heading, slug: g.slug, sub: g.items })),
-    ],
-  },
-  {
-    group: "home-appliances",
-    label: "Home Appliances",
-    items: [
-      ...APPLIANCE_COLUMNS.flat().map((g) => ({ heading: g.heading, slug: g.slug, sub: g.items })),
-    ],
-  },
-];
-
 function BrowsePanel({
   open,
   onEnter,
@@ -509,12 +491,38 @@ function BrowsePanel({
   onLeave: () => void;
   cats: Category[];
 }) {
-  const flat = useMemo(() => BROWSE_GROUPS.flatMap((g) => g.items), []);
-  const [activeSlug, setActiveSlug] = useState<string>(flat[0]?.slug ?? "");
-  const [hoverItem, setHoverItem] = useState<string | null>(null);
+  const [activeSlug, setActiveSlug] = useState<string>("");
+  const [hoverProduct, setHoverProduct] = useState<null | { name: string; image_seed: string | null; slug: string; family_slug: string | null }>(null);
 
-  const active = flat.find((f) => f.slug === activeSlug) ?? flat[0];
-  const activeCat = cats.find((c) => c.slug === active?.slug);
+  // Initialise once cats load
+  useEffect(() => {
+    if (!activeSlug && cats.length > 0) setActiveSlug(cats[0].slug);
+  }, [cats, activeSlug]);
+
+  const activeCat = cats.find((c) => c.slug === activeSlug);
+
+  // Group cats by parent_group
+  const groups = useMemo(() => {
+    const map = new Map<string, Category[]>();
+    for (const c of cats) {
+      const g = c.parent_group ?? "other";
+      if (!map.has(g)) map.set(g, []);
+      map.get(g)!.push(c);
+    }
+    const labels: Record<string, string> = {
+      "led-lighting": "LED Lightings",
+      fans: "Fans",
+      "home-appliances": "Home Appliances",
+      other: "More",
+    };
+    return Array.from(map.entries()).map(([key, items]) => ({
+      key,
+      label: labels[key] ?? key,
+      items,
+    }));
+  }, [cats]);
+
+  const { data: products = [], isLoading } = useQuery(browseProductsByCategoryQuery(activeSlug));
 
   return (
     <div
@@ -526,21 +534,21 @@ function BrowsePanel({
       onMouseLeave={onLeave}
     >
       <div className="container-x grid grid-cols-[260px_1fr_320px] gap-0 py-0">
-        {/* Left: category list with icons */}
+        {/* Left: dynamic category list with icons */}
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-primary/10 bg-surface/40 py-3">
-          {BROWSE_GROUPS.map((g) => (
-            <div key={g.group} className="mb-1">
+          {groups.map((g) => (
+            <div key={g.key} className="mb-1">
               <div className="px-5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/70">
                 {g.label}
               </div>
-              {g.items.map((it) => {
-                const Icon = BROWSE_ICONS[it.slug] ?? Lightbulb;
-                const isActive = activeSlug === it.slug;
+              {g.items.map((c) => {
+                const Icon = BROWSE_ICONS[c.slug] ?? Lightbulb;
+                const isActive = activeSlug === c.slug;
                 return (
                   <button
-                    key={it.slug}
+                    key={c.slug}
                     type="button"
-                    onMouseEnter={() => { setActiveSlug(it.slug); setHoverItem(null); }}
+                    onMouseEnter={() => { setActiveSlug(c.slug); setHoverProduct(null); }}
                     className={cn(
                       "flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-left text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
                       isActive
@@ -549,7 +557,7 @@ function BrowsePanel({
                     )}
                   >
                     <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-foreground/50")} strokeWidth={1.6} />
-                    <span className="flex-1 truncate">{it.heading}</span>
+                    <span className="flex-1 truncate">{c.name}</span>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
                   </button>
                 );
@@ -558,41 +566,57 @@ function BrowsePanel({
           ))}
         </div>
 
-
-        {/* Middle: subcategory items */}
-        <div className="max-h-[70vh] overflow-y-auto px-8 py-6">
-          {active ? (
+        {/* Middle: products in active category */}
+        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto px-8 py-6">
+          {activeCat ? (
             <>
               <div className="mb-4 flex items-center justify-between">
                 <Link
                   to="/category/$slug"
-                  params={{ slug: active.slug }}
+                  params={{ slug: activeCat.slug }}
                   className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
                 >
-                  {active.heading}
+                  {activeCat.name}
                 </Link>
                 <Link
                   to="/category/$slug"
-                  params={{ slug: active.slug }}
+                  params={{ slug: activeCat.slug }}
                   className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
                 >
                   View all →
                 </Link>
               </div>
-              <ul className="grid grid-cols-2 gap-x-6 gap-y-2">
-                {active.sub.map((item) => (
-                  <li key={item}>
-                    <Link
-                      to="/products"
-                      search={{ q: item, cat: activeCat?.slug ?? "" } as never}
-                      onMouseEnter={() => setHoverItem(item)}
-                      className="group/mi block py-1.5 text-[13.5px] leading-snug text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
-                    >
-                      <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              {isLoading ? (
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-5 animate-pulse rounded bg-primary/5" />
+                  ))}
+                </div>
+              ) : products.length === 0 ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  No products yet in this category.
+                </div>
+              ) : (
+                <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                  {products.map((p) => {
+                    const targetSlug = p.family_slug ?? p.slug;
+                    return (
+                      <li key={p.slug}>
+                        <Link
+                          to="/products/$slug"
+                          params={{ slug: targetSlug }}
+                          onMouseEnter={() => setHoverProduct(p)}
+                          className="group/mi block py-1.5 text-[13.5px] leading-snug text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
+                        >
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">
+                            {p.name}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </>
           ) : (
             <div className="grid h-full place-items-center text-sm text-muted-foreground">
@@ -601,26 +625,31 @@ function BrowsePanel({
           )}
         </div>
 
-        {/* Right: image preview */}
+        {/* Right: hovered product preview */}
         <div className="border-l border-primary/10 bg-surface/30">
           <div className="bg-primary px-5 py-3 text-center text-[10px] font-bold uppercase tracking-[0.28em] text-primary-foreground">
             Product Image
           </div>
           <div className="grid h-[calc(70vh-46px)] place-items-center p-6">
-            {activeCat?.icon ? (
+            {hoverProduct ? (
               <div className="w-full">
                 <div className="aspect-square w-full overflow-hidden rounded-2xl border border-primary/10 bg-white">
-                  <img src={activeCat.icon} alt={active?.heading} className="h-full w-full object-cover" loading="lazy" />
+                  <ProductImage
+                    product={{ slug: hoverProduct.slug, name: hoverProduct.name, image_seed: hoverProduct.image_seed }}
+                    className="h-full w-full"
+                    categoryIcon={activeCat?.icon ?? null}
+                    eager
+                  />
                 </div>
-                <div className="mt-3 text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-foreground/80">
-                  {hoverItem ?? active?.heading}
+                <div className="mt-3 text-center text-[13px] font-semibold leading-tight text-foreground/85">
+                  {hoverProduct.name}
                 </div>
                 <Link
-                  to="/category/$slug"
-                  params={{ slug: active!.slug }}
+                  to="/products/$slug"
+                  params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
                   className="mt-3 block text-center text-[10px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
                 >
-                  Shop {active?.heading} →
+                  View product →
                 </Link>
               </div>
             ) : (
@@ -635,3 +664,4 @@ function BrowsePanel({
     </div>
   );
 }
+
