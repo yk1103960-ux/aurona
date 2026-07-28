@@ -127,10 +127,9 @@ export function Header() {
               src={auronaLogo.url}
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto shrink-0 object-contain mix-blend-multiply transition-[height] duration-500",
-                scrolled ? "h-10 lg:h-11" : "h-12 lg:h-14",
+                "w-auto shrink-0 object-contain mix-blend-multiply transition-[height,max-width] duration-500",
+                scrolled ? "h-9 max-w-[180px] lg:h-10 lg:max-w-[200px]" : "h-11 max-w-[200px] lg:h-12 lg:max-w-[220px]",
               )}
-              style={{ maxWidth: "none" }}
             />
           </Link>
         </div>
