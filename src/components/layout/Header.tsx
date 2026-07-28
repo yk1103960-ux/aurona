@@ -39,6 +39,28 @@ const LED_COLUMNS: MegaGroup[][] = [
   ],
 ];
 
+// Home Appliances mega menu — matches client reference (image 2)
+const APPLIANCE_COLUMNS: MegaGroup[][] = [
+  [
+    { heading: "Pedestal Fan", slug: "pedestal-fans", items: ["Breeze Master", "Ventura Spin", "Cool Crest", "Aero pulse", "Whirlflow", "Airglide"] },
+    { heading: "Immersion Water Heater", slug: "immersion-water-heater", items: ["Ecotherm"] },
+  ],
+  [
+    { heading: "Ceiling Fans", slug: "ceiling-fans", items: ["Optimus", "Optimus Deco", "Orion", "Primus", "Spinger", "Sonata", "Windsor"] },
+  ],
+  [
+    { heading: "Water Geysers", slug: "water-geysers", items: ["InstaHeat Plus", "Magma", "Heathub", "WarmNest", "ThermoFLEX"] },
+    { heading: "Exhaust Fans", slug: "exhaust-fans", items: ["Vento", "Vento Plus"] },
+  ],
+  [
+    { heading: "Room Heater", slug: "heaters", items: ["Sun Heater", "Tower", "Warmwhiz", "Radio", "Omega", "Maximus"] },
+  ],
+  [
+    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
+    { heading: "Table Fans", slug: "table-fans", items: ["Classic", "Magnus", "Rider", "AP Fan"] },
+  ],
+];
+
 export function Header() {
   const navigate = useNavigate();
   const cart = useCart();
