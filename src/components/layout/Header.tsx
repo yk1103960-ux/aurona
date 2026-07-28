@@ -314,7 +314,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
         <img src={auronaLogo.url} alt="Aurona" className="h-9 w-auto object-contain mix-blend-multiply" />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="scrollbar-visible flex-1 overflow-y-auto p-2">
         <MobileLink to="/" onClose={onClose}>Home</MobileLink>
         <MobileLink to="/products" onClose={onClose}>All Products</MobileLink>
         {groups.map((g) => (
