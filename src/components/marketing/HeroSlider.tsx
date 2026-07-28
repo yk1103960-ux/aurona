@@ -118,27 +118,30 @@ export function HeroSlider() {
       aria-roledescription="carousel"
       aria-label="Aurona featured collections"
     >
-      <AnimatePresence mode="sync">
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0"
-        >
-          <img
-            src={s.image}
-            alt={s.title + " " + s.italic}
-            className="h-full w-full object-cover"
-            {...(i === 0 ? { fetchpriority: "high" as const } : { loading: "lazy" as const })}
-            decoding="async"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40" />
-          <div className="absolute inset-y-0 left-0 w-[65%] bg-gradient-to-r from-black/70 to-transparent" />
-        </motion.div>
-      </AnimatePresence>
+      <div className="absolute inset-0" style={{ perspective: "1600px" }}>
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, rotateY: 22, scale: 1.08, x: "8%" }}
+            animate={{ opacity: 1, rotateY: 0, scale: 1, x: "0%" }}
+            exit={{ opacity: 0, rotateY: -22, scale: 1.02, x: "-8%" }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
+            style={{ transformStyle: "preserve-3d", transformOrigin: "center center" }}
+          >
+            <img
+              src={s.image}
+              alt={s.title + " " + s.italic}
+              className="h-full w-full object-cover"
+              {...(i === 0 ? { fetchpriority: "high" as const } : { loading: "lazy" as const })}
+              decoding="async"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40" />
+            <div className="absolute inset-y-0 left-0 w-[65%] bg-gradient-to-r from-black/70 to-transparent" />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       <div className="container-x relative flex h-full items-center pt-20 lg:pt-24">
         <AnimatePresence mode="wait">
