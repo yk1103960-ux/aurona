@@ -169,9 +169,9 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
           </div>
         </div>
 
-        {/* Slide progress bar + pagination dots */}
+        {/* Slide progress bar */}
         {pageCount > 1 && (
-          <div className="mt-5 flex flex-col items-center gap-3">
+          <div className="mt-5 flex justify-center">
             <div className="relative h-1 w-40 overflow-hidden rounded-full bg-border sm:w-56">
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width,transform] duration-500"
@@ -181,21 +181,9 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
                 }}
               />
             </div>
-            <div className="flex items-center justify-center gap-1.5">
-              {Array.from({ length: pageCount }).map((_, i) => (
-                <button
-                  key={i}
-                  aria-label={`Go to page ${i + 1}`}
-                  onClick={() => scrollToPage(i)}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all duration-300",
-                    i === page ? "w-6 bg-primary" : "w-1.5 bg-border hover:bg-primary/40",
-                  )}
-                />
-              ))}
-            </div>
           </div>
         )}
+
       </div>
     </section>
   );
