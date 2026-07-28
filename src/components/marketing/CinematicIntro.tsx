@@ -320,6 +320,12 @@ export function CinematicIntro() {
 
   if (!show) return null;
 
+  const skip = () => {
+    try { sessionStorage.setItem("aurona_intro_played", "1"); } catch {}
+    setFadeOut(true);
+    setTimeout(() => setShow(false), 500);
+  };
+
   return (
     <div
       aria-hidden
@@ -352,6 +358,42 @@ export function CinematicIntro() {
           mixBlendMode: "screen",
         }}
       />
+      {/* Small skip intro button */}
+      <button
+        type="button"
+        onClick={skip}
+        style={{
+          position: "absolute",
+          bottom: "max(14px, 2vh)",
+          right: "max(14px, 2vw)",
+          pointerEvents: "auto",
+          padding: "6px 12px",
+          fontSize: "11px",
+          lineHeight: 1,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "rgba(180,215,255,0.85)",
+          background: "rgba(8,18,36,0.55)",
+          border: "1px solid rgba(120,180,255,0.25)",
+          borderRadius: "999px",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(18,40,72,0.75)";
+          e.currentTarget.style.borderColor = "rgba(140,200,255,0.5)";
+          e.currentTarget.style.color = "rgba(220,240,255,1)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(8,18,36,0.55)";
+          e.currentTarget.style.borderColor = "rgba(120,180,255,0.25)";
+          e.currentTarget.style.color = "rgba(180,215,255,0.85)";
+        }}
+      >
+        Skip
+      </button>
       <style>{`
         @keyframes aurona-logo-reveal {
           0%, 55% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); filter: drop-shadow(0 0 0px rgba(120,190,255,0)) blur(20px); }
