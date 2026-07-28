@@ -94,7 +94,7 @@ export function Header() {
           ? "border-primary/10 shadow-[0_8px_28px_-16px_oklch(0.55_0.14_240/0.35)]"
           : "border-primary/8 shadow-[0_1px_0_0_oklch(0.55_0.14_240/0.06)]",
       )}
-      onMouseLeave={() => setMegaOpen(false)}
+      onMouseLeave={() => setOpenMenu(null)}
     >
       {/* Main bar */}
       <div
