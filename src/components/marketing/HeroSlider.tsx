@@ -65,6 +65,15 @@ const DEFAULT_SLIDES: Slide[] = [
     ctaTo: "/category/$slug",
     ctaParams: { slug: "flood-lights" },
   },
+  {
+    image: b5,
+    eyebrow: "Just landed",
+    title: "New season,",
+    italic: "new light.",
+    copy: "Fresh silhouettes, quieter motors, warmer temperatures — the latest Aurona drops.",
+    ctaLabel: "See new arrivals",
+    ctaTo: "/new-arrivals",
+  },
 ];
 
 export function HeroSlider() {
