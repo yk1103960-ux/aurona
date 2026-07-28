@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
@@ -68,7 +68,7 @@ export function Header() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [openMobile, setOpenMobile] = useState(false);
-  const [openMenu, setOpenMenu] = useState<null | "led" | "appliance">(null);
+  const [openMenu, setOpenMenu] = useState<null | "led" | "appliance" | "browse">(null);
   const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
@@ -127,16 +127,21 @@ export function Header() {
               src={auronaLogo.url}
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto shrink-0 object-contain mix-blend-multiply transition-[height] duration-500",
-                scrolled ? "h-10 lg:h-11" : "h-12 lg:h-14",
+                "w-auto shrink-0 object-contain mix-blend-multiply transition-[height,max-width] duration-500",
+                scrolled ? "h-9 max-w-[180px] lg:h-10 lg:max-w-[200px]" : "h-11 max-w-[200px] lg:h-12 lg:max-w-[220px]",
               )}
-              style={{ maxWidth: "none" }}
             />
           </Link>
         </div>
 
         {/* Center: primary nav */}
         <nav className="hidden items-center justify-center gap-0.5 lg:flex">
+          <BrowseTrigger
+            isOpen={openMenu === "browse"}
+            onOpen={() => setOpenMenu("browse")}
+            onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
+          />
+          <span className="mx-1 h-4 w-px bg-primary/15" aria-hidden />
           <NavItem to="/">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
@@ -199,6 +204,12 @@ export function Header() {
         onEnter={() => setOpenMenu("appliance")}
         onLeave={() => setOpenMenu(null)}
         catBySlug={catBySlug}
+      />
+      <BrowsePanel
+        open={openMenu === "browse"}
+        onEnter={() => setOpenMenu("browse")}
+        onLeave={() => setOpenMenu(null)}
+        cats={cats}
       />
 
       {/* Mobile inline search — appears once scrolled */}
@@ -419,6 +430,179 @@ function MegaPanel({
             })}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: () => void; onToggle: () => void }) {
+  return (
+    <div className="relative" onMouseEnter={onOpen}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        className={cn(
+          "group inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[11.5px] font-bold uppercase tracking-[0.22em] transition-all",
+          isOpen
+            ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_18px_-8px_oklch(0.55_0.14_240/0.55)]"
+            : "border-primary/20 bg-white text-primary hover:border-primary/40 hover:bg-primary/5",
+        )}
+      >
+        <LayoutGrid className="h-3.5 w-3.5" strokeWidth={2} />
+        Browse Categories
+        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+      </button>
+    </div>
+  );
+}
+
+// Flattened catalog for browse panel — grouped by parent group
+const BROWSE_GROUPS: { group: string; label: string; items: { heading: string; slug: string; sub: string[] }[] }[] = [
+  {
+    group: "led-lighting",
+    label: "LED Lightings",
+    items: [
+      ...LED_COLUMNS.flat().map((g) => ({ heading: g.heading, slug: g.slug, sub: g.items })),
+    ],
+  },
+  {
+    group: "home-appliances",
+    label: "Home Appliances",
+    items: [
+      ...APPLIANCE_COLUMNS.flat().map((g) => ({ heading: g.heading, slug: g.slug, sub: g.items })),
+    ],
+  },
+];
+
+function BrowsePanel({
+  open,
+  onEnter,
+  onLeave,
+  cats,
+}: {
+  open: boolean;
+  onEnter: () => void;
+  onLeave: () => void;
+  cats: Category[];
+}) {
+  const flat = useMemo(() => BROWSE_GROUPS.flatMap((g) => g.items), []);
+  const [activeSlug, setActiveSlug] = useState<string>(flat[0]?.slug ?? "");
+  const [hoverItem, setHoverItem] = useState<string | null>(null);
+
+  const active = flat.find((f) => f.slug === activeSlug) ?? flat[0];
+  const activeCat = cats.find((c) => c.slug === active?.slug);
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 lg:block",
+        open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
+      )}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      <div className="container-x grid grid-cols-[260px_1fr_320px] gap-0 py-0">
+        {/* Left: category list grouped */}
+        <div className="max-h-[70vh] overflow-y-auto border-r border-primary/10 bg-surface/40 py-4">
+          {BROWSE_GROUPS.map((g) => (
+            <div key={g.group} className="mb-2">
+              <div className="px-5 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+                {g.label}
+              </div>
+              {g.items.map((it) => (
+                <button
+                  key={it.slug}
+                  type="button"
+                  onMouseEnter={() => { setActiveSlug(it.slug); setHoverItem(null); }}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 px-5 py-2.5 text-left text-[13px] font-semibold uppercase tracking-[0.12em] transition-colors",
+                    activeSlug === it.slug
+                      ? "bg-white text-primary"
+                      : "text-foreground/75 hover:bg-white hover:text-primary",
+                  )}
+                >
+                  <span className="truncate">{it.heading}</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Middle: subcategory items */}
+        <div className="max-h-[70vh] overflow-y-auto px-8 py-6">
+          {active ? (
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <Link
+                  to="/category/$slug"
+                  params={{ slug: active.slug }}
+                  className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                >
+                  {active.heading}
+                </Link>
+                <Link
+                  to="/category/$slug"
+                  params={{ slug: active.slug }}
+                  className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
+                >
+                  View all →
+                </Link>
+              </div>
+              <ul className="grid grid-cols-2 gap-x-6 gap-y-2">
+                {active.sub.map((item) => (
+                  <li key={item}>
+                    <Link
+                      to="/products"
+                      search={{ q: item, cat: activeCat?.slug ?? "" } as never}
+                      onMouseEnter={() => setHoverItem(item)}
+                      className="group/mi block py-1.5 text-[13.5px] leading-snug text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
+                    >
+                      <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div className="grid h-full place-items-center text-sm text-muted-foreground">
+              Hover over a category to see products
+            </div>
+          )}
+        </div>
+
+        {/* Right: image preview */}
+        <div className="border-l border-primary/10 bg-surface/30">
+          <div className="bg-primary px-5 py-3 text-center text-[10px] font-bold uppercase tracking-[0.28em] text-primary-foreground">
+            Product Image
+          </div>
+          <div className="grid h-[calc(70vh-46px)] place-items-center p-6">
+            {activeCat?.icon ? (
+              <div className="w-full">
+                <div className="aspect-square w-full overflow-hidden rounded-2xl border border-primary/10 bg-white">
+                  <img src={activeCat.icon} alt={active?.heading} className="h-full w-full object-cover" loading="lazy" />
+                </div>
+                <div className="mt-3 text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-foreground/80">
+                  {hoverItem ?? active?.heading}
+                </div>
+                <Link
+                  to="/category/$slug"
+                  params={{ slug: active!.slug }}
+                  className="mt-3 block text-center text-[10px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                >
+                  Shop {active?.heading} →
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+                <ImageIcon className="h-10 w-10" strokeWidth={1.4} />
+                <span className="text-xs">Hover over a product to see details</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
