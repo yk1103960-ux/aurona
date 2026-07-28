@@ -62,7 +62,7 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
                   className="shrink-0"
                 >
                   <Link
-                    {...(linkProps as never)}
+                    {...(linkProps as { to: string })}
                     className="group flex w-[88px] flex-col items-center gap-2 sm:w-[104px]"
                   >
                     <div className="relative">
