@@ -77,7 +77,7 @@ export function Header() {
       <div
         className={cn(
           "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
-          scrolled ? "h-[60px] lg:h-[72px]" : "h-[66px] lg:h-[84px]",
+          scrolled ? "h-[68px] lg:h-[80px]" : "h-[76px] lg:h-[96px]",
         )}
       >
         {/* Left: hamburger (mobile) + logo cluster */}
