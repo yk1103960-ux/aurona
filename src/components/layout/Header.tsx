@@ -68,7 +68,7 @@ export function Header() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [openMobile, setOpenMobile] = useState(false);
-  const [openMenu, setOpenMenu] = useState<null | "led" | "appliance">(null);
+  const [openMenu, setOpenMenu] = useState<null | "led" | "appliance" | "browse">(null);
   const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
