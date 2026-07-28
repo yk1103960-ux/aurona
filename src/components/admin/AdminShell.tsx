@@ -42,6 +42,8 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/settings", label: "Settings", icon: Settings },
 ];
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 export function AdminShell() {
   const { user, isAdmin, loading } = useAdmin();
   const nav = useNavigate();
@@ -51,6 +53,29 @@ export function AdminShell() {
     if (loading) return;
     if (user && !isAdmin) nav({ to: "/", replace: true });
   }, [user, isAdmin, loading, nav]);
+
+  // Admin idle-session timeout: any inactivity beyond 30 minutes signs the
+  // admin out of the console. Keeps the audit trail tight and reduces the
+  // blast radius of an unattended workstation.
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut();
+        toast.info("Signed out due to inactivity");
+        nav({ to: "/aurona-console-9f2x7k", replace: true });
+      }, IDLE_TIMEOUT_MS);
+    };
+    const events: Array<keyof WindowEventMap> = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, [user, isAdmin, nav]);
 
   if (loading) {
     return (

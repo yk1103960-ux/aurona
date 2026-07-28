@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
-import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +14,8 @@ import {
   getShippingRates,
   type ShippingRate,
 } from "@/lib/shipping";
+import { useServerFn } from "@tanstack/react-start";
+import { placeOrder } from "@/lib/checkout.functions";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Aurona" }] }),
@@ -127,28 +128,34 @@ function CheckoutPage() {
     }
   };
 
+  const placeOrderFn = useServerFn(placeOrder);
   const place = async () => {
+    if (!selectedRate) {
+      toast.error("Please select a shipping method.");
+      return;
+    }
     setPlacing(true);
     try {
-      const { data: order, error } = await supabase.from("orders").insert({
-        user_id: user.id,
-        subtotal: cart.subtotal,
-        discount: cart.mrpTotal - cart.subtotal,
-        shipping, total, payment_method: f.payment_method,
-        full_name: f.full_name, phone: f.phone, email: f.email,
-        address: f.address, city: f.city, state: f.state, pincode: f.pincode,
-      }).select("id, order_number").single();
-      if (error) throw error;
-      const items = cart.items.map((i) => ({
-        order_id: order.id, product_id: i.product_id,
-        product_name: i.products.name, price: i.products.price, quantity: i.quantity,
-      }));
-      const { error: e2 } = await supabase.from("order_items").insert(items);
-      if (e2) throw e2;
-      await cart.clear.mutateAsync();
-      setDone(order.order_number);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to place order");
+      const result = await placeOrderFn({
+        data: {
+          address: {
+            full_name: f.full_name,
+            phone: f.phone,
+            email: f.email,
+            address: f.address,
+            city: f.city,
+            state: f.state,
+            pincode: f.pincode,
+          },
+          payment_method: f.payment_method as "cod" | "upi" | "card",
+          shipping_rate_id: selectedRate.id,
+        },
+      });
+      await cart.clear.mutateAsync().catch(() => {});
+      setDone(result.orderNumber);
+    } catch {
+      // Detailed errors are logged server-side; users see a generic message.
+      toast.error("Something went wrong. Please try again later.");
     } finally {
       setPlacing(false);
     }
