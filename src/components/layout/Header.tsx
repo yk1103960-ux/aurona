@@ -12,28 +12,30 @@ import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogo from "@/assets/aurona-logo-2026.png.asset.json";
 
-// Mega menu column layout (based on client's reference)
-const LED_COLUMNS: { title: string; slug: string }[][] = [
+// Mega menu — matches client reference (6 columns, family names under each heading)
+type MegaGroup = { heading: string; slug: string; items: string[] };
+const LED_COLUMNS: MegaGroup[][] = [
   [
-    { title: "LED Bulbs", slug: "led-bulbs" },
-    { title: "Surface Panel", slug: "surface-panel" },
+    { heading: "LED Bulbs", slug: "led-bulbs", items: ["Power+ Night Bulb", "High Glow", "Hammer", "Inverter Bulbs"] },
   ],
   [
-    { title: "Street Lights", slug: "street-lights" },
-    { title: "Panel Lights", slug: "panel-lights" },
+    { heading: "Street Lights", slug: "street-lights", items: ["Lens", "Glass", "Slim Lens"] },
+    { heading: "Panel Lights", slug: "panel-lights", items: ["Slim Panel", "Backlit Panel", "Adjustable Panel"] },
   ],
   [
-    { title: "Interior Lights", slug: "interior-lights" },
-    { title: "Deep Lights", slug: "deep-lights" },
+    { heading: "Interior Lights", slug: "interior-lights", items: ["Delta COB", "Surface COB Cylinder", "Half Moon", "Mr. Four", "Mr. Four Small", "Mr. One", "Mr. Two", "Track Light"] },
   ],
   [
-    { title: "Flood Lights", slug: "flood-lights" },
-    { title: "Decorative Lights", slug: "decorative-lights" },
+    { heading: "Deep Light", slug: "deep-lights", items: ["Mini Junction", "Royal", "Hexa"] },
+    { heading: "Flood Light", slug: "flood-lights", items: ["Nova", "AuraLUX"] },
   ],
   [
-    { title: "Tubelight", slug: "tube-lights" },
-    { title: "Outdoor Lights", slug: "outdoor-lights" },
-    { title: "Concealed Lights", slug: "concealed-lights" },
+    { heading: "Decorative", slug: "decorative-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
+    { heading: "Tubelight", slug: "tube-lights", items: ["Batten"] },
+    { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden"] },
+  ],
+  [
+    { heading: "Concealed", slug: "concealed-lights", items: ["Razer", "Zio", "Cob", "Joy", "Nexa", "Zelly", "Zade", "Happy", "Aura"] },
   ],
 ];
 
@@ -183,55 +185,44 @@ export function Header() {
         </div>
       </div>
 
-      {/* LED Lightings Mega Menu — desktop */}
+      {/* LED Lightings Mega Menu — desktop (matches client reference) */}
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_24px_50px_-24px_rgba(15,23,42,0.25)] backdrop-blur-xl transition-all duration-300 lg:block",
+          "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
           megaOpen ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
         )}
         onMouseEnter={() => setMegaOpen(true)}
         onMouseLeave={() => setMegaOpen(false)}
       >
-        <div className="container-x grid grid-cols-6 gap-6 py-8">
+        <div className="container-x grid grid-cols-6 gap-x-8 gap-y-6 py-10">
           {LED_COLUMNS.map((col, ci) => (
-            <div key={ci} className="min-w-0">
-              {col.map((item) => {
-                const c = catBySlug(item.slug);
-                return (
-                  <div key={item.slug} className="mb-5 last:mb-0">
-                    <Link
-                      to="/category/$slug"
-                      params={{ slug: item.slug }}
-                      className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition hover:text-gold"
-                    >
-                      {item.title}
-                    </Link>
-                    <div className="mt-2 space-y-1.5">
-                      {c ? (
+            <div key={ci} className="min-w-0 space-y-6">
+              {col.map((group) => (
+                <div key={group.heading}>
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: group.slug }}
+                    className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                  >
+                    {group.heading}
+                  </Link>
+                  <ul className="mt-3 space-y-2">
+                    {group.items.map((item) => (
+                      <li key={item}>
                         <Link
-                          to="/category/$slug"
-                          params={{ slug: c.slug }}
-                          className="block text-[13px] text-foreground/75 transition hover:text-primary"
+                          to="/products"
+                          search={{ q: item, cat: catBySlug(group.slug)?.slug ?? "" } as never}
+                          className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
-                          Shop all →
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
                         </Link>
-                      ) : (
-                        <span className="block text-[12px] text-muted-foreground italic">Coming soon</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           ))}
-          <div className="col-span-1 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/8 via-white to-gold/10 p-4">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold">Featured</div>
-            <div className="mt-2 text-display text-lg leading-tight text-primary">Winter Collection</div>
-            <p className="mt-2 text-[12px] text-muted-foreground">Ambient panels &amp; concealed lighting for warm interiors.</p>
-            <Link to="/featured" className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary hover:text-gold">
-              Explore →
-            </Link>
-          </div>
         </div>
       </div>
 

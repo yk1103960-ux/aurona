@@ -33,14 +33,15 @@ const LAYOUT: Array<{
   size: "xl" | "lg" | "md" | "sm";
   tone: "dark" | "light";
 }> = [
-  { slug: "interior-lights", span: "lg:col-span-7 lg:row-span-2", size: "xl", tone: "dark" },
-  { slug: "mirror-lights", span: "lg:col-span-5 lg:row-span-2", size: "lg", tone: "dark" },
+  // Row 1 (12): 7 + 5   Row 2 (12): 4 + 4 + 4   Row 3 (12): 5 + 4 + 3
+  { slug: "interior-lights",  span: "lg:col-span-7 lg:row-span-2", size: "xl", tone: "dark"  },
+  { slug: "tube-lights",      span: "lg:col-span-5 lg:row-span-2", size: "lg", tone: "dark"  },
   { slug: "concealed-lights", span: "lg:col-span-4 lg:row-span-2", size: "md", tone: "light" },
-  { slug: "panel-lights", span: "lg:col-span-4 lg:row-span-2", size: "md", tone: "light" },
-  { slug: "led-bulbs", span: "lg:col-span-4 lg:row-span-2", size: "md", tone: "light" },
-  { slug: "ceiling-fans", span: "lg:col-span-6 lg:row-span-2", size: "lg", tone: "dark" },
-  { slug: "heaters", span: "lg:col-span-3 lg:row-span-2", size: "sm", tone: "light" },
-  { slug: "tube-lights", span: "lg:col-span-3 lg:row-span-2", size: "sm", tone: "light" },
+  { slug: "panel-lights",     span: "lg:col-span-4 lg:row-span-2", size: "md", tone: "light" },
+  { slug: "led-bulbs",        span: "lg:col-span-4 lg:row-span-2", size: "md", tone: "light" },
+  { slug: "ceiling-fans",     span: "lg:col-span-5 lg:row-span-2", size: "lg", tone: "dark"  },
+  { slug: "flood-lights",     span: "lg:col-span-4 lg:row-span-2", size: "md", tone: "dark"  },
+  { slug: "heaters",          span: "lg:col-span-3 lg:row-span-2", size: "sm", tone: "light" },
 ];
 
 export function CollectionsGrid({ categories }: { categories: Category[] }) {
