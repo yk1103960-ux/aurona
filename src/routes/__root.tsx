@@ -124,7 +124,9 @@ function RootComponent() {
         {!isAdminConsole && <MobileBottomNav />}
       </div>
       {!isAdminConsole && <OffersModal />}
+      <CinematicIntro />
       <Toaster position="top-center" richColors closeButton />
+
     </QueryClientProvider>
   );
 }
