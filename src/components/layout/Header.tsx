@@ -139,33 +139,8 @@ export function Header() {
         <nav className="hidden items-center justify-center gap-0.5 lg:flex">
           <NavItem to="/">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
-          <NavItem to="/products">Home Appliances</NavItem>
-
-          {/* LED Lightings mega trigger */}
-          <div
-            className="relative"
-            onMouseEnter={() => setMegaOpen(true)}
-          >
-            <button
-              type="button"
-              onClick={() => setMegaOpen((v) => !v)}
-              className={cn(
-                "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
-                megaOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
-              )}
-              aria-expanded={megaOpen}
-              aria-haspopup="true"
-            >
-              <span className="relative">
-                LED Lightings
-                <span className={cn(
-                  "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
-                  megaOpen ? "w-full" : "w-0 group-hover:w-full",
-                )} />
-              </span>
-              <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
-            </button>
-          </div>
+          <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
+          <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
 
           <NavItem to="/affiliate">Affiliate With Us</NavItem>
           <NavItem to="/careers">Career With Us</NavItem>
