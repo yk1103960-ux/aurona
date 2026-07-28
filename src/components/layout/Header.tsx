@@ -1,6 +1,28 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+const BROWSE_ICONS: Record<string, LucideIcon> = {
+  "led-bulbs": Lightbulb,
+  "street-lights": Lamp,
+  "panel-lights": LayoutPanelTop,
+  "interior-lights": LampDesk,
+  "deep-lights": Sun,
+  "flood-lights": Zap,
+  "decorative-lights": Sparkles,
+  "tube-lights": Grid3x3,
+  "outdoor-lights": TreePine,
+  "concealed-lights": LampCeiling,
+  "pedestal-fans": Fan,
+  "immersion-water-heater": Droplets,
+  "ceiling-fans": Fan,
+  "water-geysers": Bath,
+  "exhaust-fans": Wind,
+  heaters: Flame,
+  madhani: LampFloor,
+  "table-fans": Fan,
+};
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
