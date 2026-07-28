@@ -8,14 +8,29 @@ const categoryImages = import.meta.glob<{ default: string }>(
   { eager: true },
 );
 
+// Curated collection order matches client reference (12 items)
+const CURATED = [
+  "interior-lights", "concealed-lights", "panel-lights", "tube-lights",
+  "street-lights", "flood-lights", "led-bulbs", "mirror-lights",
+  "ceiling-fans", "table-fans", "exhaust-fans", "heaters",
+];
+
 export function CategoryCircles({ categories }: { categories: Category[] }) {
   const reduce = useReducedMotion();
-  const tiles = categories
-    .map((c) => ({
-      cat: c,
-      image: categoryImages[`../../assets/categories/${c.slug}.jpg`]?.default,
-    }))
-    .filter((t) => t.image);
+  const bySlug = new Map(categories.map((c) => [c.slug, c] as const));
+  const tiles = CURATED
+    .map((slug) => {
+      const image = categoryImages[`../../assets/categories/${slug}.jpg`]?.default;
+      if (!image) return null;
+      // Use DB category when available, otherwise render a display-only tile
+      // (mirror-lights doesn't exist as a category in DB — link to /products)
+      const cat = bySlug.get(slug);
+      const name =
+        cat?.name ??
+        slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+      return { slug, name, image, hasCategory: !!cat };
+    })
+    .filter(Boolean) as { slug: string; name: string; image: string; hasCategory: boolean }[];
 
   if (tiles.length === 0) return null;
 
