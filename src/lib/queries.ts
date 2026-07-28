@@ -316,3 +316,59 @@ export const familyProductsQuery = (skus: string[]) =>
       return map;
     },
   });
+
+// Lightweight product list for Browse Categories flyout (name, slug, image, family)
+export type BrowseProduct = {
+  slug: string;
+  name: string;
+  image_seed: string | null;
+  family_slug: string | null;
+};
+
+export const browseProductsByCategoryQuery = (categorySlug: string) =>
+  queryOptions({
+    queryKey: ["browse-products", categorySlug],
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    enabled: !!categorySlug,
+    queryFn: async (): Promise<BrowseProduct[]> => {
+      if (!categorySlug) return [];
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", categorySlug)
+        .maybeSingle();
+      if (!cat?.id) return [];
+      const { data } = await supabase
+        .from("products")
+        .select("slug, sku, name, image_seed")
+        .eq("category_id", cat.id)
+        .gt("price", 0)
+        .order("is_bestseller", { ascending: false })
+        .order("name")
+        .limit(24);
+      const rows = (data ?? []) as { slug: string; sku: string; name: string; image_seed: string | null }[];
+      const skus = rows.map((r) => r.sku).filter(Boolean);
+      const familyBySku = new Map<string, string>();
+      if (skus.length) {
+        const { data: links } = await supabase
+          .from("product_variants")
+          .select("sku, product_families(slug)")
+          .in("sku", skus);
+        for (const link of (links ?? []) as unknown as { sku: string; product_families?: { slug: string } | null }[]) {
+          if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
+        }
+      }
+      // De-dup by family (one entry per family), keep singles as-is
+      const seen = new Set<string>();
+      const out: BrowseProduct[] = [];
+      for (const r of rows) {
+        const fam = familyBySku.get(r.sku) ?? null;
+        const key = fam ?? r.slug;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ slug: r.slug, name: r.name, image_seed: r.image_seed, family_slug: fam });
+      }
+      return out.slice(0, 18);
+    },
+  });
