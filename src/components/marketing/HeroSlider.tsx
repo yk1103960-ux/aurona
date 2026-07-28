@@ -8,6 +8,7 @@ import b1 from "@/assets/banners/banner-1.jpg";
 import b2 from "@/assets/banners/banner-2.jpg";
 import b3 from "@/assets/banners/banner-3.jpg";
 import b4 from "@/assets/banners/banner-4.jpg";
+import b5 from "@/assets/banners/banner-5.jpg";
 
 type Slide = {
   image: string;
