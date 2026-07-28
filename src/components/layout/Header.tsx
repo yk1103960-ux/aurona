@@ -39,6 +39,28 @@ const LED_COLUMNS: MegaGroup[][] = [
   ],
 ];
 
+// Home Appliances mega menu — matches client reference (image 2)
+const APPLIANCE_COLUMNS: MegaGroup[][] = [
+  [
+    { heading: "Pedestal Fan", slug: "pedestal-fans", items: ["Breeze Master", "Ventura Spin", "Cool Crest", "Aero pulse", "Whirlflow", "Airglide"] },
+    { heading: "Immersion Water Heater", slug: "immersion-water-heater", items: ["Ecotherm"] },
+  ],
+  [
+    { heading: "Ceiling Fans", slug: "ceiling-fans", items: ["Optimus", "Optimus Deco", "Orion", "Primus", "Spinger", "Sonata", "Windsor"] },
+  ],
+  [
+    { heading: "Water Geysers", slug: "water-geysers", items: ["InstaHeat Plus", "Magma", "Heathub", "WarmNest", "ThermoFLEX"] },
+    { heading: "Exhaust Fans", slug: "exhaust-fans", items: ["Vento", "Vento Plus"] },
+  ],
+  [
+    { heading: "Room Heater", slug: "heaters", items: ["Sun Heater", "Tower", "Warmwhiz", "Radio", "Omega", "Maximus"] },
+  ],
+  [
+    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
+    { heading: "Table Fans", slug: "table-fans", items: ["Classic", "Magnus", "Rider", "AP Fan"] },
+  ],
+];
+
 export function Header() {
   const navigate = useNavigate();
   const cart = useCart();
@@ -46,13 +68,14 @@ export function Header() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
   const [openMobile, setOpenMobile] = useState(false);
-  const [megaOpen, setMegaOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<null | "led" | "appliance">(null);
+  const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
   const { data: cats = [] } = useQuery(categoriesQuery);
 
   useEffect(() => setOpenMobile(false), [pathname]);
-  useEffect(() => setMegaOpen(false), [pathname]);
+  useEffect(() => setOpenMenu(null), [pathname]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +94,7 @@ export function Header() {
           ? "border-primary/10 shadow-[0_8px_28px_-16px_oklch(0.55_0.14_240/0.35)]"
           : "border-primary/8 shadow-[0_1px_0_0_oklch(0.55_0.14_240/0.06)]",
       )}
-      onMouseLeave={() => setMegaOpen(false)}
+      onMouseLeave={() => setOpenMenu(null)}
     >
       {/* Main bar */}
       <div
@@ -116,33 +139,8 @@ export function Header() {
         <nav className="hidden items-center justify-center gap-0.5 lg:flex">
           <NavItem to="/">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
-          <NavItem to="/products">Home Appliances</NavItem>
-
-          {/* LED Lightings mega trigger */}
-          <div
-            className="relative"
-            onMouseEnter={() => setMegaOpen(true)}
-          >
-            <button
-              type="button"
-              onClick={() => setMegaOpen((v) => !v)}
-              className={cn(
-                "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
-                megaOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
-              )}
-              aria-expanded={megaOpen}
-              aria-haspopup="true"
-            >
-              <span className="relative">
-                LED Lightings
-                <span className={cn(
-                  "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
-                  megaOpen ? "w-full" : "w-0 group-hover:w-full",
-                )} />
-              </span>
-              <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
-            </button>
-          </div>
+          <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
+          <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
 
           <NavItem to="/affiliate">Affiliate With Us</NavItem>
           <NavItem to="/careers">Career With Us</NavItem>
@@ -186,46 +184,22 @@ export function Header() {
         </div>
       </div>
 
-      {/* LED Lightings Mega Menu — desktop (matches client reference) */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
-          megaOpen ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
-        )}
-        onMouseEnter={() => setMegaOpen(true)}
-        onMouseLeave={() => setMegaOpen(false)}
-      >
-        <div className="container-x grid grid-cols-6 gap-x-8 gap-y-6 py-10">
-          {LED_COLUMNS.map((col, ci) => (
-            <div key={ci} className="min-w-0 space-y-6">
-              {col.map((group) => (
-                <div key={group.heading}>
-                  <Link
-                    to="/category/$slug"
-                    params={{ slug: group.slug }}
-                    className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
-                  >
-                    {group.heading}
-                  </Link>
-                  <ul className="mt-3 space-y-2">
-                    {group.items.map((item) => (
-                      <li key={item}>
-                        <Link
-                          to="/products"
-                          search={{ q: item, cat: catBySlug(group.slug)?.slug ?? "" } as never}
-                          className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
-                        >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Mega menu panels — desktop */}
+      <MegaPanel
+        open={openMenu === "led"}
+        columns={LED_COLUMNS}
+        onEnter={() => setOpenMenu("led")}
+        onLeave={() => setOpenMenu(null)}
+        catBySlug={catBySlug}
+      />
+      <MegaPanel
+        open={openMenu === "appliance"}
+        columns={APPLIANCE_COLUMNS}
+        gridCols={5}
+        onEnter={() => setOpenMenu("appliance")}
+        onLeave={() => setOpenMenu(null)}
+        catBySlug={catBySlug}
+      />
 
       {/* Mobile inline search — appears once scrolled */}
       {scrolled && (
@@ -349,5 +323,103 @@ function MobileLink({ to, children, onClose }: { to: string; children: React.Rea
     <Link to={to as never} onClick={onClose} className="block border-t border-border px-3 py-3 text-sm font-semibold">
       {children}
     </Link>
+  );
+}
+
+function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpen: boolean; onOpen: () => void; onToggle: () => void }) {
+  return (
+    <div className="relative" onMouseEnter={onOpen}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
+          isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
+        )}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
+        <span className="relative">
+          {label}
+          <span className={cn(
+            "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
+            isOpen ? "w-full" : "w-0 group-hover:w-full",
+          )} />
+        </span>
+        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+      </button>
+    </div>
+  );
+}
+
+function MegaPanel({
+  open,
+  columns,
+  gridCols = 6,
+  onEnter,
+  onLeave,
+  catBySlug,
+}: {
+  open: boolean;
+  columns: { heading: string; slug: string; items: string[] }[][];
+  gridCols?: 5 | 6;
+  onEnter: () => void;
+  onLeave: () => void;
+  catBySlug: (slug: string) => Category | undefined;
+}) {
+  const colsClass = gridCols === 5 ? "grid-cols-5" : "grid-cols-6";
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
+        open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
+      )}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      <div className={cn("container-x grid gap-x-8 gap-y-6 py-10", colsClass)}>
+        {columns.map((col, ci) => (
+          <div key={ci} className="min-w-0 space-y-6">
+            {col.map((group) => {
+              const cat = catBySlug(group.slug);
+              return (
+                <div key={group.heading}>
+                  {cat ? (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: group.slug }}
+                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                    >
+                      {group.heading}
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/products"
+                      search={{ q: group.heading } as never}
+                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                    >
+                      {group.heading}
+                    </Link>
+                  )}
+                  <ul className="mt-3 space-y-2">
+                    {group.items.map((item) => (
+                      <li key={item}>
+                        <Link
+                          to="/products"
+                          search={{ q: item, cat: cat?.slug ?? "" } as never}
+                          className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
+                        >
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
