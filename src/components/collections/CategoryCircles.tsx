@@ -21,11 +21,13 @@ const categoryIcons: Record<string, string> = Object.fromEntries(
   ]),
 );
 
-// Curated collection order (12 items)
+// Curated collection order (all 17 official Aurona categories)
 const CURATED = [
-  "interior-lights", "concealed-lights", "panel-lights", "tube-lights",
-  "street-lights", "flood-lights", "led-bulbs", "mirror-lights",
-  "ceiling-fans", "table-fans", "exhaust-fans", "heaters",
+  "led-bulbs", "panel-lights", "concealed-lights", "interior-lights",
+  "tube-lights", "deep-lights", "street-lights", "flood-lights",
+  "outdoor-lights", "ceiling-fans", "table-fans", "pedestal-fans",
+  "exhaust-fans", "heaters", "water-geysers", "immersion-heaters",
+  "madhani",
 ];
 
 type Tile = { slug: string; name: string; image: string; isIcon: boolean; hasCategory: boolean };
