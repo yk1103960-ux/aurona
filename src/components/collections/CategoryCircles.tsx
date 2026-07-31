@@ -35,15 +35,17 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
   const bySlug = new Map(categories.map((c) => [c.slug, c] as const));
   const tiles: Tile[] = CURATED
     .map((slug) => {
-      const image = categoryImages[`../../assets/categories/${slug}.jpg`]?.default;
+      const icon = categoryIcons[slug];
+      const image = icon ?? categoryImages[`../../assets/categories/${slug}.jpg`]?.default;
       if (!image) return null;
       const cat = bySlug.get(slug);
       const name =
         cat?.name ??
         slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-      return { slug, name, image, hasCategory: !!cat };
+      return { slug, name, image, isIcon: !!icon, hasCategory: !!cat };
     })
     .filter(Boolean) as Tile[];
+
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(0);
