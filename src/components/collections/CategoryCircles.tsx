@@ -9,6 +9,18 @@ const categoryImages = import.meta.glob<{ default: string }>(
   { eager: true },
 );
 
+// Official Aurona category symbols (line icons, CDN-hosted pointers)
+const iconPointers = import.meta.glob<{ default: { url: string } }>(
+  "../../assets/category-icons/*.png.asset.json",
+  { eager: true },
+);
+const categoryIcons: Record<string, string> = Object.fromEntries(
+  Object.entries(iconPointers).map(([path, mod]) => [
+    path.split("/").pop()!.replace(".png.asset.json", ""),
+    mod.default.url,
+  ]),
+);
+
 // Curated collection order (12 items)
 const CURATED = [
   "interior-lights", "concealed-lights", "panel-lights", "tube-lights",
@@ -16,21 +28,24 @@ const CURATED = [
   "ceiling-fans", "table-fans", "exhaust-fans", "heaters",
 ];
 
-type Tile = { slug: string; name: string; image: string; hasCategory: boolean };
+type Tile = { slug: string; name: string; image: string; isIcon: boolean; hasCategory: boolean };
+
 
 export function CategoryCircles({ categories }: { categories: Category[] }) {
   const bySlug = new Map(categories.map((c) => [c.slug, c] as const));
   const tiles: Tile[] = CURATED
     .map((slug) => {
-      const image = categoryImages[`../../assets/categories/${slug}.jpg`]?.default;
+      const icon = categoryIcons[slug];
+      const image = icon ?? categoryImages[`../../assets/categories/${slug}.jpg`]?.default;
       if (!image) return null;
       const cat = bySlug.get(slug);
       const name =
         cat?.name ??
         slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-      return { slug, name, image, hasCategory: !!cat };
+      return { slug, name, image, isIcon: !!icon, hasCategory: !!cat };
     })
     .filter(Boolean) as Tile[];
+
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(0);
@@ -136,11 +151,17 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
                         decoding="async"
                         width={112}
                         height={112}
-                        className="h-full w-full object-cover transition-transform duration-[700ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110"
+                        className={cn(
+                          "h-full w-full transition-transform duration-[700ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110",
+                          t.isIcon ? "object-contain p-[22%]" : "object-cover",
+                        )}
                       />
-                      <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/40 via-transparent to-transparent opacity-70" />
+                      {!t.isIcon && (
+                        <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/40 via-transparent to-transparent opacity-70" />
+                      )}
                       <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/50" />
                     </div>
+
                   </div>
                   <div className="line-clamp-2 text-center text-[11px] font-semibold leading-tight text-foreground transition-colors group-hover:text-primary sm:text-xs">
                     {t.name}
