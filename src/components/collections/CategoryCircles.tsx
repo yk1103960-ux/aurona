@@ -9,6 +9,18 @@ const categoryImages = import.meta.glob<{ default: string }>(
   { eager: true },
 );
 
+// Official Aurona category symbols (line icons, CDN-hosted pointers)
+const iconPointers = import.meta.glob<{ default: { url: string } }>(
+  "../../assets/category-icons/*.png.asset.json",
+  { eager: true },
+);
+const categoryIcons: Record<string, string> = Object.fromEntries(
+  Object.entries(iconPointers).map(([path, mod]) => [
+    path.split("/").pop()!.replace(".png.asset.json", ""),
+    mod.default.url,
+  ]),
+);
+
 // Curated collection order (12 items)
 const CURATED = [
   "interior-lights", "concealed-lights", "panel-lights", "tube-lights",
@@ -16,7 +28,8 @@ const CURATED = [
   "ceiling-fans", "table-fans", "exhaust-fans", "heaters",
 ];
 
-type Tile = { slug: string; name: string; image: string; hasCategory: boolean };
+type Tile = { slug: string; name: string; image: string; isIcon: boolean; hasCategory: boolean };
+
 
 export function CategoryCircles({ categories }: { categories: Category[] }) {
   const bySlug = new Map(categories.map((c) => [c.slug, c] as const));
