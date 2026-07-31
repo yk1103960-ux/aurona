@@ -155,7 +155,7 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
                         height={112}
                         className={cn(
                           "h-full w-full transition-transform duration-[700ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110",
-                          t.isIcon ? "object-contain p-[22%]" : "object-cover",
+                          t.isIcon ? "object-contain p-[17%]" : "object-cover",
                         )}
                       />
                       {!t.isIcon && (
