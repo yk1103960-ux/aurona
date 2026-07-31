@@ -151,11 +151,17 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
                         decoding="async"
                         width={112}
                         height={112}
-                        className="h-full w-full object-cover transition-transform duration-[700ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110"
+                        className={cn(
+                          "h-full w-full transition-transform duration-[700ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110",
+                          t.isIcon ? "object-contain p-[22%]" : "object-cover",
+                        )}
                       />
-                      <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/40 via-transparent to-transparent opacity-70" />
+                      {!t.isIcon && (
+                        <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/40 via-transparent to-transparent opacity-70" />
+                      )}
                       <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/50" />
                     </div>
+
                   </div>
                   <div className="line-clamp-2 text-center text-[11px] font-semibold leading-tight text-foreground transition-colors group-hover:text-primary sm:text-xs">
                     {t.name}
