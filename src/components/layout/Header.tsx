@@ -499,7 +499,7 @@ function BrowsePanel({
   cats: Category[];
 }) {
   const [activeSlug, setActiveSlug] = useState<string>("");
-  const [hoverProduct, setHoverProduct] = useState<null | { name: string; image_seed: string | null; slug: string; family_slug: string | null }>(null);
+  const [hoverProduct, setHoverProduct] = useState<BrowseProduct | null>(null);
 
   // Initialise once cats load
   useEffect(() => {
