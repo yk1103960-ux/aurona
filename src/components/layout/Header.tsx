@@ -161,23 +161,26 @@ export function Header() {
         </div>
 
         {/* Center: primary nav */}
-        <nav className="hidden min-w-0 items-center justify-center gap-0.5 overflow-hidden lg:flex">
-          <BrowseTrigger
-            isOpen={openMenu === "browse"}
-            onOpen={() => setOpenMenu("browse")}
-            onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
-          />
-          <span className="mx-1 h-4 w-px bg-primary/15" aria-hidden />
+        <nav className="hidden min-w-0 items-center justify-start gap-0.5 overflow-hidden lg:flex">
+          <div className="shrink-0">
+            <BrowseTrigger
+              isOpen={openMenu === "browse"}
+              onOpen={() => setOpenMenu("browse")}
+              onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
+            />
+          </div>
+          <span className="mx-1 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
           <NavItem to="/">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
           <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
 
           <NavItem to="/affiliate" className="hidden xl:inline-block">Affiliate With Us</NavItem>
-          <NavItem to="/careers" className="hidden xl:inline-block">Career With Us</NavItem>
+          <NavItem to="/careers" className="hidden 2xl:inline-block">Career With Us</NavItem>
           <NavItem to="/blogs" className="hidden 2xl:inline-block">Blogs</NavItem>
-          <NavItem to="/about">About Us</NavItem>
+          <NavItem to="/about" className="hidden xl:inline-block">About Us</NavItem>
           <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
+
         </nav>
 
 
