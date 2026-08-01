@@ -575,14 +575,14 @@ function BrowsePanel({
 
 
         {/* Middle: products in active category */}
-        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto px-8 py-6">
+        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white">
           {activeCat ? (
             <>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-6 py-2">
                 <Link
                   to="/category/$slug"
                   params={{ slug: activeCat.slug }}
-                  className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                  className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
                 >
                   {activeCat.name}
                 </Link>
@@ -595,8 +595,8 @@ function BrowsePanel({
                 </Link>
               </div>
               {isLoading ? (
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                  {Array.from({ length: 8 }).map((_, i) => (
+                <div className="space-y-3 p-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="h-5 animate-pulse rounded bg-primary/5" />
                   ))}
                 </div>
@@ -605,20 +605,22 @@ function BrowsePanel({
                   No products yet in this category.
                 </div>
               ) : (
-                <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                <ul>
                   {products.map((p) => {
                     const targetSlug = p.family_slug ?? p.slug;
+                    const isHovered = hoverProduct?.slug === p.slug;
                     return (
                       <li key={p.slug}>
                         <Link
                           to="/products/$slug"
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
-                          className="group/mi block py-1.5 text-[13.5px] leading-snug text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className={cn(
+                            "block border-b border-border px-6 py-3.5 text-[15px] font-medium uppercase leading-snug tracking-[0.04em] transition-colors",
+                            isHovered ? "bg-primary/8 text-primary" : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
+                          )}
                         >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">
-                            {p.name}
-                          </span>
+                          {p.name}
                         </Link>
                       </li>
                     );
@@ -634,14 +636,19 @@ function BrowsePanel({
         </div>
 
         {/* Right: hovered product preview */}
-        <div className="border-l border-primary/10 bg-surface/30">
-          <div className="bg-primary px-5 py-3 text-center text-[10px] font-bold uppercase tracking-[0.28em] text-primary-foreground">
-            Product Image
+        <div className="bg-white">
+          <div className="truncate bg-[oklch(0.28_0.08_255)] px-5 py-3 text-center text-[13px] font-bold uppercase tracking-[0.16em] text-white">
+            {hoverProduct?.name ?? activeCat?.name ?? "Product"}
           </div>
-          <div className="grid h-[calc(70vh-46px)] place-items-center p-6">
+          <div className="grid h-[calc(70vh-46px)] place-items-center p-5">
             {hoverProduct ? (
               <div className="w-full">
-                <div className="aspect-square w-full overflow-hidden rounded-2xl border border-primary/10 bg-white">
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-surface/60">
+                  {discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0) > 0 && (
+                    <span className="absolute left-3 top-3 z-10 rounded-md bg-primary px-2 py-1 text-[12px] font-bold text-primary-foreground">
+                      -{discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0)}%
+                    </span>
+                  )}
                   <ProductImage
                     product={{ slug: hoverProduct.slug, name: hoverProduct.name, image_seed: hoverProduct.image_seed }}
                     className="h-full w-full"
@@ -649,13 +656,20 @@ function BrowsePanel({
                     eager
                   />
                 </div>
-                <div className="mt-3 text-center text-[13px] font-semibold leading-tight text-foreground/85">
-                  {hoverProduct.name}
-                </div>
+                {hoverProduct.mrp ? (
+                  <div className="mt-4 text-center text-[14px] text-muted-foreground">
+                    M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
+                  </div>
+                ) : null}
+                {hoverProduct.price ? (
+                  <div className="mt-1 text-center text-[26px] font-bold text-destructive">
+                    {inr(hoverProduct.price)}
+                  </div>
+                ) : null}
                 <Link
                   to="/products/$slug"
                   params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
-                  className="mt-3 block text-center text-[10px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                  className="mt-3 block text-center text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
                 >
                   View product →
                 </Link>
@@ -663,11 +677,12 @@ function BrowsePanel({
             ) : (
               <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
                 <ImageIcon className="h-10 w-10" strokeWidth={1.4} />
-                <span className="text-xs">Hover over a product to see details</span>
+                <span className="text-sm">Hover over a product to see details</span>
               </div>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );
