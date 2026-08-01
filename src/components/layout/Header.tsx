@@ -171,7 +171,7 @@ export function Header() {
             />
           </div>
           <span className="mx-1 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-          <NavItem to="/" className="hidden xl:inline-block">Home</NavItem>
+          <NavItem to="/" className="hidden 2xl:inline-block">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
           <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
