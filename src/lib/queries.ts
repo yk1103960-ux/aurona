@@ -370,7 +370,7 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         const key = fam ?? r.slug;
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push({ slug: r.slug, name: r.name, image_seed: r.image_seed, family_slug: fam });
+        out.push({ slug: r.slug, name: r.name, image_seed: r.image_seed, family_slug: fam, price: r.price ?? null, mrp: r.mrp ?? null });
       }
       return out.slice(0, 18);
     },
