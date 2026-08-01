@@ -153,8 +153,8 @@ export function Header() {
               className={cn(
                 "w-auto shrink-0 object-contain mix-blend-multiply transition-[height,max-width] duration-500",
                 scrolled
-                  ? "h-10 max-w-[210px] lg:h-11 lg:max-w-[240px]"
-                  : "h-12 max-w-[240px] lg:h-14 lg:max-w-[300px]",
+                  ? "h-11 max-w-[220px] lg:h-12 lg:max-w-[260px]"
+                  : "h-13 max-w-[250px] lg:h-16 lg:max-w-[340px]",
               )}
             />
           </Link>
@@ -178,7 +178,7 @@ export function Header() {
           <NavItem to="/affiliate" className="hidden xl:inline-block">Affiliate With Us</NavItem>
           <NavItem to="/careers" className="hidden 2xl:inline-block">Career With Us</NavItem>
           <NavItem to="/blogs" className="hidden 2xl:inline-block">Blogs</NavItem>
-          <NavItem to="/about" className="hidden xl:inline-block">About Us</NavItem>
+          <NavItem to="/about" className="hidden 2xl:inline-block">About Us</NavItem>
           <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
 
         </nav>
