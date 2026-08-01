@@ -29,7 +29,8 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { categoriesQuery, browseProductsByCategoryQuery, type Category } from "@/lib/queries";
+import { categoriesQuery, browseProductsByCategoryQuery, type Category, type BrowseProduct } from "@/lib/queries";
+import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
@@ -122,8 +123,8 @@ export function Header() {
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
-          scrolled ? "h-[68px] lg:h-[80px]" : "h-[76px] lg:h-[96px]",
+          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-6 xl:gap-8",
+          scrolled ? "h-[68px] lg:h-[84px]" : "h-[76px] lg:h-[104px]",
         )}
       >
         {/* Left: hamburger (mobile) + logo cluster */}
@@ -143,7 +144,7 @@ export function Header() {
           </Sheet>
           <Link
             to="/"
-            className="flex min-w-0 flex-1 items-center justify-center px-2 py-1 lg:flex-none lg:justify-start lg:px-3 lg:py-1.5"
+            className="flex min-w-0 flex-1 items-center justify-center px-1 py-1 lg:flex-none lg:shrink-0 lg:justify-start lg:pl-0 lg:pr-2"
             aria-label="Aurona — Go Fearless in the Dark"
           >
             <img
@@ -151,31 +152,37 @@ export function Header() {
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
                 "w-auto shrink-0 object-contain mix-blend-multiply transition-[height,max-width] duration-500",
-                scrolled ? "h-9 max-w-[180px] lg:h-10 lg:max-w-[200px]" : "h-11 max-w-[200px] lg:h-12 lg:max-w-[220px]",
+                scrolled
+                  ? "h-11 max-w-[220px] lg:h-12 lg:max-w-[260px]"
+                  : "h-13 max-w-[250px] lg:h-16 lg:max-w-[340px]",
               )}
             />
           </Link>
         </div>
 
         {/* Center: primary nav */}
-        <nav className="hidden items-center justify-center gap-0.5 lg:flex">
-          <BrowseTrigger
-            isOpen={openMenu === "browse"}
-            onOpen={() => setOpenMenu("browse")}
-            onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
-          />
-          <span className="mx-1 h-4 w-px bg-primary/15" aria-hidden />
+        <nav className="hidden min-w-0 items-center justify-start gap-0.5 overflow-hidden lg:flex">
+          <div className="shrink-0">
+            <BrowseTrigger
+              isOpen={openMenu === "browse"}
+              onOpen={() => setOpenMenu("browse")}
+              onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
+            />
+          </div>
+          <span className="mx-1 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
           <NavItem to="/">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
           <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
 
-          <NavItem to="/affiliate">Affiliate With Us</NavItem>
-          <NavItem to="/careers">Career With Us</NavItem>
-          <NavItem to="/blogs">Blogs</NavItem>
-          <NavItem to="/about">About Us</NavItem>
-          <NavItem to="/contact">Contact Us</NavItem>
+          <NavItem to="/affiliate" className="hidden xl:inline-block">Affiliate With Us</NavItem>
+          <NavItem to="/careers" className="hidden 2xl:inline-block">Career With Us</NavItem>
+          <NavItem to="/blogs" className="hidden 2xl:inline-block">Blogs</NavItem>
+          <NavItem to="/about" className="hidden 2xl:inline-block">About Us</NavItem>
+          <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
+
         </nav>
+
 
         {/* Right: actions */}
         <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
@@ -262,11 +269,14 @@ export function Header() {
   );
 }
 
-function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
+function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
   return (
     <Link
       to={to as never}
-      className="group relative px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-foreground/72 transition-colors hover:text-primary"
+      className={cn(
+        "group relative whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-foreground/75 transition-colors hover:text-primary",
+        className,
+      )}
       activeProps={{ className: "text-primary" }}
     >
       <span className="relative">
@@ -367,7 +377,7 @@ function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpe
         type="button"
         onClick={onToggle}
         className={cn(
-          "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
+          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
           isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
         )}
         aria-expanded={isOpen}
@@ -467,7 +477,7 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
         aria-expanded={isOpen}
         aria-haspopup="true"
         className={cn(
-          "group inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[11.5px] font-bold uppercase tracking-[0.22em] transition-all",
+          "group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-[12.5px] font-bold uppercase tracking-[0.12em] transition-all",
           isOpen
             ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_18px_-8px_oklch(0.55_0.14_240/0.55)]"
             : "border-primary/20 bg-white text-primary hover:border-primary/40 hover:bg-primary/5",
@@ -493,7 +503,7 @@ function BrowsePanel({
   cats: Category[];
 }) {
   const [activeSlug, setActiveSlug] = useState<string>("");
-  const [hoverProduct, setHoverProduct] = useState<null | { name: string; image_seed: string | null; slug: string; family_slug: string | null }>(null);
+  const [hoverProduct, setHoverProduct] = useState<BrowseProduct | null>(null);
 
   // Initialise once cats load
   useEffect(() => {
@@ -534,12 +544,12 @@ function BrowsePanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="container-x grid grid-cols-[260px_1fr_320px] gap-0 py-0">
+      <div className="container-x grid grid-cols-[300px_minmax(0,1fr)_360px] gap-0 py-0">
         {/* Left: dynamic category list with icons */}
-        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-primary/10 bg-surface/40 py-3">
+        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white py-0">
           {groups.map((g) => (
-            <div key={g.key} className="mb-1">
-              <div className="px-5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/70">
+            <div key={g.key}>
+              <div className="border-b border-border bg-surface/60 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
                 {g.label}
               </div>
               {g.items.map((c) => {
@@ -551,15 +561,15 @@ function BrowsePanel({
                     type="button"
                     onMouseEnter={() => { setActiveSlug(c.slug); setHoverProduct(null); }}
                     className={cn(
-                      "flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-left text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                      "flex w-full items-center gap-3 border-b border-border px-5 py-3.5 text-left text-[14px] font-semibold uppercase tracking-[0.06em] transition-colors",
                       isActive
-                        ? "border-primary bg-white text-primary"
-                        : "border-transparent text-foreground/75 hover:bg-white hover:text-primary",
+                        ? "bg-primary/8 text-primary"
+                        : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
                     )}
                   >
-                    <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-foreground/50")} strokeWidth={1.6} />
+                    <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-primary" : "text-foreground/45")} strokeWidth={1.6} />
                     <span className="flex-1 truncate">{c.name}</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                    <ChevronRight className={cn("h-4 w-4 shrink-0", isActive ? "opacity-70" : "opacity-30")} />
                   </button>
                 );
               })}
@@ -567,15 +577,16 @@ function BrowsePanel({
           ))}
         </div>
 
+
         {/* Middle: products in active category */}
-        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto px-8 py-6">
+        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white">
           {activeCat ? (
             <>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-6 py-2">
                 <Link
                   to="/category/$slug"
                   params={{ slug: activeCat.slug }}
-                  className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                  className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
                 >
                   {activeCat.name}
                 </Link>
@@ -588,8 +599,8 @@ function BrowsePanel({
                 </Link>
               </div>
               {isLoading ? (
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                  {Array.from({ length: 8 }).map((_, i) => (
+                <div className="space-y-3 p-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="h-5 animate-pulse rounded bg-primary/5" />
                   ))}
                 </div>
@@ -598,20 +609,22 @@ function BrowsePanel({
                   No products yet in this category.
                 </div>
               ) : (
-                <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
+                <ul>
                   {products.map((p) => {
                     const targetSlug = p.family_slug ?? p.slug;
+                    const isHovered = hoverProduct?.slug === p.slug;
                     return (
                       <li key={p.slug}>
                         <Link
                           to="/products/$slug"
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
-                          className="group/mi block py-1.5 text-[13.5px] leading-snug text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className={cn(
+                            "block border-b border-border px-6 py-3.5 text-[15px] font-medium uppercase leading-snug tracking-[0.04em] transition-colors",
+                            isHovered ? "bg-primary/8 text-primary" : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
+                          )}
                         >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">
-                            {p.name}
-                          </span>
+                          {p.name}
                         </Link>
                       </li>
                     );
@@ -627,14 +640,19 @@ function BrowsePanel({
         </div>
 
         {/* Right: hovered product preview */}
-        <div className="border-l border-primary/10 bg-surface/30">
-          <div className="bg-primary px-5 py-3 text-center text-[10px] font-bold uppercase tracking-[0.28em] text-primary-foreground">
-            Product Image
+        <div className="bg-white">
+          <div className="truncate bg-[oklch(0.28_0.08_255)] px-5 py-3 text-center text-[13px] font-bold uppercase tracking-[0.16em] text-white">
+            {hoverProduct?.name ?? activeCat?.name ?? "Product"}
           </div>
-          <div className="grid h-[calc(70vh-46px)] place-items-center p-6">
+          <div className="grid h-[calc(70vh-46px)] place-items-center p-5">
             {hoverProduct ? (
               <div className="w-full">
-                <div className="aspect-square w-full overflow-hidden rounded-2xl border border-primary/10 bg-white">
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-surface/60">
+                  {discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0) > 0 && (
+                    <span className="absolute left-3 top-3 z-10 rounded-md bg-primary px-2 py-1 text-[12px] font-bold text-primary-foreground">
+                      -{discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0)}%
+                    </span>
+                  )}
                   <ProductImage
                     product={{ slug: hoverProduct.slug, name: hoverProduct.name, image_seed: hoverProduct.image_seed }}
                     className="h-full w-full"
@@ -642,13 +660,20 @@ function BrowsePanel({
                     eager
                   />
                 </div>
-                <div className="mt-3 text-center text-[13px] font-semibold leading-tight text-foreground/85">
-                  {hoverProduct.name}
-                </div>
+                {hoverProduct.mrp ? (
+                  <div className="mt-4 text-center text-[14px] text-muted-foreground">
+                    M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
+                  </div>
+                ) : null}
+                {hoverProduct.price ? (
+                  <div className="mt-1 text-center text-[26px] font-bold text-destructive">
+                    {inr(hoverProduct.price)}
+                  </div>
+                ) : null}
                 <Link
                   to="/products/$slug"
                   params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
-                  className="mt-3 block text-center text-[10px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                  className="mt-3 block text-center text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
                 >
                   View product →
                 </Link>
@@ -656,11 +681,12 @@ function BrowsePanel({
             ) : (
               <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
                 <ImageIcon className="h-10 w-10" strokeWidth={1.4} />
-                <span className="text-xs">Hover over a product to see details</span>
+                <span className="text-sm">Hover over a product to see details</span>
               </div>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

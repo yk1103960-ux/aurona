@@ -323,6 +323,8 @@ export type BrowseProduct = {
   name: string;
   image_seed: string | null;
   family_slug: string | null;
+  price: number | null;
+  mrp: number | null;
 };
 
 export const browseProductsByCategoryQuery = (categorySlug: string) =>
@@ -341,13 +343,14 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
       if (!cat?.id) return [];
       const { data } = await supabase
         .from("products")
-        .select("slug, sku, name, image_seed")
+        .select("slug, sku, name, image_seed, price, mrp")
         .eq("category_id", cat.id)
         .gt("price", 0)
         .order("is_bestseller", { ascending: false })
         .order("name")
         .limit(24);
-      const rows = (data ?? []) as { slug: string; sku: string; name: string; image_seed: string | null }[];
+      const rows = (data ?? []) as { slug: string; sku: string; name: string; image_seed: string | null; price: number | null; mrp: number | null }[];
+
       const skus = rows.map((r) => r.sku).filter(Boolean);
       const familyBySku = new Map<string, string>();
       if (skus.length) {
@@ -367,7 +370,7 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         const key = fam ?? r.slug;
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push({ slug: r.slug, name: r.name, image_seed: r.image_seed, family_slug: fam });
+        out.push({ slug: r.slug, name: r.name, image_seed: r.image_seed, family_slug: fam, price: r.price ?? null, mrp: r.mrp ?? null });
       }
       return out.slice(0, 18);
     },
