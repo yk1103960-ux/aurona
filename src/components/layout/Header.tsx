@@ -265,11 +265,14 @@ export function Header() {
   );
 }
 
-function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
+function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
   return (
     <Link
       to={to as never}
-      className="group relative px-3 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-foreground/72 transition-colors hover:text-primary"
+      className={cn(
+        "group relative whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-foreground/75 transition-colors hover:text-primary",
+        className,
+      )}
       activeProps={{ className: "text-primary" }}
     >
       <span className="relative">
