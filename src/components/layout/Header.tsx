@@ -373,7 +373,7 @@ function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpe
         type="button"
         onClick={onToggle}
         className={cn(
-          "group relative inline-flex items-center gap-1 px-3.5 py-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] transition-colors",
+          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
           isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
         )}
         aria-expanded={isOpen}
