@@ -540,12 +540,12 @@ function BrowsePanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="container-x grid grid-cols-[260px_1fr_320px] gap-0 py-0">
+      <div className="container-x grid grid-cols-[300px_minmax(0,1fr)_360px] gap-0 py-0">
         {/* Left: dynamic category list with icons */}
-        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-primary/10 bg-surface/40 py-3">
+        <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white py-0">
           {groups.map((g) => (
-            <div key={g.key} className="mb-1">
-              <div className="px-5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/70">
+            <div key={g.key}>
+              <div className="border-b border-border bg-surface/60 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
                 {g.label}
               </div>
               {g.items.map((c) => {
@@ -557,21 +557,22 @@ function BrowsePanel({
                     type="button"
                     onMouseEnter={() => { setActiveSlug(c.slug); setHoverProduct(null); }}
                     className={cn(
-                      "flex w-full items-center gap-3 border-l-2 px-5 py-2.5 text-left text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                      "flex w-full items-center gap-3 border-b border-border px-5 py-3.5 text-left text-[14px] font-semibold uppercase tracking-[0.06em] transition-colors",
                       isActive
-                        ? "border-primary bg-white text-primary"
-                        : "border-transparent text-foreground/75 hover:bg-white hover:text-primary",
+                        ? "bg-primary/8 text-primary"
+                        : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
                     )}
                   >
-                    <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-foreground/50")} strokeWidth={1.6} />
+                    <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-primary" : "text-foreground/45")} strokeWidth={1.6} />
                     <span className="flex-1 truncate">{c.name}</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                    <ChevronRight className={cn("h-4 w-4 shrink-0", isActive ? "opacity-70" : "opacity-30")} />
                   </button>
                 );
               })}
             </div>
           ))}
         </div>
+
 
         {/* Middle: products in active category */}
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto px-8 py-6">
