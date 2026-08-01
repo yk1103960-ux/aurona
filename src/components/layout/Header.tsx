@@ -34,7 +34,7 @@ import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-logo-2026.png.asset.json";
+import auronaLogo from "@/assets/aurona-logo-trim.png.asset.json";
 
 // Mega menu — matches client reference (6 columns, family names under each heading)
 type MegaGroup = { heading: string; slug: string; items: string[] };
@@ -128,7 +128,7 @@ export function Header() {
         )}
       >
         {/* Left: hamburger (mobile) + logo cluster */}
-        <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none lg:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 lg:min-w-max lg:flex-none lg:shrink-0 lg:gap-3">
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
               <button
@@ -144,21 +144,22 @@ export function Header() {
           </Sheet>
           <Link
             to="/"
-            className="flex min-w-0 flex-1 items-center justify-center px-1 py-1 lg:flex-none lg:shrink-0 lg:justify-start lg:pl-0 lg:pr-2"
+            className="flex min-w-0 flex-1 items-center justify-center px-1 py-1 lg:min-w-max lg:flex-none lg:shrink-0 lg:justify-start lg:pl-0 lg:pr-3"
             aria-label="Aurona — Go Fearless in the Dark"
           >
             <img
               src={auronaLogo.url}
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto shrink-0 object-contain mix-blend-multiply transition-[height,max-width] duration-500",
+                "w-auto shrink-0 object-contain object-left mix-blend-multiply transition-[height,max-width] duration-500",
                 scrolled
-                  ? "h-11 max-w-[220px] lg:h-12 lg:max-w-[260px]"
-                  : "h-13 max-w-[250px] lg:h-16 lg:max-w-[340px]",
+                  ? "h-8 max-w-[190px] lg:h-10 lg:max-w-[250px]"
+                  : "h-9 max-w-[210px] lg:h-[54px] lg:max-w-[300px]",
               )}
             />
           </Link>
         </div>
+
 
         {/* Center: primary nav */}
         <nav className="hidden min-w-0 items-center justify-start gap-0.5 overflow-hidden lg:flex">
@@ -170,7 +171,7 @@ export function Header() {
             />
           </div>
           <span className="mx-1 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-          <NavItem to="/">Home</NavItem>
+          <NavItem to="/" className="hidden xl:inline-block">Home</NavItem>
           <NavItem to="/products">All Products</NavItem>
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
           <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
