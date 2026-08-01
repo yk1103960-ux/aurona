@@ -477,7 +477,7 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
         aria-expanded={isOpen}
         aria-haspopup="true"
         className={cn(
-          "group inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-[12.5px] font-bold uppercase tracking-[0.12em] transition-all",
+          "group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-[12.5px] font-bold uppercase tracking-[0.12em] transition-all",
           isOpen
             ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_18px_-8px_oklch(0.55_0.14_240/0.55)]"
             : "border-primary/20 bg-white text-primary hover:border-primary/40 hover:bg-primary/5",
