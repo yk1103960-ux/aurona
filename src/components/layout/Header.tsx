@@ -122,8 +122,8 @@ export function Header() {
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-8",
-          scrolled ? "h-[68px] lg:h-[80px]" : "h-[76px] lg:h-[96px]",
+          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-6 xl:gap-8",
+          scrolled ? "h-[68px] lg:h-[84px]" : "h-[76px] lg:h-[104px]",
         )}
       >
         {/* Left: hamburger (mobile) + logo cluster */}
@@ -143,7 +143,7 @@ export function Header() {
           </Sheet>
           <Link
             to="/"
-            className="flex min-w-0 flex-1 items-center justify-center px-2 py-1 lg:flex-none lg:justify-start lg:px-3 lg:py-1.5"
+            className="flex min-w-0 flex-1 items-center justify-center px-1 py-1 lg:flex-none lg:shrink-0 lg:justify-start lg:pl-0 lg:pr-2"
             aria-label="Aurona — Go Fearless in the Dark"
           >
             <img
@@ -151,14 +151,16 @@ export function Header() {
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
                 "w-auto shrink-0 object-contain mix-blend-multiply transition-[height,max-width] duration-500",
-                scrolled ? "h-9 max-w-[180px] lg:h-10 lg:max-w-[200px]" : "h-11 max-w-[200px] lg:h-12 lg:max-w-[220px]",
+                scrolled
+                  ? "h-10 max-w-[210px] lg:h-11 lg:max-w-[240px]"
+                  : "h-12 max-w-[240px] lg:h-14 lg:max-w-[300px]",
               )}
             />
           </Link>
         </div>
 
         {/* Center: primary nav */}
-        <nav className="hidden items-center justify-center gap-0.5 lg:flex">
+        <nav className="hidden min-w-0 items-center justify-center gap-0.5 overflow-hidden lg:flex">
           <BrowseTrigger
             isOpen={openMenu === "browse"}
             onOpen={() => setOpenMenu("browse")}
@@ -170,12 +172,13 @@ export function Header() {
           <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
           <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
 
-          <NavItem to="/affiliate">Affiliate With Us</NavItem>
-          <NavItem to="/careers">Career With Us</NavItem>
-          <NavItem to="/blogs">Blogs</NavItem>
+          <NavItem to="/affiliate" className="hidden xl:inline-block">Affiliate With Us</NavItem>
+          <NavItem to="/careers" className="hidden xl:inline-block">Career With Us</NavItem>
+          <NavItem to="/blogs" className="hidden 2xl:inline-block">Blogs</NavItem>
           <NavItem to="/about">About Us</NavItem>
-          <NavItem to="/contact">Contact Us</NavItem>
+          <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
         </nav>
+
 
         {/* Right: actions */}
         <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
