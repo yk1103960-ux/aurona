@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -286,7 +286,7 @@ function NavItem({ to, children, className }: { to: string; children: React.Reac
     <Link
       to={to as never}
       className={cn(
-        "group relative whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-foreground/75 transition-colors hover:text-primary",
+        "group relative whitespace-nowrap px-2.5 py-2 text-[14px] font-bold tracking-[0.01em] text-foreground/85 transition-colors hover:text-primary",
         className,
       )}
       activeProps={{ className: "text-primary" }}
@@ -389,7 +389,7 @@ function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpe
         type="button"
         onClick={onToggle}
         className={cn(
-          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
+          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[14px] font-bold tracking-[0.01em] transition-colors",
           isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
         )}
         aria-expanded={isOpen}
