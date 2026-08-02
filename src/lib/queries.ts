@@ -321,10 +321,13 @@ export const familyProductsQuery = (skus: string[]) =>
 export type BrowseProduct = {
   slug: string;
   name: string;
+  sku: string;
   image_seed: string | null;
   family_slug: string | null;
   price: number | null;
   mrp: number | null;
+  wattage: string | null;
+  stock: number | null;
 };
 
 export const browseProductsByCategoryQuery = (categorySlug: string) =>
@@ -343,13 +346,16 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
       if (!cat?.id) return [];
       const { data } = await supabase
         .from("products")
-        .select("slug, sku, name, image_seed, price, mrp")
+        .select("slug, sku, name, image_seed, price, mrp, wattage, stock")
         .eq("category_id", cat.id)
         .gt("price", 0)
         .order("is_bestseller", { ascending: false })
         .order("name")
         .limit(24);
-      const rows = (data ?? []) as { slug: string; sku: string; name: string; image_seed: string | null; price: number | null; mrp: number | null }[];
+      const rows = (data ?? []) as {
+        slug: string; sku: string; name: string; image_seed: string | null;
+        price: number | null; mrp: number | null; wattage: string | null; stock: number | null;
+      }[];
 
       const skus = rows.map((r) => r.sku).filter(Boolean);
       const familyBySku = new Map<string, string>();
@@ -370,8 +376,44 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         const key = fam ?? r.slug;
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push({ slug: r.slug, name: r.name, image_seed: r.image_seed, family_slug: fam, price: r.price ?? null, mrp: r.mrp ?? null });
+        out.push({
+          slug: r.slug, name: r.name, sku: r.sku, image_seed: r.image_seed, family_slug: fam,
+          price: r.price ?? null, mrp: r.mrp ?? null, wattage: r.wattage ?? null, stock: r.stock ?? null,
+        });
       }
       return out.slice(0, 18);
     },
   });
+
+// Live search suggestions for the header search bar
+export type SearchSuggestion = {
+  slug: string;
+  name: string;
+  sku: string;
+  image_seed: string | null;
+  price: number | null;
+  mrp: number | null;
+  wattage: string | null;
+};
+
+export const searchSuggestQuery = (term: string) =>
+  queryOptions({
+    queryKey: ["search-suggest", term.trim().toLowerCase()],
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    enabled: term.trim().length >= 2,
+    queryFn: async (): Promise<SearchSuggestion[]> => {
+      const t = term.trim();
+      if (t.length < 2) return [];
+      const like = `%${t.replace(/[%_]/g, "")}%`;
+      const { data } = await supabase
+        .from("products")
+        .select("slug, sku, name, image_seed, price, mrp, wattage")
+        .or(`name.ilike.${like},sku.ilike.${like}`)
+        .gt("price", 0)
+        .order("is_bestseller", { ascending: false })
+        .limit(8);
+      return (data ?? []) as SearchSuggestion[];
+    },
+  });
+
