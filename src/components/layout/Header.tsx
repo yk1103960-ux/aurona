@@ -489,16 +489,15 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
         aria-expanded={isOpen}
         aria-haspopup="true"
         className={cn(
-          "group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-[12.5px] font-bold uppercase tracking-[0.12em] transition-all",
-          isOpen
-            ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_18px_-8px_oklch(0.55_0.14_240/0.55)]"
-            : "border-primary/20 bg-white text-primary hover:border-primary/40 hover:bg-primary/5",
+          "group inline-flex shrink-0 items-center gap-3 whitespace-nowrap rounded-lg px-1 py-2 text-[15px] font-extrabold tracking-[0.01em] transition-colors",
+          isOpen ? "text-primary" : "text-foreground hover:text-primary",
         )}
       >
-        <LayoutGrid className="h-3.5 w-3.5" strokeWidth={2} />
+        <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
         Browse Categories
-        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
+
     </div>
   );
 }
