@@ -406,14 +406,46 @@ export const searchSuggestQuery = (term: string) =>
       const t = term.trim();
       if (t.length < 2) return [];
       const like = `%${t.replace(/[%_]/g, "")}%`;
-      const { data } = await supabase
-        .from("products")
-        .select("slug, sku, name, image_seed, price, mrp, wattage")
-        .or(`name.ilike.${like},sku.ilike.${like}`)
-        .gt("price", 0)
-        .order("is_bestseller", { ascending: false })
-        .limit(8);
-      return (data ?? []) as SearchSuggestion[];
+      const cols = "slug, main_sku, name, image_seed, min_price, min_mrp, category_id";
+      type Row = {
+        slug: string; main_sku: string; name: string; image_seed: string | null;
+        min_price: number | null; min_mrp: number | null; category_id: string | null;
+      };
+
+      const [direct, catMatch] = await Promise.all([
+        supabase
+          .from("product_families")
+          .select(cols)
+          .or(`name.ilike.${like},main_sku.ilike.${like}`)
+          .order("is_bestseller", { ascending: false })
+          .limit(8),
+        supabase.from("categories").select("id, name").ilike("name", like).limit(3),
+      ]);
+
+      const rows: Row[] = (direct.data ?? []) as Row[];
+      const catIds = (catMatch.data ?? []).map((c) => c.id);
+      if (rows.length < 8 && catIds.length) {
+        const { data } = await supabase
+          .from("product_families")
+          .select(cols)
+          .in("category_id", catIds)
+          .order("is_bestseller", { ascending: false })
+          .limit(8 - rows.length);
+        for (const r of (data ?? []) as Row[]) {
+          if (!rows.some((x) => x.slug === r.slug)) rows.push(r);
+        }
+      }
+
+      return rows.slice(0, 8).map((r) => ({
+        slug: r.slug,
+        name: r.name,
+        sku: r.main_sku,
+        image_seed: r.image_seed,
+        price: r.min_price === null ? null : Number(r.min_price),
+        mrp: r.min_mrp === null ? null : Number(r.min_mrp),
+        wattage: null,
+      }));
     },
+
   });
 
