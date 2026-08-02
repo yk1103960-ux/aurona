@@ -6,6 +6,18 @@ import { categoriesQuery, productsPageQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Pagination, PER_PAGE_OPTIONS } from "@/components/product/Pagination";
 
+const iconPointers = import.meta.glob<{ default: { url: string } }>(
+  "../assets/category-icons/*.png.asset.json",
+  { eager: true },
+);
+const categoryIcons: Record<string, string> = Object.fromEntries(
+  Object.entries(iconPointers).map(([path, mod]) => [
+    path.split("/").pop()!.replace(".png.asset.json", ""),
+    mod.default.url,
+  ]),
+);
+
+
 const search = z.object({
   page: fallback(z.number(), 1).default(1),
   perPage: fallback(z.number(), 24).default(24),
