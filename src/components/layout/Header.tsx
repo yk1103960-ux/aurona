@@ -778,3 +778,106 @@ function BrowsePanel({
   );
 }
 
+
+function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v: string) => void; onSubmit: (e: React.FormEvent) => void }) {
+  const [focused, setFocused] = useState(false);
+  const [debounced, setDebounced] = useState(value);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), 220);
+    return () => window.clearTimeout(t);
+  }, [value]);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setFocused(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const { data: results = [], isFetching } = useQuery(searchSuggestQuery(debounced));
+  const show = focused && debounced.trim().length >= 2;
+
+  return (
+    <div ref={box} className="relative w-full max-w-[720px]">
+      <form onSubmit={(e) => { setFocused(false); onSubmit(e); }}>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-primary/70" strokeWidth={2} />
+          <Input
+            id="aurona-search-input"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            placeholder="Search LED bulbs, panel lights, ceiling fans, geysers or SKU…"
+            className="h-[52px] rounded-full border-primary/20 bg-white pl-[52px] pr-[112px] text-[14px] font-medium text-foreground shadow-[0_2px_14px_-10px_oklch(0.55_0.14_240/0.55)] placeholder:font-normal placeholder:text-muted-foreground focus-visible:border-primary/45 focus-visible:ring-primary/25"
+            autoComplete="off"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 grid h-9 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.97]"
+          >
+            Search
+          </button>
+        </div>
+      </form>
+
+      {show && (
+        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
+          {isFetching && results.length === 0 ? (
+            <div className="space-y-3 p-4">
+              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-primary/5" />)}
+            </div>
+          ) : results.length === 0 ? (
+            <div className="px-5 py-6 text-sm text-muted-foreground">No products match “{debounced}”.</div>
+          ) : (
+            <>
+              <ul className="max-h-[420px] overflow-y-auto">
+                {results.map((r: SearchSuggestion) => {
+                  const off = discountPct(r.mrp ?? 0, r.price ?? 0);
+                  return (
+                    <li key={r.slug}>
+                      <Link
+                        to="/products/$slug"
+                        params={{ slug: r.slug }}
+                        onClick={() => setFocused(false)}
+                        className="flex items-center gap-3 border-b border-border/70 px-4 py-3 transition-colors last:border-0 hover:bg-primary/5"
+                      >
+                        <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
+                          <ProductImage product={{ slug: r.slug, name: r.name, image_seed: r.image_seed }} className="h-full w-full" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-semibold text-foreground">{r.name}</span>
+                          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                            SKU {r.sku}{r.wattage ? ` · ${r.wattage}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="block text-[14px] font-bold text-primary">{inr(r.price ?? 0)}</span>
+                          {off > 0 && (
+                            <span className="block text-[11px] text-muted-foreground">
+                              <s>{inr(r.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
+                            </span>
+                          )}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <Link
+                to="/products"
+                search={{ q: debounced.trim() } as never}
+                onClick={() => setFocused(false)}
+                className="block bg-surface/60 px-5 py-3 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary/8"
+              >
+                View all results →
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
