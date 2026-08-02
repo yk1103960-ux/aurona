@@ -153,10 +153,11 @@ export function ProductCard({
           </span>
         </div>
         {lowStock && (
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
-            <Zap className="h-3.5 w-3.5" /> Only {stock} left — order soon
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">
+            <Zap className="h-3.5 w-3.5" /> Only {stock} left
           </div>
         )}
+
         {outOfStock && (
           <div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>
         )}
