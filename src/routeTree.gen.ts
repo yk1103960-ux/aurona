@@ -20,6 +20,7 @@ import { Route as CustomerServiceRouteImport } from './routes/customer-service'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CompanyInformationRouteImport } from './routes/company-information'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as BlogsRouteImport } from './routes/blogs'
@@ -108,6 +109,11 @@ const CompanyInformationRoute = CompanyInformationRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -310,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
+  '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
   '/company-information': typeof CompanyInformationRoute
   '/contact': typeof ContactRoute
@@ -356,6 +363,7 @@ export interface FileRoutesByTo {
   '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
+  '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
   '/company-information': typeof CompanyInformationRoute
   '/contact': typeof ContactRoute
@@ -402,6 +410,7 @@ export interface FileRoutesById {
   '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
+  '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
   '/company-information': typeof CompanyInformationRoute
   '/contact': typeof ContactRoute
@@ -451,6 +460,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/careers'
     | '/cart'
+    | '/categories'
     | '/checkout'
     | '/company-information'
     | '/contact'
@@ -497,6 +507,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/careers'
     | '/cart'
+    | '/categories'
     | '/checkout'
     | '/company-information'
     | '/contact'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/careers'
     | '/cart'
+    | '/categories'
     | '/checkout'
     | '/company-information'
     | '/contact'
@@ -590,6 +602,7 @@ export interface RootRouteChildren {
   BlogsRoute: typeof BlogsRoute
   CareersRoute: typeof CareersRoute
   CartRoute: typeof CartRoute
+  CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
   CompanyInformationRoute: typeof CompanyInformationRoute
   ContactRoute: typeof ContactRoute
@@ -683,6 +696,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -1032,6 +1052,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogsRoute: BlogsRoute,
   CareersRoute: CareersRoute,
   CartRoute: CartRoute,
+  CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
   CompanyInformationRoute: CompanyInformationRoute,
   ContactRoute: ContactRoute,
