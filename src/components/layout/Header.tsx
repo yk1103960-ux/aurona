@@ -100,6 +100,9 @@ export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
   const { data: cats = [] } = useQuery(categoriesQuery);
+  const { data: settings } = useQuery(siteSettingsQuery);
+  const [lang, setLang] = useState("en");
+
 
   useEffect(() => setOpenMobile(false), [pathname]);
   useEffect(() => setOpenMenu(null), [pathname]);
