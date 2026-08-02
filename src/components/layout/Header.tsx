@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, LayoutGrid, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -123,8 +123,8 @@ export function Header() {
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-6 xl:gap-8",
-          scrolled ? "h-[68px] lg:h-[84px]" : "h-[76px] lg:h-[104px]",
+          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:gap-6 xl:gap-8",
+          scrolled ? "h-[68px] lg:h-[76px]" : "h-[76px] lg:h-[92px]",
         )}
       >
         {/* Left: hamburger (mobile) + logo cluster */}
@@ -153,36 +153,14 @@ export function Header() {
               className={cn(
                 "w-auto shrink-0 object-contain object-left mix-blend-multiply transition-[height,max-width] duration-500",
                 scrolled
-                  ? "h-8 max-w-[190px] lg:h-10 lg:max-w-[250px]"
-                  : "h-9 max-w-[210px] lg:h-[54px] lg:max-w-[300px]",
+                  ? "h-9 max-w-[210px] lg:h-12 lg:max-w-[320px]"
+                  : "h-10 max-w-[230px] lg:h-[68px] lg:max-w-[400px]",
               )}
             />
           </Link>
         </div>
 
 
-        {/* Center: primary nav */}
-        <nav className="hidden min-w-0 items-center justify-start gap-0.5 overflow-hidden lg:flex">
-          <div className="shrink-0">
-            <BrowseTrigger
-              isOpen={openMenu === "browse"}
-              onOpen={() => setOpenMenu("browse")}
-              onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
-            />
-          </div>
-          <span className="mx-1 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-          <NavItem to="/" className="hidden 2xl:inline-block">Home</NavItem>
-          <NavItem to="/products">All Products</NavItem>
-          <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
-          <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
-
-          <NavItem to="/affiliate" className="hidden xl:inline-block">Affiliate With Us</NavItem>
-          <NavItem to="/careers" className="hidden 2xl:inline-block">Career With Us</NavItem>
-          <NavItem to="/blogs" className="hidden 2xl:inline-block">Blogs</NavItem>
-          <NavItem to="/about" className="hidden 2xl:inline-block">About Us</NavItem>
-          <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
-
-        </nav>
 
 
         {/* Right: actions */}
@@ -219,6 +197,39 @@ export function Header() {
           </Link>
         </div>
       </div>
+
+      {/* Desktop nav row */}
+      <nav className="hidden border-t border-primary/8 lg:block">
+        <div className="container-x flex h-[52px] items-center gap-2">
+          <BrowseTrigger
+            isOpen={openMenu === "browse"}
+            onOpen={() => setOpenMenu("browse")}
+            onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
+          />
+          <span className="mx-3 h-5 w-px shrink-0 bg-primary/15" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center justify-start gap-0.5 overflow-hidden">
+            <NavItem to="/">Home</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/products">All Products</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/affiliate">Affiliate With Us</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/careers">Career With Us</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/blogs">Blogs</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/about">About Us</NavItem>
+            <span className="mx-1.5 hidden h-4 w-px shrink-0 bg-primary/15 xl:block" aria-hidden />
+            <NavItem to="/contact" className="hidden xl:inline-block">Contact Us</NavItem>
+          </div>
+        </div>
+      </nav>
+
+
 
       {/* Mega menu panels — desktop */}
       <MegaPanel
@@ -275,7 +286,7 @@ function NavItem({ to, children, className }: { to: string; children: React.Reac
     <Link
       to={to as never}
       className={cn(
-        "group relative whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-foreground/75 transition-colors hover:text-primary",
+        "group relative whitespace-nowrap px-2.5 py-2 text-[14px] font-bold tracking-[0.01em] text-foreground/85 transition-colors hover:text-primary",
         className,
       )}
       activeProps={{ className: "text-primary" }}
@@ -378,7 +389,7 @@ function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpe
         type="button"
         onClick={onToggle}
         className={cn(
-          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors",
+          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[14px] font-bold tracking-[0.01em] transition-colors",
           isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
         )}
         aria-expanded={isOpen}
@@ -478,16 +489,15 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
         aria-expanded={isOpen}
         aria-haspopup="true"
         className={cn(
-          "group inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-[12.5px] font-bold uppercase tracking-[0.12em] transition-all",
-          isOpen
-            ? "border-primary bg-primary text-primary-foreground shadow-[0_6px_18px_-8px_oklch(0.55_0.14_240/0.55)]"
-            : "border-primary/20 bg-white text-primary hover:border-primary/40 hover:bg-primary/5",
+          "group inline-flex shrink-0 items-center gap-3 whitespace-nowrap rounded-lg px-1 py-2 text-[15px] font-extrabold tracking-[0.01em] transition-colors",
+          isOpen ? "text-primary" : "text-foreground hover:text-primary",
         )}
       >
-        <LayoutGrid className="h-3.5 w-3.5" strokeWidth={2} />
+        <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
         Browse Categories
-        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
+
     </div>
   );
 }
