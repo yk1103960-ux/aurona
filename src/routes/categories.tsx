@@ -101,8 +101,6 @@ function CategoriesPage() {
                       {c.name}
                     </span>
                   </Link>
-
-                  </Link>
                 ))}
             </div>
           </section>
