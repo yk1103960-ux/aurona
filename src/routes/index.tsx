@@ -1,16 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { categoriesQuery, productsQuery } from "@/lib/queries";
-import { ProductCard } from "@/components/product/ProductCard";
+import { categoriesQuery } from "@/lib/queries";
 import { Counter } from "@/components/marketing/Counter";
-import { inr, discountPct } from "@/lib/format";
-import { ProductImage } from "@/components/product/ProductImage";
-import { CollectionsGrid } from "@/components/collections/CollectionsGrid";
 import { CategoryCircles } from "@/components/collections/CategoryCircles";
 import { HeroSlider } from "@/components/marketing/HeroSlider";
-import { SalesOfTheDay } from "@/components/marketing/SalesOfTheDay";
 import { GoogleReviews } from "@/components/marketing/GoogleReviews";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
