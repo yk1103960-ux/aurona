@@ -39,8 +39,6 @@ function Home() {
     "1,000+ Partners",
   ];
 
-  const hero = featured[0] ?? best[0];
-
   return (
     <div className="bg-background">
       {/* ============ HERO BANNER SLIDER ============ */}
@@ -72,14 +70,6 @@ function Home() {
 
       {/* ============ CATEGORY CIRCLES — premium round tiles ============ */}
       <CategoryCircles categories={cats} />
-
-      {/* ============ SALES OF THE DAY ============ */}
-      <SalesOfTheDay products={sale} />
-
-      {/* ============ CATEGORY EDITORIAL — bento collections ============ */}
-      <CollectionsGrid categories={cats} />
-
-
 
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
       <section className="relative overflow-hidden bg-surface py-16 lg:py-24">
