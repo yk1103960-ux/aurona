@@ -10,18 +10,9 @@ import { GoogleReviews } from "@/components/marketing/GoogleReviews";
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 
-const categoryImages = import.meta.glob<{ default: string }>(
-  "../assets/categories/*.jpg",
-  { eager: true }
-);
-
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(categoriesQuery);
-    context.queryClient.ensureQueryData(productsQuery({ sale: true, limit: 6 }));
-    context.queryClient.ensureQueryData(productsQuery({ featured: true, limit: 6 }));
-    context.queryClient.ensureQueryData(productsQuery({ bestseller: true, limit: 8 }));
-    context.queryClient.ensureQueryData(productsQuery({ isNew: true, limit: 6 }));
   },
   component: Home,
   head: () => ({
@@ -38,12 +29,6 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const cats = useSuspenseQuery(categoriesQuery).data;
-  const sale = useSuspenseQuery(productsQuery({ sale: true, limit: 6 })).data;
-  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 6 })).data;
-  const best = useSuspenseQuery(productsQuery({ bestseller: true, limit: 8 })).data;
-  const news = useSuspenseQuery(productsQuery({ isNew: true, limit: 6 })).data;
-  void featured;
-
 
   const marqueeItems = [
     "PAN India Delivery",
