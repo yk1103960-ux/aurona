@@ -124,7 +124,7 @@ function Home() {
       <section className="container-x py-16 lg:py-24">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-center lg:gap-16">
           <div className="order-2 lg:order-1">
-            <div className="text-eyebrow text-gold">05 · Air, refined</div>
+            <div className="text-eyebrow text-gold">03 · Air, refined</div>
             <h3 className="text-display mt-3 text-3xl leading-tight sm:text-4xl lg:text-5xl">
               Silent motors. <br />
               <span className="italic">Statement</span> blades.
@@ -138,7 +138,7 @@ function Home() {
                 <Link to="/category/$slug" params={{ slug: "ceiling-fans" }}>Browse fans <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button asChild variant="outline" className="h-11 rounded-full border-primary/20 px-6">
-                <Link to="/new-arrivals">New this season</Link>
+                <Link to="/products">View all products</Link>
               </Button>
             </div>
           </div>
@@ -165,7 +165,7 @@ function Home() {
           <div className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
           <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
             <div>
-              <div className="text-eyebrow text-gold">07 · Stock Aurona</div>
+              <div className="text-eyebrow text-gold">04 · Stock Aurona</div>
               <h2 className="text-display mt-3 text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
                 Retail with the brand
                 <br />
