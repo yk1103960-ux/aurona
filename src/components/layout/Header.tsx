@@ -198,6 +198,39 @@ export function Header() {
         </div>
       </div>
 
+      {/* Desktop nav row */}
+      <nav className="hidden border-t border-primary/8 lg:block">
+        <div className="container-x flex h-[52px] items-center gap-2">
+          <BrowseTrigger
+            isOpen={openMenu === "browse"}
+            onOpen={() => setOpenMenu("browse")}
+            onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
+          />
+          <span className="mx-3 h-5 w-px shrink-0 bg-primary/15" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center justify-start gap-0.5 overflow-hidden">
+            <NavItem to="/">Home</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/products">All Products</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/affiliate">Affiliate With Us</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/careers">Career With Us</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/blogs">Blogs</NavItem>
+            <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
+            <NavItem to="/about">About Us</NavItem>
+            <span className="mx-1.5 hidden h-4 w-px shrink-0 bg-primary/15 xl:block" aria-hidden />
+            <NavItem to="/contact" className="hidden xl:inline-block">Contact Us</NavItem>
+          </div>
+        </div>
+      </nav>
+
+
+
       {/* Mega menu panels — desktop */}
       <MegaPanel
         open={openMenu === "led"}
