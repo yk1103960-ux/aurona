@@ -699,6 +699,7 @@ function BrowsePanel({
                   {products.map((p) => {
                     const targetSlug = p.family_slug ?? p.slug;
                     const isHovered = hoverProduct?.slug === p.slug;
+                    const off = discountPct(p.mrp ?? 0, p.price ?? 0);
                     return (
                       <li key={p.slug}>
                         <Link
@@ -706,11 +707,36 @@ function BrowsePanel({
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
                           className={cn(
-                            "block border-b border-border px-6 py-3.5 text-[15px] font-medium uppercase leading-snug tracking-[0.04em] transition-colors",
-                            isHovered ? "bg-primary/8 text-primary" : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
+                            "flex items-center gap-4 border-b border-border px-6 py-3 transition-colors",
+                            isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                           )}
                         >
-                          {p.name}
+                          <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
+                            <ProductImage
+                              product={{ slug: p.slug, name: p.name, image_seed: p.image_seed }}
+                              className="h-full w-full"
+                              categoryIcon={activeCat?.icon ?? null}
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={cn("block truncate text-[14px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
+                              {p.name}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                              SKU {p.sku}{p.wattage ? ` · ${p.wattage}` : ""} ·{" "}
+                              <span className={p.stock && p.stock > 0 ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
+                                {p.stock && p.stock > 0 ? "In stock" : "Made to order"}
+                              </span>
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-right">
+                            <span className="block text-[14.5px] font-bold text-primary">{inr(p.price ?? 0)}</span>
+                            {off > 0 && (
+                              <span className="block text-[11px] text-muted-foreground">
+                                <s>{inr(p.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
+                              </span>
+                            )}
+                          </span>
                         </Link>
                       </li>
                     );
@@ -746,8 +772,17 @@ function BrowsePanel({
                     eager
                   />
                 </div>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                  <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">SKU {hoverProduct.sku}</span>
+                  {hoverProduct.wattage && (
+                    <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">{hoverProduct.wattage}</span>
+                  )}
+                  <span className={cn("rounded-full px-2 py-0.5 font-semibold", hoverProduct.stock && hoverProduct.stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-destructive/10 text-destructive")}>
+                    {hoverProduct.stock && hoverProduct.stock > 0 ? "In stock" : "Made to order"}
+                  </span>
+                </div>
                 {hoverProduct.mrp ? (
-                  <div className="mt-4 text-center text-[14px] text-muted-foreground">
+                  <div className="mt-3 text-center text-[14px] text-muted-foreground">
                     M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
                   </div>
                 ) : null}
@@ -759,10 +794,19 @@ function BrowsePanel({
                 <Link
                   to="/products/$slug"
                   params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
-                  className="mt-3 block text-center text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                  className="mt-4 block rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition hover:brightness-110"
                 >
-                  View product →
+                  View product
                 </Link>
+                {activeCat && (
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: activeCat.slug }}
+                    className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
+                  >
+                    View all {activeCat.name} →
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
@@ -772,6 +816,7 @@ function BrowsePanel({
             )}
           </div>
         </div>
+
 
       </div>
     </div>
