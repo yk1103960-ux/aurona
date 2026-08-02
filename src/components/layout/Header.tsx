@@ -899,13 +899,20 @@ function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v:
                           </span>
                         </span>
                         <span className="shrink-0 text-right">
-                          <span className="block text-[14px] font-bold text-primary">{inr(r.price ?? 0)}</span>
-                          {off > 0 && (
-                            <span className="block text-[11px] text-muted-foreground">
-                              <s>{inr(r.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
-                            </span>
+                          {r.price && r.price > 0 ? (
+                            <>
+                              <span className="block text-[14px] font-bold text-primary">{inr(r.price)}</span>
+                              {off > 0 && (
+                                <span className="block text-[11px] text-muted-foreground">
+                                  <s>{inr(r.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="block text-[11.5px] font-semibold text-muted-foreground">Price on request</span>
                           )}
                         </span>
+
                       </Link>
                     </li>
                   );
