@@ -17,6 +17,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { QuickAccessRail } from "@/components/layout/QuickAccessRail";
+import { StickyCartBar } from "@/components/layout/StickyCartBar";
 
 import { PageTransition } from "@/components/motion/PageTransition";
 import { OffersModal } from "@/components/marketing/OffersModal";
@@ -124,6 +125,7 @@ function RootComponent() {
         </main>
         {!isAdminConsole && <Footer />}
         {!isAdminConsole && <QuickAccessRail />}
+        {!isAdminConsole && <StickyCartBar />}
         {!isAdminConsole && <MobileBottomNav />}
 
       </div>
