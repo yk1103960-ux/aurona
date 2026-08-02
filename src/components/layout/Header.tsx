@@ -153,36 +153,14 @@ export function Header() {
               className={cn(
                 "w-auto shrink-0 object-contain object-left mix-blend-multiply transition-[height,max-width] duration-500",
                 scrolled
-                  ? "h-8 max-w-[190px] lg:h-10 lg:max-w-[250px]"
-                  : "h-9 max-w-[210px] lg:h-[54px] lg:max-w-[300px]",
+                  ? "h-9 max-w-[210px] lg:h-12 lg:max-w-[320px]"
+                  : "h-10 max-w-[230px] lg:h-[68px] lg:max-w-[400px]",
               )}
             />
           </Link>
         </div>
 
 
-        {/* Center: primary nav */}
-        <nav className="hidden min-w-0 items-center justify-start gap-0.5 overflow-hidden lg:flex">
-          <div className="shrink-0">
-            <BrowseTrigger
-              isOpen={openMenu === "browse"}
-              onOpen={() => setOpenMenu("browse")}
-              onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
-            />
-          </div>
-          <span className="mx-1 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-          <NavItem to="/" className="hidden 2xl:inline-block">Home</NavItem>
-          <NavItem to="/products">All Products</NavItem>
-          <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
-          <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
-
-          <NavItem to="/affiliate" className="hidden xl:inline-block">Affiliate With Us</NavItem>
-          <NavItem to="/careers" className="hidden 2xl:inline-block">Career With Us</NavItem>
-          <NavItem to="/blogs" className="hidden 2xl:inline-block">Blogs</NavItem>
-          <NavItem to="/about" className="hidden 2xl:inline-block">About Us</NavItem>
-          <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
-
-        </nav>
 
 
         {/* Right: actions */}
