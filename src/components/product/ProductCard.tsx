@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingCart, Star, Check, Phone } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
+import { Heart, Minus, Plus, ShoppingCart, Star, Phone, Truck, Zap } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +12,13 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 
 type Row = Product & { categories: { slug: string; name: string; icon?: string | null } | null };
+
+/** "Mon, 12 Aug" — 3 working days out, matches the delivery promise on aurona.in */
+function deliveryEstimate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+}
 
 export function ProductCard({
   product,
@@ -33,22 +39,22 @@ export function ProductCard({
   const shownMrp = rp?.mrp ?? Number(product.mrp);
   const off = discountPct(shownMrp, shownPrice);
   const icon = categoryIcon ?? product.categories?.icon ?? null;
-  const [added, setAdded] = useState(false);
   const inWishlist = wl.has(product.id);
   const detailSlug = product.family_slug ?? product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
   const isDistributor = role.role === "distributor";
 
+  const line = cart.items.find((i) => i.product_id === product.id);
+  const qty = line?.quantity ?? 0;
+  const stock = Number(product.stock ?? 0);
+  const lowStock = stock > 0 && stock <= 8;
+  const outOfStock = stock <= 0;
+  const spec = product.wattage ?? product.size ?? null;
+
   const handleAdd = () => {
     cart.add.mutate(
       { productId: product.id },
-      {
-        onSuccess: () => {
-          setAdded(true);
-          toast.success("Added to cart", { description: product.name, duration: 1800 });
-          window.setTimeout(() => setAdded(false), 1400);
-        },
-      },
+      { onSuccess: () => toast.success("Added to cart", { description: product.name, duration: 1600 }) },
     );
   };
 
@@ -58,7 +64,7 @@ export function ProductCard({
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-18px_rgba(10,132,209,0.35)]">
+    <div className="card-lift group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] hover:border-primary/40">
       <Link
         to="/products/$slug"
         params={{ slug: detailSlug }}
@@ -75,14 +81,12 @@ export function ProductCard({
           )}
           iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
         />
-        {/* soft ambient glow under product */}
         <span className="pointer-events-none absolute inset-x-6 bottom-2 h-6 rounded-full bg-primary/15 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
-        {/* subtle top sheen on hover */}
         <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
       </Link>
 
       {off > 0 && (
-        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-[0_4px_12px_-4px_color-mix(in_oklab,var(--color-primary)_60%,transparent)]">
+        <span className="pointer-events-none absolute left-3 top-3 rounded-full btn-gradient px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider">
           {off}% OFF
         </span>
       )}
@@ -91,7 +95,6 @@ export function ProductCard({
           Bestseller
         </span>
       )}
-
       <motion.button
         onClick={handleWishlist}
         whileTap={reduce ? undefined : { scale: 0.88 }}
@@ -108,12 +111,17 @@ export function ProductCard({
       </motion.button>
 
       <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-        <div className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</span>
+          {spec && (
+            <span className="rounded-md bg-primary/8 px-1.5 py-0.5 text-[10px] font-bold text-primary">{spec}</span>
+          )}
+        </div>
         <Link
           to="/products/$slug"
           params={{ slug: detailSlug }}
           search={detailSearch}
-          className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-primary"
+          className="line-clamp-2 min-h-[2.6em] text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-primary"
         >
           {product.name}
         </Link>
@@ -137,48 +145,58 @@ export function ProductCard({
         {role.role === "retailer" && (
           <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Retailer price</div>
         )}
+
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Truck className="h-3.5 w-3.5 text-success" />
+          <span>
+            Delivery by <span className="font-semibold text-foreground">{deliveryEstimate()}</span>
+          </span>
+        </div>
+        {lowStock && (
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
+            <Zap className="h-3.5 w-3.5" /> Only {stock} left — order soon
+          </div>
+        )}
+        {outOfStock && (
+          <div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>
+        )}
+
         {isDistributor ? (
           <Button asChild size="sm" className="mt-2 w-full gap-2 rounded-full">
             <a href="tel:+919602570026">
               <Phone className="h-4 w-4" /> Contact Sales
             </a>
           </Button>
+        ) : qty > 0 ? (
+          <div className="mt-2 flex h-9 items-center justify-between rounded-full btn-gradient px-1">
+            <button
+              type="button"
+              onClick={() => cart.updateQty.mutate({ id: line!.id, quantity: qty - 1 })}
+              className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition hover:bg-white/30"
+              aria-label="Decrease quantity"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <span className="text-sm font-bold tabular-nums" aria-live="polite">
+              {qty}
+            </span>
+            <button
+              type="button"
+              onClick={() => cart.updateQty.mutate({ id: line!.id, quantity: qty + 1 })}
+              className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition hover:bg-white/30"
+              aria-label="Increase quantity"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
         ) : (
           <Button
             size="sm"
-            className={cn(
-              "press mt-2 w-full gap-2 overflow-hidden",
-              added && "bg-success text-success-foreground hover:bg-success",
-            )}
+            className="press mt-2 w-full gap-2 rounded-full"
             onClick={handleAdd}
-            disabled={cart.add.isPending}
-            aria-live="polite"
+            disabled={cart.add.isPending || outOfStock}
           >
-            <AnimatePresence mode="wait" initial={false}>
-              {added ? (
-                <motion.span
-                  key="added"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18 }}
-                  className="flex items-center gap-2"
-                >
-                  <Check className="h-4 w-4" /> Added
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="add"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.18 }}
-                  className="flex items-center gap-2"
-                >
-                  <ShoppingCart className="h-4 w-4" /> Add to Cart
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <ShoppingCart className="h-4 w-4" /> {outOfStock ? "Notify me" : "ADD"}
           </Button>
         )}
       </div>

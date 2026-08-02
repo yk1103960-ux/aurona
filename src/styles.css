@@ -424,3 +424,31 @@
     border: 2px solid transparent;
   }
 }
+
+/* ============ Premium blue surface kit (v2) ============ */
+@utility btn-gradient {
+  background: linear-gradient(135deg, var(--color-primary) 0%, oklch(0.50 0.15 250) 100%);
+  color: var(--color-primary-foreground);
+  box-shadow: 0 10px 24px -12px color-mix(in oklab, var(--color-primary) 70%, transparent);
+}
+
+@utility glass-panel {
+  background: color-mix(in oklab, #ffffff 78%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 12%, transparent);
+  box-shadow: var(--shadow-premium);
+}
+
+@utility section-tint {
+  background:
+    radial-gradient(80% 60% at 50% 0%, color-mix(in oklab, var(--color-sky) 16%, transparent), transparent 70%),
+    var(--color-background);
+}
+
+@utility card-lift {
+  transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 480ms cubic-bezier(0.22, 1, 0.36, 1), border-color 320ms ease;
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lift);
+  }
+}

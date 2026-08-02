@@ -1,34 +1,58 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, Zap, Clock, ChevronRight } from "lucide-react";
+import { LayoutGrid, Zap, Clock, ChevronRight, X } from "lucide-react";
 import { categoriesQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-/** Sticky floating quick-access rail — expands on hover (desktop only). */
+/** Sticky floating quick-access rail — click to pin the category flyout (desktop only). */
 export function QuickAccessRail() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { data: cats = [] } = useQuery(categoriesQuery);
   const [openCats, setOpenCats] = useState(false);
 
+  useEffect(() => {
+    setOpenCats(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!openCats) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenCats(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openCats]);
+
   if (pathname.startsWith("/aurona-console")) return null;
 
   return (
-    <div className="pointer-events-none fixed left-0 top-1/2 z-30 hidden -translate-y-1/2 xl:block">
-      <div className="pointer-events-auto flex flex-col gap-2 pl-2">
-        {/* All categories */}
-        <div
-          className="group relative"
-          onMouseEnter={() => setOpenCats(true)}
-          onMouseLeave={() => setOpenCats(false)}
-        >
-          <RailButton icon={LayoutGrid} label="All Categories" />
+    <div className="pointer-events-none fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 xl:block">
+      <div className="pointer-events-auto flex flex-col gap-2.5 pl-2">
+        <div className="group relative">
+          <RailButton
+            icon={LayoutGrid}
+            label="All Categories"
+            active={openCats}
+            onClick={() => setOpenCats((v) => !v)}
+          />
           <div
             className={cn(
-              "absolute left-[calc(100%+10px)] top-1/2 max-h-[64vh] w-[260px] -translate-y-1/2 overflow-y-auto rounded-2xl border border-primary/12 bg-white p-2 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300",
-              openCats ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none -translate-x-2 opacity-0",
+              "glass-panel absolute left-[calc(100%+12px)] top-1/2 max-h-[64vh] w-[280px] -translate-y-1/2 overflow-y-auto rounded-2xl p-2 transition-all duration-300",
+              openCats
+                ? "pointer-events-auto translate-x-0 opacity-100"
+                : "pointer-events-none -translate-x-2 opacity-0",
             )}
           >
+            <div className="flex items-center justify-between px-3 py-2">
+              <span className="text-eyebrow text-[10px]">Browse</span>
+              <button
+                type="button"
+                onClick={() => setOpenCats(false)}
+                className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
+                aria-label="Close categories"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
             {cats.map((c) => (
               <Link
                 key={c.id}
@@ -40,6 +64,12 @@ export function QuickAccessRail() {
                 <ChevronRight className="h-3.5 w-3.5 opacity-40" />
               </Link>
             ))}
+            <Link
+              to="/categories"
+              className="mt-1 flex items-center justify-center gap-1.5 rounded-xl btn-gradient px-3 py-2 text-[12.5px] font-bold"
+            >
+              View all categories <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
 
@@ -55,11 +85,27 @@ const shell =
 const labelCls =
   "max-w-0 whitespace-nowrap text-[12.5px] font-bold tracking-[0.02em] opacity-0 transition-all duration-300 group-hover:ml-2.5 group-hover:max-w-[160px] group-hover:opacity-100";
 
-function RailButton({ icon: Icon, label }: { icon: typeof Zap; label: string }) {
+function RailButton({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: typeof Zap;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <button type="button" className={cn("group", shell)} aria-label={label}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={active}
+      className={cn("group", shell, active && "btn-gradient border-transparent pr-4")}
+      aria-label={label}
+    >
       <Icon className="h-[19px] w-[19px] shrink-0" strokeWidth={1.9} />
-      <span className={labelCls}>{label}</span>
+      <span className={cn(labelCls, active && "ml-2.5 max-w-[160px] opacity-100")}>{label}</span>
     </button>
   );
 }
