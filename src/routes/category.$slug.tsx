@@ -44,14 +44,47 @@ function CategoryPage() {
   const cat = cats.find((c) => c.slug === slug)!;
 
   return (
-    <div className="container-x py-8">
-      <div className="mb-6 text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Home</Link> /{" "}
-        <Link to="/products" className="hover:text-foreground">Products</Link> /{" "}
+    <div className="container-x py-10">
+      <div className="mb-7 text-xs text-muted-foreground">
+        <Link to="/" className="hover:text-primary">Home</Link> /{" "}
+        <Link to="/products" className="hover:text-primary">Products</Link> /{" "}
         <span className="text-foreground">{cat.name}</span>
       </div>
-      <h1 className="text-display text-4xl sm:text-5xl">{cat.name}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{total} products</p>
+
+      <div className="flex flex-col gap-6 rounded-3xl border border-primary/10 bg-gradient-to-br from-white via-surface/50 to-surface p-6 sm:flex-row sm:items-center sm:gap-7 sm:p-8">
+        {cat.icon && (
+          <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl border border-primary/12 bg-white shadow-[0_14px_30px_-22px_rgba(10,132,209,0.6)]">
+            <img src={cat.icon} alt="" className="h-14 w-14 object-contain" />
+          </span>
+        )}
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Category</div>
+          <h1 className="text-display mt-2 text-4xl leading-tight sm:text-5xl">{cat.name}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{total} products · Manufacturer-direct pricing · PAN India delivery</p>
+        </div>
+      </div>
+
+      {/* Sibling categories for easier navigation */}
+      <div className="scrollbar-visible -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-1">
+        {cats
+          .filter((c) => c.parent_group === cat.parent_group)
+          .map((c) => (
+            <Link
+              key={c.id}
+              to="/category/$slug"
+              params={{ slug: c.slug }}
+              className={
+                "shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-semibold transition-all duration-300 " +
+                (c.slug === cat.slug
+                  ? "border-primary/40 bg-primary text-primary-foreground"
+                  : "border-primary/15 bg-white text-foreground/80 hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary")
+              }
+            >
+              {c.name}
+            </Link>
+          ))}
+      </div>
+
 
       {total === 0 ? (
         <div className="mt-12 rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground">
