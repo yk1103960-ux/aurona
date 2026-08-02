@@ -120,86 +120,6 @@ function Home() {
         </div>
       </section>
 
-      {/* ============ BEST SELLERS ============ */}
-      <section className="relative overflow-hidden bg-background">
-        <div className="pointer-events-none absolute inset-0 light-halo opacity-70" aria-hidden />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px rule-editorial" aria-hidden />
-        <div className="container-x relative py-16 lg:py-24">
-          <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-            <div className="min-w-0">
-              <div className="text-eyebrow text-gold">03 · The favourites</div>
-              <h2 className="text-display mt-3 text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
-                Loved by <span className="italic">India</span>.
-              </h2>
-            </div>
-            <Link to="/bestsellers" className="hidden shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
-              All bestsellers →
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {best.slice(0, 8).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* ============ DEALS BAND — dark ============ */}
-      <section className="bg-primary py-16 text-primary-foreground lg:py-24">
-        <div className="container-x">
-          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="text-eyebrow text-gold">04 · Season sale</div>
-              <h2 className="text-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
-                Up to <span className="italic text-gold">60% off</span>.
-              </h2>
-              <p className="mt-3 max-w-sm text-sm text-primary-foreground/70">
-                Curated pieces from the current run — reduced for a limited window.
-              </p>
-            </div>
-            <Link to="/deals" className="group inline-flex w-fit items-center gap-2 rounded-full border border-primary-foreground/20 px-5 py-2.5 text-sm font-semibold hover:border-gold hover:text-gold">
-              Shop all deals <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sale.slice(0, 6).map((p) => {
-              const off = discountPct(p.mrp, p.price);
-              return (
-                <Link
-                  key={p.id}
-                  to="/products/$slug"
-                  params={{ slug: p.slug }}
-                  className="group relative flex overflow-hidden rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 backdrop-blur transition hover:border-primary-foreground/40 hover:bg-primary-foreground/15"
-                >
-                  <div className="h-32 w-32 shrink-0 sm:h-36 sm:w-36">
-                    <ProductImage product={p} categoryIcon={p.categories?.icon} className="h-full w-full rounded-none" iconClassName="h-12 w-12" />
-                  </div>
-                  <div className="flex flex-1 flex-col justify-between p-4">
-                    <div>
-                      <div className="line-clamp-2 text-sm font-semibold text-primary-foreground">{p.name}</div>
-                      <div className="mt-1 text-[10px] uppercase tracking-wider text-primary-foreground/60">{p.categories?.name}</div>
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <div className="text-lg font-semibold text-primary-foreground">{inr(p.price)}</div>
-                        <div className="text-[11px] text-primary-foreground/50 line-through">{inr(p.mrp)}</div>
-                      </div>
-                      {off > 0 && (
-                        <span className="rounded-full bg-primary-foreground/20 px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                          {off}% off
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ============ FAN EDITORIAL SPLIT ============ */}
       <section className="container-x py-16 lg:py-24">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-center lg:gap-16">
@@ -230,31 +150,6 @@ function Home() {
               loading="lazy"
             />
           </div>
-        </div>
-      </section>
-
-      {/* ============ NEW ARRIVALS ============ */}
-      <section className="relative overflow-hidden bg-surface grain py-16 lg:py-24">
-        <div className="pointer-events-none absolute inset-0 editorial-grid opacity-40" aria-hidden />
-        <div className="pointer-events-none absolute -right-24 top-10 h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_18%,transparent),transparent_70%)] blur-3xl" aria-hidden />
-        <div className="container-x relative">
-          <div className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-            <div className="min-w-0">
-              <div className="text-eyebrow text-gold">06 · Just landed</div>
-              <h2 className="text-display mt-3 text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
-                New <span className="italic">arrivals</span>.
-              </h2>
-            </div>
-            <Link to="/new-arrivals" className="hidden shrink-0 text-sm font-semibold text-primary underline-offset-4 hover:text-gold hover:underline sm:block">
-              See everything →
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {news.slice(0, 6).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-
         </div>
       </section>
 
