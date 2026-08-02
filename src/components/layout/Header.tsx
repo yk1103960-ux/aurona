@@ -123,8 +123,8 @@ export function Header() {
       {/* Main bar */}
       <div
         className={cn(
-          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-6 xl:gap-8",
-          scrolled ? "h-[68px] lg:h-[84px]" : "h-[76px] lg:h-[104px]",
+          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:gap-6 xl:gap-8",
+          scrolled ? "h-[68px] lg:h-[76px]" : "h-[76px] lg:h-[92px]",
         )}
       >
         {/* Left: hamburger (mobile) + logo cluster */}
