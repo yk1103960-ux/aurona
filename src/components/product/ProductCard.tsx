@@ -95,10 +95,6 @@ export function ProductCard({
           Bestseller
         </span>
       )}
-      {spec && (
-        <span className="pointer-events-none absolute left-3 bottom-[calc(100%-theme(spacing.3))] hidden" aria-hidden />
-      )}
-
       <motion.button
         onClick={handleWishlist}
         whileTap={reduce ? undefined : { scale: 0.88 }}
