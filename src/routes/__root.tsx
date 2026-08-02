@@ -115,13 +115,15 @@ function RootComponent() {
       <AuthListener />
       <div className="flex min-h-screen flex-col">
         {!isAdminConsole && <Header />}
-        <main className={isAdminConsole ? "flex-1" : "flex-1 pt-16 pb-16 lg:pt-[144px] lg:pb-0"}>
+        <main className={isAdminConsole ? "flex-1" : "flex-1 pt-16 pb-16 lg:pt-[180px] lg:pb-0"}>
           <PageTransition>
             <Outlet />
           </PageTransition>
         </main>
         {!isAdminConsole && <Footer />}
+        {!isAdminConsole && <QuickAccessRail />}
         {!isAdminConsole && <MobileBottomNav />}
+
       </div>
       {!isAdminConsole && <OffersModal />}
       <CinematicIntro />
