@@ -6,6 +6,18 @@ import { categoriesQuery, productsPageQuery } from "@/lib/queries";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Pagination, PER_PAGE_OPTIONS } from "@/components/product/Pagination";
 
+const iconPointers = import.meta.glob<{ default: { url: string } }>(
+  "../assets/category-icons/*.png.asset.json",
+  { eager: true },
+);
+const categoryIcons: Record<string, string> = Object.fromEntries(
+  Object.entries(iconPointers).map(([path, mod]) => [
+    path.split("/").pop()!.replace(".png.asset.json", ""),
+    mod.default.url,
+  ]),
+);
+
+
 const search = z.object({
   page: fallback(z.number(), 1).default(1),
   perPage: fallback(z.number(), 24).default(24),
@@ -52,11 +64,18 @@ function CategoryPage() {
       </div>
 
       <div className="flex flex-col gap-6 rounded-3xl border border-primary/10 bg-gradient-to-br from-white via-surface/50 to-surface p-6 sm:flex-row sm:items-center sm:gap-7 sm:p-8">
-        {cat.icon && (
-          <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl border border-primary/12 bg-white shadow-[0_14px_30px_-22px_rgba(10,132,209,0.6)]">
-            <img src={cat.icon} alt="" className="h-14 w-14 object-contain" />
-          </span>
-        )}
+        <span className="grid h-24 w-24 shrink-0 place-items-center rounded-3xl border border-primary/12 bg-gradient-to-br from-white to-[oklch(0.955_0.018_235)] shadow-[0_18px_40px_-24px_oklch(0.58_0.16_240/0.65)]">
+          {categoryIcons[cat.slug] ? (
+            <img
+              src={categoryIcons[cat.slug]}
+              alt={`${cat.name} icon`}
+              className="h-16 w-16 object-contain drop-shadow-[0_10px_18px_oklch(0.58_0.16_240/0.28)]"
+            />
+          ) : (
+            <span className="text-display text-3xl text-primary">{cat.name.charAt(0)}</span>
+          )}
+        </span>
+
         <div className="min-w-0">
           <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Category</div>
           <h1 className="text-display mt-2 text-4xl leading-tight sm:text-5xl">{cat.name}</h1>

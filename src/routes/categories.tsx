@@ -79,21 +79,25 @@ function CategoriesPage() {
                     key={c.id}
                     to="/category/$slug"
                     params={{ slug: c.slug }}
-                    className="card-lift group flex flex-col items-center gap-3 rounded-2xl border border-primary/10 bg-card p-5 text-center shadow-soft"
+                    className="group relative flex flex-col items-center gap-4 overflow-hidden rounded-3xl border border-primary/10 bg-white p-6 text-center shadow-[0_2px_10px_-6px_oklch(0.58_0.16_240/0.35)] transition-all duration-500 hover:-translate-y-1.5 hover:border-primary/30 hover:shadow-[0_28px_60px_-30px_oklch(0.58_0.16_240/0.55)]"
                   >
-                    <span className="grid h-20 w-20 place-items-center rounded-full product-tile">
+                    <span
+                      className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-[radial-gradient(ellipse_at_center,oklch(0.79_0.13_235/0.35),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                      aria-hidden
+                    />
+                    <span className="relative grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br from-[oklch(0.99_0.005_240)] to-[oklch(0.93_0.035_235)] shadow-[inset_0_1px_0_oklch(1_0_0/0.9),0_16px_30px_-20px_oklch(0.58_0.16_240/0.7)] transition-transform duration-500 group-hover:scale-105">
                       {categoryIcons[c.slug] ? (
                         <img
                           src={categoryIcons[c.slug]}
                           alt={`${c.name} icon`}
-                          className="h-12 w-12 object-contain transition-transform duration-500 group-hover:scale-110"
+                          className="h-14 w-14 object-contain drop-shadow-[0_10px_16px_oklch(0.58_0.16_240/0.3)] transition-transform duration-500 group-hover:-translate-y-0.5 group-hover:scale-110"
                           loading="lazy"
                         />
                       ) : (
                         <span className="text-display text-2xl text-primary">{c.name.charAt(0)}</span>
                       )}
                     </span>
-                    <span className="text-[13px] font-semibold leading-tight text-foreground group-hover:text-primary">
+                    <span className="relative text-[13px] font-bold leading-tight tracking-tight text-foreground transition-colors group-hover:text-primary">
                       {c.name}
                     </span>
                   </Link>
