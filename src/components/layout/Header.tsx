@@ -218,17 +218,41 @@ export function Header() {
         </div>
 
 
-
+        {/* Center: large search with live suggestions */}
+        <div className="hidden min-w-0 flex-1 justify-center px-4 lg:flex xl:px-8">
+          <SearchBox value={q} onChange={setQ} onSubmit={submit} />
+        </div>
 
         {/* Right: actions */}
-        <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+        <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
+          <Link
+            to={user ? "/account" : "/auth"}
+            className="group hidden items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 transition-all hover:border-primary/40 hover:shadow-[0_8px_20px_-14px_oklch(0.55_0.14_240/0.6)] lg:inline-flex"
+          >
+            <User className="h-[18px] w-[18px] text-primary" strokeWidth={1.9} />
+            <span className="flex flex-col leading-none">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {user ? "Welcome" : "Account"}
+              </span>
+              <span className="mt-0.5 text-[12.5px] font-bold text-foreground group-hover:text-primary">
+                {user ? "My Account" : "Login / Register"}
+              </span>
+            </span>
+          </Link>
           <button
             onClick={() => document.getElementById("aurona-search-input")?.focus()}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
+            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
             aria-label="Search"
           >
             <Search className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </button>
+          <Link
+            to={user ? "/account" : "/auth"}
+            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
+            aria-label="Account"
+          >
+            <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
+          </Link>
           <Link
             to="/wishlist"
             className="relative hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
@@ -236,13 +260,6 @@ export function Header() {
           >
             <Heart className="h-[19px] w-[19px]" strokeWidth={1.75} />
             {wl.count > 0 && <Badge count={wl.count} />}
-          </Link>
-          <Link
-            to={user ? "/account" : "/auth"}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
-            aria-label="Account"
-          >
-            <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </Link>
           <Link
             to="/cart"
@@ -253,6 +270,7 @@ export function Header() {
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
         </div>
+
       </div>
 
       {/* Desktop nav row */}
