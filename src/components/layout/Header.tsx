@@ -1,7 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 
 const BROWSE_ICONS: Record<string, LucideIcon> = {
   "led-bulbs": Lightbulb,
