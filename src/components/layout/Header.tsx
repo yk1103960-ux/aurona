@@ -123,7 +123,58 @@ export function Header() {
       )}
       onMouseLeave={() => setOpenMenu(null)}
     >
+      {/* Utility strip — helpline, language, social, quick links */}
+      <div className={cn("hidden overflow-hidden border-b border-primary/8 bg-gradient-to-r from-primary via-[oklch(0.52_0.13_248)] to-primary text-primary-foreground transition-all duration-500 lg:block", scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100")}>
+        <div className="container-x flex h-9 items-center justify-between text-[11.5px] font-medium tracking-[0.04em]">
+          <div className="flex items-center gap-5">
+            <a href={`tel:${(settings?.support_phone ?? "").replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+              <PhoneCall className="h-3.5 w-3.5" strokeWidth={2} />
+              Helpline: {settings?.support_phone ?? "+91 96025 70026"}
+            </a>
+            <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
+            <a href={`mailto:${settings?.support_email ?? ""}`} className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+              <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+              {settings?.support_email ?? "support@auronalighting.com"}
+            </a>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="inline-flex items-center gap-1.5">
+              <Globe className="h-3.5 w-3.5" strokeWidth={2} />
+              <select
+                aria-label="Language"
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="cursor-pointer rounded-md bg-transparent text-[11.5px] font-semibold text-primary-foreground outline-none [&>option]:text-foreground"
+              >
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            </div>
+            <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
+            <Link to="/contact" className="transition-opacity hover:opacity-80">Contact Us</Link>
+            <Link to="/customer-service" className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+              <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} /> FAQs
+            </Link>
+            <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
+            <div className="flex items-center gap-2.5">
+              {([
+                [settings?.social_facebook, Facebook, "Facebook"],
+                [settings?.social_instagram, Instagram, "Instagram"],
+                [settings?.social_twitter, Twitter, "X"],
+                [settings?.social_youtube, Youtube, "YouTube"],
+                [settings?.social_linkedin, Linkedin, "LinkedIn"],
+              ] as [string | undefined, LucideIcon, string][]).map(([href, Icn, label]) => (
+                <a key={label} href={href ?? "#"} target="_blank" rel="noreferrer" aria-label={label} className="transition-transform hover:-translate-y-0.5 hover:text-gold">
+                  <Icn className="h-3.5 w-3.5" strokeWidth={2} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main bar */}
+
       <div
         className={cn(
           "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:gap-6 xl:gap-8",
