@@ -16,6 +16,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { QuickAccessRail } from "@/components/layout/QuickAccessRail";
+
 import { PageTransition } from "@/components/motion/PageTransition";
 import { OffersModal } from "@/components/marketing/OffersModal";
 import { CinematicIntro } from "@/components/marketing/CinematicIntro";
@@ -115,13 +117,15 @@ function RootComponent() {
       <AuthListener />
       <div className="flex min-h-screen flex-col">
         {!isAdminConsole && <Header />}
-        <main className={isAdminConsole ? "flex-1" : "flex-1 pt-16 pb-16 lg:pt-[144px] lg:pb-0"}>
+        <main className={isAdminConsole ? "flex-1" : "flex-1 pt-16 pb-16 lg:pt-[180px] lg:pb-0"}>
           <PageTransition>
             <Outlet />
           </PageTransition>
         </main>
         {!isAdminConsole && <Footer />}
+        {!isAdminConsole && <QuickAccessRail />}
         {!isAdminConsole && <MobileBottomNav />}
+
       </div>
       {!isAdminConsole && <OffersModal />}
       <CinematicIntro />

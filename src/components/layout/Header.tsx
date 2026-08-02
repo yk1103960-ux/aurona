@@ -1,7 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 
 const BROWSE_ICONS: Record<string, LucideIcon> = {
   "led-bulbs": Lightbulb,
@@ -29,7 +30,9 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { categoriesQuery, browseProductsByCategoryQuery, type Category, type BrowseProduct } from "@/lib/queries";
+import { categoriesQuery, browseProductsByCategoryQuery, searchSuggestQuery, type Category, type BrowseProduct, type SearchSuggestion } from "@/lib/queries";
+import { siteSettingsQuery } from "@/lib/settings";
+
 import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
@@ -97,6 +100,9 @@ export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
   const { data: cats = [] } = useQuery(categoriesQuery);
+  const { data: settings } = useQuery(siteSettingsQuery);
+  const [lang, setLang] = useState("en");
+
 
   useEffect(() => setOpenMobile(false), [pathname]);
   useEffect(() => setOpenMenu(null), [pathname]);
@@ -120,7 +126,58 @@ export function Header() {
       )}
       onMouseLeave={() => setOpenMenu(null)}
     >
+      {/* Utility strip — helpline, language, social, quick links */}
+      <div className={cn("hidden overflow-hidden border-b border-primary/8 bg-gradient-to-r from-primary via-[oklch(0.52_0.13_248)] to-primary text-primary-foreground transition-all duration-500 lg:block", scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100")}>
+        <div className="container-x flex h-9 items-center justify-between text-[11.5px] font-medium tracking-[0.04em]">
+          <div className="flex items-center gap-5">
+            <a href={`tel:${(settings?.support_phone ?? "").replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+              <PhoneCall className="h-3.5 w-3.5" strokeWidth={2} />
+              Helpline: {settings?.support_phone ?? "+91 96025 70026"}
+            </a>
+            <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
+            <a href={`mailto:${settings?.support_email ?? ""}`} className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+              <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+              {settings?.support_email ?? "support@auronalighting.com"}
+            </a>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="inline-flex items-center gap-1.5">
+              <Globe className="h-3.5 w-3.5" strokeWidth={2} />
+              <select
+                aria-label="Language"
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="cursor-pointer rounded-md bg-transparent text-[11.5px] font-semibold text-primary-foreground outline-none [&>option]:text-foreground"
+              >
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            </div>
+            <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
+            <Link to="/contact" className="transition-opacity hover:opacity-80">Contact Us</Link>
+            <Link to="/customer-service" className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+              <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} /> FAQs
+            </Link>
+            <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
+            <div className="flex items-center gap-2.5">
+              {([
+                [settings?.social_facebook, Facebook, "Facebook"],
+                [settings?.social_instagram, Instagram, "Instagram"],
+                [settings?.social_twitter, Twitter, "X"],
+                [settings?.social_youtube, Youtube, "YouTube"],
+                [settings?.social_linkedin, Linkedin, "LinkedIn"],
+              ] as [string | undefined, LucideIcon, string][]).map(([href, Icn, label]) => (
+                <a key={label} href={href ?? "#"} target="_blank" rel="noreferrer" aria-label={label} className="transition-transform hover:-translate-y-0.5 hover:text-gold">
+                  <Icn className="h-3.5 w-3.5" strokeWidth={2} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main bar */}
+
       <div
         className={cn(
           "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:gap-6 xl:gap-8",
@@ -161,17 +218,41 @@ export function Header() {
         </div>
 
 
-
+        {/* Center: large search with live suggestions */}
+        <div className="hidden min-w-0 flex-1 justify-center px-4 lg:flex xl:px-8">
+          <SearchBox value={q} onChange={setQ} onSubmit={submit} />
+        </div>
 
         {/* Right: actions */}
-        <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+        <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
+          <Link
+            to={user ? "/account" : "/auth"}
+            className="group hidden items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 transition-all hover:border-primary/40 hover:shadow-[0_8px_20px_-14px_oklch(0.55_0.14_240/0.6)] lg:inline-flex"
+          >
+            <User className="h-[18px] w-[18px] text-primary" strokeWidth={1.9} />
+            <span className="flex flex-col leading-none">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {user ? "Welcome" : "Account"}
+              </span>
+              <span className="mt-0.5 text-[12.5px] font-bold text-foreground group-hover:text-primary">
+                {user ? "My Account" : "Login / Register"}
+              </span>
+            </span>
+          </Link>
           <button
             onClick={() => document.getElementById("aurona-search-input")?.focus()}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
+            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
             aria-label="Search"
           >
             <Search className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </button>
+          <Link
+            to={user ? "/account" : "/auth"}
+            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
+            aria-label="Account"
+          >
+            <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
+          </Link>
           <Link
             to="/wishlist"
             className="relative hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
@@ -179,13 +260,6 @@ export function Header() {
           >
             <Heart className="h-[19px] w-[19px]" strokeWidth={1.75} />
             {wl.count > 0 && <Badge count={wl.count} />}
-          </Link>
-          <Link
-            to={user ? "/account" : "/auth"}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
-            aria-label="Account"
-          >
-            <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </Link>
           <Link
             to="/cart"
@@ -196,6 +270,7 @@ export function Header() {
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
         </div>
+
       </div>
 
       {/* Desktop nav row */}
@@ -624,6 +699,7 @@ function BrowsePanel({
                   {products.map((p) => {
                     const targetSlug = p.family_slug ?? p.slug;
                     const isHovered = hoverProduct?.slug === p.slug;
+                    const off = discountPct(p.mrp ?? 0, p.price ?? 0);
                     return (
                       <li key={p.slug}>
                         <Link
@@ -631,11 +707,36 @@ function BrowsePanel({
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
                           className={cn(
-                            "block border-b border-border px-6 py-3.5 text-[15px] font-medium uppercase leading-snug tracking-[0.04em] transition-colors",
-                            isHovered ? "bg-primary/8 text-primary" : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
+                            "flex items-center gap-4 border-b border-border px-6 py-3 transition-colors",
+                            isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                           )}
                         >
-                          {p.name}
+                          <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
+                            <ProductImage
+                              product={{ slug: p.slug, name: p.name, image_seed: p.image_seed }}
+                              className="h-full w-full"
+                              categoryIcon={activeCat?.icon ?? null}
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={cn("block truncate text-[14px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
+                              {p.name}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                              SKU {p.sku}{p.wattage ? ` · ${p.wattage}` : ""} ·{" "}
+                              <span className={p.stock && p.stock > 0 ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
+                                {p.stock && p.stock > 0 ? "In stock" : "Made to order"}
+                              </span>
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-right">
+                            <span className="block text-[14.5px] font-bold text-primary">{inr(p.price ?? 0)}</span>
+                            {off > 0 && (
+                              <span className="block text-[11px] text-muted-foreground">
+                                <s>{inr(p.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
+                              </span>
+                            )}
+                          </span>
                         </Link>
                       </li>
                     );
@@ -671,8 +772,17 @@ function BrowsePanel({
                     eager
                   />
                 </div>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                  <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">SKU {hoverProduct.sku}</span>
+                  {hoverProduct.wattage && (
+                    <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">{hoverProduct.wattage}</span>
+                  )}
+                  <span className={cn("rounded-full px-2 py-0.5 font-semibold", hoverProduct.stock && hoverProduct.stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-destructive/10 text-destructive")}>
+                    {hoverProduct.stock && hoverProduct.stock > 0 ? "In stock" : "Made to order"}
+                  </span>
+                </div>
                 {hoverProduct.mrp ? (
-                  <div className="mt-4 text-center text-[14px] text-muted-foreground">
+                  <div className="mt-3 text-center text-[14px] text-muted-foreground">
                     M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
                   </div>
                 ) : null}
@@ -684,10 +794,19 @@ function BrowsePanel({
                 <Link
                   to="/products/$slug"
                   params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
-                  className="mt-3 block text-center text-[11px] font-bold uppercase tracking-[0.24em] text-primary hover:text-gold"
+                  className="mt-4 block rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition hover:brightness-110"
                 >
-                  View product →
+                  View product
                 </Link>
+                {activeCat && (
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: activeCat.slug }}
+                    className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
+                  >
+                    View all {activeCat.name} →
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
@@ -698,8 +817,119 @@ function BrowsePanel({
           </div>
         </div>
 
+
       </div>
     </div>
   );
 }
 
+
+function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v: string) => void; onSubmit: (e: React.FormEvent) => void }) {
+  const [focused, setFocused] = useState(false);
+  const [debounced, setDebounced] = useState(value);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), 220);
+    return () => window.clearTimeout(t);
+  }, [value]);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setFocused(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const { data: results = [], isFetching } = useQuery(searchSuggestQuery(debounced));
+  const show = focused && debounced.trim().length >= 2;
+
+  return (
+    <div ref={box} className="relative w-full max-w-[720px]">
+      <form onSubmit={(e) => { setFocused(false); onSubmit(e); }}>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-primary/70" strokeWidth={2} />
+          <Input
+            id="aurona-search-input"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            placeholder="Search LED bulbs, panel lights, ceiling fans, geysers or SKU…"
+            className="h-[52px] rounded-full border-primary/20 bg-white pl-[52px] pr-[112px] text-[14px] font-medium text-foreground shadow-[0_2px_14px_-10px_oklch(0.55_0.14_240/0.55)] placeholder:font-normal placeholder:text-muted-foreground focus-visible:border-primary/45 focus-visible:ring-primary/25"
+            autoComplete="off"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 grid h-9 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.97]"
+          >
+            Search
+          </button>
+        </div>
+      </form>
+
+      {show && (
+        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
+          {isFetching && results.length === 0 ? (
+            <div className="space-y-3 p-4">
+              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-primary/5" />)}
+            </div>
+          ) : results.length === 0 ? (
+            <div className="px-5 py-6 text-sm text-muted-foreground">No products match “{debounced}”.</div>
+          ) : (
+            <>
+              <ul className="max-h-[420px] overflow-y-auto">
+                {results.map((r: SearchSuggestion) => {
+                  const off = discountPct(r.mrp ?? 0, r.price ?? 0);
+                  return (
+                    <li key={r.slug}>
+                      <Link
+                        to="/products/$slug"
+                        params={{ slug: r.slug }}
+                        onClick={() => setFocused(false)}
+                        className="flex items-center gap-3 border-b border-border/70 px-4 py-3 transition-colors last:border-0 hover:bg-primary/5"
+                      >
+                        <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
+                          <ProductImage product={{ slug: r.slug, name: r.name, image_seed: r.image_seed }} className="h-full w-full" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-semibold text-foreground">{r.name}</span>
+                          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                            SKU {r.sku}{r.wattage ? ` · ${r.wattage}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          {r.price && r.price > 0 ? (
+                            <>
+                              <span className="block text-[14px] font-bold text-primary">{inr(r.price)}</span>
+                              {off > 0 && (
+                                <span className="block text-[11px] text-muted-foreground">
+                                  <s>{inr(r.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="block text-[11.5px] font-semibold text-muted-foreground">Price on request</span>
+                          )}
+                        </span>
+
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <Link
+                to="/products"
+                search={{ q: debounced.trim() } as never}
+                onClick={() => setFocused(false)}
+                className="block bg-surface/60 px-5 py-3 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary/8"
+              >
+                View all results →
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
