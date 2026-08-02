@@ -16,6 +16,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { QuickAccessRail } from "@/components/layout/QuickAccessRail";
+
 import { PageTransition } from "@/components/motion/PageTransition";
 import { OffersModal } from "@/components/marketing/OffersModal";
 import { CinematicIntro } from "@/components/marketing/CinematicIntro";
