@@ -30,7 +30,9 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { categoriesQuery, browseProductsByCategoryQuery, type Category, type BrowseProduct } from "@/lib/queries";
+import { categoriesQuery, browseProductsByCategoryQuery, searchSuggestQuery, type Category, type BrowseProduct, type SearchSuggestion } from "@/lib/queries";
+import { siteSettingsQuery } from "@/lib/settings";
+
 import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
