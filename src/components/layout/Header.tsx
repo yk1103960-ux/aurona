@@ -733,7 +733,7 @@ function BrowsePanel({
 
         {/* Right: hovered product preview */}
         <div className="bg-white">
-          <div className="truncate bg-[oklch(0.28_0.08_255)] px-5 py-3 text-center text-[13px] font-bold uppercase tracking-[0.16em] text-white">
+          <div className="truncate bg-nav px-5 py-3 text-center text-[12.5px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
             {hoverProduct?.name ?? activeCat?.name ?? "Product"}
           </div>
           <div className="grid h-[calc(70vh-46px)] place-items-center p-5">
@@ -752,22 +752,13 @@ function BrowsePanel({
                     eager
                   />
                 </div>
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-                  <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">SKU {hoverProduct.sku}</span>
-                  {hoverProduct.wattage && (
-                    <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">{hoverProduct.wattage}</span>
-                  )}
-                  <span className={cn("rounded-full px-2 py-0.5 font-semibold", hoverProduct.stock && hoverProduct.stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-destructive/10 text-destructive")}>
-                    {hoverProduct.stock && hoverProduct.stock > 0 ? "In stock" : "Made to order"}
-                  </span>
-                </div>
-                {hoverProduct.mrp ? (
-                  <div className="mt-3 text-center text-[14px] text-muted-foreground">
+                {hoverProduct.mrp && discountPct(hoverProduct.mrp, hoverProduct.price ?? 0) > 0 ? (
+                  <div className="mt-3 text-center text-[13px] text-muted-foreground">
                     M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
                   </div>
                 ) : null}
                 {hoverProduct.price ? (
-                  <div className="mt-1 text-center text-[26px] font-bold text-destructive">
+                  <div className="mt-1 text-center text-[24px] font-bold text-primary">
                     {inr(hoverProduct.price)}
                   </div>
                 ) : null}
@@ -780,8 +771,8 @@ function BrowsePanel({
                 </Link>
                 {activeCat && (
                   <Link
-                    to="/category/$slug"
-                    params={{ slug: activeCat.slug }}
+                    to="/products"
+                    search={{ cat: activeCat.slug } as never}
                     className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
                   >
                     View all {activeCat.name} →
