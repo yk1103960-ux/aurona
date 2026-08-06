@@ -282,16 +282,12 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="mt-16">
-        <Tabs defaultValue="desc">
+        <Tabs defaultValue="specs">
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-            <TabsTrigger value="desc">Description</TabsTrigger>
             <TabsTrigger value="specs">Specifications</TabsTrigger>
             <TabsTrigger value="variations">All Variations ({family.variants.length})</TabsTrigger>
             <TabsTrigger value="ship">Shipping</TabsTrigger>
           </TabsList>
-          <TabsContent value="desc" className="prose max-w-3xl pt-6 text-sm text-muted-foreground">
-            {family.description || family.short_description || `Premium ${family.name} by Aurona — engineered in India with a ${family.warranty ?? "1 Year"} manufacturer warranty.`}
-          </TabsContent>
           <TabsContent value="specs" className="pt-6">
             <div className="max-w-2xl divide-y divide-border rounded-xl border border-border">
               {[

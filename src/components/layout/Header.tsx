@@ -37,7 +37,7 @@ import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-logo-trim.png.asset.json";
+import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 
 // Mega menu — matches client reference (6 columns, family names under each heading)
 type MegaGroup = { heading: string; slug: string; items: string[] };
@@ -176,11 +176,12 @@ export function Header() {
         </div>
       </div>
 
-      {/* Main bar */}
+      {/* Main bar — deep navy so the white brand mark reads cleanly */}
 
+      <div className="bg-nav text-nav-foreground">
       <div
         className={cn(
-          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:gap-6 xl:gap-8",
+          "container-x flex items-center justify-between transition-[height] duration-500 lg:gap-6 xl:gap-8",
           scrolled ? "h-[68px] lg:h-[76px]" : "h-[76px] lg:h-[92px]",
         )}
       >
@@ -189,7 +190,7 @@ export function Header() {
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
               <button
-                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-primary/8 lg:hidden"
+                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 lg:hidden"
                 aria-label="Menu"
               >
                 <Menu className="h-6 w-6" strokeWidth={1.75} />
@@ -205,13 +206,13 @@ export function Header() {
             aria-label="Aurona — Go Fearless in the Dark"
           >
             <img
-              src={auronaLogo.url}
+              src={auronaLogoWhite.url}
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto shrink-0 object-contain object-left mix-blend-multiply transition-[height,max-width] duration-500",
+                "w-auto shrink-0 object-contain object-left transition-[height,max-width] duration-500",
                 scrolled
                   ? "h-9 max-w-[210px] lg:h-12 lg:max-w-[320px]"
-                  : "h-10 max-w-[230px] lg:h-[68px] lg:max-w-[400px]",
+                  : "h-10 max-w-[230px] lg:h-[62px] lg:max-w-[380px]",
               )}
             />
           </Link>
@@ -227,35 +228,35 @@ export function Header() {
         <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
           <Link
             to={user ? "/account" : "/auth"}
-            className="group hidden items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 transition-all hover:border-primary/40 hover:shadow-[0_8px_20px_-14px_oklch(0.55_0.14_240/0.6)] lg:inline-flex"
+            className="group hidden items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 transition-all hover:border-white/45 hover:bg-white/15 lg:inline-flex"
           >
-            <User className="h-[18px] w-[18px] text-primary" strokeWidth={1.9} />
+            <User className="h-[18px] w-[18px]" strokeWidth={1.9} />
             <span className="flex flex-col leading-none">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-70">
                 {user ? "Welcome" : "Account"}
               </span>
-              <span className="mt-0.5 text-[12.5px] font-bold text-foreground group-hover:text-primary">
+              <span className="mt-0.5 text-[12.5px] font-bold">
                 {user ? "My Account" : "Login / Register"}
               </span>
             </span>
           </Link>
           <button
             onClick={() => document.getElementById("aurona-search-input")?.focus()}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
+            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Search"
           >
             <Search className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </button>
           <Link
             to={user ? "/account" : "/auth"}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
+            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Account"
           >
             <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </Link>
           <Link
             to="/wishlist"
-            className="relative hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
+            className="relative hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid"
             aria-label="Wishlist"
           >
             <Heart className="h-[19px] w-[19px]" strokeWidth={1.75} />
@@ -263,7 +264,7 @@ export function Header() {
           </Link>
           <Link
             to="/cart"
-            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
+            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
             aria-label="Cart"
           >
             <ShoppingCart className="h-6 w-6 lg:h-[19px] lg:w-[19px]" strokeWidth={1.75} />
@@ -272,6 +273,8 @@ export function Header() {
         </div>
 
       </div>
+      </div>
+
 
       {/* Desktop nav row */}
       <nav className="hidden border-t border-primary/8 lg:block">
@@ -408,8 +411,8 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
   const { user } = useAuth();
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border p-4">
-        <img src={auronaLogo.url} alt="Aurona" className="h-9 w-auto object-contain mix-blend-multiply" />
+      <div className="flex items-center justify-between border-b border-border bg-nav p-4">
+        <img src={auronaLogoWhite.url} alt="Aurona" className="h-9 w-auto object-contain" />
       </div>
 
       <div className="scrollbar-visible flex-1 overflow-y-auto p-2">
@@ -624,13 +627,13 @@ function BrowsePanel({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 lg:block",
+        "container-x pointer-events-none absolute inset-x-0 top-full hidden origin-top pt-1 transition-all duration-300 lg:block",
         open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
       )}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="container-x grid grid-cols-[300px_minmax(0,1fr)_360px] gap-0 py-0">
+      <div className="grid w-full max-w-[1040px] grid-cols-[248px_minmax(0,1fr)_300px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
         {/* Left: dynamic category list with icons */}
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white py-0">
           {groups.map((g) => (
@@ -668,20 +671,20 @@ function BrowsePanel({
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white">
           {activeCat ? (
             <>
-              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-6 py-2">
+              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-5 py-2">
                 <Link
-                  to="/category/$slug"
-                  params={{ slug: activeCat.slug }}
+                  to="/products"
+                  search={{ cat: activeCat.slug } as never}
                   className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
                 >
                   {activeCat.name}
                 </Link>
                 <Link
-                  to="/category/$slug"
-                  params={{ slug: activeCat.slug }}
+                  to="/products"
+                  search={{ cat: activeCat.slug } as never}
                   className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
                 >
-                  View all →
+                  View all results →
                 </Link>
               </div>
               {isLoading ? (
@@ -699,7 +702,6 @@ function BrowsePanel({
                   {products.map((p) => {
                     const targetSlug = p.family_slug ?? p.slug;
                     const isHovered = hoverProduct?.slug === p.slug;
-                    const off = discountPct(p.mrp ?? 0, p.price ?? 0);
                     return (
                       <li key={p.slug}>
                         <Link
@@ -707,36 +709,14 @@ function BrowsePanel({
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
                           className={cn(
-                            "flex items-center gap-4 border-b border-border px-6 py-3 transition-colors",
+                            "flex items-center gap-2 border-b border-border px-5 py-2.5 transition-colors",
                             isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                           )}
                         >
-                          <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
-                            <ProductImage
-                              product={{ slug: p.slug, name: p.name, image_seed: p.image_seed }}
-                              className="h-full w-full"
-                              categoryIcon={activeCat?.icon ?? null}
-                            />
+                          <span className={cn("min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
+                            {p.name}
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className={cn("block truncate text-[14px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
-                              {p.name}
-                            </span>
-                            <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                              SKU {p.sku}{p.wattage ? ` · ${p.wattage}` : ""} ·{" "}
-                              <span className={p.stock && p.stock > 0 ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
-                                {p.stock && p.stock > 0 ? "In stock" : "Made to order"}
-                              </span>
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-right">
-                            <span className="block text-[14.5px] font-bold text-primary">{inr(p.price ?? 0)}</span>
-                            {off > 0 && (
-                              <span className="block text-[11px] text-muted-foreground">
-                                <s>{inr(p.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
-                              </span>
-                            )}
-                          </span>
+                          <ChevronRight className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")} />
                         </Link>
                       </li>
                     );
@@ -753,7 +733,7 @@ function BrowsePanel({
 
         {/* Right: hovered product preview */}
         <div className="bg-white">
-          <div className="truncate bg-[oklch(0.28_0.08_255)] px-5 py-3 text-center text-[13px] font-bold uppercase tracking-[0.16em] text-white">
+          <div className="truncate bg-nav px-5 py-3 text-center text-[12.5px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
             {hoverProduct?.name ?? activeCat?.name ?? "Product"}
           </div>
           <div className="grid h-[calc(70vh-46px)] place-items-center p-5">
@@ -772,22 +752,13 @@ function BrowsePanel({
                     eager
                   />
                 </div>
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-                  <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">SKU {hoverProduct.sku}</span>
-                  {hoverProduct.wattage && (
-                    <span className="rounded-full bg-primary/8 px-2 py-0.5 font-semibold text-primary">{hoverProduct.wattage}</span>
-                  )}
-                  <span className={cn("rounded-full px-2 py-0.5 font-semibold", hoverProduct.stock && hoverProduct.stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-destructive/10 text-destructive")}>
-                    {hoverProduct.stock && hoverProduct.stock > 0 ? "In stock" : "Made to order"}
-                  </span>
-                </div>
-                {hoverProduct.mrp ? (
-                  <div className="mt-3 text-center text-[14px] text-muted-foreground">
+                {hoverProduct.mrp && discountPct(hoverProduct.mrp, hoverProduct.price ?? 0) > 0 ? (
+                  <div className="mt-3 text-center text-[13px] text-muted-foreground">
                     M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
                   </div>
                 ) : null}
                 {hoverProduct.price ? (
-                  <div className="mt-1 text-center text-[26px] font-bold text-destructive">
+                  <div className="mt-1 text-center text-[24px] font-bold text-primary">
                     {inr(hoverProduct.price)}
                   </div>
                 ) : null}
@@ -800,8 +771,8 @@ function BrowsePanel({
                 </Link>
                 {activeCat && (
                   <Link
-                    to="/category/$slug"
-                    params={{ slug: activeCat.slug }}
+                    to="/products"
+                    search={{ cat: activeCat.slug } as never}
                     className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
                   >
                     View all {activeCat.name} →
@@ -828,6 +799,7 @@ function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v:
   const [focused, setFocused] = useState(false);
   const [debounced, setDebounced] = useState(value);
   const box = useRef<HTMLDivElement>(null);
+  const { data: allCats = [] } = useQuery(categoriesQuery);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebounced(value), 220);
@@ -920,7 +892,14 @@ function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v:
               </ul>
               <Link
                 to="/products"
-                search={{ q: debounced.trim() } as never}
+                search={(() => {
+                  const term = debounced.trim();
+                  const lower = term.toLowerCase();
+                  const match = allCats.find(
+                    (c) => c.name.toLowerCase().includes(lower) || lower.includes(c.name.toLowerCase()),
+                  );
+                  return (match ? { q: "", cat: match.slug } : { q: term }) as never;
+                })()}
                 onClick={() => setFocused(false)}
                 className="block bg-surface/60 px-5 py-3 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary/8"
               >

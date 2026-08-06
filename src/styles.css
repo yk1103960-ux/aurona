@@ -41,6 +41,8 @@
   --color-gold-foreground: var(--gold-foreground);
   --color-sky: var(--sky);
   --color-sky-foreground: var(--sky-foreground);
+  --color-nav: var(--nav);
+  --color-nav-foreground: var(--nav-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-destructive: var(--destructive);
@@ -110,6 +112,8 @@
 
   /* Retain 'gold' token for legacy tiles — remap to accent sky so nothing feels amber */
   --gold: oklch(0.79 0.13 235);
+  --nav: oklch(0.24 0.062 258);
+  --nav-foreground: oklch(0.99 0.004 250);
   --gold-foreground: oklch(0.22 0.06 245);
 
   --sky: oklch(0.79 0.13 235);
@@ -161,6 +165,8 @@
   --accent: oklch(0.79 0.13 235);
   --accent-foreground: oklch(0.16 0.04 245);
   --gold: oklch(0.79 0.13 235);
+  --nav: oklch(0.24 0.062 258);
+  --nav-foreground: oklch(0.99 0.004 250);
   --gold-foreground: oklch(0.16 0.04 245);
   --sky: oklch(0.79 0.13 235);
   --sky-foreground: oklch(0.16 0.04 245);

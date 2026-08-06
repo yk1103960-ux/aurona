@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck } from "lucide-react";
 
 const JOBS = [
   { t: "Production Engineer", d: "Manufacturing", loc: "Delhi NCR", type: "Full-time" },
@@ -9,18 +9,72 @@ const JOBS = [
   { t: "Warehouse Executive", d: "Operations", loc: "Chennai", type: "Full-time" },
 ];
 
+const REFERRALS = [
+  {
+    icon: Users,
+    title: "Refer a Candidate",
+    reward: "₹5,000 bonus",
+    body: "Know someone great? Refer them for any open role. You earn a bonus once they complete 90 days with Aurona.",
+  },
+  {
+    icon: Share2,
+    title: "Refer a Retailer",
+    reward: "2% of first order",
+    body: "Introduce a shop or electrical store to Aurona. Earn a commission on their first wholesale purchase.",
+  },
+  {
+    icon: IndianRupee,
+    title: "Customer Referral",
+    reward: "₹250 store credit",
+    body: "Share your personal referral code. Your friend gets a welcome discount, you get store credit on their first order.",
+  },
+  {
+    icon: Gift,
+    title: "Distributor Introduction",
+    reward: "Up to ₹25,000",
+    body: "Connect us with a distribution partner in an untapped territory and earn a one-time introduction reward.",
+  },
+];
+
+const STEPS = [
+  "Share your referral code or submit the referral form",
+  "Our team verifies and contacts the referred candidate or partner",
+  "Reward is credited once the qualifying milestone is met",
+];
+
 export const Route = createFileRoute("/careers")({
-  head: () => ({ meta: [{ title: "Careers — Aurona" }] }),
-  component: () => (
+  head: () => ({
+    meta: [
+      { title: "Careers & Referral Programs — Aurona Lighting" },
+      {
+        name: "description",
+        content:
+          "Join Aurona Lighting or earn through our referral programs — candidate, retailer, customer and distributor referrals with cash and credit rewards.",
+      },
+      { property: "og:title", content: "Careers & Referral Programs — Aurona Lighting" },
+      {
+        property: "og:description",
+        content: "Open roles across manufacturing, sales and design, plus four ways to earn through Aurona referrals.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: CareersPage,
+});
+
+function CareersPage() {
+  return (
     <div className="container-x py-16">
       <div className="text-eyebrow">Careers</div>
       <h1 className="text-display mt-3 max-w-3xl text-5xl">Build the future of lighting with us.</h1>
       <p className="mt-4 max-w-2xl text-muted-foreground">
         We're always looking for engineers, designers, and operators who want to build serious products for modern India.
       </p>
+
       <div className="mt-12 space-y-3">
         {JOBS.map((j) => (
-          <div key={j.t} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border p-5">
+          <div key={j.t} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border p-5 transition hover:shadow-lift">
             <div>
               <div className="font-semibold">{j.t}</div>
               <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
@@ -33,6 +87,56 @@ export const Route = createFileRoute("/careers")({
           </div>
         ))}
       </div>
+
+      {/* Referral programs */}
+      <section className="mt-20">
+        <div className="text-eyebrow">Referral Programs</div>
+        <h2 className="text-display mt-3 max-w-3xl text-4xl">Earn with every introduction you make.</h2>
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+          Aurona grows through people who believe in the brand. Refer talent, retailers, customers or distributors — and get
+          rewarded when it works out.
+        </p>
+
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
+          {REFERRALS.map((r) => {
+            const Icon = r.icon;
+            return (
+              <div key={r.title} className="rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" strokeWidth={1.8} />
+                  </span>
+                  <span className="rounded-full bg-primary/8 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+                    {r.reward}
+                  </span>
+                </div>
+                <h3 className="text-display mt-5 text-2xl">{r.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{r.body}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 grid gap-6 rounded-2xl border border-primary/15 bg-primary/5 p-7 lg:grid-cols-[1.2fr_auto] lg:items-center">
+          <div>
+            <div className="text-eyebrow">How it works</div>
+            <ol className="mt-4 space-y-3">
+              {STEPS.map((s, i) => (
+                <li key={s} className="flex items-start gap-3 text-sm">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="text-muted-foreground">{s}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
+              <BadgeCheck className="h-4 w-4 text-primary" /> Rewards are paid after verification. Terms apply.
+            </p>
+          </div>
+          <Button size="lg" className="rounded-full">Submit a referral</Button>
+        </div>
+      </section>
     </div>
-  ),
-});
+  );
+}
