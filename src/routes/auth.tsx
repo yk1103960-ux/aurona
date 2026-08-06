@@ -39,12 +39,35 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [channel, setChannel] = useState<"email" | "sms">("email");
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const MAX_ATTEMPTS = 5;
+  const OTP_TTL = 600; // 10 minutes
+
+  // Expiry countdown
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const t = setInterval(() => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [secondsLeft]);
+
+  const expired = otpSent && secondsLeft === 0;
+  const locked = attempts >= MAX_ATTEMPTS;
+  const mmss = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
   const google = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     setBusy(false);
     if (result.error) toast.error(result.error.message || "Google sign-in failed");
+  };
+
+  const startOtp = () => {
+    setOtpSent(true);
+    setOtp("");
+    setAttempts(0);
+    setSecondsLeft(OTP_TTL);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -68,23 +91,65 @@ function AuthPage() {
       });
       if (error) toast.error(error.message);
       else {
-        setOtpSent(true);
-        toast.success("We sent a 6-digit verification code to " + email);
+        startOtp();
+        toast.success(`We sent a 6-digit verification code to ${email}`);
       }
     }
     setBusy(false);
   };
 
+  const resend = async () => {
+    setBusy(true);
+    if (channel === "sms") {
+      if (!phone.trim()) {
+        setBusy(false);
+        return toast.error("Add your mobile number above to receive an SMS code");
+      }
+      const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
+      setBusy(false);
+      if (error) return toast.error(error.message || "SMS delivery is unavailable right now");
+      startOtp();
+      return toast.success(`Code sent by SMS to ${phone}`);
+    }
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    startOtp();
+    toast.success(`New code sent to ${email}`);
+  };
+
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (locked) return toast.error("Too many attempts. Please resend a fresh code.");
+    if (expired) return toast.error("This code has expired. Please resend a new one.");
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "signup" });
+    const token = otp.trim();
+    const res =
+      channel === "sms"
+        ? await supabase.auth.verifyOtp({ phone: phone.trim(), token, type: "sms" })
+        : await supabase.auth.verifyOtp({ email, token, type: "email" });
     setBusy(false);
-    if (error) return toast.error(error.message || "Invalid or expired code");
+    if (res.error) {
+      setAttempts((a) => a + 1);
+      const left = MAX_ATTEMPTS - (attempts + 1);
+      return toast.error(
+        left > 0
+          ? `${res.error.message || "Invalid code"} — ${left} attempt${left === 1 ? "" : "s"} left`
+          : "Too many invalid attempts. Please resend a new code.",
+      );
+    }
+    if (!res.data.session) {
+      // Fall back to a password sign-in so the user lands verified & logged in.
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return toast.error("Verified — please sign in to continue");
+    }
+    setOtpSent(false);
+    setSecondsLeft(0);
     if (role === "customer") toast.success("Email verified — welcome to Aurona!");
     else toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
     nav({ to: "/account" });
   };
+
 
   const active = ROLES.find((r) => r.id === role)!;
 
@@ -186,10 +251,36 @@ function AuthPage() {
               </form>
               {otpSent && (
                 <form onSubmit={verifyOtp} className="mt-5 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Verify your email</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                      Verify your account
+                    </div>
+                    <div className={cn("text-[11px] font-semibold", expired ? "text-destructive" : "text-muted-foreground")}>
+                      {expired ? "Code expired" : `Expires in ${mmss}`}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1 rounded-full bg-background p-1">
+                    {(["email", "sms"] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setChannel(c)}
+                        className={cn(
+                          "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                          channel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {c === "email" ? "Email OTP" : "Mobile SMS OTP"}
+                      </button>
+                    ))}
+                  </div>
+
                   <p className="text-[11px] text-muted-foreground">
-                    Enter the 6-digit code we emailed to {email} to activate your account.
+                    Enter the 6-digit code sent to {channel === "sms" ? phone || "your mobile number" : email} to
+                    activate your account. Verification is mandatory to complete registration.
                   </p>
+
                   <Input
                     value={otp}
                     onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -198,11 +289,34 @@ function AuthPage() {
                     className="h-11 text-center text-lg tracking-[0.5em]"
                     required
                   />
-                  <Button type="submit" className="h-11 w-full rounded-full" disabled={busy || otp.length < 6}>
+                  {attempts > 0 && !locked && (
+                    <div className="text-[11px] text-destructive">
+                      Invalid code — {MAX_ATTEMPTS - attempts} attempt{MAX_ATTEMPTS - attempts === 1 ? "" : "s"} left
+                    </div>
+                  )}
+                  {locked && (
+                    <div className="text-[11px] text-destructive">
+                      Maximum attempts reached. Request a fresh code to continue.
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    className="h-11 w-full rounded-full"
+                    disabled={busy || otp.length < 6 || expired || locked}
+                  >
                     {busy ? "Verifying…" : "Verify & continue"}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={resend}
+                    disabled={busy || (secondsLeft > OTP_TTL - 30 && !locked)}
+                    className="w-full text-center text-[11px] font-semibold text-primary underline disabled:opacity-50"
+                  >
+                    {channel === "sms" ? "Send code by SMS" : "Resend code"}
+                  </button>
                 </form>
               )}
+
             </TabsContent>
           </Tabs>
 

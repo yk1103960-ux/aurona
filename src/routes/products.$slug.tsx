@@ -46,7 +46,9 @@ export const Route = createFileRoute("/products/$slug")({
     }
     context.queryClient.ensureQueryData(productImagesQuery({ productId: p.id }));
   },
-  validateSearch: (s: Record<string, unknown>) => ({ v: typeof s.v === "string" ? s.v : undefined }),
+  validateSearch: (s: Record<string, unknown>): { v?: string } =>
+    typeof s.v === "string" ? { v: s.v } : {},
+
   head: ({ params }) => ({
     meta: [
       { title: `${params.slug.replace(/-/g, " ")} — Aurona` },

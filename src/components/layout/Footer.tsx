@@ -1,3 +1,4 @@
+import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -148,17 +149,10 @@ export function Footer() {
 
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
               <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-nav-foreground/70">We Accept</span>
-              <div className="flex items-center gap-2.5">
-                {["UPI", "Paytm", "Mastercard", "VISA"].map((p) => (
-                  <span
-                    key={p}
-                    className="grid h-9 min-w-[62px] place-items-center rounded-lg border border-primary/12 bg-white px-2.5 text-[11px] font-bold tracking-[0.06em] text-primary shadow-[0_1px_2px_rgba(10,132,209,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_10px_20px_-14px_rgba(10,132,209,0.55)]"
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
+              <PaymentLogos />
             </div>
+
+
 
             <div className="flex flex-wrap justify-center gap-2">
               {socials.map(([href, Icn, label]) => (

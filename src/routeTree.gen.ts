@@ -23,7 +23,6 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CareersRouteImport } from './routes/careers'
-import { Route as BlogsRouteImport } from './routes/blogs'
 import { Route as BestsellersRouteImport } from './routes/bestsellers'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuronaConsole9f2x7kRouteImport } from './routes/aurona-console-9f2x7k'
@@ -33,11 +32,13 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
+import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
 import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-console-9f2x7k.index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
 import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
 import { Route as AuronaConsole9f2x7kSettingsRouteImport } from './routes/aurona-console-9f2x7k.settings'
 import { Route as AuronaConsole9f2x7kSecurityRouteImport } from './routes/aurona-console-9f2x7k.security'
@@ -126,11 +127,6 @@ const CareersRoute = CareersRouteImport.update({
   path: '/careers',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BlogsRoute = BlogsRouteImport.update({
-  id: '/blogs',
-  path: '/blogs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const BestsellersRoute = BestsellersRouteImport.update({
   id: '/bestsellers',
   path: '/bestsellers',
@@ -176,6 +172,11 @@ const PartnerIndexRoute = PartnerIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PartnerRoute,
 } as any)
+const BlogsIndexRoute = BlogsIndexRouteImport.update({
+  id: '/blogs/',
+  path: '/blogs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuronaConsole9f2x7kIndexRoute =
   AuronaConsole9f2x7kIndexRouteImport.update({
     id: '/',
@@ -200,6 +201,11 @@ const PartnerTypeRoute = PartnerTypeRouteImport.update({
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogsSlugRoute = BlogsSlugRouteImport.update({
+  id: '/blogs/$slug',
+  path: '/blogs/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuronaConsole9f2x7kShippingRoute =
@@ -313,7 +319,6 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
-  '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -340,11 +345,13 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/aurona-console-9f2x7k/': typeof AuronaConsole9f2x7kIndexRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -360,7 +367,6 @@ export interface FileRoutesByTo {
   '/affiliate': typeof AffiliateRoute
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
-  '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -385,11 +391,13 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kIndexRoute
+  '/blogs': typeof BlogsIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/products': typeof ProductsIndexRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -407,7 +415,6 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
-  '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -434,11 +441,13 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/aurona-console-9f2x7k/': typeof AuronaConsole9f2x7kIndexRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -457,7 +466,6 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k'
     | '/auth'
     | '/bestsellers'
-    | '/blogs'
     | '/careers'
     | '/cart'
     | '/categories'
@@ -484,11 +492,13 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
+    | '/blogs/$slug'
     | '/category/$slug'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
     | '/aurona-console-9f2x7k/'
+    | '/blogs/'
     | '/partner/'
     | '/products/'
     | '/api/public/razorpay-webhook'
@@ -504,7 +514,6 @@ export interface FileRouteTypes {
     | '/affiliate'
     | '/auth'
     | '/bestsellers'
-    | '/blogs'
     | '/careers'
     | '/cart'
     | '/categories'
@@ -529,11 +538,13 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
+    | '/blogs/$slug'
     | '/category/$slug'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
     | '/aurona-console-9f2x7k'
+    | '/blogs'
     | '/partner'
     | '/products'
     | '/api/public/razorpay-webhook'
@@ -550,7 +561,6 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k'
     | '/auth'
     | '/bestsellers'
-    | '/blogs'
     | '/careers'
     | '/cart'
     | '/categories'
@@ -577,11 +587,13 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
+    | '/blogs/$slug'
     | '/category/$slug'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
     | '/aurona-console-9f2x7k/'
+    | '/blogs/'
     | '/partner/'
     | '/products/'
     | '/api/public/razorpay-webhook'
@@ -599,7 +611,6 @@ export interface RootRouteChildren {
   AuronaConsole9f2x7kRoute: typeof AuronaConsole9f2x7kRouteWithChildren
   AuthRoute: typeof AuthRoute
   BestsellersRoute: typeof BestsellersRoute
-  BlogsRoute: typeof BlogsRoute
   CareersRoute: typeof CareersRoute
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
@@ -614,8 +625,10 @@ export interface RootRouteChildren {
   PartnerRoute: typeof PartnerRouteWithChildren
   ProductsRoute: typeof ProductsRouteWithChildren
   WishlistRoute: typeof WishlistRoute
+  BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
+  BlogsIndexRoute: typeof BlogsIndexRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
 }
 
@@ -719,13 +732,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CareersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/blogs': {
-      id: '/blogs'
-      path: '/blogs'
-      fullPath: '/blogs'
-      preLoaderRoute: typeof BlogsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/bestsellers': {
       id: '/bestsellers'
       path: '/bestsellers'
@@ -789,6 +795,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerIndexRouteImport
       parentRoute: typeof PartnerRoute
     }
+    '/blogs/': {
+      id: '/blogs/'
+      path: '/blogs'
+      fullPath: '/blogs/'
+      preLoaderRoute: typeof BlogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/aurona-console-9f2x7k/': {
       id: '/aurona-console-9f2x7k/'
       path: '/'
@@ -822,6 +835,13 @@ declare module '@tanstack/react-router' {
       path: '/category/$slug'
       fullPath: '/category/$slug'
       preLoaderRoute: typeof CategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blogs/$slug': {
+      id: '/blogs/$slug'
+      path: '/blogs/$slug'
+      fullPath: '/blogs/$slug'
+      preLoaderRoute: typeof BlogsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aurona-console-9f2x7k/shipping': {
@@ -1049,7 +1069,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuronaConsole9f2x7kRoute: AuronaConsole9f2x7kRouteWithChildren,
   AuthRoute: AuthRoute,
   BestsellersRoute: BestsellersRoute,
-  BlogsRoute: BlogsRoute,
   CareersRoute: CareersRoute,
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
@@ -1064,8 +1083,10 @@ const rootRouteChildren: RootRouteChildren = {
   PartnerRoute: PartnerRouteWithChildren,
   ProductsRoute: ProductsRouteWithChildren,
   WishlistRoute: WishlistRoute,
+  BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
+  BlogsIndexRoute: BlogsIndexRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
 }
 export const routeTree = rootRouteImport
