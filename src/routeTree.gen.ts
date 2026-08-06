@@ -32,6 +32,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
+import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
 import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-console-9f2x7k.index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
@@ -169,6 +170,11 @@ const PartnerIndexRoute = PartnerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PartnerRoute,
+} as any)
+const BlogsIndexRoute = BlogsIndexRouteImport.update({
+  id: '/blogs/',
+  path: '/blogs/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuronaConsole9f2x7kIndexRoute =
   AuronaConsole9f2x7kIndexRouteImport.update({
@@ -338,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/aurona-console-9f2x7k/': typeof AuronaConsole9f2x7kIndexRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -382,6 +389,7 @@ export interface FileRoutesByTo {
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kIndexRoute
+  '/blogs': typeof BlogsIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/products': typeof ProductsIndexRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -430,6 +438,7 @@ export interface FileRoutesById {
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/aurona-console-9f2x7k/': typeof AuronaConsole9f2x7kIndexRoute
+  '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -479,6 +488,7 @@ export interface FileRouteTypes {
     | '/policies/$slug'
     | '/products/$slug'
     | '/aurona-console-9f2x7k/'
+    | '/blogs/'
     | '/partner/'
     | '/products/'
     | '/api/public/razorpay-webhook'
@@ -523,6 +533,7 @@ export interface FileRouteTypes {
     | '/policies/$slug'
     | '/products/$slug'
     | '/aurona-console-9f2x7k'
+    | '/blogs'
     | '/partner'
     | '/products'
     | '/api/public/razorpay-webhook'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '/policies/$slug'
     | '/products/$slug'
     | '/aurona-console-9f2x7k/'
+    | '/blogs/'
     | '/partner/'
     | '/products/'
     | '/api/public/razorpay-webhook'
@@ -603,6 +615,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   CategorySlugRoute: typeof CategorySlugRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
+  BlogsIndexRoute: typeof BlogsIndexRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
 }
 
@@ -768,6 +781,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/'
       preLoaderRoute: typeof PartnerIndexRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/blogs/': {
+      id: '/blogs/'
+      path: '/blogs'
+      fullPath: '/blogs/'
+      preLoaderRoute: typeof BlogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/aurona-console-9f2x7k/': {
       id: '/aurona-console-9f2x7k/'
@@ -1045,6 +1065,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   CategorySlugRoute: CategorySlugRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
+  BlogsIndexRoute: BlogsIndexRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
 }
 export const routeTree = rootRouteImport
