@@ -37,7 +37,7 @@ import { inr, discountPct } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
-import auronaLogo from "@/assets/aurona-logo-trim.png.asset.json";
+import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 
 // Mega menu — matches client reference (6 columns, family names under each heading)
 type MegaGroup = { heading: string; slug: string; items: string[] };
