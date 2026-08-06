@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, CalendarDays, User, Share2, Facebook, Linkedin, Twitter, MessageCircle, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { POSTS, getPost, neighbours } from "@/lib/blog-data";
+import { POSTS, getPost, neighbours, type BlogPost } from "@/lib/blog-data";
 
 export const Route = createFileRoute("/blogs/$slug")({
   loader: ({ params }) => {
@@ -75,7 +75,7 @@ function BlogPostPage() {
                 {b.p && <p className="text-[15px] leading-relaxed text-muted-foreground">{b.p}</p>}
                 {b.li && (
                   <ul className="mt-2 space-y-2">
-                    {b.li.map((l) => (
+                    {b.li.map((l: string) => (
                       <li key={l} className="flex gap-2 text-[15px] leading-relaxed text-muted-foreground">
                         <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                         {l}
