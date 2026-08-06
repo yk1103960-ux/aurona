@@ -23,7 +23,6 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CareersRouteImport } from './routes/careers'
-import { Route as BlogsRouteImport } from './routes/blogs'
 import { Route as BestsellersRouteImport } from './routes/bestsellers'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuronaConsole9f2x7kRouteImport } from './routes/aurona-console-9f2x7k'
@@ -124,11 +123,6 @@ const CartRoute = CartRouteImport.update({
 const CareersRoute = CareersRouteImport.update({
   id: '/careers',
   path: '/careers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogsRoute = BlogsRouteImport.update({
-  id: '/blogs',
-  path: '/blogs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BestsellersRoute = BestsellersRouteImport.update({
@@ -313,7 +307,6 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
-  '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -360,7 +353,6 @@ export interface FileRoutesByTo {
   '/affiliate': typeof AffiliateRoute
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
-  '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -407,7 +399,6 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
-  '/blogs': typeof BlogsRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -457,7 +448,6 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k'
     | '/auth'
     | '/bestsellers'
-    | '/blogs'
     | '/careers'
     | '/cart'
     | '/categories'
@@ -504,7 +494,6 @@ export interface FileRouteTypes {
     | '/affiliate'
     | '/auth'
     | '/bestsellers'
-    | '/blogs'
     | '/careers'
     | '/cart'
     | '/categories'
@@ -550,7 +539,6 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k'
     | '/auth'
     | '/bestsellers'
-    | '/blogs'
     | '/careers'
     | '/cart'
     | '/categories'
@@ -599,7 +587,6 @@ export interface RootRouteChildren {
   AuronaConsole9f2x7kRoute: typeof AuronaConsole9f2x7kRouteWithChildren
   AuthRoute: typeof AuthRoute
   BestsellersRoute: typeof BestsellersRoute
-  BlogsRoute: typeof BlogsRoute
   CareersRoute: typeof CareersRoute
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
@@ -717,13 +704,6 @@ declare module '@tanstack/react-router' {
       path: '/careers'
       fullPath: '/careers'
       preLoaderRoute: typeof CareersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blogs': {
-      id: '/blogs'
-      path: '/blogs'
-      fullPath: '/blogs'
-      preLoaderRoute: typeof BlogsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bestsellers': {
@@ -1049,7 +1029,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuronaConsole9f2x7kRoute: AuronaConsole9f2x7kRouteWithChildren,
   AuthRoute: AuthRoute,
   BestsellersRoute: BestsellersRoute,
-  BlogsRoute: BlogsRoute,
   CareersRoute: CareersRoute,
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
