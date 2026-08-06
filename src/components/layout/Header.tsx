@@ -176,11 +176,12 @@ export function Header() {
         </div>
       </div>
 
-      {/* Main bar */}
+      {/* Main bar — deep navy so the white brand mark reads cleanly */}
 
+      <div className="bg-nav text-nav-foreground">
       <div
         className={cn(
-          "container-x flex items-center justify-between text-foreground transition-[height] duration-500 lg:gap-6 xl:gap-8",
+          "container-x flex items-center justify-between transition-[height] duration-500 lg:gap-6 xl:gap-8",
           scrolled ? "h-[68px] lg:h-[76px]" : "h-[76px] lg:h-[92px]",
         )}
       >
@@ -189,7 +190,7 @@ export function Header() {
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
               <button
-                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-primary/8 lg:hidden"
+                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 lg:hidden"
                 aria-label="Menu"
               >
                 <Menu className="h-6 w-6" strokeWidth={1.75} />
@@ -205,13 +206,13 @@ export function Header() {
             aria-label="Aurona — Go Fearless in the Dark"
           >
             <img
-              src={auronaLogo.url}
+              src={auronaLogoWhite.url}
               alt="Aurona — Go Fearless in the Dark"
               className={cn(
-                "w-auto shrink-0 object-contain object-left mix-blend-multiply transition-[height,max-width] duration-500",
+                "w-auto shrink-0 object-contain object-left transition-[height,max-width] duration-500",
                 scrolled
                   ? "h-9 max-w-[210px] lg:h-12 lg:max-w-[320px]"
-                  : "h-10 max-w-[230px] lg:h-[68px] lg:max-w-[400px]",
+                  : "h-10 max-w-[230px] lg:h-[62px] lg:max-w-[380px]",
               )}
             />
           </Link>
@@ -227,35 +228,35 @@ export function Header() {
         <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
           <Link
             to={user ? "/account" : "/auth"}
-            className="group hidden items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 transition-all hover:border-primary/40 hover:shadow-[0_8px_20px_-14px_oklch(0.55_0.14_240/0.6)] lg:inline-flex"
+            className="group hidden items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 transition-all hover:border-white/45 hover:bg-white/15 lg:inline-flex"
           >
-            <User className="h-[18px] w-[18px] text-primary" strokeWidth={1.9} />
+            <User className="h-[18px] w-[18px]" strokeWidth={1.9} />
             <span className="flex flex-col leading-none">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-70">
                 {user ? "Welcome" : "Account"}
               </span>
-              <span className="mt-0.5 text-[12.5px] font-bold text-foreground group-hover:text-primary">
+              <span className="mt-0.5 text-[12.5px] font-bold">
                 {user ? "My Account" : "Login / Register"}
               </span>
             </span>
           </Link>
           <button
             onClick={() => document.getElementById("aurona-search-input")?.focus()}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
+            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Search"
           >
             <Search className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </button>
           <Link
             to={user ? "/account" : "/auth"}
-            className="hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid lg:hidden"
+            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Account"
           >
             <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </Link>
           <Link
             to="/wishlist"
-            className="relative hidden h-11 w-11 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 sm:grid"
+            className="relative hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid"
             aria-label="Wishlist"
           >
             <Heart className="h-[19px] w-[19px]" strokeWidth={1.75} />
@@ -263,7 +264,7 @@ export function Header() {
           </Link>
           <Link
             to="/cart"
-            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full text-primary transition-all hover:bg-primary/8 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
+            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
             aria-label="Cart"
           >
             <ShoppingCart className="h-6 w-6 lg:h-[19px] lg:w-[19px]" strokeWidth={1.75} />
@@ -272,6 +273,8 @@ export function Header() {
         </div>
 
       </div>
+      </div>
+
 
       {/* Desktop nav row */}
       <nav className="hidden border-t border-primary/8 lg:block">
