@@ -251,10 +251,36 @@ function AuthPage() {
               </form>
               {otpSent && (
                 <form onSubmit={verifyOtp} className="mt-5 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Verify your email</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                      Verify your account
+                    </div>
+                    <div className={cn("text-[11px] font-semibold", expired ? "text-destructive" : "text-muted-foreground")}>
+                      {expired ? "Code expired" : `Expires in ${mmss}`}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1 rounded-full bg-background p-1">
+                    {(["email", "sms"] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setChannel(c)}
+                        className={cn(
+                          "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                          channel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {c === "email" ? "Email OTP" : "Mobile SMS OTP"}
+                      </button>
+                    ))}
+                  </div>
+
                   <p className="text-[11px] text-muted-foreground">
-                    Enter the 6-digit code we emailed to {email} to activate your account.
+                    Enter the 6-digit code sent to {channel === "sms" ? phone || "your mobile number" : email} to
+                    activate your account. Verification is mandatory to complete registration.
                   </p>
+
                   <Input
                     value={otp}
                     onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -263,11 +289,34 @@ function AuthPage() {
                     className="h-11 text-center text-lg tracking-[0.5em]"
                     required
                   />
-                  <Button type="submit" className="h-11 w-full rounded-full" disabled={busy || otp.length < 6}>
+                  {attempts > 0 && !locked && (
+                    <div className="text-[11px] text-destructive">
+                      Invalid code — {MAX_ATTEMPTS - attempts} attempt{MAX_ATTEMPTS - attempts === 1 ? "" : "s"} left
+                    </div>
+                  )}
+                  {locked && (
+                    <div className="text-[11px] text-destructive">
+                      Maximum attempts reached. Request a fresh code to continue.
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    className="h-11 w-full rounded-full"
+                    disabled={busy || otp.length < 6 || expired || locked}
+                  >
                     {busy ? "Verifying…" : "Verify & continue"}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={resend}
+                    disabled={busy || (secondsLeft > OTP_TTL - 30 && !locked)}
+                    className="w-full text-center text-[11px] font-semibold text-primary underline disabled:opacity-50"
+                  >
+                    {channel === "sms" ? "Send code by SMS" : "Resend code"}
+                  </button>
                 </form>
               )}
+
             </TabsContent>
           </Tabs>
 
