@@ -1,0 +1,1 @@
+UPDATE public.product_families SET name = 'RECHARGEABLE BULBS' WHERE slug = 'inverter-bulbs-b-rb';
