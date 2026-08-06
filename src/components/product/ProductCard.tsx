@@ -39,12 +39,12 @@ export function ProductCard({
   const shownMrp = rp?.mrp ?? Number(product.mrp);
   const off = discountPct(shownMrp, shownPrice);
   const icon = categoryIcon ?? product.categories?.icon ?? null;
-  const inWishlist = wl.has(product.id);
+  const inWishlist = wl.has(product.id, product.sku);
   const detailSlug = product.family_slug ?? product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
   const isDistributor = role.role === "distributor";
 
-  const line = cart.items.find((i) => i.product_id === product.id);
+  const line = cart.lineFor(product.id, product.sku);
   const qty = line?.quantity ?? 0;
   const stock = Number(product.stock ?? 0);
   const lowStock = stock > 0 && stock <= 8;
@@ -53,15 +53,15 @@ export function ProductCard({
 
   const handleAdd = () => {
     cart.add.mutate(
-      { productId: product.id },
+      { productId: product.id, sku: product.sku },
       { onSuccess: () => toast.success("Added to cart", { description: product.name, duration: 1600 }) },
     );
   };
 
   const handleWishlist = () => {
-    wl.toggle.mutate(product.id);
-    toast(inWishlist ? "Removed from wishlist" : "Added to wishlist", { duration: 1200 });
+    wl.toggle.mutate({ productId: product.id, sku: product.sku });
   };
+
 
   return (
     <div className="card-lift group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] hover:border-primary/40">
