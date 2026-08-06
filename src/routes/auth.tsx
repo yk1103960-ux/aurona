@@ -39,12 +39,35 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [channel, setChannel] = useState<"email" | "sms">("email");
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const MAX_ATTEMPTS = 5;
+  const OTP_TTL = 600; // 10 minutes
+
+  // Expiry countdown
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const t = setInterval(() => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [secondsLeft]);
+
+  const expired = otpSent && secondsLeft === 0;
+  const locked = attempts >= MAX_ATTEMPTS;
+  const mmss = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
   const google = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     setBusy(false);
     if (result.error) toast.error(result.error.message || "Google sign-in failed");
+  };
+
+  const startOtp = () => {
+    setOtpSent(true);
+    setOtp("");
+    setAttempts(0);
+    setSecondsLeft(OTP_TTL);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -68,23 +91,65 @@ function AuthPage() {
       });
       if (error) toast.error(error.message);
       else {
-        setOtpSent(true);
-        toast.success("We sent a 6-digit verification code to " + email);
+        startOtp();
+        toast.success(`We sent a 6-digit verification code to ${email}`);
       }
     }
     setBusy(false);
   };
 
+  const resend = async () => {
+    setBusy(true);
+    if (channel === "sms") {
+      if (!phone.trim()) {
+        setBusy(false);
+        return toast.error("Add your mobile number above to receive an SMS code");
+      }
+      const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
+      setBusy(false);
+      if (error) return toast.error(error.message || "SMS delivery is unavailable right now");
+      startOtp();
+      return toast.success(`Code sent by SMS to ${phone}`);
+    }
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    startOtp();
+    toast.success(`New code sent to ${email}`);
+  };
+
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (locked) return toast.error("Too many attempts. Please resend a fresh code.");
+    if (expired) return toast.error("This code has expired. Please resend a new one.");
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "signup" });
+    const token = otp.trim();
+    const res =
+      channel === "sms"
+        ? await supabase.auth.verifyOtp({ phone: phone.trim(), token, type: "sms" })
+        : await supabase.auth.verifyOtp({ email, token, type: "email" });
     setBusy(false);
-    if (error) return toast.error(error.message || "Invalid or expired code");
+    if (res.error) {
+      setAttempts((a) => a + 1);
+      const left = MAX_ATTEMPTS - (attempts + 1);
+      return toast.error(
+        left > 0
+          ? `${res.error.message || "Invalid code"} — ${left} attempt${left === 1 ? "" : "s"} left`
+          : "Too many invalid attempts. Please resend a new code.",
+      );
+    }
+    if (!res.data.session) {
+      // Fall back to a password sign-in so the user lands verified & logged in.
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return toast.error("Verified — please sign in to continue");
+    }
+    setOtpSent(false);
+    setSecondsLeft(0);
     if (role === "customer") toast.success("Email verified — welcome to Aurona!");
     else toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
     nav({ to: "/account" });
   };
+
 
   const active = ROLES.find((r) => r.id === role)!;
 
