@@ -37,6 +37,8 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [business, setBusiness] = useState("");
   const [busy, setBusy] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const google = async () => {
     setBusy(true);
@@ -66,12 +68,22 @@ function AuthPage() {
       });
       if (error) toast.error(error.message);
       else {
-        if (role === "customer") toast.success("Account created — welcome!");
-        else toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
-        nav({ to: "/account" });
+        setOtpSent(true);
+        toast.success("We sent a 6-digit verification code to " + email);
       }
     }
     setBusy(false);
+  };
+
+  const verifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "signup" });
+    setBusy(false);
+    if (error) return toast.error(error.message || "Invalid or expired code");
+    if (role === "customer") toast.success("Email verified — welcome to Aurona!");
+    else toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
+    nav({ to: "/account" });
   };
 
   const active = ROLES.find((r) => r.id === role)!;
@@ -172,6 +184,25 @@ function AuthPage() {
                   {busy ? "Creating…" : `Create ${active.title} account`}
                 </Button>
               </form>
+              {otpSent && (
+                <form onSubmit={verifyOtp} className="mt-5 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Verify your email</div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Enter the 6-digit code we emailed to {email} to activate your account.
+                  </p>
+                  <Input
+                    value={otp}
+                    onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputMode="numeric"
+                    placeholder="••••••"
+                    className="h-11 text-center text-lg tracking-[0.5em]"
+                    required
+                  />
+                  <Button type="submit" className="h-11 w-full rounded-full" disabled={busy || otp.length < 6}>
+                    {busy ? "Verifying…" : "Verify & continue"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
           </Tabs>
 
