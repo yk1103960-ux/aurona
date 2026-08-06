@@ -671,20 +671,20 @@ function BrowsePanel({
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white">
           {activeCat ? (
             <>
-              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-6 py-2">
+              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-5 py-2">
                 <Link
-                  to="/category/$slug"
-                  params={{ slug: activeCat.slug }}
+                  to="/products"
+                  search={{ cat: activeCat.slug } as never}
                   className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
                 >
                   {activeCat.name}
                 </Link>
                 <Link
-                  to="/category/$slug"
-                  params={{ slug: activeCat.slug }}
+                  to="/products"
+                  search={{ cat: activeCat.slug } as never}
                   className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
                 >
-                  View all →
+                  View all results →
                 </Link>
               </div>
               {isLoading ? (
@@ -702,7 +702,6 @@ function BrowsePanel({
                   {products.map((p) => {
                     const targetSlug = p.family_slug ?? p.slug;
                     const isHovered = hoverProduct?.slug === p.slug;
-                    const off = discountPct(p.mrp ?? 0, p.price ?? 0);
                     return (
                       <li key={p.slug}>
                         <Link
@@ -710,36 +709,14 @@ function BrowsePanel({
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
                           className={cn(
-                            "flex items-center gap-4 border-b border-border px-6 py-3 transition-colors",
+                            "flex items-center gap-2 border-b border-border px-5 py-2.5 transition-colors",
                             isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                           )}
                         >
-                          <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
-                            <ProductImage
-                              product={{ slug: p.slug, name: p.name, image_seed: p.image_seed }}
-                              className="h-full w-full"
-                              categoryIcon={activeCat?.icon ?? null}
-                            />
+                          <span className={cn("min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
+                            {p.name}
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className={cn("block truncate text-[14px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
-                              {p.name}
-                            </span>
-                            <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                              SKU {p.sku}{p.wattage ? ` · ${p.wattage}` : ""} ·{" "}
-                              <span className={p.stock && p.stock > 0 ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
-                                {p.stock && p.stock > 0 ? "In stock" : "Made to order"}
-                              </span>
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-right">
-                            <span className="block text-[14.5px] font-bold text-primary">{inr(p.price ?? 0)}</span>
-                            {off > 0 && (
-                              <span className="block text-[11px] text-muted-foreground">
-                                <s>{inr(p.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
-                              </span>
-                            )}
-                          </span>
+                          <ChevronRight className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")} />
                         </Link>
                       </li>
                     );
