@@ -5,7 +5,7 @@ import {
   Facebook, Instagram, Youtube, Linkedin, Twitter, MapPin, Mail, Phone,
   ShieldCheck, Headphones, CreditCard, Truck, ArrowRight, Check,
 } from "lucide-react";
-import auronaLogo from "@/assets/aurona-logo-2026.png.asset.json";
+import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 import { siteSettingsQuery } from "@/lib/settings";
 
 const FEATURES = [
@@ -142,12 +142,12 @@ export function Footer() {
         </div>
 
         {/* Brand + payments + socials */}
-        <div className="border-t border-primary/10">
+        <div className="bg-nav text-nav-foreground">
           <div className="container-x flex flex-col items-center justify-between gap-6 py-7 lg:flex-row">
-            <img src={auronaLogo.url} alt="Aurona — Go Fearless in the Dark" className="h-11 w-auto object-contain mix-blend-multiply" />
+            <img src={auronaLogoWhite.url} alt="Aurona — Go Fearless in the Dark" className="h-12 w-auto object-contain" />
 
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
-              <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground">We Accept</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-nav-foreground/70">We Accept</span>
               <div className="flex items-center gap-2.5">
                 {["UPI", "Paytm", "Mastercard", "VISA"].map((p) => (
                   <span
