@@ -892,7 +892,14 @@ function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v:
               </ul>
               <Link
                 to="/products"
-                search={{ q: debounced.trim() } as never}
+                search={(() => {
+                  const term = debounced.trim();
+                  const lower = term.toLowerCase();
+                  const match = allCats.find(
+                    (c) => c.name.toLowerCase().includes(lower) || lower.includes(c.name.toLowerCase()),
+                  );
+                  return (match ? { q: "", cat: match.slug } : { q: term }) as never;
+                })()}
                 onClick={() => setFocused(false)}
                 className="block bg-surface/60 px-5 py-3 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary/8"
               >
