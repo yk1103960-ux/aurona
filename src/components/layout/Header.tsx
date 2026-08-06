@@ -799,6 +799,7 @@ function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v:
   const [focused, setFocused] = useState(false);
   const [debounced, setDebounced] = useState(value);
   const box = useRef<HTMLDivElement>(null);
+  const { data: allCats = [] } = useQuery(categoriesQuery);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebounced(value), 220);
