@@ -168,7 +168,7 @@ export function Footer() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={label}
-                  className="group grid h-10 w-10 place-items-center rounded-full border border-primary/15 bg-white text-muted-foreground shadow-[0_1px_2px_rgba(10,132,209,0.05)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_10px_22px_-10px_rgba(10,132,209,0.5)]"
+                  className="group grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 text-nav-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/20"
                 >
                   <Icn className="h-4 w-4 transition-transform group-hover:scale-110" />
                 </a>
@@ -178,13 +178,13 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-border bg-white/60">
-          <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-muted-foreground sm:flex-row">
+        <div className="border-t border-white/10 bg-nav">
+          <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-nav-foreground/70 sm:flex-row">
             <div>Copyright © {new Date().getFullYear()}. All Rights Reserved | Aurona</div>
             <div className="flex gap-5">
-              <Link to="/policies/$slug" params={{ slug: "privacy" }} className="transition-colors hover:text-primary">Privacy Policy</Link>
-              <Link to="/policies/$slug" params={{ slug: "terms" }} className="transition-colors hover:text-primary">Terms &amp; Conditions</Link>
-              <Link to="/policies/$slug" params={{ slug: "return" }} className="transition-colors hover:text-primary">Return Policy</Link>
+              <Link to="/policies/$slug" params={{ slug: "privacy" }} className="transition-colors hover:text-nav-foreground">Privacy Policy</Link>
+              <Link to="/policies/$slug" params={{ slug: "terms" }} className="transition-colors hover:text-nav-foreground">Terms &amp; Conditions</Link>
+              <Link to="/policies/$slug" params={{ slug: "return" }} className="transition-colors hover:text-nav-foreground">Return Policy</Link>
             </div>
           </div>
         </div>
