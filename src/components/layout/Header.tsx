@@ -627,13 +627,13 @@ function BrowsePanel({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 lg:block",
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top px-6 pt-1 transition-all duration-300 lg:block xl:px-10",
         open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
       )}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="container-x grid grid-cols-[300px_minmax(0,1fr)_360px] gap-0 py-0">
+      <div className="mx-auto grid w-full max-w-[1040px] grid-cols-[248px_minmax(0,1fr)_300px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
         {/* Left: dynamic category list with icons */}
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white py-0">
           {groups.map((g) => (
