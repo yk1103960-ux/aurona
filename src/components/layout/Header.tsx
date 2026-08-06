@@ -411,8 +411,8 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
   const { user } = useAuth();
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border p-4">
-        <img src={auronaLogo.url} alt="Aurona" className="h-9 w-auto object-contain mix-blend-multiply" />
+      <div className="flex items-center justify-between border-b border-border bg-nav p-4">
+        <img src={auronaLogoWhite.url} alt="Aurona" className="h-9 w-auto object-contain" />
       </div>
 
       <div className="scrollbar-visible flex-1 overflow-y-auto p-2">
