@@ -150,7 +150,8 @@ export function Footer() {
               <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-nav-foreground/70">We Accept</span>
               <PaymentLogos />
             </div>
-          </div>
+
+
 
             <div className="flex flex-wrap justify-center gap-2">
               {socials.map(([href, Icn, label]) => (
