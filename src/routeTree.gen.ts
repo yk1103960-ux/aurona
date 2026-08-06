@@ -38,6 +38,7 @@ import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
 import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
 import { Route as AuronaConsole9f2x7kSettingsRouteImport } from './routes/aurona-console-9f2x7k.settings'
 import { Route as AuronaConsole9f2x7kSecurityRouteImport } from './routes/aurona-console-9f2x7k.security'
@@ -202,6 +203,11 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogsSlugRoute = BlogsSlugRouteImport.update({
+  id: '/blogs/$slug',
+  path: '/blogs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuronaConsole9f2x7kShippingRoute =
   AuronaConsole9f2x7kShippingRouteImport.update({
     id: '/shipping',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
@@ -384,6 +391,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
+  '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
@@ -483,6 +492,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
+    | '/blogs/$slug'
     | '/category/$slug'
     | '/partner/$type'
     | '/policies/$slug'
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
+    | '/blogs/$slug'
     | '/category/$slug'
     | '/partner/$type'
     | '/policies/$slug'
@@ -576,6 +587,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
+    | '/blogs/$slug'
     | '/category/$slug'
     | '/partner/$type'
     | '/policies/$slug'
@@ -613,6 +625,7 @@ export interface RootRouteChildren {
   PartnerRoute: typeof PartnerRouteWithChildren
   ProductsRoute: typeof ProductsRouteWithChildren
   WishlistRoute: typeof WishlistRoute
+  BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
@@ -822,6 +835,13 @@ declare module '@tanstack/react-router' {
       path: '/category/$slug'
       fullPath: '/category/$slug'
       preLoaderRoute: typeof CategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blogs/$slug': {
+      id: '/blogs/$slug'
+      path: '/blogs/$slug'
+      fullPath: '/blogs/$slug'
+      preLoaderRoute: typeof BlogsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aurona-console-9f2x7k/shipping': {
@@ -1063,6 +1083,7 @@ const rootRouteChildren: RootRouteChildren = {
   PartnerRoute: PartnerRouteWithChildren,
   ProductsRoute: ProductsRouteWithChildren,
   WishlistRoute: WishlistRoute,
+  BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,

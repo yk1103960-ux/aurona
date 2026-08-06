@@ -69,7 +69,7 @@ function BlogPostPage() {
           <div className={`mt-8 aspect-[16/8] w-full rounded-2xl bg-gradient-to-br ${post.tone} ring-1 ring-border`} />
 
           <div className="mt-8 space-y-5">
-            {post.body.map((b, i) => (
+            {post.body.map((b: BlogPost["body"][number], i: number) => (
               <div key={i}>
                 {b.h && <h2 className="text-display text-2xl">{b.h}</h2>}
                 {b.p && <p className="text-[15px] leading-relaxed text-muted-foreground">{b.p}</p>}
