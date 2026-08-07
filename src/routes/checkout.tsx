@@ -141,6 +141,15 @@ function CheckoutPage() {
   };
 
   const placeOrderFn = useServerFn(placeOrder);
+  const availabilityFn = useServerFn(getPaymentAvailability);
+  const startPhonePe = useServerFn(startPhonePePayment);
+  const { data: pay } = useQuery({
+    queryKey: ["payment-availability"],
+    queryFn: () => availabilityFn({}),
+    staleTime: 5 * 60 * 1000,
+  });
+  const onlineEnabled = Boolean(pay?.phonepe);
+
   const place = async () => {
     if (!selectedRate) {
       toast.error("Please select a shipping method.");
@@ -164,6 +173,20 @@ function CheckoutPage() {
         },
       });
       await cart.clear.mutateAsync().catch(() => {});
+
+      if (f.payment_method !== "cod" && onlineEnabled) {
+        try {
+          const pp = await startPhonePe({
+            data: { orderId: result.orderId, origin: window.location.origin },
+          });
+          if (pp.redirectUrl) {
+            window.location.href = pp.redirectUrl;
+            return;
+          }
+        } catch {
+          toast.error("Could not open the payment page. Your order is saved as pending payment.");
+        }
+      }
       setDone(result.orderNumber);
     } catch {
       // Detailed errors are logged server-side; users see a generic message.
@@ -172,6 +195,7 @@ function CheckoutPage() {
       setPlacing(false);
     }
   };
+
 
   return (
     <div className="container-x py-8">
