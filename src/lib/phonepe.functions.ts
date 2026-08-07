@@ -20,10 +20,18 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getPhonePeConfig, phonePeBase, xVerify, merchantTxnId } = await import("./phonepe.server");
+    const {
+      getPhonePeConfig,
+      getPhonePeV2Config,
+      phonePeV2Pay,
+      phonePeBase,
+      xVerify,
+      merchantTxnId,
+    } = await import("./phonepe.server");
 
-    const cfg = await getPhonePeConfig();
-    if (!cfg) throw new Error("Online payments are not configured yet.");
+    const v2 = await getPhonePeV2Config();
+    const cfg = v2 ? null : await getPhonePeConfig();
+    if (!v2 && !cfg) throw new Error("Online payments are not configured yet.");
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -36,6 +44,23 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
 
     const txnId = merchantTxnId(order.order_number);
     const origin = new URL(data.origin).origin;
+
+    if (v2) {
+      const url = await phonePeV2Pay({
+        cfg: v2,
+        merchantOrderId: txnId,
+        amountPaise: Math.round(Number(order.total) * 100),
+        redirectUrl: `${origin}/payment-status?order=${order.id}`,
+        message: `Aurona order ${order.order_number}`,
+      });
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_provider_order_id: txnId })
+        .eq("id", order.id);
+      return { alreadyPaid: false as const, redirectUrl: url };
+    }
+    if (!cfg) throw new Error("Online payments are not configured yet.");
+
     const payload = {
       merchantId: cfg.merchantId,
       merchantTransactionId: txnId,
