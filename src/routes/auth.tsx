@@ -251,11 +251,18 @@ function AuthPage() {
         }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) return toast.error("Verified — please sign in to continue.");
-      } else {
+      } else if (channel === "sms") {
         const p = normalisePhone(phone);
-        const res = channel === "sms"
-          ? await supabase.auth.verifyOtp({ phone: p.e164 ?? phone, token, type: "sms" })
-          : await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
+        const out = await verifyLoginSmsOtp({ data: { phone: p.e164 ?? phone, code: token } });
+        if (!out.ok) {
+          setAttempts((a) => a + 1);
+          return toast.error(out.message);
+        }
+        const { error } = await supabase.auth.verifyOtp({ token_hash: out.tokenHash!, type: "magiclink" });
+        if (error) return toast.error("Verified — please sign in with your password to continue.");
+      } else {
+        const res = await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
+
         if (res.error) {
           setAttempts((a) => a + 1);
           const left = policy.otpMaxAttempts - (attempts + 1);
