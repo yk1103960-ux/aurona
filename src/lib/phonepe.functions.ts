@@ -4,10 +4,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Public: tells the storefront which online payment options are live right now. */
 export const getPaymentAvailability = createServerFn({ method: "GET" }).handler(async () => {
-  const { getPhonePeConfig } = await import("./phonepe.server");
+  const { getPhonePeConfig, getPhonePeV2Config } = await import("./phonepe.server");
+  const v2 = await getPhonePeV2Config().catch(() => null);
+  if (v2) return { phonepe: true, mode: v2.env };
   const cfg = await getPhonePeConfig().catch(() => null);
   return { phonepe: Boolean(cfg), mode: cfg?.env ?? null };
 });
+
 
 /** Creates a PhonePe payment for an existing order and returns the hosted checkout URL. */
 export const startPhonePePayment = createServerFn({ method: "POST" })
