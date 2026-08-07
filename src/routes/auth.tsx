@@ -480,6 +480,25 @@ function AuthPage() {
                       Your {role} application will be reviewed by our team. Trade pricing unlocks after approval.
                     </div>
                   )}
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Send my OTP by</div>
+                    <div className="mt-2 flex gap-1 rounded-full bg-background p-1">
+                      {(["sms", "email"] as const).map((c) => (
+                        <button
+                          key={c} type="button" onClick={() => setSignupChannel(c)}
+                          className={cn(
+                            "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                            signupChannel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                          )}
+                        >
+                          {c === "sms" ? "Mobile (SMS)" : "Email"}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Verification is mandatory — the account stays locked until the code is verified.
+                    </p>
+                  </div>
                   <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm}>
                     {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…</> : `Create ${active.title} account`}
                   </Button>
@@ -488,7 +507,7 @@ function AuthPage() {
                   </p>
                 </form>
               ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: channel === "sms" ? phone : email, channel, setChannel }} />
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: channel === "sms" ? phone : email, channel, setChannel: switchSignupChannel }} />
               )}
             </TabsContent>
           </Tabs>
