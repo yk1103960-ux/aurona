@@ -46,15 +46,21 @@ export async function sendSms(to: string, message: string): Promise<void> {
     return;
   }
 
-  // Default: MSG91. The OTP API delivers our own 6-digit code and works with or
-  // without a custom DLT template, so it is the most reliable path for India.
+  // Default: MSG91. In India, carriers only deliver against a DLT-approved
+  // template, so without a template ID MSG91 accepts the request and returns
+  // "success" while the message is silently dropped. Refuse instead of lying.
   const code = message.match(/\d{6}/)?.[0] ?? message;
   const mobile = to.replace(/\D/g, "");
-  const templateId = pub?.templateId?.trim();
+  const templateId = (pub?.templateId ?? process.env["MSG91_TEMPLATE_ID"] ?? "").trim();
+  if (!templateId) {
+    throw new Error(
+      "SMS OTP can’t be delivered yet — the SMS provider still needs a DLT-approved template ID. Please use “Email OTP” for now, or add the template ID in Admin → Integrations → SMS / OTP.",
+    );
+  }
   const url = new URL("https://control.msg91.com/api/v5/otp");
   url.searchParams.set("mobile", mobile);
   url.searchParams.set("otp", code);
-  if (templateId) url.searchParams.set("template_id", templateId);
+  url.searchParams.set("template_id", templateId);
   if (pub?.senderId?.trim()) url.searchParams.set("sender", pub.senderId.trim());
 
   const res = await fetch(url.toString(), {
@@ -72,5 +78,5 @@ export async function sendSms(to: string, message: string): Promise<void> {
     if (err instanceof Error && err.message.startsWith("SMS delivery failed")) throw err;
     if (!res.ok) throw new Error(`SMS delivery failed (${res.status}). Please try Email OTP.`);
   }
-
 }
+
