@@ -198,10 +198,13 @@ export async function syncWooCustomers(maxPages = 20): Promise<SyncSummary> {
 // ---------------- Shiprocket ----------------
 export async function testShiprocket(): Promise<string> {
   const sec = await readSecrets<{ email: string; password: string; apiToken?: string }>("shiprocket");
-  if (!sec) throw new Error("Shiprocket credentials are not saved");
-  if (sec.apiToken) {
+  const apiToken = sec?.apiToken;
+  const email = process.env["SHIPROCKET_EMAIL"] ?? sec?.email;
+  const password = process.env["SHIPROCKET_PASSWORD"] ?? sec?.password;
+  if (!email || !password) throw new Error("Shiprocket credentials are not saved");
+  if (apiToken) {
     const r = await fetch("https://apiv2.shiprocket.in/v1/external/orders?per_page=1", {
-      headers: { Authorization: `Bearer ${sec.apiToken}` },
+      headers: { Authorization: `Bearer ${apiToken}` },
     });
     if (!r.ok) throw new Error(`Shiprocket token rejected (${r.status})`);
     return "Connected using the saved API token.";
@@ -209,11 +212,16 @@ export async function testShiprocket(): Promise<string> {
   const r = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: sec.email, password: sec.password }),
+    body: JSON.stringify({ email, password }),
   });
   const j = (await r.json()) as { token?: string; message?: string };
-  if (!r.ok || !j.token) throw new Error(j.message || "Shiprocket rejected the credentials");
-  return `Connected as ${sec.email}.`;
+  if (!r.ok || !j.token) {
+    const blocked = /blocked|too many failed/i.test(j.message ?? "");
+    throw new Error(blocked
+      ? "Shiprocket temporarily blocked this account after failed sign-in attempts. Reset/unblock it in Shiprocket, then test once."
+      : j.message || `Shiprocket rejected the credentials (${r.status})`);
+  }
+  return `Connected as ${email}.`;
 }
 
 // ---------------- Payment gateways ----------------
@@ -250,11 +258,12 @@ export async function testPhonePe(): Promise<string> {
 export async function testSms(): Promise<string> {
   const sec = await readSecrets<{ apiKey: string; authToken?: string }>("sms");
   const pub = await readPublic<{ providerName: string; senderId: string }>("sms");
-  if (!sec?.apiKey) throw new Error("SMS API key is not saved");
+  const apiKey = process.env["MSG91_AUTH_KEY"] ?? sec?.apiKey;
+  if (!apiKey) throw new Error("SMS API key is not saved");
   if ((pub?.providerName || "msg91") === "msg91") {
     const r = await fetch("https://control.msg91.com/api/v5/otp/verify", {
       method: "POST",
-      headers: { authkey: sec.apiKey, "Content-Type": "application/json" },
+      headers: { authkey: apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ mobile: "910000000000", otp: "000000" }),
     });
     const t = await r.text();

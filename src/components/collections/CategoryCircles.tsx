@@ -30,7 +30,7 @@ const CURATED = [
   "madhani",
 ];
 
-type Tile = { slug: string; name: string; image: string; isIcon: boolean; hasCategory: boolean };
+type Tile = { slug: string; name: string; image: string; isIcon: boolean };
 
 
 export function CategoryCircles({ categories }: { categories: Category[] }) {
@@ -44,7 +44,7 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
       const name =
         cat?.name ??
         slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-      return { slug, name, image, isIcon: !!icon, hasCategory: !!cat };
+      return { slug, name, image, isIcon: !!icon };
     })
     .filter(Boolean) as Tile[];
 
@@ -177,15 +177,9 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
                   key={t.slug}
                   className="shrink-0 basis-1/3 snap-start px-2 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-[12.5%]"
                 >
-                  {t.hasCategory ? (
-                    <Link to="/category/$slug" params={{ slug: t.slug }} className={cls}>
-                      {inner}
-                    </Link>
-                  ) : (
-                    <Link to="/products" search={{ q: t.name } as never} className={cls}>
-                      {inner}
-                    </Link>
-                  )}
+                  <Link to="/category/$slug" params={{ slug: t.slug }} className={cls}>
+                    {inner}
+                  </Link>
                 </div>
               );
             })}

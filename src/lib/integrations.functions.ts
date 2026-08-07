@@ -1,23 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-async function assertAdmin(context: { supabase: any; userId: string }) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (error || !data) throw new Error("Forbidden");
-  return context.userId;
-}
-
-const PROVIDERS = ["woocommerce", "shiprocket", "razorpay", "stripe", "phonepe", "sms"] as const;
+import { IntegrationProviderSchema } from "./integration.schemas";
 
 /** Admin-only listing. Never returns ciphertext or plaintext secrets. */
 export const listIntegrations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    const { assertIntegrationAdmin } = await import("./integration-auth.server");
+    await assertIntegrationAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("integrations")
@@ -33,7 +24,7 @@ export const saveIntegration = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
-        provider: z.enum(PROVIDERS),
+        provider: IntegrationProviderSchema,
         enabled: z.boolean().default(false),
         publicConfig: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).default({}),
         secrets: z.record(z.string(), z.string().max(500)).default({}),
@@ -42,7 +33,8 @@ export const saveIntegration = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const userId = await assertAdmin(context);
+    const { assertIntegrationAdmin } = await import("./integration-auth.server");
+    const userId = await assertIntegrationAdmin(context);
     const { persistIntegration } = await import("./integrations.server");
     return persistIntegration({
       provider: data.provider,
@@ -56,9 +48,10 @@ export const saveIntegration = createServerFn({ method: "POST" })
 
 export const testIntegration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ provider: z.enum(PROVIDERS) }).parse(input))
+  .inputValidator((input: unknown) => z.object({ provider: IntegrationProviderSchema }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    const { assertIntegrationAdmin } = await import("./integration-auth.server");
+    await assertIntegrationAdmin(context);
     const mod = await import("./integrations.server");
     const runners: Record<string, () => Promise<string>> = {
       woocommerce: mod.testWoo,
@@ -85,7 +78,8 @@ export const syncWooEntity = createServerFn({ method: "POST" })
     z.object({ entity: z.enum(["products", "orders", "customers"]) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    const { assertIntegrationAdmin } = await import("./integration-auth.server");
+    await assertIntegrationAdmin(context);
     const mod = await import("./integrations.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     try {
@@ -113,7 +107,8 @@ export const syncWooEntity = createServerFn({ method: "POST" })
 export const wooImportStats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    const { assertIntegrationAdmin } = await import("./integration-auth.server");
+    await assertIntegrationAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const entities = ["product", "order", "customer"] as const;
     const out: Record<string, number> = {};
