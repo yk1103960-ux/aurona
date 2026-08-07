@@ -458,3 +458,14 @@
     box-shadow: var(--shadow-lift);
   }
 }
+
+/* Admin console: keep dense data tables usable on small screens. */
+@media (max-width: 1023px) {
+  .admin-scope table {
+    min-width: 44rem;
+  }
+  .admin-scope div:has(> table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
