@@ -112,7 +112,7 @@ export function HeroSlider() {
 
   return (
     <section
-      className="relative -mt-16 h-[86vh] min-h-[540px] w-full overflow-hidden bg-black text-white lg:-mt-20 lg:h-[92vh]"
+      className="relative -mt-16 h-[74vh] min-h-[460px] max-h-[680px] w-full overflow-hidden bg-black text-white md:h-[78vh] md:max-h-[760px] lg:-mt-20 lg:h-[92vh] lg:max-h-none"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
