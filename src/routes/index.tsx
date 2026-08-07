@@ -46,7 +46,7 @@ function Home() {
 
       {/* ============ COUNTERS ============ */}
       <section className="border-b border-border bg-background">
-        <div className="container-x grid grid-cols-2 gap-6 py-8 lg:grid-cols-4 lg:py-10">
+        <div className="container-x grid grid-cols-2 gap-6 py-8 sm:grid-cols-4 lg:py-10">
           <Counter to={17} suffix="+" label="Years crafting" />
           <Counter to={150} suffix="+" label="Products shipped" />
           <Counter to={1000} suffix="+" label="Retail partners" />
