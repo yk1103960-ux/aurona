@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as PaymentStatusRouteImport } from './routes/payment-status'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as LeadershipRouteImport } from './routes/leadership'
@@ -58,6 +59,7 @@ import { Route as AuronaConsole9f2x7kProductsBulkRouteImport } from './routes/au
 import { Route as AuronaConsole9f2x7kProductsIdRouteImport } from './routes/aurona-console-9f2x7k.products.$id'
 import { Route as AuronaConsole9f2x7kOrdersIdRouteImport } from './routes/aurona-console-9f2x7k.orders.$id'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
+import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -67,6 +69,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentStatusRoute = PaymentStatusRouteImport.update({
+  id: '/payment-status',
+  path: '/payment-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnerRoute = PartnerRouteImport.update({
@@ -324,6 +331,12 @@ const ApiPublicRazorpayWebhookRoute =
     path: '/api/public/razorpay-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPhonepeCallbackRoute =
+  ApiPublicPhonepeCallbackRouteImport.update({
+    id: '/api/public/phonepe-callback',
+    path: '/api/public/phonepe-callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -345,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
@@ -370,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/aurona-console-9f2x7k/orders/$id': typeof AuronaConsole9f2x7kOrdersIdRoute
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
@@ -394,6 +409,7 @@ export interface FileRoutesByTo {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/payment-status': typeof PaymentStatusRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
@@ -418,6 +434,7 @@ export interface FileRoutesByTo {
   '/blogs': typeof BlogsIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/aurona-console-9f2x7k/orders/$id': typeof AuronaConsole9f2x7kOrdersIdRoute
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
@@ -445,6 +462,7 @@ export interface FileRoutesById {
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
@@ -470,6 +488,7 @@ export interface FileRoutesById {
   '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/aurona-console-9f2x7k/orders/$id': typeof AuronaConsole9f2x7kOrdersIdRoute
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
@@ -498,6 +517,7 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/new-arrivals'
     | '/partner'
+    | '/payment-status'
     | '/products'
     | '/wishlist'
     | '/aurona-console-9f2x7k/audit'
@@ -523,6 +543,7 @@ export interface FileRouteTypes {
     | '/blogs/'
     | '/partner/'
     | '/products/'
+    | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
     | '/aurona-console-9f2x7k/orders/$id'
     | '/aurona-console-9f2x7k/products/$id'
@@ -547,6 +568,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/payment-status'
     | '/wishlist'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/categories'
@@ -571,6 +593,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/partner'
     | '/products'
+    | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
     | '/aurona-console-9f2x7k/orders/$id'
     | '/aurona-console-9f2x7k/products/$id'
@@ -597,6 +620,7 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/new-arrivals'
     | '/partner'
+    | '/payment-status'
     | '/products'
     | '/wishlist'
     | '/aurona-console-9f2x7k/audit'
@@ -622,6 +646,7 @@ export interface FileRouteTypes {
     | '/blogs/'
     | '/partner/'
     | '/products/'
+    | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
     | '/aurona-console-9f2x7k/orders/$id'
     | '/aurona-console-9f2x7k/products/$id'
@@ -649,12 +674,14 @@ export interface RootRouteChildren {
   LeadershipRoute: typeof LeadershipRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
   PartnerRoute: typeof PartnerRouteWithChildren
+  PaymentStatusRoute: typeof PaymentStatusRoute
   ProductsRoute: typeof ProductsRouteWithChildren
   WishlistRoute: typeof WishlistRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
+  ApiPublicPhonepeCallbackRoute: typeof ApiPublicPhonepeCallbackRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
 }
 
@@ -672,6 +699,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-status': {
+      id: '/payment-status'
+      path: '/payment-status'
+      fullPath: '/payment-status'
+      preLoaderRoute: typeof PaymentStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partner': {
@@ -1003,6 +1037,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/phonepe-callback': {
+      id: '/api/public/phonepe-callback'
+      path: '/api/public/phonepe-callback'
+      fullPath: '/api/public/phonepe-callback'
+      preLoaderRoute: typeof ApiPublicPhonepeCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1125,24 +1166,16 @@ const rootRouteChildren: RootRouteChildren = {
   LeadershipRoute: LeadershipRoute,
   NewArrivalsRoute: NewArrivalsRoute,
   PartnerRoute: PartnerRouteWithChildren,
+  PaymentStatusRoute: PaymentStatusRoute,
   ProductsRoute: ProductsRouteWithChildren,
   WishlistRoute: WishlistRoute,
   BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,
+  ApiPublicPhonepeCallbackRoute: ApiPublicPhonepeCallbackRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

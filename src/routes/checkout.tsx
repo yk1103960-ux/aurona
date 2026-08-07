@@ -16,6 +16,9 @@ import {
 } from "@/lib/shipping";
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
+import { getPaymentAvailability, startPhonePePayment } from "@/lib/phonepe.functions";
+import { useQuery } from "@tanstack/react-query";
+
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -138,6 +141,15 @@ function CheckoutPage() {
   };
 
   const placeOrderFn = useServerFn(placeOrder);
+  const availabilityFn = useServerFn(getPaymentAvailability);
+  const startPhonePe = useServerFn(startPhonePePayment);
+  const { data: pay } = useQuery({
+    queryKey: ["payment-availability"],
+    queryFn: () => availabilityFn({}),
+    staleTime: 5 * 60 * 1000,
+  });
+  const onlineEnabled = Boolean(pay?.phonepe);
+
   const place = async () => {
     if (!selectedRate) {
       toast.error("Please select a shipping method.");
@@ -161,6 +173,20 @@ function CheckoutPage() {
         },
       });
       await cart.clear.mutateAsync().catch(() => {});
+
+      if (f.payment_method !== "cod" && onlineEnabled) {
+        try {
+          const pp = await startPhonePe({
+            data: { orderId: result.orderId, origin: window.location.origin },
+          });
+          if (pp.redirectUrl) {
+            window.location.href = pp.redirectUrl;
+            return;
+          }
+        } catch {
+          toast.error("Could not open the payment page. Your order is saved as pending payment.");
+        }
+      }
       setDone(result.orderNumber);
     } catch {
       // Detailed errors are logged server-side; users see a generic message.
@@ -169,6 +195,7 @@ function CheckoutPage() {
       setPlacing(false);
     }
   };
+
 
   return (
     <div className="container-x py-8">
@@ -291,9 +318,20 @@ function CheckoutPage() {
               <div className="grid gap-2">
                 {[
                   { v: "cod", l: "Cash on Delivery" },
-                  { v: "upi", l: "UPI (coming soon)", d: true },
-                  { v: "card", l: "Card — Visa / Mastercard (coming soon)", d: true },
+                  {
+                    v: "upi",
+                    l: onlineEnabled ? "UPI — PhonePe, GPay, Paytm" : "UPI (coming soon)",
+                    d: !onlineEnabled,
+                  },
+                  {
+                    v: "card",
+                    l: onlineEnabled
+                      ? "Card / Netbanking — secured by PhonePe"
+                      : "Card — Visa / Mastercard (coming soon)",
+                    d: !onlineEnabled,
+                  },
                 ].map((opt) => (
+
                   <label
                     key={opt.v}
                     className={cn(
