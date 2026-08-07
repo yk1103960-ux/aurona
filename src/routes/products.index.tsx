@@ -113,7 +113,7 @@ function ProductsPage() {
           <select
             value={sp.sort}
             onChange={(e) => setSearch({ sort: e.target.value as Sort })}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm sm:flex-none"
           >
             <option value="newest">Newest</option>
             <option value="price-asc">Price: Low to High</option>
