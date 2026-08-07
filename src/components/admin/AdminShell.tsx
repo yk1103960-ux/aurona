@@ -190,7 +190,7 @@ export function AdminShell() {
   );
 }
 
-function AdminLogin() {
+function AdminLogin({ signedInAs }: { signedInAs?: string }) {
   const nav = useNavigate();
   const [email, setEmail] = useState("admin@aurona.in");
   const [password, setPassword] = useState("");
@@ -201,6 +201,9 @@ function AdminLogin() {
     setBusy(true);
 
     const loginEmail = email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
+    // Drop any existing (non-admin) storefront session first so the console
+    // never mixes a customer session with an admin sign-in attempt.
+    if (signedInAs) await supabase.auth.signOut();
     const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
 
     if (error || !data.user) {
