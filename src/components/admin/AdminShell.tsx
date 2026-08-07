@@ -99,7 +99,7 @@ export function AdminShell() {
     );
   }
   if (!user) return <AdminLogin />;
-  if (!isAdmin) return null;
+  if (!isAdmin) return <AdminLogin signedInAs={user.email ?? undefined} />;
 
   const signOut = async () => {
     await supabase.auth.signOut();
