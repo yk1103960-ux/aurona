@@ -262,6 +262,24 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
             <p className="mt-1 text-sm text-slate-300">Enter the admin password to continue.</p>
           </div>
 
+          {signedInAs && (
+            <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-100">
+              You are signed in as <span className="font-semibold">{signedInAs}</span>, which has no admin access.
+              Sign in below with an authorized admin account.
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  toast.info("Signed out");
+                }}
+                className="mt-2 block underline underline-offset-2 hover:text-white"
+              >
+                Sign out of {signedInAs}
+              </button>
+            </div>
+          )}
+
+
           <form onSubmit={submit} className="space-y-4">
             <div>
               <Label htmlFor="admin-email" className="text-xs text-slate-200">Username / Email</Label>
