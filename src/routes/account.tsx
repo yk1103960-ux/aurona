@@ -11,6 +11,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { inr } from "@/lib/format";
 import { AddressManager } from "@/components/account/AddressManager";
+import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { ProductImage } from "@/components/product/ProductImage";
 import {
@@ -41,7 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 type Section =
   | "overview" | "orders" | "wishlist" | "cart" | "addresses"
-  | "payments" | "support" | "profile" | "security" | "notifications";
+  | "payments" | "returns" | "support" | "profile" | "security" | "notifications";
 
 const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "overview", label: "Overview", Icon: LayoutDashboard },
@@ -50,6 +51,7 @@ const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "cart", label: "Cart Summary", Icon: ShoppingBag },
   { id: "addresses", label: "Addresses", Icon: MapPin },
   { id: "payments", label: "Payment Methods", Icon: CreditCard },
+  { id: "returns", label: "Returns & Refunds", Icon: RotateCcw },
   { id: "support", label: "Support & Refunds", Icon: Headphones },
   { id: "notifications", label: "Notifications", Icon: Bell },
   { id: "profile", label: "Profile", Icon: UserCog },
