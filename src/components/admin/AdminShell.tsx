@@ -56,6 +56,13 @@ export function AdminShell() {
   const { user, isAdmin, loading } = useAdmin();
   const nav = useNavigate();
   const loc = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [loc.pathname]);
+
 
   useEffect(() => {
     if (loading) return;
