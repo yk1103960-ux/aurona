@@ -164,8 +164,8 @@ export function AdminShell() {
           </Link>
         </div>
       </aside>
-      <main className="pl-60 min-h-screen">
-        <div className="p-6 max-w-[1400px]">
+      <main className="min-h-screen lg:pl-60">
+        <div className="p-4 sm:p-6 max-w-[1400px] min-w-0">
           <Outlet />
         </div>
       </main>
