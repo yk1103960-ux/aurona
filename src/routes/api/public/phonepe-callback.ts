@@ -6,11 +6,50 @@ export const Route = createFileRoute("/api/public/phonepe-callback")({
     handlers: {
       POST: async ({ request }) => {
         const { createHash, timingSafeEqual } = await import("node:crypto");
-        const { getPhonePeConfig } = await import("@/lib/phonepe.server");
+        const { getPhonePeConfig, getPhonePeV2Config } = await import("@/lib/phonepe.server");
+
+        const raw = await request.text();
+
+        // Standard Checkout v2: callback is plain JSON, authenticated with
+        // sha256(username:password) in the Authorization header.
+        const v2 = await getPhonePeV2Config();
+        if (v2) {
+          const user = process.env["PHONEPE_CALLBACK_USERNAME"];
+          const pass = process.env["PHONEPE_CALLBACK_PASSWORD"];
+          if (!user || !pass) return new Response("callback auth not configured", { status: 503 });
+          const got = (request.headers.get("authorization") ?? "").replace(/^SHA256\s+/i, "").trim();
+          const want = createHash("sha256").update(`${user}:${pass}`).digest("hex");
+          const ga = Buffer.from(got);
+          const gb = Buffer.from(want);
+          if (ga.length !== gb.length || !timingSafeEqual(ga, gb)) {
+            return new Response("invalid signature", { status: 401 });
+          }
+          const evt = JSON.parse(raw) as {
+            payload?: { merchantOrderId?: string; state?: string; paymentDetails?: Array<{ transactionId?: string }> };
+          };
+          const orderId = evt.payload?.merchantOrderId;
+          if (!orderId) return new Response("ok");
+          const paidV2 = evt.payload?.state === "COMPLETED";
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          await supabaseAdmin
+            .from("orders")
+            .update(
+              paidV2
+                ? {
+                    payment_status: "paid",
+                    status: "confirmed",
+                    payment_provider_payment_id:
+                      evt.payload?.paymentDetails?.[0]?.transactionId ?? orderId,
+                  }
+                : { payment_status: "failed" },
+            )
+            .eq("payment_provider_order_id", orderId);
+          return new Response("ok");
+        }
+
         const cfg = await getPhonePeConfig();
         if (!cfg) return new Response("not configured", { status: 503 });
 
-        const raw = await request.text();
         let base64: string | undefined;
         try {
           base64 = (JSON.parse(raw) as { response?: string }).response;
@@ -18,6 +57,7 @@ export const Route = createFileRoute("/api/public/phonepe-callback")({
           base64 = undefined;
         }
         if (!base64) return new Response("bad payload", { status: 400 });
+
 
         const header = request.headers.get("x-verify") ?? "";
         const expected = `${createHash("sha256").update(`${base64}${cfg.saltKey}`).digest("hex")}###${cfg.saltIndex}`;
