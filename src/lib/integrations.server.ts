@@ -214,13 +214,19 @@ export async function testShiprocket(): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  const j = (await r.json()) as { token?: string; message?: string };
+  const j = (await r.json().catch(() => ({}))) as { token?: string; message?: string };
   if (!r.ok || !j.token) {
     const blocked = /blocked|too many failed/i.test(j.message ?? "");
-    throw new Error(blocked
-      ? "Shiprocket temporarily blocked this account after failed sign-in attempts. Reset/unblock it in Shiprocket, then test once."
-      : j.message || `Shiprocket rejected the credentials (${r.status})`);
+    const forbidden = r.status === 403 || /access forbidden/i.test(j.message ?? "");
+    throw new Error(
+      forbidden
+        ? "Shiprocket refused API access for this login. In Shiprocket go to Settings → API → Configure and create an API User, then save that API user’s email and password here (dashboard logins cannot call the API)."
+        : blocked
+          ? "Shiprocket temporarily blocked this account after failed sign-in attempts. Reset/unblock it in Shiprocket, then test once."
+          : j.message || `Shiprocket rejected the credentials (${r.status})`,
+    );
   }
+
   return `Connected as ${email}.`;
 }
 
