@@ -104,6 +104,42 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          identifier: string
+          ip: string | null
+          method: string
+          reason: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifier: string
+          ip?: string | null
+          method?: string
+          reason?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifier?: string
+          ip?: string | null
+          method?: string
+          reason?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -1508,6 +1544,84 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_security: {
+        Row: {
+          blocked: boolean
+          blocked_at: string | null
+          blocked_reason: string | null
+          created_at: string
+          email_verified_at: string | null
+          failed_login_count: number
+          last_login_at: string | null
+          last_login_device: string | null
+          last_login_ip: string | null
+          locked_until: string | null
+          phone_verified_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked?: boolean
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          created_at?: string
+          email_verified_at?: string | null
+          failed_login_count?: number
+          last_login_at?: string | null
+          last_login_device?: string | null
+          last_login_ip?: string | null
+          locked_until?: string | null
+          phone_verified_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked?: boolean
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          created_at?: string
+          email_verified_at?: string | null
+          failed_login_count?: number
+          last_login_at?: string | null
+          last_login_device?: string | null
+          last_login_ip?: string | null
+          locked_until?: string | null
+          phone_verified_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device: string | null
+          id: string
+          ip: string | null
+          last_seen_at: string
+          revoked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          revoked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          revoked_at?: string | null
           user_id?: string
         }
         Relationships: []
