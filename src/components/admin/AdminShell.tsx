@@ -64,10 +64,9 @@ export function AdminShell() {
   }, [loc.pathname]);
 
 
-  useEffect(() => {
-    if (loading) return;
-    if (user && !isAdmin) nav({ to: "/", replace: true });
-  }, [user, isAdmin, loading, nav]);
+  // Non-admin visitors are NOT bounced to the storefront — they get the admin
+  // login screen so they can sign in with an authorized account instead.
+
 
   // Admin idle-session timeout: any inactivity beyond 30 minutes signs the
   // admin out of the console. Keeps the audit trail tight and reduces the
@@ -100,7 +99,7 @@ export function AdminShell() {
     );
   }
   if (!user) return <AdminLogin />;
-  if (!isAdmin) return null;
+  if (!isAdmin) return <AdminLogin signedInAs={user.email ?? undefined} />;
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -191,7 +190,7 @@ export function AdminShell() {
   );
 }
 
-function AdminLogin() {
+function AdminLogin({ signedInAs }: { signedInAs?: string }) {
   const nav = useNavigate();
   const [email, setEmail] = useState("admin@aurona.in");
   const [password, setPassword] = useState("");
@@ -202,6 +201,9 @@ function AdminLogin() {
     setBusy(true);
 
     const loginEmail = email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
+    // Drop any existing (non-admin) storefront session first so the console
+    // never mixes a customer session with an admin sign-in attempt.
+    if (signedInAs) await supabase.auth.signOut();
     const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
 
     if (error || !data.user) {
@@ -259,6 +261,24 @@ function AdminLogin() {
             <h2 className="mt-4 text-2xl font-semibold text-white">Admin Login</h2>
             <p className="mt-1 text-sm text-slate-300">Enter the admin password to continue.</p>
           </div>
+
+          {signedInAs && (
+            <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-100">
+              You are signed in as <span className="font-semibold">{signedInAs}</span>, which has no admin access.
+              Sign in below with an authorized admin account.
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  toast.info("Signed out");
+                }}
+                className="mt-2 block underline underline-offset-2 hover:text-white"
+              >
+                Sign out of {signedInAs}
+              </button>
+            </div>
+          )}
+
 
           <form onSubmit={submit} className="space-y-4">
             <div>
