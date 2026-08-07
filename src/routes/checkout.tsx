@@ -18,7 +18,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
 
 export const Route = createFileRoute("/checkout")({
-  head: () => ({ meta: [{ title: "Checkout — Aurona" }] }),
+  head: () => ({
+    meta: [
+      { title: "Secure Checkout | Aurona Lighting" },
+      { name: "description", content: "Complete your Aurona Lighting order with secure checkout and delivery across India." },
+      { property: "og:title", content: "Secure Checkout | Aurona Lighting" },
+      { property: "og:description", content: "Complete your Aurona Lighting order with secure checkout and delivery across India." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CheckoutPage,
 });
 

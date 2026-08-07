@@ -23,16 +23,17 @@ export async function sendSms(to: string, message: string): Promise<void> {
   const sec = await readSecrets<{ apiKey?: string; authToken?: string; accountSid?: string }>("sms");
   const pub = await readPublic<{ providerName?: string; senderId?: string; templateId?: string }>("sms");
   const provider = (pub?.providerName ?? "").toLowerCase();
+  const apiKey = sec?.apiKey ?? process.env["MSG91_AUTH_KEY"];
 
-  if (!sec?.apiKey) {
+  if (!apiKey) {
     throw new Error(
       "SMS OTP is not configured yet. Please choose “Email OTP”, or ask an administrator to add SMS credentials in Admin → Integrations.",
     );
   }
 
   if (provider.includes("twilio")) {
-    const sid = sec.accountSid ?? sec.apiKey;
-    const token = sec.authToken ?? "";
+    const sid = sec?.accountSid ?? apiKey;
+    const token = sec?.authToken ?? "";
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: "POST",
       headers: {
@@ -48,7 +49,7 @@ export async function sendSms(to: string, message: string): Promise<void> {
   // Default: MSG91 flow API (India)
   const res = await fetch("https://control.msg91.com/api/v5/flow/", {
     method: "POST",
-    headers: { authkey: sec.apiKey, "Content-Type": "application/json" },
+    headers: { authkey: apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({
       template_id: pub?.templateId ?? "",
       sender: pub?.senderId ?? "AURONA",

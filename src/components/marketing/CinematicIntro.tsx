@@ -10,17 +10,18 @@ import logoAsset from "@/assets/aurona-logo-2026.png.asset.json";
  * Phase 5 (6-7s): Portal transition (shockwave, fly-through)
  */
 export function CinematicIntro() {
-  const [show, setShow] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return !sessionStorage.getItem("aurona_intro_played");
-    } catch {
-      return true;
-    }
-  });
+  const [show, setShow] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const logoRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    try {
+      setShow(!sessionStorage.getItem("aurona_intro_played"));
+    } catch {
+      setShow(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!show) return;

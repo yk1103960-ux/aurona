@@ -133,7 +133,7 @@ export function HeroSlider() {
               src={s.image}
               alt={s.title + " " + s.italic}
               className="h-full w-full object-cover"
-              {...(i === 0 ? { fetchpriority: "high" as const } : { loading: "lazy" as const })}
+              {...(i === 0 ? { fetchPriority: "high" as const } : { loading: "lazy" as const })}
               decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30" />

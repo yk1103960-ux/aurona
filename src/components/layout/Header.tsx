@@ -99,7 +99,7 @@ export function Header() {
   const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
-  const { data: cats = [] } = useQuery(categoriesQuery);
+  const { data: cats = [] } = useQuery({ ...categoriesQuery, initialData: [] as Category[] });
   const { data: settings } = useQuery(siteSettingsQuery);
   const [lang, setLang] = useState("en");
 
@@ -315,7 +315,6 @@ export function Header() {
         columns={LED_COLUMNS}
         onEnter={() => setOpenMenu("led")}
         onLeave={() => setOpenMenu(null)}
-        catBySlug={catBySlug}
       />
       <MegaPanel
         open={openMenu === "appliance"}
@@ -323,14 +322,15 @@ export function Header() {
         gridCols={5}
         onEnter={() => setOpenMenu("appliance")}
         onLeave={() => setOpenMenu(null)}
-        catBySlug={catBySlug}
       />
-      <BrowsePanel
-        open={openMenu === "browse"}
-        onEnter={() => setOpenMenu("browse")}
-        onLeave={() => setOpenMenu(null)}
-        cats={cats}
-      />
+      {openMenu === "browse" && (
+        <BrowsePanel
+          open
+          onEnter={() => setOpenMenu("browse")}
+          onLeave={() => setOpenMenu(null)}
+          cats={cats}
+        />
+      )}
 
       {/* Mobile inline search — appears once scrolled */}
       {scrolled && (
@@ -492,14 +492,12 @@ function MegaPanel({
   gridCols = 6,
   onEnter,
   onLeave,
-  catBySlug,
 }: {
   open: boolean;
   columns: { heading: string; slug: string; items: string[] }[][];
   gridCols?: 5 | 6;
   onEnter: () => void;
   onLeave: () => void;
-  catBySlug: (slug: string) => Category | undefined;
 }) {
   const colsClass = gridCols === 5 ? "grid-cols-5" : "grid-cols-6";
   return (
@@ -515,32 +513,21 @@ function MegaPanel({
         {columns.map((col, ci) => (
           <div key={ci} className="min-w-0 space-y-6">
             {col.map((group) => {
-              const cat = catBySlug(group.slug);
               return (
                 <div key={group.heading}>
-                  {cat ? (
-                    <Link
-                      to="/category/$slug"
-                      params={{ slug: group.slug }}
-                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
-                    >
-                      {group.heading}
-                    </Link>
-                  ) : (
-                    <Link
-                      to="/products"
-                      search={{ q: group.heading } as never}
-                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
-                    >
-                      {group.heading}
-                    </Link>
-                  )}
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: group.slug }}
+                    className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                  >
+                    {group.heading}
+                  </Link>
                   <ul className="mt-3 space-y-2">
                     {group.items.map((item) => (
                       <li key={item}>
                         <Link
                           to="/products"
-                          search={{ q: item, cat: cat?.slug ?? "" } as never}
+                          search={{ q: item, cat: group.slug } as never}
                           className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>

@@ -7,6 +7,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  ClientOnly,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
@@ -130,7 +131,7 @@ function RootComponent() {
 
       </div>
       {!isAdminConsole && <OffersModal />}
-      <CinematicIntro />
+       <ClientOnly fallback={null}><CinematicIntro /></ClientOnly>
       <Toaster position="top-center" richColors closeButton />
 
     </QueryClientProvider>

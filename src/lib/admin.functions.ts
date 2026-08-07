@@ -2,37 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-// Assert caller is admin; logs an audit row on success/failure at call sites.
-async function assertAdmin(context: { supabase: any; userId: string; claims: any }) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (error || !data) throw new Error("Forbidden");
-  return { userId: context.userId, email: (context.claims?.email as string) ?? null };
-}
-
-async function writeAudit(params: {
-  actorUserId: string;
-  actorEmail: string | null;
-  action: string;
-  entityType?: string;
-  entityId?: string;
-  before?: unknown;
-  after?: unknown;
-}) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin.from("audit_logs").insert({
-    actor_user_id: params.actorUserId,
-    actor_email: params.actorEmail,
-    action: params.action,
-    entity_type: params.entityType ?? null,
-    entity_id: params.entityId ?? null,
-    before: (params.before ?? null) as any,
-    after: (params.after ?? null) as any,
-  });
-}
-
 // ============== Audit query ==============
 export const listAuditLogs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -44,6 +13,7 @@ export const listAuditLogs = createServerFn({ method: "POST" })
     }).parse(input ?? {})
   )
   .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import("./admin.server");
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(data.limit);
@@ -67,6 +37,7 @@ export const saveRazorpayCredentials = createServerFn({ method: "POST" })
     }).parse(input)
   )
   .handler(async ({ data, context }) => {
+    const { assertAdmin, writeAudit } = await import("./admin.server");
     const actor = await assertAdmin(context);
     const { encryptJSON, mask } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -107,6 +78,7 @@ export const setRazorpayEnabled = createServerFn({ method: "POST" })
     z.object({ enabled: z.boolean() }).parse(input)
   )
   .handler(async ({ data, context }) => {
+    const { assertAdmin, writeAudit } = await import("./admin.server");
     const actor = await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -134,6 +106,7 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
     }).parse(input)
   )
   .handler(async ({ data, context }) => {
+    const { assertAdmin, writeAudit } = await import("./admin.server");
     const actor = await assertAdmin(context);
     const { encryptJSON } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -182,40 +155,11 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ============== Push order to Shiprocket ==============
-async function getShiprocketToken(): Promise<string> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { decryptJSON, encryptJSON } = await import("./crypto.server");
-  const { data: row, error } = await supabaseAdmin
-    .from("shipping_providers")
-    .select("credentials_ciphertext, auth_token_ciphertext, auth_token_expires_at")
-    .eq("provider", "shiprocket")
-    .maybeSingle();
-  if (error || !row?.credentials_ciphertext) throw new Error("Shiprocket not connected");
-
-  const stillValid = row.auth_token_ciphertext && row.auth_token_expires_at &&
-    new Date(row.auth_token_expires_at).getTime() > Date.now() + 60_000;
-  if (stillValid) return decryptJSON<{ token: string }>(row.auth_token_ciphertext!).token;
-
-  const creds = decryptJSON<{ email: string; password: string }>(row.credentials_ciphertext);
-  const r = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(creds),
-  });
-  const j = await r.json();
-  if (!r.ok || !j?.token) throw new Error("Shiprocket auth failed");
-  await supabaseAdmin.from("shipping_providers").update({
-    auth_token_ciphertext: encryptJSON({ token: j.token }),
-    auth_token_expires_at: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
-    last_verified_at: new Date().toISOString(),
-  }).eq("provider", "shiprocket");
-  return j.token;
-}
-
 export const pushOrderToShiprocket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const { assertAdmin, getShiprocketToken, writeAudit } = await import("./admin.server");
     const actor = await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: order }, { data: items }, { data: sp }] = await Promise.all([
