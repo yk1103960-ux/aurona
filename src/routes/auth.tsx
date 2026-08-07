@@ -18,6 +18,7 @@ import {
   registerSession,
   getAuthPolicy,
 } from "@/lib/auth.functions";
+import { sendSignupSmsOtp, verifySignupSmsOtp } from "@/lib/otp.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -52,7 +53,17 @@ function deviceLabel() {
 function AuthPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  useEffect(() => { if (!loading && user) nav({ to: "/account" }); }, [user, loading, nav]);
+  // Hard gate: an unverified session can never reach the site.
+  useEffect(() => {
+    if (loading || !user) return;
+    const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
+    if (!verified) {
+      supabase.auth.signOut();
+      toast.error("Please verify the OTP sent to you before accessing your account.");
+      return;
+    }
+    nav({ to: "/account" });
+  }, [user, loading, nav]);
 
   const [role, setRole] = useState<Role>("customer");
   const [mode, setMode] = useState<"in" | "up">("in");
@@ -73,6 +84,7 @@ function AuthPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [channel, setChannel] = useState<"email" | "sms">("email");
+  const [signupChannel, setSignupChannel] = useState<"email" | "sms">("email");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -129,6 +141,23 @@ function AuthPage() {
   };
 
   // ---------- Registration ----------
+  const deliverSignupOtp = async (via: "email" | "sms") => {
+    if (via === "sms") {
+      const res = await sendSignupSmsOtp({ data: { email, phone } });
+      if (!res.ok) { toast.error(res.message); return false; }
+      setChannel("sms");
+      startOtp();
+      toast.success(res.message);
+      return true;
+    }
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    if (error && !/already confirmed/i.test(error.message)) { toast.error(error.message); return false; }
+    setChannel("email");
+    startOtp();
+    toast.success(`We sent a 6-digit code to ${email}. It expires in ${Math.round(policy.otpExpirySeconds / 60)} minutes.`);
+    return true;
+  };
+
   const register = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -145,7 +174,7 @@ function AuthPage() {
         toast.error(check.issues[0]?.message ?? "Please correct the highlighted fields.");
         return;
       }
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -163,9 +192,14 @@ function AuthPage() {
         toast.error(error.message);
         return;
       }
-      setChannel("email");
-      startOtp();
-      toast.success(`We sent a 6-digit code to ${email}. It expires in ${Math.round(policy.otpExpirySeconds / 60)} minutes.`);
+      // Never let an unverified account stay signed in, whatever the server returns.
+      if (signUpData.session) await supabase.auth.signOut();
+
+      const sent = await deliverSignupOtp(signupChannel);
+      if (!sent && signupChannel === "sms") {
+        // SMS unavailable — fall back to email so verification stays mandatory.
+        await deliverSignupOtp("email");
+      }
     } catch (err: any) {
       toast.error(err?.message?.includes("fetch") ? "Network problem — please try again." : err?.message || "Something went wrong. Please try again.");
     } finally {
@@ -177,21 +211,26 @@ function AuthPage() {
     if (cooldown > 0) return toast.error(`Please wait ${cooldown}s before requesting another code.`);
     setBusy(true);
     try {
-      if (channel === "sms") {
-        const p = normalisePhone(phone);
-        if (!p.ok) return toast.error(p.reason!);
-        const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
-        if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
-        startOtp();
-        return toast.success(`Code sent by SMS to ${p.e164}`);
+      if (mode === "up") {
+        await deliverSignupOtp(channel);
+        return;
       }
-      const { error } = await supabase.auth.resend({ type: "signup", email });
-      if (error) return toast.error(error.message);
+      const p = normalisePhone(phone);
+      if (!p.ok) return toast.error(p.reason!);
+      const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
+      if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
       startOtp();
-      toast.success(`New code sent to ${email}`);
+      toast.success(`Code sent by SMS to ${p.e164}`);
     } finally {
       setBusy(false);
     }
+  };
+
+  const switchSignupChannel = async (c: "email" | "sms") => {
+    if (c === channel || busy) return;
+    setSignupChannel(c);
+    setBusy(true);
+    try { await deliverSignupOtp(c); } finally { setBusy(false); }
   };
 
   const verifyOtp = async (e: React.FormEvent) => {
@@ -200,30 +239,46 @@ function AuthPage() {
     if (expired) return toast.error("This code has expired. Please request a new one.");
     setBusy(true);
     const token = otp.trim();
-    const p = normalisePhone(phone);
-    const res = channel === "sms"
-      ? await supabase.auth.verifyOtp({ phone: p.e164 ?? phone, token, type: "sms" })
-      : await supabase.auth.verifyOtp({ email, token, type: "email" });
-    setBusy(false);
-    if (res.error) {
-      setAttempts((a) => a + 1);
-      const left = policy.otpMaxAttempts - (attempts + 1);
-      return toast.error(left > 0
-        ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left`
-        : "Too many invalid attempts. Please request a new code.");
+
+    try {
+      // Registration + SMS: our own server-side challenge, then password sign-in.
+      if (mode === "up" && channel === "sms") {
+        const res = await verifySignupSmsOtp({ data: { email, code: token } });
+        if (!res.ok) {
+          setAttempts((a) => a + 1);
+          return toast.error(res.message);
+        }
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return toast.error("Verified — please sign in to continue.");
+      } else {
+        const p = normalisePhone(phone);
+        const res = channel === "sms"
+          ? await supabase.auth.verifyOtp({ phone: p.e164 ?? phone, token, type: "sms" })
+          : await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
+        if (res.error) {
+          setAttempts((a) => a + 1);
+          const left = policy.otpMaxAttempts - (attempts + 1);
+          return toast.error(left > 0
+            ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left`
+            : "Too many invalid attempts. Please request a new code.");
+        }
+        if (!res.data.session && password) {
+          const { error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) return toast.error("Verified — please sign in to continue.");
+        }
+      }
+
+      setOtpSent(false);
+      setSecondsLeft(0);
+      if (mode === "up" && role !== "customer") {
+        toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
+      } else {
+        toast.success("Verified — welcome to Aurona!");
+      }
+      await finishLogin("otp");
+    } finally {
+      setBusy(false);
     }
-    if (!res.data.session && password) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return toast.error("Verified — please sign in to continue.");
-    }
-    setOtpSent(false);
-    setSecondsLeft(0);
-    if (mode === "up" && role !== "customer") {
-      toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
-    } else {
-      toast.success("Verified — welcome to Aurona!");
-    }
-    await finishLogin("otp");
   };
 
   // ---------- Login ----------
@@ -425,6 +480,25 @@ function AuthPage() {
                       Your {role} application will be reviewed by our team. Trade pricing unlocks after approval.
                     </div>
                   )}
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Send my OTP by</div>
+                    <div className="mt-2 flex gap-1 rounded-full bg-background p-1">
+                      {(["sms", "email"] as const).map((c) => (
+                        <button
+                          key={c} type="button" onClick={() => setSignupChannel(c)}
+                          className={cn(
+                            "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                            signupChannel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                          )}
+                        >
+                          {c === "sms" ? "Mobile (SMS)" : "Email"}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Verification is mandatory — the account stays locked until the code is verified.
+                    </p>
+                  </div>
                   <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm}>
                     {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…</> : `Create ${active.title} account`}
                   </Button>
@@ -433,7 +507,7 @@ function AuthPage() {
                   </p>
                 </form>
               ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: channel === "sms" ? phone : email, channel, setChannel }} />
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: channel === "sms" ? phone : email, channel, setChannel: switchSignupChannel }} />
               )}
             </TabsContent>
           </Tabs>
