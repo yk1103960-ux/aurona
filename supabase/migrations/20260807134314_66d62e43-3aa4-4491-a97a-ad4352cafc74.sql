@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "public read gateway status" ON public.payment_gateways; REVOKE SELECT ON public.payment_gateways FROM anon;
