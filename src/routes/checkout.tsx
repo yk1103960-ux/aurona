@@ -16,6 +16,9 @@ import {
 } from "@/lib/shipping";
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
+import { getPaymentAvailability, startPhonePePayment } from "@/lib/phonepe.functions";
+import { useQuery } from "@tanstack/react-query";
+
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
