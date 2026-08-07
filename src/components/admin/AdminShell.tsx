@@ -142,6 +142,15 @@ export function AdminShell() {
               <div className="text-sm font-semibold">Admin Console</div>
             </div>
           </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close admin menu"
+            className="lg:hidden text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {NAV.map((item) => {
