@@ -176,7 +176,7 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
     const { data: row, error } = await supabaseAdmin
       .from("auth_otp_challenges")
       .insert({
-        email: null,
+        email: `sms:${p.e164}`,
         phone: p.e164,
         channel: "sms",
         purpose: "login",
