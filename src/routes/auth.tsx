@@ -52,7 +52,17 @@ function deviceLabel() {
 function AuthPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  useEffect(() => { if (!loading && user) nav({ to: "/account" }); }, [user, loading, nav]);
+  // Hard gate: an unverified session can never reach the site.
+  useEffect(() => {
+    if (loading || !user) return;
+    const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
+    if (!verified) {
+      supabase.auth.signOut();
+      toast.error("Please verify the OTP sent to you before accessing your account.");
+      return;
+    }
+    nav({ to: "/account" });
+  }, [user, loading, nav]);
 
   const [role, setRole] = useState<Role>("customer");
   const [mode, setMode] = useState<"in" | "up">("in");
