@@ -18,6 +18,7 @@ import {
   registerSession,
   getAuthPolicy,
 } from "@/lib/auth.functions";
+import { sendSignupSmsOtp, verifySignupSmsOtp } from "@/lib/otp.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
