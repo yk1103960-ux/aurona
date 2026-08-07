@@ -217,10 +217,11 @@ function AuthPage() {
       }
       const p = normalisePhone(phone);
       if (!p.ok) return toast.error(p.reason!);
-      const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
-      if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
+      const res = await sendLoginSmsOtp({ data: { phone: p.e164! } });
+      if (!res.ok) return toast.error(res.message);
       startOtp();
-      toast.success(`Code sent by SMS to ${p.e164}`);
+      toast.success(res.message);
+
     } finally {
       setBusy(false);
     }
