@@ -253,11 +253,20 @@ export async function testStripe(): Promise<string> {
 }
 
 export async function testPhonePe(): Promise<string> {
-  const { getPhonePeConfig, phonePeBase, xVerify } = await import("./phonepe.server");
+  const { getPhonePeConfig, getPhonePeV2Config, getPhonePeV2Token, phonePeBase, xVerify } =
+    await import("./phonepe.server");
+
+  // Newer merchants use Standard Checkout v2 (Client ID / Secret + OAuth).
+  const v2 = await getPhonePeV2Config();
+  if (v2) {
+    await getPhonePeV2Token(v2);
+    return `Connected to PhonePe ${v2.env} (Standard Checkout v2) with client ${v2.clientId}.`;
+  }
+
   const cfg = await getPhonePeConfig();
   if (!cfg) {
     throw new Error(
-      "PhonePe needs a Merchant ID and Salt Key (with Salt Index) from PhonePe Business → Developer Settings. Save both here, then test again.",
+      "PhonePe needs credentials. New merchants: save the Client ID, Client Secret and Client Version from PhonePe Business → Developer Settings → API Keys. Legacy merchants: save the Merchant ID, Salt Key and Salt Index.",
     );
   }
   if (!/^\d+$/.test(cfg.saltIndex)) throw new Error("Salt index must be numeric");
@@ -274,8 +283,14 @@ export async function testPhonePe(): Promise<string> {
   if (body.code === "AUTHORIZATION_FAILED" || r.status === 401) {
     throw new Error("PhonePe rejected the Salt Key / Salt Index. Please re-check them.");
   }
+  if (body.code === "404" || (r.status === 404 && !body.code?.includes("TRANSACTION"))) {
+    throw new Error(
+      "PhonePe’s legacy API does not recognise this merchant — your account is on Standard Checkout v2. Save the Client ID, Client Secret and Client Version from PhonePe Business → Developer Settings → API Keys instead of the Salt Key.",
+    );
+  }
   return `Connected to PhonePe ${cfg.env} for merchant ${cfg.merchantId}.`;
 }
+
 
 
 export async function testSms(): Promise<string> {

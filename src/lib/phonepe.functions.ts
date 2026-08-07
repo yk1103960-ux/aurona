@@ -4,10 +4,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Public: tells the storefront which online payment options are live right now. */
 export const getPaymentAvailability = createServerFn({ method: "GET" }).handler(async () => {
-  const { getPhonePeConfig } = await import("./phonepe.server");
+  const { getPhonePeConfig, getPhonePeV2Config } = await import("./phonepe.server");
+  const v2 = await getPhonePeV2Config().catch(() => null);
+  if (v2) return { phonepe: true, mode: v2.env };
   const cfg = await getPhonePeConfig().catch(() => null);
   return { phonepe: Boolean(cfg), mode: cfg?.env ?? null };
 });
+
 
 /** Creates a PhonePe payment for an existing order and returns the hosted checkout URL. */
 export const startPhonePePayment = createServerFn({ method: "POST" })
@@ -17,10 +20,18 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getPhonePeConfig, phonePeBase, xVerify, merchantTxnId } = await import("./phonepe.server");
+    const {
+      getPhonePeConfig,
+      getPhonePeV2Config,
+      phonePeV2Pay,
+      phonePeBase,
+      xVerify,
+      merchantTxnId,
+    } = await import("./phonepe.server");
 
-    const cfg = await getPhonePeConfig();
-    if (!cfg) throw new Error("Online payments are not configured yet.");
+    const v2 = await getPhonePeV2Config();
+    const cfg = v2 ? null : await getPhonePeConfig();
+    if (!v2 && !cfg) throw new Error("Online payments are not configured yet.");
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -33,6 +44,23 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
 
     const txnId = merchantTxnId(order.order_number);
     const origin = new URL(data.origin).origin;
+
+    if (v2) {
+      const url = await phonePeV2Pay({
+        cfg: v2,
+        merchantOrderId: txnId,
+        amountPaise: Math.round(Number(order.total) * 100),
+        redirectUrl: `${origin}/payment-status?order=${order.id}`,
+        message: `Aurona order ${order.order_number}`,
+      });
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_provider_order_id: txnId })
+        .eq("id", order.id);
+      return { alreadyPaid: false as const, redirectUrl: url };
+    }
+    if (!cfg) throw new Error("Online payments are not configured yet.");
+
     const payload = {
       merchantId: cfg.merchantId,
       merchantTransactionId: txnId,
@@ -79,10 +107,18 @@ export const checkPhonePePayment = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getPhonePeConfig, phonePeBase, xVerify, merchantTxnId } = await import("./phonepe.server");
+    const {
+      getPhonePeConfig,
+      getPhonePeV2Config,
+      phonePeV2Status,
+      phonePeBase,
+      xVerify,
+      merchantTxnId,
+    } = await import("./phonepe.server");
 
-    const cfg = await getPhonePeConfig();
-    if (!cfg) throw new Error("Online payments are not configured yet.");
+    const v2 = await getPhonePeV2Config();
+    const cfg = v2 ? null : await getPhonePeConfig();
+    if (!v2 && !cfg) throw new Error("Online payments are not configured yet.");
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -96,7 +132,28 @@ export const checkPhonePePayment = createServerFn({ method: "POST" })
     }
 
     const txnId = order.payment_provider_order_id || merchantTxnId(order.order_number);
+
+    if (v2) {
+      const { state, transactionId } = await phonePeV2Status(v2, txnId);
+      const paid = state === "COMPLETED";
+      if (paid) {
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            payment_status: "paid",
+            status: "confirmed",
+            payment_provider_payment_id: transactionId ?? txnId,
+          })
+          .eq("id", order.id);
+      } else if (state === "FAILED") {
+        await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
+      }
+      return { state, paid, orderNumber: order.order_number };
+    }
+    if (!cfg) throw new Error("Online payments are not configured yet.");
+
     const path = `/pg/v1/status/${cfg.merchantId}/${txnId}`;
+
     const res = await fetch(`${phonePeBase(cfg.env)}${path}`, {
       headers: {
         "Content-Type": "application/json",
