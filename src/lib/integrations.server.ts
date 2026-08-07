@@ -253,13 +253,30 @@ export async function testStripe(): Promise<string> {
 }
 
 export async function testPhonePe(): Promise<string> {
-  const sec = await readSecrets<{ saltKey: string }>("phonepe");
-  const pub = await readPublic<{ merchantId: string; saltIndex: string; env: string }>("phonepe");
-  if (!sec?.saltKey || !pub?.merchantId) throw new Error("PhonePe credentials are not saved");
-  // PhonePe has no read-only ping endpoint; validate the credential shape instead.
-  if (!/^\d+$/.test(String(pub.saltIndex || "1"))) throw new Error("Salt index must be numeric");
-  return `Credentials stored for merchant ${pub.merchantId} (${pub.env || "sandbox"}). A live payment attempt will confirm end to end.`;
+  const { getPhonePeConfig, phonePeBase, xVerify } = await import("./phonepe.server");
+  const cfg = await getPhonePeConfig();
+  if (!cfg) {
+    throw new Error(
+      "PhonePe needs a Merchant ID and Salt Key (with Salt Index) from PhonePe Business → Developer Settings. Save both here, then test again.",
+    );
+  }
+  if (!/^\d+$/.test(cfg.saltIndex)) throw new Error("Salt index must be numeric");
+  // Probe a known-missing transaction: valid credentials return a signed 4xx, bad ones fail auth.
+  const path = `/pg/v1/status/${cfg.merchantId}/AURONAPING`;
+  const r = await fetch(`${phonePeBase(cfg.env)}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      "X-VERIFY": xVerify("", path, cfg.saltKey, cfg.saltIndex),
+      "X-MERCHANT-ID": cfg.merchantId,
+    },
+  });
+  const body = (await r.json().catch(() => ({}))) as { code?: string; message?: string };
+  if (body.code === "AUTHORIZATION_FAILED" || r.status === 401) {
+    throw new Error("PhonePe rejected the Salt Key / Salt Index. Please re-check them.");
+  }
+  return `Connected to PhonePe ${cfg.env} for merchant ${cfg.merchantId}.`;
 }
+
 
 export async function testSms(): Promise<string> {
   const sec = await readSecrets<{ apiKey: string; authToken?: string }>("sms");
