@@ -64,10 +64,9 @@ export function AdminShell() {
   }, [loc.pathname]);
 
 
-  useEffect(() => {
-    if (loading) return;
-    if (user && !isAdmin) nav({ to: "/", replace: true });
-  }, [user, isAdmin, loading, nav]);
+  // Non-admin visitors are NOT bounced to the storefront — they get the admin
+  // login screen so they can sign in with an authorized account instead.
+
 
   // Admin idle-session timeout: any inactivity beyond 30 minutes signs the
   // admin out of the console. Keeps the audit trail tight and reduces the
