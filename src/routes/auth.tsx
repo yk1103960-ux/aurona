@@ -327,12 +327,14 @@ function AuthPage() {
     const p = normalisePhone(phone);
     if (!p.ok) { setErrors({ phone: p.reason! }); return; }
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
+    const res = await sendLoginSmsOtp({ data: { phone: p.e164! } }).catch(() => null);
     setBusy(false);
-    if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
+    if (!res) return toast.error("Network problem — please try again.");
+    if (!res.ok) return toast.error(res.message);
     setChannel("sms");
     startOtp();
-    toast.success(`Code sent by SMS to ${p.e164}`);
+    toast.success(res.message);
+
   };
 
   const active = ROLES.find((r) => r.id === role)!;
