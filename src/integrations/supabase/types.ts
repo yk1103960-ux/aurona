@@ -313,6 +313,54 @@ export type Database = {
         }
         Relationships: []
       }
+      integrations: {
+        Row: {
+          config_public: Json
+          config_secret_ciphertext: string | null
+          created_at: string
+          enabled: boolean
+          last_sync_at: string | null
+          last_sync_summary: Json | null
+          last_test_message: string | null
+          last_tested_at: string | null
+          provider: string
+          secret_masked: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_public?: Json
+          config_secret_ciphertext?: string | null
+          created_at?: string
+          enabled?: boolean
+          last_sync_at?: string | null
+          last_sync_summary?: Json | null
+          last_test_message?: string | null
+          last_tested_at?: string | null
+          provider: string
+          secret_masked?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_public?: Json
+          config_secret_ciphertext?: string | null
+          created_at?: string
+          enabled?: boolean
+          last_sync_at?: string | null
+          last_sync_summary?: Json | null
+          last_test_message?: string | null
+          last_tested_at?: string | null
+          provider?: string
+          secret_masked?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           created_at: string
@@ -343,6 +391,30 @@ export type Database = {
           path?: string
           size_bytes?: number | null
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          source: string
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          source?: string
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          source?: string
+          unsubscribed_at?: string | null
         }
         Relationships: []
       }
@@ -1237,6 +1309,51 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_zones: {
+        Row: {
+          active: boolean
+          cod_allowed: boolean
+          created_at: string
+          flat_rate: number
+          free_above: number | null
+          id: string
+          max_days: number
+          min_days: number
+          name: string
+          pincode_prefixes: string[]
+          sort_order: number
+          states: string[]
+        }
+        Insert: {
+          active?: boolean
+          cod_allowed?: boolean
+          created_at?: string
+          flat_rate?: number
+          free_above?: number | null
+          id?: string
+          max_days?: number
+          min_days?: number
+          name: string
+          pincode_prefixes?: string[]
+          sort_order?: number
+          states?: string[]
+        }
+        Update: {
+          active?: boolean
+          cod_allowed?: boolean
+          created_at?: string
+          flat_rate?: number
+          free_above?: number | null
+          id?: string
+          max_days?: number
+          min_days?: number
+          name?: string
+          pincode_prefixes?: string[]
+          sort_order?: number
+          states?: string[]
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           key: string
@@ -1317,6 +1434,36 @@ export type Database = {
           },
         ]
       }
+      tax_rules: {
+        Row: {
+          active: boolean
+          applies_to: string
+          created_at: string
+          gst_percent: number
+          hsn_code: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          applies_to?: string
+          created_at?: string
+          gst_percent?: number
+          hsn_code?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          applies_to?: string
+          created_at?: string
+          gst_percent?: number
+          hsn_code?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       user_mfa: {
         Row: {
           backup_codes_ciphertext: string | null
@@ -1393,6 +1540,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      woo_import_records: {
+        Row: {
+          applied: boolean
+          entity: string
+          external_id: string
+          id: string
+          imported_at: string
+          payload: Json
+        }
+        Insert: {
+          applied?: boolean
+          entity: string
+          external_id: string
+          id?: string
+          imported_at?: string
+          payload: Json
+        }
+        Update: {
+          applied?: boolean
+          entity?: string
+          external_id?: string
+          id?: string
+          imported_at?: string
+          payload?: Json
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -47,6 +47,7 @@ import { Route as AuronaConsole9f2x7kProductsRouteImport } from './routes/aurona
 import { Route as AuronaConsole9f2x7kPaymentsRouteImport } from './routes/aurona-console-9f2x7k.payments'
 import { Route as AuronaConsole9f2x7kOrdersRouteImport } from './routes/aurona-console-9f2x7k.orders'
 import { Route as AuronaConsole9f2x7kMediaRouteImport } from './routes/aurona-console-9f2x7k.media'
+import { Route as AuronaConsole9f2x7kIntegrationsRouteImport } from './routes/aurona-console-9f2x7k.integrations'
 import { Route as AuronaConsole9f2x7kCustomersRouteImport } from './routes/aurona-console-9f2x7k.customers'
 import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-console-9f2x7k.coupons'
 import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
@@ -257,6 +258,12 @@ const AuronaConsole9f2x7kMediaRoute =
     path: '/media',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kIntegrationsRoute =
+  AuronaConsole9f2x7kIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kCustomersRoute =
   AuronaConsole9f2x7kCustomersRouteImport.update({
     id: '/customers',
@@ -345,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
   '/aurona-console-9f2x7k/payments': typeof AuronaConsole9f2x7kPaymentsRoute
@@ -392,6 +400,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
   '/aurona-console-9f2x7k/payments': typeof AuronaConsole9f2x7kPaymentsRoute
@@ -443,6 +452,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
   '/aurona-console-9f2x7k/payments': typeof AuronaConsole9f2x7kPaymentsRoute
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/media'
     | '/aurona-console-9f2x7k/orders'
     | '/aurona-console-9f2x7k/payments'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/media'
     | '/aurona-console-9f2x7k/orders'
     | '/aurona-console-9f2x7k/payments'
@@ -592,6 +604,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/media'
     | '/aurona-console-9f2x7k/orders'
     | '/aurona-console-9f2x7k/payments'
@@ -913,6 +926,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kMediaRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/integrations': {
+      id: '/aurona-console-9f2x7k/integrations'
+      path: '/integrations'
+      fullPath: '/aurona-console-9f2x7k/integrations'
+      preLoaderRoute: typeof AuronaConsole9f2x7kIntegrationsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/customers': {
       id: '/aurona-console-9f2x7k/customers'
       path: '/customers'
@@ -1024,6 +1044,7 @@ interface AuronaConsole9f2x7kRouteChildren {
   AuronaConsole9f2x7kContentRoute: typeof AuronaConsole9f2x7kContentRoute
   AuronaConsole9f2x7kCouponsRoute: typeof AuronaConsole9f2x7kCouponsRoute
   AuronaConsole9f2x7kCustomersRoute: typeof AuronaConsole9f2x7kCustomersRoute
+  AuronaConsole9f2x7kIntegrationsRoute: typeof AuronaConsole9f2x7kIntegrationsRoute
   AuronaConsole9f2x7kMediaRoute: typeof AuronaConsole9f2x7kMediaRoute
   AuronaConsole9f2x7kOrdersRoute: typeof AuronaConsole9f2x7kOrdersRouteWithChildren
   AuronaConsole9f2x7kPaymentsRoute: typeof AuronaConsole9f2x7kPaymentsRoute
@@ -1041,6 +1062,7 @@ const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
   AuronaConsole9f2x7kContentRoute: AuronaConsole9f2x7kContentRoute,
   AuronaConsole9f2x7kCouponsRoute: AuronaConsole9f2x7kCouponsRoute,
   AuronaConsole9f2x7kCustomersRoute: AuronaConsole9f2x7kCustomersRoute,
+  AuronaConsole9f2x7kIntegrationsRoute: AuronaConsole9f2x7kIntegrationsRoute,
   AuronaConsole9f2x7kMediaRoute: AuronaConsole9f2x7kMediaRoute,
   AuronaConsole9f2x7kOrdersRoute: AuronaConsole9f2x7kOrdersRouteWithChildren,
   AuronaConsole9f2x7kPaymentsRoute: AuronaConsole9f2x7kPaymentsRoute,
@@ -1114,13 +1136,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
