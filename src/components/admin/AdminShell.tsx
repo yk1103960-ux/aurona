@@ -31,6 +31,7 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/products", label: "Products", icon: Package },
   { to: "/aurona-console-9f2x7k/categories", label: "Categories", icon: FolderTree },
   { to: "/aurona-console-9f2x7k/orders", label: "Orders", icon: ShoppingCart },
+  { to: "/aurona-console-9f2x7k/returns", label: "Returns & Refunds", icon: RotateCcw },
   { to: "/aurona-console-9f2x7k/customers", label: "Customers", icon: Users },
   { to: "/aurona-console-9f2x7k/media", label: "Media", icon: ImageIcon },
   { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
