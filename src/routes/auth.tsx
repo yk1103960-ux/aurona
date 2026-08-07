@@ -18,7 +18,7 @@ import {
   registerSession,
   getAuthPolicy,
 } from "@/lib/auth.functions";
-import { sendSignupSmsOtp, verifySignupSmsOtp } from "@/lib/otp.functions";
+import { sendSignupSmsOtp, verifySignupSmsOtp, sendLoginSmsOtp, verifyLoginSmsOtp } from "@/lib/otp.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -217,10 +217,11 @@ function AuthPage() {
       }
       const p = normalisePhone(phone);
       if (!p.ok) return toast.error(p.reason!);
-      const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
-      if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
+      const res = await sendLoginSmsOtp({ data: { phone: p.e164! } });
+      if (!res.ok) return toast.error(res.message);
       startOtp();
-      toast.success(`Code sent by SMS to ${p.e164}`);
+      toast.success(res.message);
+
     } finally {
       setBusy(false);
     }
@@ -250,11 +251,18 @@ function AuthPage() {
         }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) return toast.error("Verified — please sign in to continue.");
-      } else {
+      } else if (channel === "sms") {
         const p = normalisePhone(phone);
-        const res = channel === "sms"
-          ? await supabase.auth.verifyOtp({ phone: p.e164 ?? phone, token, type: "sms" })
-          : await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
+        const out = await verifyLoginSmsOtp({ data: { phone: p.e164 ?? phone, code: token } });
+        if (!out.ok) {
+          setAttempts((a) => a + 1);
+          return toast.error(out.message);
+        }
+        const { error } = await supabase.auth.verifyOtp({ token_hash: out.tokenHash!, type: "magiclink" });
+        if (error) return toast.error("Verified — please sign in with your password to continue.");
+      } else {
+        const res = await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
+
         if (res.error) {
           setAttempts((a) => a + 1);
           const left = policy.otpMaxAttempts - (attempts + 1);
@@ -319,12 +327,14 @@ function AuthPage() {
     const p = normalisePhone(phone);
     if (!p.ok) { setErrors({ phone: p.reason! }); return; }
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
+    const res = await sendLoginSmsOtp({ data: { phone: p.e164! } }).catch(() => null);
     setBusy(false);
-    if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
+    if (!res) return toast.error("Network problem — please try again.");
+    if (!res.ok) return toast.error(res.message);
     setChannel("sms");
     startOtp();
-    toast.success(`Code sent by SMS to ${p.e164}`);
+    toast.success(res.message);
+
   };
 
   const active = ROLES.find((r) => r.id === role)!;

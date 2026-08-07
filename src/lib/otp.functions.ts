@@ -141,3 +141,123 @@ export const verifySignupSmsOtp = createServerFn({ method: "POST" })
 
     return { ok: true, message: "Mobile verified — signing you in…" };
   });
+
+/** Sends a login code by SMS using our own provider (Supabase has no phone provider). */
+export const sendLoginSmsOtp = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ phone: z.string().trim().max(20) }).parse(input))
+  .handler(async ({ data }) => {
+    const p = normalisePhone(data.phone);
+    if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const last10 = p.e164!.slice(-10);
+
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("phone", `%${last10}`)
+      .limit(1);
+    const userId = prof?.[0]?.id;
+    if (!userId) return { ok: false, message: "No account found with this mobile number. Please register first." };
+
+    const { data: recent } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .select("created_at")
+      .eq("phone", p.e164!)
+      .eq("purpose", "login")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const last = recent?.[0]?.created_at ? new Date(recent[0].created_at).getTime() : 0;
+    const waited = (Date.now() - last) / 1000;
+    if (last && waited < RESEND_COOLDOWN) {
+      return { ok: false, message: `Please wait ${Math.ceil(RESEND_COOLDOWN - waited)}s before requesting another code.` };
+    }
+
+    const code = generateCode();
+    const { data: row, error } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .insert({
+        email: `sms:${p.e164}`,
+        phone: p.e164,
+        channel: "sms",
+        purpose: "login",
+        code_hash: "pending",
+        expires_at: new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error || !row) return { ok: false, message: "Could not start verification. Please try again." };
+    await supabaseAdmin.from("auth_otp_challenges").update({ code_hash: hashCode(code, row.id) }).eq("id", row.id);
+
+    try {
+      await sendSms(p.e164!, `${code} is your Aurona login code. It expires in 5 minutes. Do not share it.`);
+    } catch (err: unknown) {
+      await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
+      return { ok: false, message: err instanceof Error ? err.message : "SMS delivery failed. Please sign in with your password." };
+    }
+    return { ok: true, message: `Code sent by SMS to ${p.e164}`, expirySeconds: EXPIRY_SECONDS, maxAttempts: MAX_ATTEMPTS };
+  });
+
+/** Verifies a login code and returns a one-time token the browser exchanges for a session. */
+export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ phone: z.string().trim().max(20), code: z.string().trim().regex(/^\d{6}$/) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const p = normalisePhone(data.phone);
+    if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: rows } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .select("id, code_hash, attempts, expires_at")
+      .eq("phone", p.e164!)
+      .eq("purpose", "login")
+      .is("consumed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const ch = rows?.[0];
+    if (!ch) return { ok: false, message: "No active code. Please request a new one." };
+    if (new Date(ch.expires_at).getTime() < Date.now()) return { ok: false, message: "This code has expired. Please request a new one." };
+    if ((ch.attempts ?? 0) >= MAX_ATTEMPTS) return { ok: false, message: "Too many incorrect attempts. Please request a new code." };
+    if (!safeEqual(ch.code_hash, hashCode(data.code, ch.id))) {
+      const attempts = (ch.attempts ?? 0) + 1;
+      await supabaseAdmin.from("auth_otp_challenges").update({ attempts }).eq("id", ch.id);
+      const left = Math.max(0, MAX_ATTEMPTS - attempts);
+      return {
+        ok: false,
+        message: left > 0 ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left.` : "Too many incorrect attempts. Please request a new code.",
+      };
+    }
+
+    const last10 = p.e164!.slice(-10);
+    const { data: prof } = await supabaseAdmin.from("profiles").select("id").ilike("phone", `%${last10}`).limit(1);
+    const userId = prof?.[0]?.id;
+    if (!userId) return { ok: false, message: "No account found with this mobile number." };
+
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    if (!url || !key) return { ok: false, message: "Sign-in is temporarily unavailable. Please try your password." };
+
+    const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const email = userRes?.user?.email;
+    if (!email) return { ok: false, message: "This account has no email on file. Please sign in with your password." };
+
+    // Mark the phone verified and mint a one-time link token for the browser.
+    await supabaseAdmin.auth.admin.updateUserById(userId, { phone_confirm: true, email_confirm: true } as never).catch(() => null);
+
+    const res = await fetch(`${url}/auth/v1/admin/generate_link`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "magiclink", email }),
+    });
+    if (!res.ok) return { ok: false, message: "Could not complete sign-in. Please try your password." };
+    const j = (await res.json()) as { hashed_token?: string; properties?: { hashed_token?: string } };
+    const tokenHash = j.hashed_token ?? j.properties?.hashed_token;
+    if (!tokenHash) return { ok: false, message: "Could not complete sign-in. Please try your password." };
+
+    await supabaseAdmin.from("auth_otp_challenges").update({ consumed_at: new Date().toISOString() }).eq("id", ch.id);
+    const now = new Date().toISOString();
+    await supabaseAdmin.from("user_security").upsert({ user_id: userId, phone_verified_at: now, updated_at: now } as never);
+
+    return { ok: true, message: "Verified — signing you in…", tokenHash, email };
+  });
