@@ -8,6 +8,9 @@ import {
 } from "lucide-react";
 import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 import { siteSettingsQuery } from "@/lib/settings";
+import { useServerFn } from "@tanstack/react-start";
+import { subscribeNewsletter } from "@/lib/integrations.functions";
+
 
 const FEATURES = [
   { icon: ShieldCheck, title: "Quality Products", sub: "ISO 9001:2015 certified products" },
@@ -45,8 +48,11 @@ const COL_3: [string, string][] = [
 
 export function Footer() {
   const { data: s } = useQuery(siteSettingsQuery);
+  const subscribe = useServerFn(subscribeNewsletter);
   const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+
 
   const socials: [string, React.ComponentType<{ className?: string }>, string][] = [
     [s?.social_facebook ?? "#", Facebook, "Facebook"],
@@ -115,7 +121,19 @@ export function Footer() {
 
             <form
               className="mt-6"
-              onSubmit={(e) => { e.preventDefault(); if (email.trim()) setSubscribed(true); }}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!email.trim() || busy) return;
+                setBusy(true);
+                try {
+                  await subscribe({ data: { email: email.trim(), source: "footer" } });
+                  setSubscribed(true);
+                } catch {
+                  setSubscribed(false);
+                } finally {
+                  setBusy(false);
+                }
+              }}
             >
               <label htmlFor="footer-newsletter" className="block text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
                 Newsletter
@@ -132,13 +150,15 @@ export function Footer() {
                 />
                 <button
                   type="submit"
-                  className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 text-[11px] font-bold uppercase tracking-[0.16em] text-primary-foreground transition hover:brightness-110 active:scale-[0.97]"
+                  disabled={busy}
+                  className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 text-[11px] font-bold uppercase tracking-[0.16em] text-primary-foreground transition hover:brightness-110 active:scale-[0.97] disabled:opacity-70"
                 >
                   {subscribed ? <Check className="h-4 w-4" /> : <>Subscribe <ArrowRight className="h-3.5 w-3.5" /></>}
                 </button>
               </div>
               {subscribed && <p className="mt-2 text-[12px] text-emerald-600">Thanks — you’re on the list.</p>}
             </form>
+
           </div>
         </div>
 
