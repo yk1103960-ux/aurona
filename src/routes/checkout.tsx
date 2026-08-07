@@ -332,7 +332,6 @@ function CheckoutPage() {
                   },
                 ].map((opt) => (
 
-                ].map((opt) => (
                   <label
                     key={opt.v}
                     className={cn(
