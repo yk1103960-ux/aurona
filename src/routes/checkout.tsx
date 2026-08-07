@@ -318,8 +318,20 @@ function CheckoutPage() {
               <div className="grid gap-2">
                 {[
                   { v: "cod", l: "Cash on Delivery" },
-                  { v: "upi", l: "UPI (coming soon)", d: true },
-                  { v: "card", l: "Card — Visa / Mastercard (coming soon)", d: true },
+                  {
+                    v: "upi",
+                    l: onlineEnabled ? "UPI — PhonePe, GPay, Paytm" : "UPI (coming soon)",
+                    d: !onlineEnabled,
+                  },
+                  {
+                    v: "card",
+                    l: onlineEnabled
+                      ? "Card / Netbanking — secured by PhonePe"
+                      : "Card — Visa / Mastercard (coming soon)",
+                    d: !onlineEnabled,
+                  },
+                ].map((opt) => (
+
                 ].map((opt) => (
                   <label
                     key={opt.v}
