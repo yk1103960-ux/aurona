@@ -117,7 +117,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
         <> / <span className="text-foreground">{family.name}</span></>
       </div>
 
-      <div className="grid gap-10 lg:grid-cols-[1.05fr_1fr]">
+      <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
         <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} categoryIcon={cat?.icon} />
 
         <div>
