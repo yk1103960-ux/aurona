@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as PaymentStatusRouteImport } from './routes/payment-status'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as LeadershipRouteImport } from './routes/leadership'
@@ -68,6 +69,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentStatusRoute = PaymentStatusRouteImport.update({
+  id: '/payment-status',
+  path: '/payment-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnerRoute = PartnerRouteImport.update({
@@ -352,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/payment-status': typeof PaymentStatusRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
@@ -508,6 +517,7 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/new-arrivals'
     | '/partner'
+    | '/payment-status'
     | '/products'
     | '/wishlist'
     | '/aurona-console-9f2x7k/audit'
@@ -558,6 +568,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/payment-status'
     | '/wishlist'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/categories'
@@ -609,6 +620,7 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/new-arrivals'
     | '/partner'
+    | '/payment-status'
     | '/products'
     | '/wishlist'
     | '/aurona-console-9f2x7k/audit'
@@ -662,6 +674,7 @@ export interface RootRouteChildren {
   LeadershipRoute: typeof LeadershipRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
   PartnerRoute: typeof PartnerRouteWithChildren
+  PaymentStatusRoute: typeof PaymentStatusRoute
   ProductsRoute: typeof ProductsRouteWithChildren
   WishlistRoute: typeof WishlistRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
@@ -686,6 +699,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-status': {
+      id: '/payment-status'
+      path: '/payment-status'
+      fullPath: '/payment-status'
+      preLoaderRoute: typeof PaymentStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partner': {
@@ -1146,6 +1166,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeadershipRoute: LeadershipRoute,
   NewArrivalsRoute: NewArrivalsRoute,
   PartnerRoute: PartnerRouteWithChildren,
+  PaymentStatusRoute: PaymentStatusRoute,
   ProductsRoute: ProductsRouteWithChildren,
   WishlistRoute: WishlistRoute,
   BlogsSlugRoute: BlogsSlugRoute,

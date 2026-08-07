@@ -46,16 +46,31 @@ export async function sendSms(to: string, message: string): Promise<void> {
     return;
   }
 
-  // Default: MSG91 flow API (India)
-  const res = await fetch("https://control.msg91.com/api/v5/flow/", {
+  // Default: MSG91. The OTP API delivers our own 6-digit code and works with or
+  // without a custom DLT template, so it is the most reliable path for India.
+  const code = message.match(/\d{6}/)?.[0] ?? message;
+  const mobile = to.replace(/\D/g, "");
+  const templateId = pub?.templateId?.trim();
+  const url = new URL("https://control.msg91.com/api/v5/otp");
+  url.searchParams.set("mobile", mobile);
+  url.searchParams.set("otp", code);
+  if (templateId) url.searchParams.set("template_id", templateId);
+  if (pub?.senderId?.trim()) url.searchParams.set("sender", pub.senderId.trim());
+
+  const res = await fetch(url.toString(), {
     method: "POST",
     headers: { authkey: apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      template_id: pub?.templateId ?? "",
-      sender: pub?.senderId ?? "AURONA",
-      short_url: 0,
-      recipients: [{ mobiles: to.replace(/^\+/, ""), OTP: message.match(/\d{6}/)?.[0] ?? message }],
-    }),
+    body: JSON.stringify({ otp_expiry: 5 }),
   });
-  if (!res.ok) throw new Error(`SMS delivery failed (${res.status}). Please try Email OTP.`);
+  const text = await res.text();
+  let ok = res.ok;
+  try {
+    const j = JSON.parse(text) as { type?: string; message?: string };
+    ok = res.ok && j.type !== "error";
+    if (!ok) throw new Error(`SMS delivery failed: ${j.message ?? text}. Please try Email OTP.`);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("SMS delivery failed")) throw err;
+    if (!res.ok) throw new Error(`SMS delivery failed (${res.status}). Please try Email OTP.`);
+  }
+
 }
