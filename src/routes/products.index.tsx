@@ -95,8 +95,9 @@ function ProductsPage() {
           </h1>
           <div className="mt-1 text-sm text-muted-foreground">{total} products</div>
         </div>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative w-full min-w-0 sm:w-64">
+
             <Input
               value={sp.q}
               onChange={(e) => setSearch({ q: e.target.value })}
@@ -112,7 +113,7 @@ function ProductsPage() {
           <select
             value={sp.sort}
             onChange={(e) => setSearch({ sort: e.target.value as Sort })}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm sm:flex-none"
           >
             <option value="newest">Newest</option>
             <option value="price-asc">Price: Low to High</option>

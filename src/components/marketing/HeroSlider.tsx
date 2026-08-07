@@ -112,7 +112,7 @@ export function HeroSlider() {
 
   return (
     <section
-      className="relative -mt-16 h-[86vh] min-h-[540px] w-full overflow-hidden bg-black text-white lg:-mt-20 lg:h-[92vh]"
+      className="relative -mt-16 h-[74vh] min-h-[460px] max-h-[680px] w-full overflow-hidden bg-black text-white md:h-[78vh] md:max-h-[760px] lg:-mt-20 lg:h-[92vh] lg:max-h-none"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
@@ -158,7 +158,7 @@ export function HeroSlider() {
               <span className="text-[10px] uppercase tracking-[0.24em] text-white/90">{s.eyebrow}</span>
             </div>
             <h1
-              className="text-display text-[42px] leading-[0.98] tracking-tight sm:text-6xl lg:text-[92px]"
+              className="text-display text-[38px] leading-[0.98] tracking-tight sm:text-5xl md:text-6xl lg:text-[92px]"
               style={{ textShadow: "0 2px 24px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.8)" }}
             >
               <span className="block text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">{s.title}</span>
@@ -200,14 +200,14 @@ export function HeroSlider() {
       <button
         onClick={() => go(i - 1)}
         aria-label="Previous slide"
-        className="absolute left-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur transition hover:bg-black/50 sm:left-6 sm:h-12 sm:w-12"
+        className="absolute left-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur transition hover:bg-black/50 lg:grid lg:left-6 lg:h-12 lg:w-12"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
       <button
         onClick={() => go(i + 1)}
         aria-label="Next slide"
-        className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur transition hover:bg-black/50 sm:right-6 sm:h-12 sm:w-12"
+        className="absolute right-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur transition hover:bg-black/50 lg:grid lg:right-6 lg:h-12 lg:w-12"
       >
         <ChevronRight className="h-5 w-5" />
       </button>
