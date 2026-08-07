@@ -200,7 +200,7 @@ export function HeroSlider() {
       <button
         onClick={() => go(i - 1)}
         aria-label="Previous slide"
-        className="absolute left-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur transition hover:bg-black/50 sm:left-6 sm:h-12 sm:w-12"
+        className="absolute left-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur transition hover:bg-black/50 lg:grid lg:left-6 lg:h-12 lg:w-12"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
