@@ -481,11 +481,11 @@ function TaxShippingCard() {
   });
 
   const patchTax = async (id: string, patch: Record<string, unknown>) => {
-    const { error } = await supabase.from("tax_rules").update(patch).eq("id", id);
+    const { error } = await supabase.from("tax_rules").update(patch as never).eq("id", id);
     error ? toast.error(error.message) : qc.invalidateQueries({ queryKey: ["admin-tax-rules"] });
   };
   const patchZone = async (id: string, patch: Record<string, unknown>) => {
-    const { error } = await supabase.from("shipping_zones").update(patch).eq("id", id);
+    const { error } = await supabase.from("shipping_zones").update(patch as never).eq("id", id);
     error ? toast.error(error.message) : qc.invalidateQueries({ queryKey: ["admin-shipping-zones"] });
   };
 
