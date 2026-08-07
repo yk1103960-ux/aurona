@@ -384,7 +384,7 @@ function LegacyPDP({ slug }: { slug: string }) {
         <> / <span className="text-foreground">{product.name}</span></>
       </div>
 
-      <div className="grid gap-10 lg:grid-cols-[1.05fr_1fr]">
+      <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
         <LegacyGallery product={product} categoryIcon={cat?.icon} />
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
