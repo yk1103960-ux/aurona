@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,11 +8,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Store, Building2, ShieldCheck, Info } from "lucide-react";
+import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { assessPassword, normalisePhone } from "@/lib/auth-security";
+import {
+  validateRegistration,
+  loginGuard,
+  recordLoginAttempt,
+  registerSession,
+  getAuthPolicy,
+} from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — Aurona" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in or create your Aurona account" },
+      { name: "description", content: "Secure Aurona sign-in with OTP verification, verified-email checks and trade pricing for retailers and distributors." },
+      { property: "og:title", content: "Sign in or create your Aurona account" },
+      { property: "og:description", content: "Secure Aurona sign-in with OTP verification and role-based trade pricing." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: AuthPage,
 });
 
@@ -24,6 +41,14 @@ const ROLES: { id: Role; title: string; icon: any; blurb: string; accent: string
   { id: "distributor", title: "Distributor", icon: Building2, blurb: "Enterprise pricing, direct sales channel.", accent: "from-primary/15 to-primary/5" },
 ];
 
+const REMEMBER_KEY = "aurona.remember";
+const SESSION_MARK = "aurona.session";
+
+function deviceLabel() {
+  if (typeof navigator === "undefined") return "Unknown device";
+  return navigator.userAgent.slice(0, 240);
+}
+
 function AuthPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
@@ -31,30 +56,62 @@ function AuthPage() {
 
   const [role, setRole] = useState<Role>("customer");
   const [mode, setMode] = useState<"in" | "up">("in");
+  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [business, setBusiness] = useState("");
+  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // OTP state
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [channel, setChannel] = useState<"email" | "sms">("email");
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [cooldown, setCooldown] = useState(0);
   const [attempts, setAttempts] = useState(0);
-  const MAX_ATTEMPTS = 5;
-  const OTP_TTL = 600; // 10 minutes
+  const [policy, setPolicy] = useState({ otpExpirySeconds: 300, otpMaxAttempts: 5, otpResendCooldown: 60, maxFailures: 5, lockMinutes: 15 });
 
-  // Expiry countdown
   useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const t = setInterval(() => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    getAuthPolicy().then(setPolicy).catch(() => null);
+    const stored = typeof window !== "undefined" ? localStorage.getItem(REMEMBER_KEY) : null;
+    if (stored) { setEmail(stored); setRemember(true); }
+  }, []);
+
+  // Expiry + resend countdowns
+  useEffect(() => {
+    if (secondsLeft <= 0 && cooldown <= 0) return;
+    const t = setInterval(() => {
+      setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+      setCooldown((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
     return () => clearInterval(t);
-  }, [secondsLeft]);
+  }, [secondsLeft, cooldown]);
 
   const expired = otpSent && secondsLeft === 0;
-  const locked = attempts >= MAX_ATTEMPTS;
+  const locked = attempts >= policy.otpMaxAttempts;
   const mmss = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
+  const verdict = useMemo(() => assessPassword(password, { email, name, phone }), [password, email, name, phone]);
+
+  const finishLogin = async (method: "password" | "otp" | "google") => {
+    if (remember) localStorage.setItem(REMEMBER_KEY, email);
+    else localStorage.removeItem(REMEMBER_KEY);
+    sessionStorage.setItem(SESSION_MARK, "1");
+    await recordLoginAttempt({ data: { identifier: email || phone, method, success: true, device: deviceLabel() } }).catch(() => null);
+    const res = await registerSession({ data: { device: deviceLabel() } }).catch(() => null);
+    if (res && res.blocked) {
+      await supabase.auth.signOut();
+      toast.error(res.reason || "Your account has been suspended.");
+      return;
+    }
+    nav({ to: "/account" });
+  };
 
   const google = async () => {
     setBusy(true);
@@ -67,89 +124,153 @@ function AuthPage() {
     setOtpSent(true);
     setOtp("");
     setAttempts(0);
-    setSecondsLeft(OTP_TTL);
+    setSecondsLeft(policy.otpExpirySeconds);
+    setCooldown(policy.otpResendCooldown);
   };
 
-  const submit = async (e: React.FormEvent) => {
+  // ---------- Registration ----------
+  const register = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    const local: Record<string, string> = {};
+    if (password !== confirm) local.confirm = "Passwords do not match.";
+    if (role !== "customer" && business.trim().length < 3) local.business = "Enter your business name.";
+    if (Object.keys(local).length) { setErrors(local); return; }
+
     setBusy(true);
-    if (mode === "in") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) toast.error(error.message);
-      else {
-        toast.success(`Welcome back — signing in as ${role}`);
-        nav({ to: "/account" });
+    try {
+      const check = await validateRegistration({ data: { fullName: name, email, phone, password } });
+      if (!check.ok) {
+        setErrors(Object.fromEntries(check.issues.map((i) => [i.field, i.message])));
+        toast.error(check.issues[0]?.message ?? "Please correct the highlighted fields.");
+        return;
       }
-    } else {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: name, phone, business_name: business, intended_role: role },
+          data: {
+            full_name: name.trim(),
+            phone: check.phoneE164 ?? phone,
+            business_name: business,
+            intended_role: role,
+          },
         },
       });
-      if (error) toast.error(error.message);
-      else {
-        startOtp();
-        toast.success(`We sent a 6-digit verification code to ${email}`);
+      if (error) {
+        setErrors({ email: error.message });
+        toast.error(error.message);
+        return;
       }
+      setChannel("email");
+      startOtp();
+      toast.success(`We sent a 6-digit code to ${email}. It expires in ${Math.round(policy.otpExpirySeconds / 60)} minutes.`);
+    } catch (err: any) {
+      toast.error(err?.message?.includes("fetch") ? "Network problem — please try again." : err?.message || "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const resend = async () => {
+    if (cooldown > 0) return toast.error(`Please wait ${cooldown}s before requesting another code.`);
     setBusy(true);
-    if (channel === "sms") {
-      if (!phone.trim()) {
-        setBusy(false);
-        return toast.error("Add your mobile number above to receive an SMS code");
+    try {
+      if (channel === "sms") {
+        const p = normalisePhone(phone);
+        if (!p.ok) return toast.error(p.reason!);
+        const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
+        if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
+        startOtp();
+        return toast.success(`Code sent by SMS to ${p.e164}`);
       }
-      const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
-      setBusy(false);
-      if (error) return toast.error(error.message || "SMS delivery is unavailable right now");
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) return toast.error(error.message);
       startOtp();
-      return toast.success(`Code sent by SMS to ${phone}`);
+      toast.success(`New code sent to ${email}`);
+    } finally {
+      setBusy(false);
     }
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    startOtp();
-    toast.success(`New code sent to ${email}`);
   };
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (locked) return toast.error("Too many attempts. Please resend a fresh code.");
-    if (expired) return toast.error("This code has expired. Please resend a new one.");
+    if (locked) return toast.error("Too many attempts. Please request a fresh code.");
+    if (expired) return toast.error("This code has expired. Please request a new one.");
     setBusy(true);
     const token = otp.trim();
-    const res =
-      channel === "sms"
-        ? await supabase.auth.verifyOtp({ phone: phone.trim(), token, type: "sms" })
-        : await supabase.auth.verifyOtp({ email, token, type: "email" });
+    const p = normalisePhone(phone);
+    const res = channel === "sms"
+      ? await supabase.auth.verifyOtp({ phone: p.e164 ?? phone, token, type: "sms" })
+      : await supabase.auth.verifyOtp({ email, token, type: "email" });
     setBusy(false);
     if (res.error) {
       setAttempts((a) => a + 1);
-      const left = MAX_ATTEMPTS - (attempts + 1);
-      return toast.error(
-        left > 0
-          ? `${res.error.message || "Invalid code"} — ${left} attempt${left === 1 ? "" : "s"} left`
-          : "Too many invalid attempts. Please resend a new code.",
-      );
+      const left = policy.otpMaxAttempts - (attempts + 1);
+      return toast.error(left > 0
+        ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left`
+        : "Too many invalid attempts. Please request a new code.");
     }
-    if (!res.data.session) {
-      // Fall back to a password sign-in so the user lands verified & logged in.
+    if (!res.data.session && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return toast.error("Verified — please sign in to continue");
+      if (error) return toast.error("Verified — please sign in to continue.");
     }
     setOtpSent(false);
     setSecondsLeft(0);
-    if (role === "customer") toast.success("Email verified — welcome to Aurona!");
-    else toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
-    nav({ to: "/account" });
+    if (mode === "up" && role !== "customer") {
+      toast.success(`${role[0].toUpperCase() + role.slice(1)} application submitted — awaiting admin approval.`);
+    } else {
+      toast.success("Verified — welcome to Aurona!");
+    }
+    await finishLogin("otp");
   };
 
+  // ---------- Login ----------
+  const signIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setBusy(true);
+    try {
+      const guard = await loginGuard({ data: { identifier: email } }).catch(() => null);
+      if (guard?.locked) {
+        toast.error(`Too many failed attempts. Try again in ${guard.lockMinutes} minutes or reset your password.`);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        await recordLoginAttempt({ data: { identifier: email, method: "password", success: false, reason: error.message, device: deviceLabel() } }).catch(() => null);
+        const left = guard ? Math.max(0, guard.remaining - 1) : null;
+        const msg = /email not confirmed/i.test(error.message)
+          ? "Please verify your email with the OTP we sent before signing in."
+          : /invalid login/i.test(error.message)
+            ? `Incorrect email or password${left !== null ? ` — ${left} attempt${left === 1 ? "" : "s"} left before a temporary lock` : ""}.`
+            : error.message;
+        setErrors({ password: msg });
+        toast.error(msg);
+        return;
+      }
+      toast.success("Welcome back to Aurona");
+      await finishLogin("password");
+    } catch {
+      toast.error("Network problem — please check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendLoginOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = normalisePhone(phone);
+    if (!p.ok) { setErrors({ phone: p.reason! }); return; }
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: p.e164! });
+    setBusy(false);
+    if (error) return toast.error(error.message || "SMS delivery is unavailable right now.");
+    setChannel("sms");
+    startOtp();
+    toast.success(`Code sent by SMS to ${p.e164}`);
+  };
 
   const active = ROLES.find((r) => r.id === role)!;
 
@@ -166,28 +287,29 @@ function AuthPage() {
           <div className="mt-4 space-y-3">
             {ROLES.map((r) => {
               const Icon = r.icon;
-              const active = role === r.id;
+              const isActive = role === r.id;
               return (
                 <button
                   key={r.id}
+                  type="button"
                   onClick={() => setRole(r.id)}
                   className={cn(
                     "group relative flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition-all",
-                    active
+                    isActive
                       ? "border-primary bg-gradient-to-br shadow-sky " + r.accent
                       : "border-border bg-card hover:border-primary/40 hover:shadow-soft",
                   )}
                 >
                   <div className={cn(
                     "grid h-12 w-12 shrink-0 place-items-center rounded-full transition",
-                    active ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
+                    isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
                   )}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-semibold">Sign in as {r.title}</span>
-                      {active && <ShieldCheck className="h-4 w-4 text-primary" />}
+                      {isActive && <ShieldCheck className="h-4 w-4 text-primary" />}
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">{r.blurb}</div>
                     {r.id !== "customer" && (
@@ -214,109 +336,105 @@ function AuthPage() {
             <div className="h-px flex-1 bg-border" /> OR <div className="h-px flex-1 bg-border" />
           </div>
 
-          <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
+          <Tabs value={mode} onValueChange={(v) => { setMode(v as any); setErrors({}); }}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="in">Sign in</TabsTrigger>
               <TabsTrigger value="up">Create account</TabsTrigger>
             </TabsList>
 
+            {/* ---------------- SIGN IN ---------------- */}
             <TabsContent value="in" className="pt-4">
-              <form onSubmit={submit} className="space-y-3">
-                <Field label="Email" value={email} onChange={setEmail} type="email" />
-                <Field label="Password" value={password} onChange={setPassword} type="password" />
-                <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                  {busy ? "Signing in…" : `Sign in as ${active.title}`}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="up" className="pt-4">
-              <form onSubmit={submit} className="space-y-3">
-                <Field label="Full name" value={name} onChange={setName} />
-                <Field label="Phone" value={phone} onChange={setPhone} />
-                {role !== "customer" && (
-                  <Field label={role === "retailer" ? "Shop / Store name" : "Company / Distribution firm"} value={business} onChange={setBusiness} />
-                )}
-                <Field label="Email" value={email} onChange={setEmail} type="email" />
-                <Field label="Password" value={password} onChange={setPassword} type="password" />
-                {role !== "customer" && (
-                  <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-[11px] text-muted-foreground">
-                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                    Your {role} application will be reviewed by our team. Trade pricing unlocks after approval.
-                  </div>
-                )}
-                <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                  {busy ? "Creating…" : `Create ${active.title} account`}
-                </Button>
-              </form>
-              {otpSent && (
-                <form onSubmit={verifyOtp} className="mt-5 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-                      Verify your account
-                    </div>
-                    <div className={cn("text-[11px] font-semibold", expired ? "text-destructive" : "text-muted-foreground")}>
-                      {expired ? "Code expired" : `Expires in ${mmss}`}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-1 rounded-full bg-background p-1">
-                    {(["email", "sms"] as const).map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setChannel(c)}
-                        className={cn(
-                          "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
-                          channel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        {c === "email" ? "Email OTP" : "Mobile SMS OTP"}
-                      </button>
-                    ))}
-                  </div>
-
-                  <p className="text-[11px] text-muted-foreground">
-                    Enter the 6-digit code sent to {channel === "sms" ? phone || "your mobile number" : email} to
-                    activate your account. Verification is mandatory to complete registration.
-                  </p>
-
-                  <Input
-                    value={otp}
-                    onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
-                    inputMode="numeric"
-                    placeholder="••••••"
-                    className="h-11 text-center text-lg tracking-[0.5em]"
-                    required
-                  />
-                  {attempts > 0 && !locked && (
-                    <div className="text-[11px] text-destructive">
-                      Invalid code — {MAX_ATTEMPTS - attempts} attempt{MAX_ATTEMPTS - attempts === 1 ? "" : "s"} left
-                    </div>
-                  )}
-                  {locked && (
-                    <div className="text-[11px] text-destructive">
-                      Maximum attempts reached. Request a fresh code to continue.
-                    </div>
-                  )}
-                  <Button
-                    type="submit"
-                    className="h-11 w-full rounded-full"
-                    disabled={busy || otp.length < 6 || expired || locked}
-                  >
-                    {busy ? "Verifying…" : "Verify & continue"}
-                  </Button>
+              <div className="mb-4 flex gap-1 rounded-full bg-muted p-1">
+                {(["password", "otp"] as const).map((m) => (
                   <button
+                    key={m}
                     type="button"
-                    onClick={resend}
-                    disabled={busy || (secondsLeft > OTP_TTL - 30 && !locked)}
-                    className="w-full text-center text-[11px] font-semibold text-primary underline disabled:opacity-50"
+                    onClick={() => { setLoginMode(m); setOtpSent(false); }}
+                    className={cn(
+                      "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                      loginMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                    )}
                   >
-                    {channel === "sms" ? "Send code by SMS" : "Resend code"}
+                    {m === "password" ? "Email + Password" : "Mobile + OTP"}
                   </button>
+                ))}
+              </div>
+
+              {loginMode === "password" ? (
+                <form onSubmit={signIn} className="space-y-3">
+                  <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
+                  <Field
+                    label="Password" value={password} onChange={setPassword}
+                    type={showPw ? "text" : "password"} error={errors.password}
+                    trailing={
+                      <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
+                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    }
+                  />
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
+                    Remember me on this device
+                  </label>
+                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                    {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
+                  </Button>
+                </form>
+              ) : otpSent ? (
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone, channel: "sms" }} />
+              ) : (
+                <form onSubmit={sendLoginOtp} className="space-y-3">
+                  <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
+                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                    {busy ? "Sending…" : "Send OTP"}
+                  </Button>
                 </form>
               )}
+            </TabsContent>
 
+            {/* ---------------- REGISTER ---------------- */}
+            <TabsContent value="up" className="pt-4">
+              {!otpSent ? (
+                <form onSubmit={register} className="space-y-3">
+                  <Field label="Full name" value={name} onChange={setName} error={errors.fullName} />
+                  <Field label="Email address" value={email} onChange={setEmail} type="email" error={errors.email} />
+                  <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
+                  {role !== "customer" && (
+                    <Field
+                      label={role === "retailer" ? "Shop / Store name" : "Company / Distribution firm"}
+                      value={business} onChange={setBusiness} error={errors.business}
+                    />
+                  )}
+                  <Field
+                    label="Password" value={password} onChange={setPassword}
+                    type={showPw ? "text" : "password"} error={errors.password}
+                    trailing={
+                      <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
+                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    }
+                  />
+                  {password.length > 0 && <StrengthMeter verdict={verdict} />}
+                  <Field label="Confirm password" value={confirm} onChange={setConfirm} type={showPw ? "text" : "password"} error={errors.confirm} />
+                  {confirm.length > 0 && confirm === password && (
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-primary"><Check className="h-3 w-3" /> Passwords match</div>
+                  )}
+                  {role !== "customer" && (
+                    <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-[11px] text-muted-foreground">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      Your {role} application will be reviewed by our team. Trade pricing unlocks after approval.
+                    </div>
+                  )}
+                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm}>
+                    {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…</> : `Create ${active.title} account`}
+                  </Button>
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    We verify your email is real and deliverable before creating the account.
+                  </p>
+                </form>
+              ) : (
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: channel === "sms" ? phone : email, channel, setChannel }} />
+              )}
             </TabsContent>
           </Tabs>
 
@@ -329,11 +447,117 @@ function AuthPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+function StrengthMeter({ verdict }: { verdict: ReturnType<typeof assessPassword> }) {
+  const colors = ["bg-destructive", "bg-destructive", "bg-amber-500", "bg-emerald-500", "bg-emerald-600"];
+  const rules: [keyof typeof verdict.checks, string][] = [
+    ["length", "8+ characters"],
+    ["upper", "Uppercase"],
+    ["lower", "Lowercase"],
+    ["number", "Number"],
+    ["special", "Special character"],
+  ];
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
+      <div className="flex items-center justify-between text-[11px] font-semibold">
+        <span className="text-muted-foreground">Password strength</span>
+        <span className={verdict.score >= 3 ? "text-emerald-600" : verdict.score === 2 ? "text-amber-600" : "text-destructive"}>
+          {verdict.label}
+        </span>
+      </div>
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={cn("h-1.5 flex-1 rounded-full", i < verdict.score ? colors[verdict.score] : "bg-border")} />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-1">
+        {rules.map(([k, label]) => (
+          <div key={k} className={cn("flex items-center gap-1 text-[11px]", verdict.checks[k] ? "text-emerald-600" : "text-muted-foreground")}>
+            {verdict.checks[k] ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />} {label}
+          </div>
+        ))}
+      </div>
+      {verdict.problems.length > 0 && (
+        <div className="text-[11px] text-destructive">{verdict.problems[0]}</div>
+      )}
+    </div>
+  );
+}
+
+function OtpPanel(props: {
+  otp: string; setOtp: (v: string) => void; verifyOtp: (e: React.FormEvent) => void;
+  busy: boolean; expired: boolean; locked: boolean; mmss: string; attempts: number; maxAttempts: number;
+  resend: () => void; cooldown: number; target: string; channel: "email" | "sms";
+  setChannel?: (c: "email" | "sms") => void;
+}) {
+  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target, channel, setChannel } = props;
+  return (
+    <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Verify your account</div>
+        <div className={cn("text-[11px] font-semibold", expired ? "text-destructive" : "text-muted-foreground")}>
+          {expired ? "Code expired" : `Expires in ${mmss}`}
+        </div>
+      </div>
+
+      {setChannel && (
+        <div className="flex gap-1 rounded-full bg-background p-1">
+          {(["email", "sms"] as const).map((c) => (
+            <button
+              key={c} type="button" onClick={() => setChannel(c)}
+              className={cn(
+                "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                channel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+              )}
+            >
+              {c === "email" ? "Email OTP" : "Mobile SMS OTP"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[11px] text-muted-foreground">
+        Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.
+      </p>
+
+      <Input
+        value={otp}
+        onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
+        inputMode="numeric" placeholder="••••••"
+        className="h-11 text-center text-lg tracking-[0.5em]" required
+      />
+      {attempts > 0 && !locked && (
+        <div className="text-[11px] text-destructive">
+          Invalid code — {maxAttempts - attempts} attempt{maxAttempts - attempts === 1 ? "" : "s"} left
+        </div>
+      )}
+      {locked && <div className="text-[11px] text-destructive">Maximum attempts reached. Request a fresh code to continue.</div>}
+      <Button type="submit" className="h-11 w-full rounded-full" disabled={busy || otp.length < 6 || expired || locked}>
+        {busy ? "Verifying…" : "Verify & continue"}
+      </Button>
+      <button
+        type="button" onClick={resend} disabled={busy || cooldown > 0}
+        className="w-full text-center text-[11px] font-semibold text-primary underline disabled:opacity-50"
+      >
+        {cooldown > 0 ? `Resend code in ${cooldown}s` : channel === "sms" ? "Send code by SMS" : "Resend code"}
+      </button>
+    </form>
+  );
+}
+
+function Field({ label, value, onChange, type = "text", error, trailing }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; error?: string; trailing?: React.ReactNode;
+}) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} type={type} required className="mt-1 h-11" />
+      <div className="relative">
+        <Input
+          value={value} onChange={(e) => onChange(e.target.value)} type={type} required
+          className={cn("mt-1 h-11", trailing && "pr-10", error && "border-destructive")}
+        />
+        {trailing && <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span>}
+      </div>
+      {error && <div className="mt-1 text-[11px] text-destructive">{error}</div>}
     </div>
   );
 }
