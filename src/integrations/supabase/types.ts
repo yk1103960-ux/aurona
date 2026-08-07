@@ -1053,6 +1053,148 @@ export type Database = {
         }
         Relationships: []
       }
+      return_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          request_id: string
+          status: Database["public"]["Enums"]["return_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          request_id: string
+          status: Database["public"]["Enums"]["return_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          request_id?: string
+          status?: Database["public"]["Enums"]["return_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "return_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_request_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_item_id: string | null
+          price: number
+          product_name: string
+          quantity: number
+          request_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_item_id?: string | null
+          price?: number
+          product_name: string
+          quantity?: number
+          request_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_item_id?: string | null
+          price?: number
+          product_name?: string
+          quantity?: number
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_request_items_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "return_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_requests: {
+        Row: {
+          admin_note: string | null
+          comments: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["return_kind"]
+          order_id: string
+          reason: string
+          refund_amount: number
+          refund_method: string | null
+          refund_reference: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["return_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["return_kind"]
+          order_id: string
+          reason: string
+          refund_amount?: number
+          refund_method?: string | null
+          refund_reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["return_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["return_kind"]
+          order_id?: string
+          reason?: string
+          refund_amount?: number
+          refund_method?: string | null
+          refund_reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["return_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_providers: {
         Row: {
           auth_token_ciphertext: string | null
@@ -1354,6 +1496,18 @@ export type Database = {
         | "oem"
         | "builder"
         | "career"
+      return_kind: "return" | "replacement" | "cancellation"
+      return_status:
+        | "requested"
+        | "approved"
+        | "rejected"
+        | "pickup_scheduled"
+        | "picked_up"
+        | "received"
+        | "refund_initiated"
+        | "refunded"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1498,6 +1652,19 @@ export const Constants = {
         "oem",
         "builder",
         "career",
+      ],
+      return_kind: ["return", "replacement", "cancellation"],
+      return_status: [
+        "requested",
+        "approved",
+        "rejected",
+        "pickup_scheduled",
+        "picked_up",
+        "received",
+        "refund_initiated",
+        "refunded",
+        "completed",
+        "cancelled",
       ],
     },
   },

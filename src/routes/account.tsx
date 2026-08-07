@@ -11,6 +11,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { inr } from "@/lib/format";
 import { AddressManager } from "@/components/account/AddressManager";
+import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { ProductImage } from "@/components/product/ProductImage";
 import {
@@ -41,7 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 type Section =
   | "overview" | "orders" | "wishlist" | "cart" | "addresses"
-  | "payments" | "support" | "profile" | "security" | "notifications";
+  | "payments" | "returns" | "support" | "profile" | "security" | "notifications";
 
 const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "overview", label: "Overview", Icon: LayoutDashboard },
@@ -50,6 +51,7 @@ const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "cart", label: "Cart Summary", Icon: ShoppingBag },
   { id: "addresses", label: "Addresses", Icon: MapPin },
   { id: "payments", label: "Payment Methods", Icon: CreditCard },
+  { id: "returns", label: "Returns & Refunds", Icon: RotateCcw },
   { id: "support", label: "Support & Refunds", Icon: Headphones },
   { id: "notifications", label: "Notifications", Icon: Bell },
   { id: "profile", label: "Profile", Icon: UserCog },
@@ -304,6 +306,7 @@ function AccountPage() {
                   <Tile Icon={ShoppingBag} title={`Cart (${cart.count})`} body="Resume your checkout" onClick={() => setSection("cart")} />
                   <Tile Icon={MapPin} title="Addresses" body="Manage delivery addresses" onClick={() => setSection("addresses")} />
                   <Tile Icon={Headphones} title="Support" body="Tickets, refunds & conversations" onClick={() => setSection("support")} />
+                  <Tile Icon={RotateCcw} title="Returns & refunds" body="Cancel, return or replace an order" onClick={() => setSection("returns")} />
                   <Tile Icon={ShieldCheck} title="Security" body="Password & account controls" onClick={() => setSection("security")} />
                 </div>
               </div>
@@ -399,14 +402,18 @@ function AccountPage() {
             </Panel>
           )}
 
+          {section === "returns" && (
+            <ReturnsPanel orders={rows} loading={orders.isLoading} />
+          )}
+
           {section === "support" && (
             <Panel title="Support, refunds & conversations" sub="Tickets you have raised with our team">
               <div className="mb-5 flex flex-wrap gap-3">
                 <Button asChild className="rounded-full">
                   <Link to="/customer-service">Raise a ticket</Link>
                 </Button>
-                <Button asChild variant="outline" className="gap-2 rounded-full">
-                  <Link to="/customer-service"><RotateCcw className="h-4 w-4" /> Request a refund / return</Link>
+                <Button variant="outline" className="gap-2 rounded-full" onClick={() => setSection("returns")}>
+                  <RotateCcw className="h-4 w-4" /> Request a refund / return
                 </Button>
               </div>
               {tickets.isLoading ? (
