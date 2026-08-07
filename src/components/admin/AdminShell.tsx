@@ -21,6 +21,8 @@ import {
   ShieldCheck,
   RotateCcw,
   Plug,
+  Menu,
+  X,
 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,13 @@ export function AdminShell() {
   const { user, isAdmin, loading } = useAdmin();
   const nav = useNavigate();
   const loc = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [loc.pathname]);
+
 
   useEffect(() => {
     if (loading) return;
@@ -99,9 +108,33 @@ export function AdminShell() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <aside className="fixed inset-y-0 left-0 w-60 bg-slate-950 text-slate-100 flex flex-col z-40">
-        <div className="px-5 py-5 border-b border-white/10">
+    <div className="admin-scope min-h-screen bg-slate-50 text-slate-900">
+      {/* Mobile top bar */}
+      <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
+        <Button size="icon" variant="ghost" onClick={() => setMenuOpen(true)} aria-label="Open admin menu">
+          <Menu className="w-5 h-5" />
+        </Button>
+        <div className="flex min-w-0 items-center gap-2">
+          <Shield className="w-4 h-4 shrink-0 text-amber-500" />
+          <span className="truncate text-sm font-semibold">Aurona Admin</span>
+        </div>
+      </div>
+
+      {menuOpen && (
+        <button
+          type="button"
+          aria-label="Close admin menu"
+          onClick={() => setMenuOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/60 lg:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 max-w-[82vw] bg-slate-950 text-slate-100 flex flex-col z-50 transition-transform duration-300 lg:w-60 lg:translate-x-0 ${
+          menuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-amber-400" />
             <div>
@@ -109,6 +142,15 @@ export function AdminShell() {
               <div className="text-sm font-semibold">Admin Console</div>
             </div>
           </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close admin menu"
+            className="lg:hidden text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {NAV.map((item) => {
@@ -140,8 +182,8 @@ export function AdminShell() {
           </Link>
         </div>
       </aside>
-      <main className="pl-60 min-h-screen">
-        <div className="p-6 max-w-[1400px]">
+      <main className="min-h-screen lg:pl-60">
+        <div className="p-4 sm:p-6 max-w-[1400px] min-w-0">
           <Outlet />
         </div>
       </main>
