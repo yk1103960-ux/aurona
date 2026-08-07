@@ -158,7 +158,7 @@ export function HeroSlider() {
               <span className="text-[10px] uppercase tracking-[0.24em] text-white/90">{s.eyebrow}</span>
             </div>
             <h1
-              className="text-display text-[42px] leading-[0.98] tracking-tight sm:text-6xl lg:text-[92px]"
+              className="text-display text-[38px] leading-[0.98] tracking-tight sm:text-5xl md:text-6xl lg:text-[92px]"
               style={{ textShadow: "0 2px 24px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.8)" }}
             >
               <span className="block text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">{s.title}</span>
