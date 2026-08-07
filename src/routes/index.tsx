@@ -57,7 +57,7 @@ function Home() {
 
 
       {/* ============ MARQUEE ============ */}
-      <div className="border-y border-border bg-primary py-3 text-primary-foreground">
+      <div className="overflow-hidden border-y border-border bg-primary py-3 text-primary-foreground">
         <div className="marquee flex gap-12 whitespace-nowrap">
           {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((t, i) => (
             <span key={i} className="flex items-center gap-3 text-[11px] uppercase tracking-[0.32em]">
