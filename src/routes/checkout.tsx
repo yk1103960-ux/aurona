@@ -9,10 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import {
-  detectAddressFromGeolocation,
-  type ShippingRate,
-} from "@/lib/shipping";
+import { detectAddressFromGeolocation } from "@/lib/shipping";
+
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
 import { quoteShipping } from "@/lib/shipping.functions";
@@ -39,7 +37,7 @@ type Step = 0 | 1 | 2 | 3;
 const STEPS = [
   { label: "Cart", icon: ShoppingBag },
   { label: "Address", icon: MapPin },
-  { label: "Shipping", icon: Truck },
+  { label: "Delivery", icon: Truck },
   { label: "Payment", icon: CreditCard },
 ] as const;
 
@@ -57,10 +55,12 @@ function CheckoutPage() {
     payment_method: "cod",
   });
 
-  const [rates, setRates] = useState<ShippingRate[]>([]);
+  type DeliveryOption = { id: string; label: string; eta: string; price: number };
+  const [rates, setRates] = useState<DeliveryOption[]>([]);
   const [rateId, setRateId] = useState<string | null>(null);
   const [shipMsg, setShipMsg] = useState<string | null>(null);
   const [quoting, setQuoting] = useState(false);
+
 
   // NOTE: every hook must run on every render — no early returns above this
   // block, otherwise React throws "Rendered more hooks than during the
@@ -278,7 +278,7 @@ function CheckoutPage() {
           {step === 1 && (
             <section className="rounded-2xl border border-border p-6">
               <div className="flex items-center justify-between">
-                <div className="text-eyebrow">Shipping address</div>
+                <div className="text-eyebrow">Delivery address</div>
                 <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={detect} disabled={detecting}>
                   {detecting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-2 h-3.5 w-3.5" />}
                   Detect my location
@@ -298,10 +298,10 @@ function CheckoutPage() {
 
           {step === 2 && (
             <section className="rounded-2xl border border-border p-6">
-              <div className="text-eyebrow mb-4">Shipping method</div>
+              <div className="text-eyebrow mb-4">Delivery</div>
               {quoting ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Checking couriers for {f.pincode || "your address"}…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Checking delivery to {f.pincode || "your address"}…
                 </div>
               ) : rates.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
@@ -328,13 +328,14 @@ function CheckoutPage() {
                         />
                         <div>
                           <div className="font-medium text-foreground">{r.label}</div>
-                          <div className="text-xs text-muted-foreground">{r.eta} · via {r.provider}</div>
+                          <div className="text-xs text-muted-foreground">Arrives in {r.eta}</div>
                         </div>
                       </div>
-                      <div className="font-semibold">{r.price === 0 ? "Free" : inr(r.price)}</div>
+                      <div className="font-semibold">{r.price === 0 ? "FREE Delivery" : inr(r.price)}</div>
                     </label>
                   ))}
                 </div>
+
               )}
             </section>
           )}
@@ -414,7 +415,7 @@ function CheckoutPage() {
           <div className="text-eyebrow mb-4">Order summary</div>
           <div className="space-y-2 text-sm">
             <Row l={`Subtotal (${cart.count})`} v={inr(cart.subtotal)} />
-            <Row l="Shipping" v={selectedRate ? (shipping === 0 ? "Free" : inr(shipping)) : "—"} />
+            <Row l="Delivery" v={selectedRate ? (shipping === 0 ? "FREE" : inr(shipping)) : "—"} />
             <div className="my-2 h-px bg-border" />
             <Row l="Total" v={inr(total)} bold />
           </div>

@@ -26,12 +26,16 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
       phonePeV2Pay,
       phonePeBase,
       xVerify,
-      merchantTxnId,
+      newMerchantTxnId,
     } = await import("./phonepe.server");
 
     const v2 = await getPhonePeV2Config();
     const cfg = v2 ? null : await getPhonePeConfig();
-    if (!v2 && !cfg) throw new Error("Online payments are not configured yet.");
+    if (!v2 && !cfg) {
+      throw new Error(
+        "Online payments are not configured. An administrator must add the payment gateway credentials in Admin → Integrations before online payment can be used.",
+      );
+    }
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -42,14 +46,21 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
     if (order.user_id !== context.userId) throw new Error("Forbidden");
     if (order.payment_status === "paid") return { alreadyPaid: true as const, redirectUrl: null };
 
-    const txnId = merchantTxnId(order.order_number);
+    const amountPaise = Math.round(Number(order.total) * 100);
+    if (!Number.isFinite(amountPaise) || amountPaise < 100) {
+      throw new Error("This order amount cannot be paid online. Please contact support.");
+    }
+
+    // Always a brand-new id: PhonePe rejects a reused merchant order id, which
+    // is what produced the hosted page failing right after "Pay".
+    const txnId = newMerchantTxnId(order.order_number);
     const origin = new URL(data.origin).origin;
 
     if (v2) {
       const url = await phonePeV2Pay({
         cfg: v2,
         merchantOrderId: txnId,
-        amountPaise: Math.round(Number(order.total) * 100),
+        amountPaise,
         redirectUrl: `${origin}/payment-status?order=${order.id}`,
         message: `Aurona order ${order.order_number}`,
       });
@@ -60,6 +71,7 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
       return { alreadyPaid: false as const, redirectUrl: url };
     }
     if (!cfg) throw new Error("Online payments are not configured yet.");
+
 
     const payload = {
       merchantId: cfg.merchantId,

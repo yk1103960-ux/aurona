@@ -62,6 +62,86 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_commission_items: {
+        Row: {
+          affiliate_id: string
+          amount: number
+          commission_id: string
+          commission_kind: string
+          commission_value: number
+          created_at: string
+          eligible_amount: number
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          affiliate_id: string
+          amount?: number
+          commission_id: string
+          commission_kind?: string
+          commission_value?: number
+          created_at?: string
+          eligible_amount?: number
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number
+          commission_id?: string
+          commission_kind?: string
+          commission_value?: number
+          created_at?: string
+          eligible_amount?: number
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commission_items_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commission_items_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commission_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commission_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_commissions: {
         Row: {
           affiliate_id: string
@@ -179,6 +259,63 @@ export type Database = {
           },
         ]
       }
+      affiliate_product_clicks: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          id: string
+          ip: string | null
+          landing_path: string | null
+          product_id: string | null
+          referrer: string | null
+          source: string | null
+          user_agent: string | null
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          id?: string
+          ip?: string | null
+          landing_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          source?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          id?: string
+          ip?: string | null
+          landing_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          source?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_product_clicks_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_product_clicks_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_referrals: {
         Row: {
           affiliate_id: string
@@ -189,6 +326,7 @@ export type Database = {
           id: string
           ip: string | null
           landing_path: string | null
+          product_id: string | null
           referrer: string | null
           user_agent: string | null
           user_id: string | null
@@ -203,6 +341,7 @@ export type Database = {
           id?: string
           ip?: string | null
           landing_path?: string | null
+          product_id?: string | null
           referrer?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -217,6 +356,7 @@ export type Database = {
           id?: string
           ip?: string | null
           landing_path?: string | null
+          product_id?: string | null
           referrer?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -228,6 +368,13 @@ export type Database = {
             columns: ["affiliate_id"]
             isOneToOne: false
             referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -1424,11 +1571,20 @@ export type Database = {
       }
       products: {
         Row: {
+          affiliate_commission_kind: string
+          affiliate_commission_value: number | null
+          affiliate_enabled: boolean
+          affiliate_ends_at: string | null
+          affiliate_max_commission: number | null
+          affiliate_starts_at: string | null
           brand: string
           category_id: string | null
           color_temp: string | null
           created_at: string
           description: string | null
+          dim_h: number | null
+          dim_l: number | null
+          dim_w: number | null
           id: string
           image_seed: string | null
           is_bestseller: boolean
@@ -1451,13 +1607,23 @@ export type Database = {
           variations: Json | null
           warranty: string | null
           wattage: string | null
+          weight_g: number | null
         }
         Insert: {
+          affiliate_commission_kind?: string
+          affiliate_commission_value?: number | null
+          affiliate_enabled?: boolean
+          affiliate_ends_at?: string | null
+          affiliate_max_commission?: number | null
+          affiliate_starts_at?: string | null
           brand?: string
           category_id?: string | null
           color_temp?: string | null
           created_at?: string
           description?: string | null
+          dim_h?: number | null
+          dim_l?: number | null
+          dim_w?: number | null
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -1480,13 +1646,23 @@ export type Database = {
           variations?: Json | null
           warranty?: string | null
           wattage?: string | null
+          weight_g?: number | null
         }
         Update: {
+          affiliate_commission_kind?: string
+          affiliate_commission_value?: number | null
+          affiliate_enabled?: boolean
+          affiliate_ends_at?: string | null
+          affiliate_max_commission?: number | null
+          affiliate_starts_at?: string | null
           brand?: string
           category_id?: string | null
           color_temp?: string | null
           created_at?: string
           description?: string | null
+          dim_h?: number | null
+          dim_l?: number | null
+          dim_w?: number | null
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -1509,6 +1685,7 @@ export type Database = {
           variations?: Json | null
           warranty?: string | null
           wattage?: string | null
+          weight_g?: number | null
         }
         Relationships: [
           {

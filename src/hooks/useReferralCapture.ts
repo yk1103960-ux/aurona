@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { trackReferralVisit, claimReferral } from "@/lib/affiliate.functions";
+import {
+  trackReferralVisit,
+  claimReferral,
+  trackProductReferralClick,
+} from "@/lib/affiliate.functions";
 import { useAuth } from "./useAuth";
+
 
 const VISITOR_KEY = "aurona_visitor_id";
 const REF_KEY = "aurona_ref_code";
@@ -49,4 +54,33 @@ export function useReferralCapture() {
     claim({ data: { visitorId: visitorId() } }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+}
+
+/**
+ * Product-page attribution: when a visitor lands on a PDP through an
+ * affiliate's product link, log the click against that product once.
+ */
+export function useProductReferralClick(productId: string | null) {
+  const trackProduct = useServerFn(trackProductReferralClick);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !productId) return;
+    const code =
+      new URLSearchParams(window.location.search).get("ref")?.trim() ||
+      localStorage.getItem(REF_KEY)?.trim();
+    if (!code) return;
+    const once = `aurona_pc_${productId}_${code}`;
+    if (sessionStorage.getItem(once)) return;
+    sessionStorage.setItem(once, "1");
+    trackProduct({
+      data: {
+        code,
+        visitorId: visitorId(),
+        productId,
+        landingPath: window.location.pathname,
+        referrer: document.referrer?.slice(0, 300) || undefined,
+      },
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
 }

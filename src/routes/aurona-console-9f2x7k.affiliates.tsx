@@ -28,7 +28,9 @@ const TABS = [
   "Overview",
   "Affiliates",
   "Referrals",
+  "Products",
   "Commissions",
+
   "Withdrawals",
   "Configuration",
   "Logs",
@@ -81,6 +83,8 @@ function AffiliatesAdmin() {
       {tab === "Overview" && <Overview data={data} />}
       {tab === "Affiliates" && <AffiliatesTab data={data} refresh={refresh} />}
       {tab === "Referrals" && <ReferralsTab data={data} />}
+      {tab === "Products" && <ProductsTab data={data} />}
+
       {tab === "Commissions" && <CommissionsTab data={data} refresh={refresh} />}
       {tab === "Withdrawals" && <WithdrawalsTab data={data} refresh={refresh} />}
       {tab === "Configuration" && <ConfigTab data={data} refresh={refresh} />}
@@ -114,7 +118,38 @@ function Table({ head, children }: { head: string[]; children: React.ReactNode }
   );
 }
 
+/** Per-product affiliate performance: link clicks, units sold, commission owed. */
+function ProductsTab({ data }: { data: Data }) {
+  const rows = data.productStats ?? [];
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <div className="text-sm text-muted-foreground">
+          No affiliate product activity yet. Set a commission on a product in Products → Affiliate
+          Commission, and affiliates will see a share link on that product page.
+        </div>
+      </Card>
+    );
+  }
+  return (
+    <Table head={["Product", "Link clicks", "Units sold", "Commission earned", "Conversion"]}>
+      {rows.map((p) => (
+        <tr key={p.product_id || p.product_name}>
+          <td className="px-3 py-2 font-medium">{p.product_name}</td>
+          <td className="px-3 py-2">{p.clicks}</td>
+          <td className="px-3 py-2">{p.units}</td>
+          <td className="px-3 py-2 font-semibold">{inr(p.commission)}</td>
+          <td className="px-3 py-2 text-muted-foreground">
+            {p.clicks > 0 ? `${Math.round((p.units / p.clicks) * 1000) / 10}%` : "—"}
+          </td>
+        </tr>
+      ))}
+    </Table>
+  );
+}
+
 function Overview({ data }: { data: Data }) {
+
   const sum = (s: string) =>
     Math.round(data.commissions.filter((c) => c.status === s).reduce((t, c) => t + Number(c.amount), 0) * 100) / 100;
   const cards = [

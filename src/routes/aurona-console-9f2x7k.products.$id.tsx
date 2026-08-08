@@ -19,6 +19,12 @@ type ProductForm = {
   wattage: string; size: string; color_temp: string; material: string; warranty: string;
   image_seed: string;
   is_published: boolean; is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
+  affiliate_enabled: boolean;
+  affiliate_commission_kind: "" | "percentage" | "fixed";
+  affiliate_commission_value: number | null;
+  affiliate_max_commission: number | null;
+  weight_g: number | null;
+  dim_l: number | null; dim_w: number | null; dim_h: number | null;
 };
 
 const EMPTY: ProductForm = {
@@ -28,7 +34,14 @@ const EMPTY: ProductForm = {
   wattage: "", size: "", color_temp: "", material: "", warranty: "1 Year",
   image_seed: "",
   is_published: true, is_featured: false, is_bestseller: false, is_new: false, is_sale: false,
+  affiliate_enabled: true,
+  affiliate_commission_kind: "",
+  affiliate_commission_value: null,
+  affiliate_max_commission: null,
+  weight_g: null,
+  dim_l: null, dim_w: null, dim_h: null,
 };
+
 
 function ProductEditor() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/products/$id" });
@@ -55,7 +68,19 @@ function ProductEditor() {
         wattage: data.wattage ?? "", size: data.size ?? "", color_temp: data.color_temp ?? "", material: data.material ?? "", warranty: data.warranty ?? "",
         image_seed: data.image_seed ?? "",
         is_published: data.is_published ?? true, is_featured: !!data.is_featured, is_bestseller: !!data.is_bestseller, is_new: !!data.is_new, is_sale: !!data.is_sale,
+        affiliate_enabled: data.affiliate_enabled ?? true,
+        affiliate_commission_kind:
+          (data.affiliate_commission_kind as ProductForm["affiliate_commission_kind"]) ?? "",
+        affiliate_commission_value:
+          data.affiliate_commission_value != null ? Number(data.affiliate_commission_value) : null,
+        affiliate_max_commission:
+          data.affiliate_max_commission != null ? Number(data.affiliate_max_commission) : null,
+        weight_g: data.weight_g != null ? Number(data.weight_g) : null,
+        dim_l: data.dim_l != null ? Number(data.dim_l) : null,
+        dim_w: data.dim_w != null ? Number(data.dim_w) : null,
+        dim_h: data.dim_h != null ? Number(data.dim_h) : null,
       });
+
       return data;
     },
   });
@@ -65,7 +90,13 @@ function ProductEditor() {
   const save = async () => {
     if (!f.name || !f.sku) return toast.error("Name and SKU are required");
     setSaving(true);
-    const payload = { ...f, slug: f.slug || slugify(f.name) };
+    const payload = {
+      ...f,
+      slug: f.slug || slugify(f.name),
+      // Empty kind means "inherit the program/affiliate default".
+      affiliate_commission_kind: f.affiliate_commission_kind || "inherit",
+    };
+
     const { data, error } = isNew
       ? await supabase.from("products").insert(payload).select("id").single()
       : await supabase.from("products").update(payload).eq("id", id).select("id").single();
@@ -118,6 +149,79 @@ function ProductEditor() {
           <Field label="Material"><Input value={f.material} onChange={(e) => upd("material", e.target.value)} /></Field>
           <Field label="Warranty"><Input value={f.warranty} onChange={(e) => upd("warranty", e.target.value)} /></Field>
         </Section>
+
+        <Section title="Affiliate Commission">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={f.affiliate_enabled}
+              onChange={(e) => upd("affiliate_enabled", e.target.checked)}
+            />{" "}
+            Affiliates can earn on this product
+          </label>
+          <Field label="Commission type">
+            <select
+              className="w-full h-10 border rounded-md px-3 text-sm bg-white"
+              value={f.affiliate_commission_kind}
+              onChange={(e) =>
+                upd("affiliate_commission_kind", e.target.value as ProductForm["affiliate_commission_kind"])
+              }
+            >
+              <option value="">Inherit program default</option>
+              <option value="percentage">Percentage of item value</option>
+              <option value="fixed">Fixed ₹ per unit</option>
+            </select>
+          </Field>
+          <Field label={f.affiliate_commission_kind === "fixed" ? "Commission (₹ per unit)" : "Commission (%)"}>
+            <Input
+              type="number"
+              value={f.affiliate_commission_value ?? ""}
+              placeholder="Leave blank to inherit"
+              onChange={(e) =>
+                upd("affiliate_commission_value", e.target.value === "" ? null : Number(e.target.value))
+              }
+            />
+          </Field>
+          <Field label="Max commission per order line (₹, optional)">
+            <Input
+              type="number"
+              value={f.affiliate_max_commission ?? ""}
+              placeholder="No cap"
+              onChange={(e) =>
+                upd("affiliate_max_commission", e.target.value === "" ? null : Number(e.target.value))
+              }
+            />
+          </Field>
+          <div className="text-xs text-slate-500">
+            Payouts to affiliates are approved and paid from the Affiliates console.
+          </div>
+        </Section>
+
+        <Section title="Shipping Dimensions">
+          <Field label="Weight (grams)">
+            <Input
+              type="number"
+              value={f.weight_g ?? ""}
+              placeholder="Uses default weight when blank"
+              onChange={(e) => upd("weight_g", e.target.value === "" ? null : Number(e.target.value))}
+            />
+          </Field>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Length (cm)">
+              <Input type="number" value={f.dim_l ?? ""} onChange={(e) => upd("dim_l", e.target.value === "" ? null : Number(e.target.value))} />
+            </Field>
+            <Field label="Width (cm)">
+              <Input type="number" value={f.dim_w ?? ""} onChange={(e) => upd("dim_w", e.target.value === "" ? null : Number(e.target.value))} />
+            </Field>
+            <Field label="Height (cm)">
+              <Input type="number" value={f.dim_h ?? ""} onChange={(e) => upd("dim_h", e.target.value === "" ? null : Number(e.target.value))} />
+            </Field>
+          </div>
+          <div className="text-xs text-slate-500">
+            Used to calculate live delivery charges at checkout.
+          </div>
+        </Section>
+
 
         <Section title="Visibility & Flags">
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.is_published} onChange={(e) => upd("is_published", e.target.checked)} /> Published</label>

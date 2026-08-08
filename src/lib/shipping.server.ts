@@ -20,36 +20,73 @@ export type ShippingQuote = {
 
 const DEFAULT_WEIGHT_G = 500;
 const FALLBACK_FREE_ABOVE = 999;
+const FALLBACK_FLAT = 79;
 
-type Settings = { defaultWeightG: number; freeAbove: number | null; pickupPincode: string | null };
+// Customer-facing delivery naming. Courier/provider names and any logistics
+// vendor terminology must never reach the storefront.
+const BRAND = "Aurona Delivery";
+
+type Settings = {
+  defaultWeightG: number;
+  freeAbove: number | null;
+  flatRate: number;
+  codFee: number;
+  pickupPincode: string | null;
+};
 
 async function readSettings(): Promise<Settings> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("site_settings")
     .select("key, value")
-    .in("key", ["shipping_default_weight_g", "free_shipping_above", "shipping_pickup_pincode"]);
+    .in("key", [
+      "shipping_default_weight_g",
+      "free_shipping_above",
+      "shipping_flat_rate",
+      "cod_fee",
+      "shipping_pickup_pincode",
+    ]);
   const map = new Map((data ?? []).map((r) => [r.key, r.value]));
+  const num = (k: string, fallback: number) => {
+    const n = Number(map.get(k));
+    return Number.isFinite(n) && n >= 0 ? n : fallback;
+  };
   const w = Number(map.get("shipping_default_weight_g"));
   const f = map.get("free_shipping_above");
   return {
     defaultWeightG: Number.isFinite(w) && w > 0 ? w : DEFAULT_WEIGHT_G,
     freeAbove: f == null || f === "" ? FALLBACK_FREE_ABOVE : Number(f),
+    flatRate: num("shipping_flat_rate", FALLBACK_FLAT),
+    codFee: num("cod_fee", 0),
     pickupPincode: map.get("shipping_pickup_pincode")?.trim() || null,
   };
 }
 
-/** Sum of real variant weights, falling back to the configured default per unit. */
+/**
+ * Real package weight/dimensions from the database only — never from the
+ * browser. Resolution order per line: variant row → parent product row →
+ * admin-configured default weight.
+ */
 async function computePackage(lines: CartLine[], defaultWeightG: number) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const skus = lines.map((l) => l.sku).filter(Boolean) as string[];
-  const byKey = new Map<string, { weight_g: number | null; dim_l: number | null; dim_w: number | null; dim_h: number | null }>();
+  type Dims = { weight_g: number | null; dim_l: number | null; dim_w: number | null; dim_h: number | null };
+  const byKey = new Map<string, Dims>();
   if (skus.length > 0) {
-    const { data } = await supabaseAdmin
-      .from("product_variants")
-      .select("sku, weight_g, dim_l, dim_w, dim_h")
-      .in("sku", skus);
-    for (const v of data ?? []) byKey.set(v.sku, v);
+    const [{ data: variants }, { data: parents }] = await Promise.all([
+      supabaseAdmin.from("product_variants").select("sku, weight_g, dim_l, dim_w, dim_h").in("sku", skus),
+      supabaseAdmin.from("products").select("sku, weight_g, dim_l, dim_w, dim_h").in("sku", skus),
+    ]);
+    for (const p of parents ?? []) if (p.sku) byKey.set(p.sku, p as Dims);
+    for (const v of variants ?? []) {
+      const prev = byKey.get(v.sku);
+      byKey.set(v.sku, {
+        weight_g: v.weight_g ?? prev?.weight_g ?? null,
+        dim_l: v.dim_l ?? prev?.dim_l ?? null,
+        dim_w: v.dim_w ?? prev?.dim_w ?? null,
+        dim_h: v.dim_h ?? prev?.dim_h ?? null,
+      });
+    }
   }
   let grams = 0;
   let maxL = 10, maxW = 10, maxH = 5;
@@ -65,6 +102,7 @@ async function computePackage(lines: CartLine[], defaultWeightG: number) {
   const weightKg = Math.max(0.05, Math.round((grams / 1000) * 100) / 100);
   return { weightKg, dims: { length: maxL, breadth: maxW, height: maxH } };
 }
+
 
 /** Pickup pincode for the configured pickup location (cached briefly). */
 let pickupCache: { pincode: string; at: number } | null = null;
@@ -96,8 +134,9 @@ async function resolvePickupPincode(configured: string | null): Promise<string |
 
 const quoteCache = new Map<string, { quote: ShippingQuote; at: number }>();
 
-function fallbackQuote(subtotal: number, freeAbove: number | null, weightKg: number, message: string | null): ShippingQuote {
-  const free = freeAbove != null && subtotal >= freeAbove;
+function fallbackQuote(s: Settings, subtotal: number, cod: boolean, weightKg: number, message: string | null): ShippingQuote {
+  const free = s.freeAbove != null && subtotal >= s.freeAbove;
+  const codFee = cod ? s.codFee : 0;
   return {
     serviceable: true,
     message,
@@ -106,22 +145,23 @@ function fallbackQuote(subtotal: number, freeAbove: number | null, weightKg: num
     rates: [
       {
         id: "aurona-standard",
-        provider: "Aurona Logistics",
-        label: "Standard delivery",
+        provider: BRAND,
+        label: "Standard Delivery",
         eta: "3–7 business days",
-        price: free ? 0 : 79,
-        freeAbove: freeAbove ?? undefined,
+        price: (free ? 0 : s.flatRate) + codFee,
+        freeAbove: s.freeAbove ?? undefined,
       },
       {
         id: "aurona-express",
-        provider: "Aurona Logistics",
-        label: "Express delivery",
+        provider: BRAND,
+        label: "Express Delivery",
         eta: "1–3 business days",
-        price: 149,
+        price: Math.round(s.flatRate * 1.9) + codFee,
       },
     ],
   };
 }
+
 
 /**
  * Authoritative shipping quote. Uses Shiprocket serviceability + courier rates
@@ -154,7 +194,7 @@ export async function quoteShippingForCart(opts: {
 
   const pickup = await resolvePickupPincode(settings.pickupPincode);
   if (!pickup) {
-    return fallbackQuote(opts.subtotal, settings.freeAbove, pkg.weightKg, null);
+    return fallbackQuote(settings, opts.subtotal, opts.cod, pkg.weightKg, null);
   }
 
   let quote: ShippingQuote;
@@ -178,7 +218,7 @@ export async function quoteShippingForCart(opts: {
       (call.json?.data?.available_courier_companies as Array<Record<string, unknown>>) ?? [];
 
     if (!call.ok) {
-      quote = fallbackQuote(opts.subtotal, settings.freeAbove, pkg.weightKg, null);
+      quote = fallbackQuote(settings, opts.subtotal, opts.cod, pkg.weightKg, null);
     } else if (couriers.length === 0) {
       quote = {
         serviceable: false,
@@ -189,29 +229,48 @@ export async function quoteShippingForCart(opts: {
       };
     } else {
       const free = settings.freeAbove != null && opts.subtotal >= settings.freeAbove;
-      const rates: ShippingRate[] = couriers
+      const codFee = opts.cod ? settings.codFee : 0;
+      // Internal candidates, keyed by the real courier id so the order can be
+      // re-priced server-side later. Nothing here is shown to the customer.
+      const candidates = couriers
         .map((c) => {
           const base = Number(c["rate"] ?? 0);
-          const cod = opts.cod ? Number(c["cod_charges"] ?? 0) : 0;
-          const price = Math.round((base + cod) * 100) / 100;
+          const providerCod = opts.cod ? Number(c["cod_charges"] ?? 0) : 0;
+          const raw = Math.round((base + providerCod) * 100) / 100;
           const days = Number(c["estimated_delivery_days"] ?? 0);
           return {
             id: `sr-${String(c["courier_company_id"] ?? c["courier_name"])}`,
-            provider: String(c["courier_name"] ?? "Shiprocket"),
-            label: String(c["courier_name"] ?? "Courier"),
-            eta:
-              typeof c["etd"] === "string" && c["etd"]
-                ? `Delivery by ${String(c["etd"]).split(" ")[0]}`
-                : days > 0
-                  ? `${days} business day${days > 1 ? "s" : ""}`
-                  : "3–7 business days",
-            price: free ? 0 : price,
-            freeAbove: settings.freeAbove ?? undefined,
-          } satisfies ShippingRate;
+            price: (free ? 0 : raw) + codFee,
+            days: Number.isFinite(days) && days > 0 ? days : 7,
+          };
         })
-        .filter((r) => Number.isFinite(r.price))
-        .sort((a, b) => a.price - b.price)
-        .slice(0, 5);
+        .filter((c) => Number.isFinite(c.price));
+
+      const cheapest = [...candidates].sort((a, b) => a.price - b.price)[0];
+      const fastest = [...candidates].sort((a, b) => a.days - b.days || a.price - b.price)[0];
+      const etaLabel = (d: number) => `${d} business day${d > 1 ? "s" : ""}`;
+
+      const rates: ShippingRate[] = [];
+      if (cheapest) {
+        rates.push({
+          id: cheapest.id,
+          provider: BRAND,
+          label: "Standard Delivery",
+          eta: etaLabel(cheapest.days),
+          price: cheapest.price,
+          freeAbove: settings.freeAbove ?? undefined,
+        });
+      }
+      if (fastest && fastest.id !== cheapest?.id && fastest.days < (cheapest?.days ?? 99)) {
+        rates.push({
+          id: fastest.id,
+          provider: BRAND,
+          label: "Express Delivery",
+          eta: etaLabel(fastest.days),
+          price: fastest.price,
+        });
+      }
+
       quote = {
         serviceable: rates.length > 0,
         message: rates.length > 0 ? null : "Sorry, delivery is currently unavailable for this pincode.",
@@ -221,8 +280,9 @@ export async function quoteShippingForCart(opts: {
       };
     }
   } catch {
-    quote = fallbackQuote(opts.subtotal, settings.freeAbove, pkg.weightKg, null);
+    quote = fallbackQuote(settings, opts.subtotal, opts.cod, pkg.weightKg, null);
   }
+
 
   quoteCache.set(cacheKey, { quote, at: Date.now() });
   return quote;

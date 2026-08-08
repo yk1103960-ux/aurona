@@ -37,7 +37,7 @@ export const quoteShipping = createServerFn({ method: "POST" })
       }));
 
     if (lines.length === 0) {
-      return { serviceable: false, message: "Your cart is empty.", source: "fallback" as const, weightKg: 0, rates: [] };
+      return { serviceable: false, message: "Your cart is empty.", rates: [] };
     }
 
     // Role-adjusted subtotal for free-shipping thresholds / declared value.
@@ -55,5 +55,17 @@ export const quoteShipping = createServerFn({ method: "POST" })
     );
 
     const { quoteShippingForCart } = await import("./shipping.server");
-    return quoteShippingForCart({ lines, pincode: data.pincode, cod: data.cod, subtotal });
+    const quote = await quoteShippingForCart({ lines, pincode: data.pincode, cod: data.cod, subtotal });
+    // Customer-facing shape only: no logistics vendor, weight or diagnostics.
+    return {
+      serviceable: quote.serviceable,
+      message: quote.message,
+      rates: quote.rates.map((r) => ({
+        id: r.id,
+        label: r.label,
+        eta: r.eta,
+        price: r.price,
+      })),
+    };
   });
+

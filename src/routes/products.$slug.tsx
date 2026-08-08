@@ -18,7 +18,11 @@ import { useVariantSelection } from "@/hooks/useVariantSelection";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
+import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar";
+import { useProductReferralClick } from "@/hooks/useReferralCapture";
+
 import type { ProductFamily } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
@@ -87,6 +91,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const skus = useMemo(() => family.variants.map((v) => v.sku).filter(Boolean), [family]);
   const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
+  useProductReferralClick(productId);
+
 
   const role = useMyRole();
   const { data: priceMap } = useVisiblePrices([variant.sku]);
@@ -269,6 +275,11 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             </div>
           )}
 
+          <div className="mt-4">
+            <ProductAffiliateBar productId={productId} slug={family.slug} />
+          </div>
+
+
           <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
             <div className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center">
               <Truck className="h-4 w-4 text-gold" /> PAN India delivery
@@ -361,6 +372,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
 
 function LegacyPDP({ slug }: { slug: string }) {
   const product = useSuspenseQuery(productQuery(slug)).data!;
+  useProductReferralClick(product.id);
+
   const cats = useSuspenseQuery(categoriesQuery).data;
   const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === product.category_id);
@@ -415,6 +428,10 @@ function LegacyPDP({ slug }: { slug: string }) {
             </Button>
             <Button size="lg" className="h-12 rounded-full" onClick={buyNow}>Buy now</Button>
           </div>
+          <div className="mt-4">
+            <ProductAffiliateBar productId={product.id} slug={product.slug} />
+          </div>
+
         </div>
       </div>
 

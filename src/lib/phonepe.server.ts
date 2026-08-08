@@ -65,6 +65,21 @@ export function merchantTxnId(orderNumber: string): string {
   return orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 34) || `ORD${Date.now()}`;
 }
 
+/**
+ * A *fresh* merchant order id for every payment attempt.
+ * PhonePe treats `merchantOrderId` / `merchantTransactionId` as immutable: once
+ * an id has been used (even for an abandoned or failed attempt) re-sending it
+ * makes the hosted page load and then fail with a generic "Something went
+ * wrong" when the customer picks an instrument. Retries therefore MUST use a
+ * new id, while the order row keeps the id of the attempt in flight.
+ */
+export function newMerchantTxnId(orderNumber: string): string {
+  const base = merchantTxnId(orderNumber).slice(0, 24);
+  const suffix = Date.now().toString(36).toUpperCase().slice(-6);
+  return `${base}${suffix}`;
+}
+
+
 // ---------------- PhonePe Standard Checkout v2 (OAuth) ----------------
 // Newer merchants are provisioned on the v2 APIs, which use a Client ID/Secret
 // pair instead of a Salt Key. The legacy hermes endpoints answer 404 for them.
