@@ -62,7 +62,9 @@ export const testIntegration = createServerFn({ method: "POST" })
       sms: mod.testSms,
     };
     try {
-      const message = await runners[data.provider]!();
+      const runner = runners[data.provider];
+      if (!runner) throw new Error("Unsupported integration provider");
+      const message = await runner();
       await mod.recordTest(data.provider, true, message);
       return { ok: true, message };
     } catch (e) {
