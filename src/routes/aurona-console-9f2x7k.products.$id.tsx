@@ -19,6 +19,12 @@ type ProductForm = {
   wattage: string; size: string; color_temp: string; material: string; warranty: string;
   image_seed: string;
   is_published: boolean; is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
+  affiliate_enabled: boolean;
+  affiliate_commission_kind: "" | "percentage" | "fixed";
+  affiliate_commission_value: number | null;
+  affiliate_max_commission: number | null;
+  weight_g: number | null;
+  dim_l: number | null; dim_w: number | null; dim_h: number | null;
 };
 
 const EMPTY: ProductForm = {
@@ -28,7 +34,14 @@ const EMPTY: ProductForm = {
   wattage: "", size: "", color_temp: "", material: "", warranty: "1 Year",
   image_seed: "",
   is_published: true, is_featured: false, is_bestseller: false, is_new: false, is_sale: false,
+  affiliate_enabled: true,
+  affiliate_commission_kind: "",
+  affiliate_commission_value: null,
+  affiliate_max_commission: null,
+  weight_g: null,
+  dim_l: null, dim_w: null, dim_h: null,
 };
+
 
 function ProductEditor() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/products/$id" });
