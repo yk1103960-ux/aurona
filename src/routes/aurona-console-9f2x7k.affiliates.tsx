@@ -28,7 +28,9 @@ const TABS = [
   "Overview",
   "Affiliates",
   "Referrals",
+  "Products",
   "Commissions",
+
   "Withdrawals",
   "Configuration",
   "Logs",
