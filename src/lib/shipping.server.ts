@@ -194,7 +194,7 @@ export async function quoteShippingForCart(opts: {
 
   const pickup = await resolvePickupPincode(settings.pickupPincode);
   if (!pickup) {
-    return fallbackQuote(opts.subtotal, settings.freeAbove, pkg.weightKg, null);
+    return fallbackQuote(settings, opts.subtotal, opts.cod, pkg.weightKg, null);
   }
 
   let quote: ShippingQuote;
@@ -218,7 +218,7 @@ export async function quoteShippingForCart(opts: {
       (call.json?.data?.available_courier_companies as Array<Record<string, unknown>>) ?? [];
 
     if (!call.ok) {
-      quote = fallbackQuote(opts.subtotal, settings.freeAbove, pkg.weightKg, null);
+      quote = fallbackQuote(settings, opts.subtotal, opts.cod, pkg.weightKg, null);
     } else if (couriers.length === 0) {
       quote = {
         serviceable: false,
@@ -229,29 +229,48 @@ export async function quoteShippingForCart(opts: {
       };
     } else {
       const free = settings.freeAbove != null && opts.subtotal >= settings.freeAbove;
-      const rates: ShippingRate[] = couriers
+      const codFee = opts.cod ? settings.codFee : 0;
+      // Internal candidates, keyed by the real courier id so the order can be
+      // re-priced server-side later. Nothing here is shown to the customer.
+      const candidates = couriers
         .map((c) => {
           const base = Number(c["rate"] ?? 0);
-          const cod = opts.cod ? Number(c["cod_charges"] ?? 0) : 0;
-          const price = Math.round((base + cod) * 100) / 100;
+          const providerCod = opts.cod ? Number(c["cod_charges"] ?? 0) : 0;
+          const raw = Math.round((base + providerCod) * 100) / 100;
           const days = Number(c["estimated_delivery_days"] ?? 0);
           return {
             id: `sr-${String(c["courier_company_id"] ?? c["courier_name"])}`,
-            provider: String(c["courier_name"] ?? "Shiprocket"),
-            label: String(c["courier_name"] ?? "Courier"),
-            eta:
-              typeof c["etd"] === "string" && c["etd"]
-                ? `Delivery by ${String(c["etd"]).split(" ")[0]}`
-                : days > 0
-                  ? `${days} business day${days > 1 ? "s" : ""}`
-                  : "3–7 business days",
-            price: free ? 0 : price,
-            freeAbove: settings.freeAbove ?? undefined,
-          } satisfies ShippingRate;
+            price: (free ? 0 : raw) + codFee,
+            days: Number.isFinite(days) && days > 0 ? days : 7,
+          };
         })
-        .filter((r) => Number.isFinite(r.price))
-        .sort((a, b) => a.price - b.price)
-        .slice(0, 5);
+        .filter((c) => Number.isFinite(c.price));
+
+      const cheapest = [...candidates].sort((a, b) => a.price - b.price)[0];
+      const fastest = [...candidates].sort((a, b) => a.days - b.days || a.price - b.price)[0];
+      const etaLabel = (d: number) => `${d} business day${d > 1 ? "s" : ""}`;
+
+      const rates: ShippingRate[] = [];
+      if (cheapest) {
+        rates.push({
+          id: cheapest.id,
+          provider: BRAND,
+          label: "Standard Delivery",
+          eta: etaLabel(cheapest.days),
+          price: cheapest.price,
+          freeAbove: settings.freeAbove ?? undefined,
+        });
+      }
+      if (fastest && fastest.id !== cheapest?.id && fastest.days < (cheapest?.days ?? 99)) {
+        rates.push({
+          id: fastest.id,
+          provider: BRAND,
+          label: "Express Delivery",
+          eta: etaLabel(fastest.days),
+          price: fastest.price,
+        });
+      }
+
       quote = {
         serviceable: rates.length > 0,
         message: rates.length > 0 ? null : "Sorry, delivery is currently unavailable for this pincode.",
@@ -261,8 +280,9 @@ export async function quoteShippingForCart(opts: {
       };
     }
   } catch {
-    quote = fallbackQuote(opts.subtotal, settings.freeAbove, pkg.weightKg, null);
+    quote = fallbackQuote(settings, opts.subtotal, opts.cod, pkg.weightKg, null);
   }
+
 
   quoteCache.set(cacheKey, { quote, at: Date.now() });
   return quote;
