@@ -114,7 +114,7 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
     const { shiprocketLogin, shiprocketPickupLocations, authFailureMessage } =
       await import("./shiprocket.server");
 
-    const diagnostics: Array<Record<string, unknown>> = [];
+    const diagnostics: Diagnostic[] = [];
     const apiToken = data.apiToken?.trim() ?? "";
     const email = data.email?.trim() ?? "";
     const password = data.password ?? "";
@@ -189,7 +189,7 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
       credential_masked: apiToken ? "API token •••• " + apiToken.slice(-4) : email.replace(/(.).*(@.*)/, "$1***$2"),
       connected_at: nowIso,
       last_verified_at: nowIso,
-      status: "connected",
+
       updated_by: actor.userId,
       updated_at: nowIso,
     });
@@ -211,7 +211,7 @@ export const testShiprocketConnection = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { resolveShiprocketToken, shiprocketPickupLocations } = await import("./shiprocket.server");
-    const diagnostics: Array<Record<string, unknown>> = [];
+    const diagnostics: Diagnostic[] = [];
     try {
       const token = await resolveShiprocketToken(true);
       diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Token acquired from stored credentials." });
@@ -221,7 +221,7 @@ export const testShiprocketConnection = createServerFn({ method: "POST" })
       const names = locations.map((l) => l.pickup_location).filter(Boolean);
       await supabaseAdmin
         .from("shipping_providers")
-        .update({ last_verified_at: new Date().toISOString(), status: "connected" })
+        .update({ last_verified_at: new Date().toISOString() })
         .eq("provider", "shiprocket");
       return { ok: true as const, pickupLocations: names, diagnostics };
     } catch (error) {
