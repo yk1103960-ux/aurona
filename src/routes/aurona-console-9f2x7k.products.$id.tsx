@@ -68,7 +68,19 @@ function ProductEditor() {
         wattage: data.wattage ?? "", size: data.size ?? "", color_temp: data.color_temp ?? "", material: data.material ?? "", warranty: data.warranty ?? "",
         image_seed: data.image_seed ?? "",
         is_published: data.is_published ?? true, is_featured: !!data.is_featured, is_bestseller: !!data.is_bestseller, is_new: !!data.is_new, is_sale: !!data.is_sale,
+        affiliate_enabled: data.affiliate_enabled ?? true,
+        affiliate_commission_kind:
+          (data.affiliate_commission_kind as ProductForm["affiliate_commission_kind"]) ?? "",
+        affiliate_commission_value:
+          data.affiliate_commission_value != null ? Number(data.affiliate_commission_value) : null,
+        affiliate_max_commission:
+          data.affiliate_max_commission != null ? Number(data.affiliate_max_commission) : null,
+        weight_g: data.weight_g != null ? Number(data.weight_g) : null,
+        dim_l: data.dim_l != null ? Number(data.dim_l) : null,
+        dim_w: data.dim_w != null ? Number(data.dim_w) : null,
+        dim_h: data.dim_h != null ? Number(data.dim_h) : null,
       });
+
       return data;
     },
   });
