@@ -298,10 +298,10 @@ function CheckoutPage() {
 
           {step === 2 && (
             <section className="rounded-2xl border border-border p-6">
-              <div className="text-eyebrow mb-4">Shipping method</div>
+              <div className="text-eyebrow mb-4">Delivery</div>
               {quoting ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Checking couriers for {f.pincode || "your address"}…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Checking delivery to {f.pincode || "your address"}…
                 </div>
               ) : rates.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
@@ -328,13 +328,14 @@ function CheckoutPage() {
                         />
                         <div>
                           <div className="font-medium text-foreground">{r.label}</div>
-                          <div className="text-xs text-muted-foreground">{r.eta} · via {r.provider}</div>
+                          <div className="text-xs text-muted-foreground">Arrives in {r.eta}</div>
                         </div>
                       </div>
-                      <div className="font-semibold">{r.price === 0 ? "Free" : inr(r.price)}</div>
+                      <div className="font-semibold">{r.price === 0 ? "FREE Delivery" : inr(r.price)}</div>
                     </label>
                   ))}
                 </div>
+
               )}
             </section>
           )}
