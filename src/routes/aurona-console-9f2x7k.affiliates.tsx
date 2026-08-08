@@ -83,6 +83,8 @@ function AffiliatesAdmin() {
       {tab === "Overview" && <Overview data={data} />}
       {tab === "Affiliates" && <AffiliatesTab data={data} refresh={refresh} />}
       {tab === "Referrals" && <ReferralsTab data={data} />}
+      {tab === "Products" && <ProductsTab data={data} />}
+
       {tab === "Commissions" && <CommissionsTab data={data} refresh={refresh} />}
       {tab === "Withdrawals" && <WithdrawalsTab data={data} refresh={refresh} />}
       {tab === "Configuration" && <ConfigTab data={data} refresh={refresh} />}
