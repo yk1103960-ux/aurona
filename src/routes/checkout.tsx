@@ -88,6 +88,60 @@ function CheckoutPage() {
     if (user?.email && !f.email) setF((prev) => ({ ...prev, email: user.email ?? "" }));
   }, [user, f.email]);
 
+  // Saved address book — remembered between orders so we never ask twice.
+  const savedQuery = useQuery({
+    queryKey: ["addresses", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as AddressRow[];
+    },
+  });
+  const savedRows = savedQuery.data ?? [];
+
+  const applySaved = (a: AddressRow) => {
+    setSelectedAddressId(a.id);
+    setAddingNew(false);
+    setF((prev) => ({
+      ...prev,
+      full_name: a.full_name,
+      phone: (a.phone || "").replace(/\D/g, "").slice(-10),
+      address: [a.line1, a.line2].filter(Boolean).join(", "),
+      city: a.city,
+      state: a.state,
+      pincode: a.pincode,
+    }));
+  };
+
+  // Preselect the default/most recent saved address once.
+  useEffect(() => {
+    if (selectedAddressId || addingNew || savedRows.length === 0) return;
+    applySaved(savedRows[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedRows.length]);
+
+  const errors: Record<string, string | undefined> = {
+    full_name: f.full_name.trim().length < 3 ? "Enter your full name (at least 3 characters)" : undefined,
+    phone: !/^[6-9]\d{9}$/.test(f.phone.trim())
+      ? "Enter a valid 10-digit mobile number starting with 6-9"
+      : undefined,
+    email:
+      f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email.trim())
+        ? "Enter a valid email address"
+        : undefined,
+    address: f.address.trim().length < 8 ? "Enter house / street / area (at least 8 characters)" : undefined,
+    city: f.city.trim().length < 2 ? "Enter your city" : undefined,
+    state: f.state.trim().length < 2 ? "Enter your state" : undefined,
+    pincode: !/^\d{6}$/.test(f.pincode.trim()) ? "Enter a valid 6-digit pincode" : undefined,
+  };
+  const addressValid = Object.values(errors).every((e) => !e);
+
+
   // Live, server-authoritative shipping rates for the destination pincode.
   const cod = f.payment_method === "cod";
   useEffect(() => {
