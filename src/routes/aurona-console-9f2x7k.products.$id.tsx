@@ -90,7 +90,13 @@ function ProductEditor() {
   const save = async () => {
     if (!f.name || !f.sku) return toast.error("Name and SKU are required");
     setSaving(true);
-    const payload = { ...f, slug: f.slug || slugify(f.name) };
+    const payload = {
+      ...f,
+      slug: f.slug || slugify(f.name),
+      // Empty kind means "inherit the program/affiliate default".
+      affiliate_commission_kind: f.affiliate_commission_kind || null,
+    };
+
     const { data, error } = isNew
       ? await supabase.from("products").insert(payload).select("id").single()
       : await supabase.from("products").update(payload).eq("id", id).select("id").single();
