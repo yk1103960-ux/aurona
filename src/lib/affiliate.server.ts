@@ -177,10 +177,77 @@ export async function claimReferralForUser(visitorId: string, userId: string) {
   return { ok: true as const, claimed: true };
 }
 
+export type ProductAffiliateRule = {
+  enabled: boolean;
+  kind: "percentage" | "fixed";
+  value: number;
+  max: number | null;
+};
+
 /**
- * Creates the commission ledger row for a new order, if the buyer is
- * attributed to an approved affiliate inside the attribution window.
- * Idempotent: one commission per order.
+ * Resolves the commission rule that applies to one product right now.
+ * Priority: product override → affiliate-specific rate → program default.
+ * `inherit` / missing values fall through; campaign windows are respected.
+ */
+export function resolveProductRule(
+  product: {
+    affiliate_enabled?: boolean | null;
+    affiliate_commission_kind?: string | null;
+    affiliate_commission_value?: number | null;
+    affiliate_max_commission?: number | null;
+    affiliate_starts_at?: string | null;
+    affiliate_ends_at?: string | null;
+  } | null,
+  affiliate: { commission_kind?: string | null; commission_value?: number | null },
+  settings: AffiliateSettings,
+  at: Date = new Date(),
+): ProductAffiliateRule {
+  const fallbackKind = (affiliate.commission_kind ?? settings.default_commission_kind) as
+    | "percentage"
+    | "fixed";
+  const fallbackValue = Number(affiliate.commission_value ?? settings.default_commission_value);
+
+  if (!product) return { enabled: true, kind: fallbackKind, value: fallbackValue, max: null };
+  if (product.affiliate_enabled === false) {
+    return { enabled: false, kind: fallbackKind, value: 0, max: null };
+  }
+  if (product.affiliate_starts_at && new Date(product.affiliate_starts_at) > at) {
+    return { enabled: false, kind: fallbackKind, value: 0, max: null };
+  }
+  if (product.affiliate_ends_at && new Date(product.affiliate_ends_at) < at) {
+    return { enabled: false, kind: fallbackKind, value: 0, max: null };
+  }
+
+  const overrideKind = product.affiliate_commission_kind;
+  const hasOverride =
+    (overrideKind === "percentage" || overrideKind === "fixed") &&
+    product.affiliate_commission_value != null;
+
+  return {
+    enabled: true,
+    kind: hasOverride ? (overrideKind as "percentage" | "fixed") : fallbackKind,
+    value: hasOverride ? Number(product.affiliate_commission_value) : fallbackValue,
+    max: product.affiliate_max_commission != null ? Number(product.affiliate_max_commission) : null,
+  };
+}
+
+/** Commission for a single order line, honouring quantity and any cap. */
+export function commissionForLine(rule: ProductAffiliateRule, unitPrice: number, quantity: number) {
+  if (!rule.enabled || rule.value <= 0) return { eligible: 0, amount: 0 };
+  const eligible = Math.round(unitPrice * quantity * 100) / 100;
+  let amount =
+    rule.kind === "fixed"
+      ? rule.value * quantity
+      : Math.round(((eligible * rule.value) / 100) * 100) / 100;
+  amount = Math.min(amount, eligible);
+  if (rule.max != null && rule.max > 0) amount = Math.min(amount, rule.max);
+  return { eligible, amount: Math.round(amount * 100) / 100 };
+}
+
+/**
+ * Creates the commission ledger row for a new order, computed PER ORDER ITEM
+ * from each product's own affiliate configuration. Idempotent: exactly one
+ * commission (with its item breakdown) per order.
  */
 export async function recordCommissionForOrder(orderId: string) {
   const settings = await getSettings();
@@ -220,36 +287,104 @@ export async function recordCommissionForOrder(orderId: string) {
   // Affiliates never earn on their own purchases.
   if (aff.user_id && aff.user_id === order.user_id) return { created: false as const };
 
-  const kind = (aff.commission_kind ?? settings.default_commission_kind) as "percentage" | "fixed";
-  const value = Number(aff.commission_value ?? settings.default_commission_value);
-  const eligible = settings.exclude_shipping
-    ? Math.max(0, Number(order.total) - Number(order.shipping ?? 0))
-    : Number(order.total);
-  const amount =
-    kind === "fixed" ? Math.min(value, eligible) : Math.round(((eligible * value) / 100) * 100) / 100;
+  const { data: items } = await db
+    .from("order_items")
+    .select("product_id, product_name, price, quantity")
+    .eq("order_id", order.id);
+  const lines = items ?? [];
 
-  await db.from("affiliate_commissions").insert({
-    affiliate_id: aff.id,
-    order_id: order.id,
-    referral_id: referral.id,
-    order_number: order.order_number,
-    order_total: Number(order.total),
-    eligible_amount: Math.round(eligible * 100) / 100,
-    commission_kind: kind,
-    commission_value: value,
-    amount,
-    status: "pending",
-  });
+  const productIds = Array.from(
+    new Set(lines.map((l) => l.product_id).filter(Boolean) as string[]),
+  );
+  const products = new Map<string, Record<string, unknown>>();
+  if (productIds.length > 0) {
+    const { data: prods } = await db
+      .from("products")
+      .select(
+        "id, affiliate_enabled, affiliate_commission_kind, affiliate_commission_value, affiliate_max_commission, affiliate_starts_at, affiliate_ends_at",
+      )
+      .in("id", productIds);
+    for (const p of prods ?? []) products.set(p.id, p as Record<string, unknown>);
+  }
+
+  const orderedAt = new Date(order.created_at);
+  const breakdown: Array<{
+    product_id: string | null;
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    eligible_amount: number;
+    commission_kind: string;
+    commission_value: number;
+    amount: number;
+  }> = [];
+  let total = 0;
+  let eligibleTotal = 0;
+
+  for (const line of lines) {
+    const product = line.product_id
+      ? (products.get(line.product_id) as Parameters<typeof resolveProductRule>[0]) ?? null
+      : null;
+    const rule = resolveProductRule(product, aff, settings, orderedAt);
+    const { eligible, amount } = commissionForLine(rule, Number(line.price), Number(line.quantity));
+    if (amount <= 0) continue;
+    eligibleTotal += eligible;
+    total += amount;
+    breakdown.push({
+      product_id: line.product_id ?? null,
+      product_name: line.product_name,
+      quantity: Number(line.quantity),
+      unit_price: Number(line.price),
+      eligible_amount: eligible,
+      commission_kind: rule.kind,
+      commission_value: rule.value,
+      amount,
+    });
+  }
+
+  if (breakdown.length === 0 || total <= 0) return { created: false as const };
+  total = Math.round(total * 100) / 100;
+  eligibleTotal = Math.round(eligibleTotal * 100) / 100;
+
+  const { data: commission, error: cErr } = await db
+    .from("affiliate_commissions")
+    .insert({
+      affiliate_id: aff.id,
+      order_id: order.id,
+      referral_id: referral.id,
+      order_number: order.order_number,
+      order_total: Number(order.total),
+      eligible_amount: eligibleTotal,
+      commission_kind: "per_product",
+      commission_value: 0,
+      amount: total,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  // A unique index on order_id makes concurrent duplicate processing a no-op.
+  if (cErr || !commission) return { created: false as const };
+
+  await db.from("affiliate_commission_items").insert(
+    breakdown.map((b) => ({
+      commission_id: commission.id,
+      affiliate_id: aff.id,
+      order_id: order.id,
+      ...b,
+    })),
+  );
+
   if (!referral.converted_at) {
     await db.from("affiliate_referrals").update({ converted_at: new Date().toISOString() }).eq("id", referral.id);
   }
   await logAffiliate({
     affiliateId: aff.id,
     action: "commission.created",
-    detail: { orderId: order.id, amount, kind, value },
+    detail: { orderId: order.id, amount: total, items: breakdown.length },
   });
-  return { created: true as const, amount };
+  return { created: true as const, amount: total };
 }
+
 
 export async function getBalance(affiliateId: string) {
   const db = await admin();
