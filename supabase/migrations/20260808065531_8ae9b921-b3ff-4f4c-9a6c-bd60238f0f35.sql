@@ -1,0 +1,1 @@
+INSERT INTO integrations (provider, enabled, config_public, status, updated_at) VALUES ('sms', true, '{"providerName":"msg91","senderId":"AURONA","templateId":"1007807652032669441"}'::jsonb, 'configured', now()) ON CONFLICT (provider) DO UPDATE SET enabled = true, config_public = EXCLUDED.config_public, status = 'configured', updated_at = now();
