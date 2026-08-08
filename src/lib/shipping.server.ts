@@ -134,8 +134,9 @@ async function resolvePickupPincode(configured: string | null): Promise<string |
 
 const quoteCache = new Map<string, { quote: ShippingQuote; at: number }>();
 
-function fallbackQuote(subtotal: number, freeAbove: number | null, weightKg: number, message: string | null): ShippingQuote {
-  const free = freeAbove != null && subtotal >= freeAbove;
+function fallbackQuote(s: Settings, subtotal: number, cod: boolean, weightKg: number, message: string | null): ShippingQuote {
+  const free = s.freeAbove != null && subtotal >= s.freeAbove;
+  const codFee = cod ? s.codFee : 0;
   return {
     serviceable: true,
     message,
@@ -144,22 +145,23 @@ function fallbackQuote(subtotal: number, freeAbove: number | null, weightKg: num
     rates: [
       {
         id: "aurona-standard",
-        provider: "Aurona Logistics",
-        label: "Standard delivery",
+        provider: BRAND,
+        label: "Standard Delivery",
         eta: "3–7 business days",
-        price: free ? 0 : 79,
-        freeAbove: freeAbove ?? undefined,
+        price: (free ? 0 : s.flatRate) + codFee,
+        freeAbove: s.freeAbove ?? undefined,
       },
       {
         id: "aurona-express",
-        provider: "Aurona Logistics",
-        label: "Express delivery",
+        provider: BRAND,
+        label: "Express Delivery",
         eta: "1–3 business days",
-        price: 149,
+        price: Math.round(s.flatRate * 1.9) + codFee,
       },
     ],
   };
 }
+
 
 /**
  * Authoritative shipping quote. Uses Shiprocket serviceability + courier rates
