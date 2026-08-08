@@ -141,6 +141,7 @@ function RootComponent() {
 function AuthListener() {
   const router = useRouter();
   const qc = useQueryClient();
+  useReferralCapture();
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -151,3 +152,4 @@ function AuthListener() {
   }, [router, qc]);
   return null;
 }
+
