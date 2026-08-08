@@ -39,6 +39,94 @@ export const getAffiliateProgramInfo = createServerFn({ method: "GET" }).handler
   };
 });
 
+const ProductClickInput = z.object({
+  code: z.string().trim().min(2).max(40),
+  visitorId: z.string().trim().min(6).max(64),
+  productId: z.string().uuid().optional(),
+  landingPath: z.string().trim().max(300).optional(),
+  referrer: z.string().trim().max(300).optional(),
+});
+
+/** Records a click that arrived on a product page through an affiliate link. */
+export const trackProductReferralClick = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ProductClickInput.parse(input))
+  .handler(async ({ data }) => {
+    const { recordProductClick } = await import("./affiliate.server");
+    await recordProductClick({
+      code: data.code,
+      visitorId: data.visitorId,
+      productId: data.productId ?? null,
+      landingPath: data.landingPath ?? null,
+      referrer: data.referrer ?? null,
+    });
+    return { ok: true };
+  });
+
+/**
+ * The signed-in affiliate's share link and expected earnings for one product.
+ * Returns `affiliate: null` for everyone who isn't an approved affiliate, so
+ * the PDP simply hides the panel.
+ */
+export const getProductAffiliateLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ productId: z.string().uuid(), slug: z.string().trim().max(200) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getSettings, resolveProductRule, commissionForLine } = await import("./affiliate.server");
+    const settings = await getSettings();
+    if (!settings.enabled) return { affiliate: null as null };
+
+    const { data: aff } = await supabaseAdmin
+      .from("affiliates")
+      .select("id, code, status, commission_kind, commission_value")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!aff || aff.status !== "approved") return { affiliate: null as null };
+
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select(
+        "id, price, affiliate_enabled, affiliate_commission_kind, affiliate_commission_value, affiliate_max_commission, affiliate_starts_at, affiliate_ends_at",
+      )
+      .eq("id", data.productId)
+      .maybeSingle();
+
+    const rule = resolveProductRule(product, aff, settings);
+    const { amount } = commissionForLine(rule, Number(product?.price ?? 0), 1);
+
+    const [clicks, conversions] = await Promise.all([
+      supabaseAdmin
+        .from("affiliate_product_clicks")
+        .select("id", { count: "exact", head: true })
+        .eq("affiliate_id", aff.id)
+        .eq("product_id", data.productId),
+      supabaseAdmin
+        .from("affiliate_commission_items")
+        .select("amount")
+        .eq("affiliate_id", aff.id)
+        .eq("product_id", data.productId),
+    ]);
+
+    return {
+      affiliate: {
+        code: aff.code,
+        slug: data.slug,
+        enabled: rule.enabled && amount > 0,
+        commissionKind: rule.kind,
+        commissionValue: rule.value,
+        perUnitEarning: amount,
+        clicks: clicks.count ?? 0,
+        earned:
+          Math.round(
+            ((conversions.data ?? []).reduce((s, r) => s + Number(r.amount), 0)) * 100,
+          ) / 100,
+      },
+    };
+  });
+
+
 /* ------------------------------------------------------- affiliate (owner) */
 
 export const claimReferral = createServerFn({ method: "POST" })
