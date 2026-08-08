@@ -18,7 +18,9 @@ import { useVariantSelection } from "@/hooks/useVariantSelection";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
+import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar";
 import type { ProductFamily } from "@/lib/queries";
+
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
@@ -268,6 +270,11 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
               </Button>
             </div>
           )}
+
+          <div className="mt-4">
+            <ProductAffiliateBar productId={productId} slug={family.slug} />
+          </div>
+
 
           <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
             <div className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center">
