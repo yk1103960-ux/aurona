@@ -286,13 +286,16 @@ export const pushOrderToShiprocket = createServerFn({ method: "POST" })
       length: 20, breadth: 20, height: 10, weight: 1.0,
     };
 
-    const r = await fetch("https://apiv2.shiprocket.in/v1/external/orders/create/adhoc", {
+    const { shiprocketAuthed } = await import("./shiprocket.server");
+    const call = await shiprocketAuthed({
+      stage: "create-order",
+      path: "/orders/create/adhoc",
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
+      body: payload,
     });
-    const j: any = await r.json();
-    if (!r.ok || j?.status_code >= 400) throw new Error(j?.message || "Shiprocket create failed");
+    const j: any = call.json ?? {};
+    if (!call.ok || j?.status_code >= 400) throw new Error(j?.message || "Shiprocket create failed");
+
 
     await supabaseAdmin.from("orders").update({
       shipment_provider: "shiprocket",
