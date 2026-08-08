@@ -355,8 +355,12 @@ export async function recordCommissionForOrder(orderId: string) {
       order_number: order.order_number,
       order_total: Number(order.total),
       eligible_amount: eligibleTotal,
-      commission_kind: "per_product",
-      commission_value: 0,
+      // Header row stores the blended effective rate; the real per-product
+      // rules live in affiliate_commission_items.
+      commission_kind: "percentage",
+      commission_value:
+        eligibleTotal > 0 ? Math.round((total / eligibleTotal) * 10000) / 100 : 0,
+
       amount: total,
       status: "pending",
     })
