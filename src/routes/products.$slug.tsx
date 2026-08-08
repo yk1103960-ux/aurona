@@ -422,6 +422,10 @@ function LegacyPDP({ slug }: { slug: string }) {
             </Button>
             <Button size="lg" className="h-12 rounded-full" onClick={buyNow}>Buy now</Button>
           </div>
+          <div className="mt-4">
+            <ProductAffiliateBar productId={product.id} slug={product.slug} />
+          </div>
+
         </div>
       </div>
 
