@@ -35,13 +35,20 @@ function ShippingAdmin() {
     if (!form.email || !form.password) return toast.error("Email and password required");
     setBusy(true);
     try {
-      await save({ data: form });
+      const result = await save({ data: form });
+      if (!result.ok) {
+        toast.error(result.error, { duration: 10_000 });
+        return;
+      }
       toast.success("Shiprocket connected & verified");
       setOpen(false);
       setForm({ email: "", password: "", pickupLocation: "Primary", enabled: true });
-      qc.invalidateQueries({ queryKey: ["admin-shipping"] });
-    } catch (e: any) { toast.error(e.message); }
-    setBusy(false);
+      await qc.invalidateQueries({ queryKey: ["admin-shipping"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Shiprocket connection failed");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const toggle = async (enabled: boolean) => {
@@ -67,7 +74,7 @@ function ShippingAdmin() {
             <div className="text-xs text-slate-500 mt-1">
               {data?.connected_at
                 ? <>Account: <code className="font-mono">{data.credential_masked}</code> · Pickup: <code className="font-mono">{(data.config_public as any)?.pickupLocation}</code> · Last verified {data.last_verified_at ? new Date(data.last_verified_at).toLocaleString() : "—"}</>
-                : "Not connected. Credentials are verified against Shiprocket immediately and stored encrypted."}
+                : "Not connected. Use a dedicated Shiprocket API User from Settings → API → Configure (not the dashboard login). Credentials are verified immediately and stored encrypted."}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -88,9 +95,10 @@ function ShippingAdmin() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Connect Shiprocket</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Shiprocket email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="off" /></div>
+            <div><Label>API User email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="username" /></div>
             <div><Label>Password</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="off" /></div>
             <div><Label>Pickup location name</Label><Input value={form.pickupLocation} onChange={(e) => setForm({ ...form, pickupLocation: e.target.value })} placeholder="Primary" /></div>
+            <p className="text-xs text-slate-500">Shiprocket dashboard login details are not accepted by the shipping API. The API User must be active and must allow requests without an IP restriction.</p>
             <div className="text-xs text-slate-500 flex gap-2 items-start"><ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> AES-256 encrypted. Verified against Shiprocket before saving; never re-displayed in the admin panel.</div>
           </div>
           <DialogFooter><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={connect} disabled={busy}>{busy ? "Verifying…" : "Verify & Connect"}</Button></DialogFooter>

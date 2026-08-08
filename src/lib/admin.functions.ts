@@ -112,23 +112,64 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Verify credentials work now by fetching a token from Shiprocket
-    let tokenResp: any = null;
+    let tokenResp: { token?: string; message?: string; errors?: Record<string, string[]> } = {};
     try {
       const r = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": "Aurona-Commerce/1.0",
+        },
         body: JSON.stringify({ email: data.email, password: data.password }),
+        signal: AbortSignal.timeout(20_000),
       });
-      tokenResp = await r.json();
-      if (!r.ok || !tokenResp?.token) {
-        throw new Error(tokenResp?.message || "Shiprocket rejected the credentials");
+      const responseText = await r.text();
+      try {
+        tokenResp = JSON.parse(responseText) as typeof tokenResp;
+      } catch {
+        tokenResp = { message: responseText.slice(0, 300) };
       }
-    } catch (e: any) {
-      throw new Error(`Shiprocket verification failed: ${e.message}`);
+      if (!r.ok || !tokenResp?.token) {
+        const providerMessage = tokenResp.message?.trim();
+        if (r.status === 403 || /access forbidden/i.test(providerMessage ?? "")) {
+          return {
+            ok: false as const,
+            code: "SHIPROCKET_ACCESS_FORBIDDEN" as const,
+            error: "Shiprocket denied API access for this account. In Shiprocket, open Settings → API → Configure, make sure this exact API User is active and has no IP restriction, then reconnect. Dashboard login credentials do not work here.",
+          };
+        }
+        if (r.status === 422 || /incorrect|invalid/i.test(providerMessage ?? "")) {
+          return {
+            ok: false as const,
+            code: "SHIPROCKET_INVALID_CREDENTIALS" as const,
+            error: "Shiprocket rejected the API User email or password. Reset the API User password in Settings → API → Configure, then enter the new value here.",
+          };
+        }
+        return {
+          ok: false as const,
+          code: "SHIPROCKET_AUTH_FAILED" as const,
+          error: providerMessage || `Shiprocket verification failed (${r.status}). Please try again shortly.`,
+        };
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Network request failed";
+      return {
+        ok: false as const,
+        code: "SHIPROCKET_UNREACHABLE" as const,
+        error: message.includes("timeout") || message.includes("aborted")
+          ? "Shiprocket did not respond within 20 seconds. Please try again."
+          : `Could not reach Shiprocket: ${message}`,
+      };
+    }
+
+    const token = tokenResp.token;
+    if (!token) {
+      return { ok: false as const, code: "SHIPROCKET_AUTH_FAILED" as const, error: "Shiprocket did not return an access token." };
     }
 
     const credCipher = encryptJSON({ email: data.email, password: data.password });
-    const tokenCipher = encryptJSON({ token: tokenResp.token });
+    const tokenCipher = encryptJSON({ token });
     // Shiprocket tokens are valid ~10 days
     const expiresAt = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -152,7 +193,7 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
       action: "shipping.connect", entityType: "shipping_provider", entityId: "shiprocket",
       after: { pickupLocation: data.pickupLocation || "Primary", enabled: data.enabled },
     });
-    return { ok: true };
+    return { ok: true as const };
   });
 
 export const pushOrderToShiprocket = createServerFn({ method: "POST" })
