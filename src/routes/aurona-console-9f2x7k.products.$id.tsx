@@ -94,7 +94,7 @@ function ProductEditor() {
       ...f,
       slug: f.slug || slugify(f.name),
       // Empty kind means "inherit the program/affiliate default".
-      affiliate_commission_kind: f.affiliate_commission_kind || null,
+      affiliate_commission_kind: f.affiliate_commission_kind || "inherit",
     };
 
     const { data, error } = isNew
