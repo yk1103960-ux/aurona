@@ -10,6 +10,8 @@ import { useCart } from "@/hooks/useCart";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { detectAddressFromGeolocation } from "@/lib/shipping";
+import { supabase } from "@/integrations/supabase/client";
+import type { AddressRow } from "@/components/account/AddressManager";
 
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
