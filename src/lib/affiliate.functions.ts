@@ -368,14 +368,58 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
       };
     });
 
+    // Product-level performance: clicks on product links vs commission earned.
+    const [clickRows, itemRows] = await Promise.all([
+      supabaseAdmin.from("affiliate_product_clicks").select("product_id").limit(5000),
+      supabaseAdmin
+        .from("affiliate_commission_items")
+        .select("product_id, product_name, quantity, amount")
+        .limit(5000),
+    ]);
+    const byProduct = new Map<
+      string,
+      { product_id: string; product_name: string; clicks: number; units: number; commission: number }
+    >();
+    for (const it of itemRows.data ?? []) {
+      const key = it.product_id ?? it.product_name;
+      const row =
+        byProduct.get(key) ??
+        { product_id: it.product_id ?? "", product_name: it.product_name, clicks: 0, units: 0, commission: 0 };
+      row.units += Number(it.quantity);
+      row.commission = Math.round((row.commission + Number(it.amount)) * 100) / 100;
+      byProduct.set(key, row);
+    }
+    for (const c of clickRows.data ?? []) {
+      if (!c.product_id) continue;
+      const row =
+        byProduct.get(c.product_id) ??
+        { product_id: c.product_id, product_name: "—", clicks: 0, units: 0, commission: 0 };
+      row.clicks += 1;
+      byProduct.set(c.product_id, row);
+    }
+    const missingNames = [...byProduct.values()].filter((r) => r.product_name === "—" && r.product_id);
+    if (missingNames.length > 0) {
+      const { data: named } = await supabaseAdmin
+        .from("products")
+        .select("id, name")
+        .in("id", missingNames.map((r) => r.product_id));
+      for (const p of named ?? []) {
+        const row = byProduct.get(p.id);
+        if (row) row.product_name = p.name;
+      }
+    }
+    const productStats = [...byProduct.values()].sort((a, b) => b.commission - a.commission).slice(0, 50);
+
     return {
       settings,
       affiliates: rows,
       stats,
+      productStats,
       commissions: comms,
       withdrawals: withdrawals.data ?? [],
       referrals: refs,
       logs: logs.data ?? [],
+
     };
   });
 
