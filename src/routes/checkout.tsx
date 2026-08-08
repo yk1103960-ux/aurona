@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CheckCircle2, MapPin, ChevronLeft, ChevronRight, Loader2, Truck, CreditCard, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,14 @@ import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   detectAddressFromGeolocation,
-  getShippingRates,
   type ShippingRate,
 } from "@/lib/shipping";
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
+import { quoteShipping } from "@/lib/shipping.functions";
 import { getPaymentAvailability, startPhonePePayment } from "@/lib/phonepe.functions";
 import { useQuery } from "@tanstack/react-query";
+
 
 
 export const Route = createFileRoute("/checkout")({
@@ -45,7 +46,6 @@ const STEPS = [
 function CheckoutPage() {
   const { user, loading } = useAuth();
   const cart = useCart();
-  const nav = useNavigate();
   const [step, setStep] = useState<Step>(0);
   const [placing, setPlacing] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -59,22 +59,58 @@ function CheckoutPage() {
 
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [rateId, setRateId] = useState<string | null>(null);
+  const [shipMsg, setShipMsg] = useState<string | null>(null);
+  const [quoting, setQuoting] = useState(false);
+
+  // NOTE: every hook must run on every render — no early returns above this
+  // block, otherwise React throws "Rendered more hooks than during the
+  // previous render" the moment the cart or auth state resolves.
+  const placeOrderFn = useServerFn(placeOrder);
+  const availabilityFn = useServerFn(getPaymentAvailability);
+  const startPhonePe = useServerFn(startPhonePePayment);
+  const quoteFn = useServerFn(quoteShipping);
+  const { data: pay } = useQuery({
+    queryKey: ["payment-availability"],
+    queryFn: () => availabilityFn({}),
+    staleTime: 5 * 60 * 1000,
+  });
+  const onlineEnabled = Boolean(pay?.phonepe);
 
   useEffect(() => {
     if (user?.email && !f.email) setF((prev) => ({ ...prev, email: user.email ?? "" }));
   }, [user, f.email]);
 
-  // Recompute shipping when entering step 2 or subtotal changes
+  // Live, server-authoritative shipping rates for the destination pincode.
+  const cod = f.payment_method === "cod";
   useEffect(() => {
-    if (step < 2) return;
+    if (step < 2 || !user || cart.items.length === 0) return;
+    if (!/^\d{6}$/.test(f.pincode.trim())) {
+      setRates([]);
+      setShipMsg("Enter a valid 6-digit pincode to see delivery options.");
+      return;
+    }
     let cancel = false;
-    getShippingRates({ subtotal: cart.subtotal, address: f, itemCount: cart.count }).then((r) => {
-      if (cancel) return;
-      setRates(r);
-      setRateId((prev) => prev ?? r[0]?.id ?? null);
-    });
+    setQuoting(true);
+    quoteFn({ data: { pincode: f.pincode.trim(), cod } })
+      .then((q) => {
+        if (cancel) return;
+        setRates(q.rates);
+        setShipMsg(q.message ?? null);
+        setRateId((prev) => (q.rates.some((r) => r.id === prev) ? prev : (q.rates[0]?.id ?? null)));
+      })
+      .catch(() => {
+        if (!cancel) setShipMsg("Could not fetch delivery rates. Please try again.");
+      })
+      .finally(() => {
+        if (!cancel) setQuoting(false);
+      });
     return () => { cancel = true; };
-  }, [step, cart.subtotal, cart.count, f]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, user, cart.items.length, cart.subtotal, f.pincode, cod]);
+
+  const selectedRate = rates.find((r) => r.id === rateId) ?? rates[0];
+  const shipping = selectedRate?.price ?? 0;
+  const total = cart.subtotal + shipping;
 
   if (loading) return null;
   if (!user)
@@ -100,7 +136,7 @@ function CheckoutPage() {
       </div>
     );
 
-  if (cart.items.length === 0 && !done)
+  if (cart.items.length === 0)
     return (
       <div className="container-x py-24 text-center">
         <h1 className="text-display text-3xl">Your cart is empty</h1>
@@ -108,13 +144,9 @@ function CheckoutPage() {
       </div>
     );
 
-  const selectedRate = rates.find((r) => r.id === rateId) ?? rates[0];
-  const shipping = selectedRate?.price ?? 0;
-  const total = cart.subtotal + shipping;
-
   const canNext = (() => {
     if (step === 0) return cart.items.length > 0;
-    if (step === 1) return f.full_name && f.phone && f.address && f.city && f.state && f.pincode.length >= 5;
+    if (step === 1) return Boolean(f.full_name && f.phone && f.address && f.city && f.state && /^\d{6}$/.test(f.pincode.trim()));
     if (step === 2) return !!selectedRate;
     return true;
   })();
@@ -139,16 +171,6 @@ function CheckoutPage() {
       setDetecting(false);
     }
   };
-
-  const placeOrderFn = useServerFn(placeOrder);
-  const availabilityFn = useServerFn(getPaymentAvailability);
-  const startPhonePe = useServerFn(startPhonePePayment);
-  const { data: pay } = useQuery({
-    queryKey: ["payment-availability"],
-    queryFn: () => availabilityFn({}),
-    staleTime: 5 * 60 * 1000,
-  });
-  const onlineEnabled = Boolean(pay?.phonepe);
 
   const place = async () => {
     if (!selectedRate) {
@@ -188,13 +210,13 @@ function CheckoutPage() {
         }
       }
       setDone(result.orderNumber);
-    } catch {
-      // Detailed errors are logged server-side; users see a generic message.
-      toast.error("Something went wrong. Please try again later.");
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : "Something went wrong. Please try again later.");
     } finally {
       setPlacing(false);
     }
   };
+
 
 
   return (
@@ -277,11 +299,16 @@ function CheckoutPage() {
           {step === 2 && (
             <section className="rounded-2xl border border-border p-6">
               <div className="text-eyebrow mb-4">Shipping method</div>
-              {rates.length === 0 ? (
+              {quoting ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Fetching best rates for {f.pincode || "your address"}…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Checking couriers for {f.pincode || "your address"}…
+                </div>
+              ) : rates.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  {shipMsg ?? "No delivery options available for this pincode."}
                 </div>
               ) : (
+
                 <div className="grid gap-2">
                   {rates.map((r) => (
                     <label

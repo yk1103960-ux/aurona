@@ -1,0 +1,268 @@
+// Server-only affiliate engine: attribution, commission ledger, payouts.
+// All writes go through the service-role client after the caller is verified
+// by the calling server function.
+
+export type AffiliateSettings = {
+  enabled: boolean;
+  default_commission_kind: "percentage" | "fixed";
+  default_commission_value: number;
+  attribution_days: number;
+  cookie_days: number;
+  min_payout: number;
+  auto_approve_affiliates: boolean;
+  auto_approve_commission_on_delivery: boolean;
+  exclude_shipping: boolean;
+  terms: string | null;
+};
+
+async function admin() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
+
+export async function getSettings(): Promise<AffiliateSettings> {
+  const db = await admin();
+  const { data } = await db.from("affiliate_settings").select("*").eq("id", true).maybeSingle();
+  return {
+    enabled: data?.enabled ?? true,
+    default_commission_kind: (data?.default_commission_kind ?? "percentage") as "percentage" | "fixed",
+    default_commission_value: Number(data?.default_commission_value ?? 5),
+    attribution_days: Number(data?.attribution_days ?? 30),
+    cookie_days: Number(data?.cookie_days ?? 30),
+    min_payout: Number(data?.min_payout ?? 500),
+    auto_approve_affiliates: data?.auto_approve_affiliates ?? false,
+    auto_approve_commission_on_delivery: data?.auto_approve_commission_on_delivery ?? true,
+    exclude_shipping: data?.exclude_shipping ?? true,
+    terms: data?.terms ?? null,
+  };
+}
+
+export async function logAffiliate(params: {
+  affiliateId: string | null;
+  actorUserId?: string | null;
+  action: string;
+  detail?: Record<string, unknown>;
+}) {
+  const db = await admin();
+  await db.from("affiliate_logs").insert({
+    affiliate_id: params.affiliateId,
+    actor_user_id: params.actorUserId ?? null,
+    action: params.action,
+    detail: (params.detail ?? {}) as never,
+  });
+}
+
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+/** Unique, human-friendly referral code derived from the affiliate's name. */
+export async function generateCode(name: string): Promise<string> {
+  const db = await admin();
+  const base =
+    name
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, 6) || "AURONA";
+  for (let attempt = 0; attempt < 12; attempt++) {
+    let suffix = "";
+    for (let i = 0; i < 4; i++) {
+      suffix += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    }
+    const code = `${base}${suffix}`;
+    const { data } = await db.from("affiliates").select("id").ilike("code", code).maybeSingle();
+    if (!data) return code;
+  }
+  return `AUR${Date.now().toString(36).toUpperCase()}`;
+}
+
+/** Records/refreshes first-touch attribution for a visitor and/or user. */
+export async function recordReferral(params: {
+  code: string;
+  visitorId: string;
+  userId?: string | null;
+  landingPath?: string | null;
+  referrer?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+}) {
+  const settings = await getSettings();
+  if (!settings.enabled) return { ok: false as const, reason: "Affiliate program is disabled" };
+
+  const db = await admin();
+  const { data: aff } = await db
+    .from("affiliates")
+    .select("id, status, code")
+    .ilike("code", params.code.trim())
+    .maybeSingle();
+  if (!aff || aff.status !== "approved") return { ok: false as const, reason: "Unknown referral code" };
+
+  const expires = new Date(Date.now() + settings.attribution_days * 86_400_000).toISOString();
+
+  // Signed-in users get a single durable attribution row (first touch wins).
+  if (params.userId) {
+    const { data: existing } = await db
+      .from("affiliate_referrals")
+      .select("id, affiliate_id, expires_at")
+      .eq("user_id", params.userId)
+      .maybeSingle();
+    if (existing) {
+      const stale = new Date(existing.expires_at).getTime() < Date.now();
+      if (stale) {
+        await db
+          .from("affiliate_referrals")
+          .update({ affiliate_id: aff.id, expires_at: expires, first_seen_at: new Date().toISOString() })
+          .eq("id", existing.id);
+      }
+      return { ok: true as const, affiliateId: existing.affiliate_id, code: aff.code };
+    }
+    await db.from("affiliate_referrals").insert({
+      affiliate_id: aff.id,
+      user_id: params.userId,
+      visitor_id: params.visitorId,
+      landing_path: params.landingPath ?? null,
+      referrer: params.referrer ?? null,
+      ip: params.ip ?? null,
+      user_agent: params.userAgent ?? null,
+      expires_at: expires,
+    });
+    await logAffiliate({ affiliateId: aff.id, action: "referral.user_attributed", detail: { userId: params.userId } });
+    return { ok: true as const, affiliateId: aff.id, code: aff.code };
+  }
+
+  // Anonymous visitor row, keyed by the visitor id stored in the browser.
+  const { data: v } = await db
+    .from("affiliate_referrals")
+    .select("id")
+    .eq("visitor_id", params.visitorId)
+    .is("user_id", null)
+    .maybeSingle();
+  if (v) {
+    await db.from("affiliate_referrals").update({ affiliate_id: aff.id, expires_at: expires }).eq("id", v.id);
+  } else {
+    await db.from("affiliate_referrals").insert({
+      affiliate_id: aff.id,
+      visitor_id: params.visitorId,
+      landing_path: params.landingPath ?? null,
+      referrer: params.referrer ?? null,
+      ip: params.ip ?? null,
+      user_agent: params.userAgent ?? null,
+      expires_at: expires,
+    });
+  }
+  return { ok: true as const, affiliateId: aff.id, code: aff.code };
+}
+
+/** Moves an anonymous visitor attribution onto a freshly signed-in user. */
+export async function claimReferralForUser(visitorId: string, userId: string) {
+  const db = await admin();
+  const { data: mine } = await db
+    .from("affiliate_referrals")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (mine) return { ok: true as const, claimed: false };
+
+  const { data: anon } = await db
+    .from("affiliate_referrals")
+    .select("id, affiliate_id, expires_at")
+    .eq("visitor_id", visitorId)
+    .is("user_id", null)
+    .order("first_seen_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!anon) return { ok: true as const, claimed: false };
+  if (new Date(anon.expires_at).getTime() < Date.now()) return { ok: true as const, claimed: false };
+
+  await db.from("affiliate_referrals").update({ user_id: userId }).eq("id", anon.id);
+  await logAffiliate({ affiliateId: anon.affiliate_id, action: "referral.claimed", detail: { userId } });
+  return { ok: true as const, claimed: true };
+}
+
+/**
+ * Creates the commission ledger row for a new order, if the buyer is
+ * attributed to an approved affiliate inside the attribution window.
+ * Idempotent: one commission per order.
+ */
+export async function recordCommissionForOrder(orderId: string) {
+  const settings = await getSettings();
+  if (!settings.enabled) return { created: false as const };
+  const db = await admin();
+
+  const { data: order } = await db
+    .from("orders")
+    .select("id, user_id, order_number, subtotal, shipping, total, created_at")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order) return { created: false as const };
+
+  const { data: existing } = await db
+    .from("affiliate_commissions")
+    .select("id")
+    .eq("order_id", orderId)
+    .maybeSingle();
+  if (existing) return { created: false as const };
+
+  const { data: referral } = await db
+    .from("affiliate_referrals")
+    .select("id, affiliate_id, expires_at, converted_at")
+    .eq("user_id", order.user_id)
+    .maybeSingle();
+  if (!referral) return { created: false as const };
+  if (new Date(referral.expires_at).getTime() < new Date(order.created_at).getTime()) {
+    return { created: false as const };
+  }
+
+  const { data: aff } = await db
+    .from("affiliates")
+    .select("id, user_id, status, commission_kind, commission_value")
+    .eq("id", referral.affiliate_id)
+    .maybeSingle();
+  if (!aff || aff.status !== "approved") return { created: false as const };
+  // Affiliates never earn on their own purchases.
+  if (aff.user_id && aff.user_id === order.user_id) return { created: false as const };
+
+  const kind = (aff.commission_kind ?? settings.default_commission_kind) as "percentage" | "fixed";
+  const value = Number(aff.commission_value ?? settings.default_commission_value);
+  const eligible = settings.exclude_shipping
+    ? Math.max(0, Number(order.total) - Number(order.shipping ?? 0))
+    : Number(order.total);
+  const amount =
+    kind === "fixed" ? Math.min(value, eligible) : Math.round(((eligible * value) / 100) * 100) / 100;
+
+  await db.from("affiliate_commissions").insert({
+    affiliate_id: aff.id,
+    order_id: order.id,
+    referral_id: referral.id,
+    order_number: order.order_number,
+    order_total: Number(order.total),
+    eligible_amount: Math.round(eligible * 100) / 100,
+    commission_kind: kind,
+    commission_value: value,
+    amount,
+    status: "pending",
+  });
+  if (!referral.converted_at) {
+    await db.from("affiliate_referrals").update({ converted_at: new Date().toISOString() }).eq("id", referral.id);
+  }
+  await logAffiliate({
+    affiliateId: aff.id,
+    action: "commission.created",
+    detail: { orderId: order.id, amount, kind, value },
+  });
+  return { created: true as const, amount };
+}
+
+export async function getBalance(affiliateId: string) {
+  const db = await admin();
+  const { data } = await db.rpc("affiliate_balance", { _affiliate_id: affiliateId });
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { pending: number; approved: number; paid: number; reversed: number; withdrawn_pending: number; available: number }
+    | undefined;
+  return {
+    pending: Number(row?.pending ?? 0),
+    approved: Number(row?.approved ?? 0),
+    paid: Number(row?.paid ?? 0),
+    reversed: Number(row?.reversed ?? 0),
+    withdrawnPending: Number(row?.withdrawn_pending ?? 0),
+    available: Number(row?.available ?? 0),
+  };
+}

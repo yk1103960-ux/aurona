@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getShippingRates } from "./shipping";
+
+
 
 const AddressSchema = z.object({
   full_name: z.string().trim().min(1).max(120),
@@ -94,16 +95,27 @@ export const placeOrder = createServerFn({ method: "POST" })
     });
     subtotal = Math.round(subtotal * 100) / 100;
 
-    // 6) Recompute shipping server-side.
-    const rates = await getShippingRates({
+    // 6) Recompute shipping server-side from the live courier quote.
+    const { quoteShippingForCart } = await import("./shipping.server");
+    const quote = await quoteShippingForCart({
+      lines: items.map((it) => ({
+        sku: it.products!.sku,
+        name: it.products!.name,
+        price: Number(it.products!.price),
+        quantity: it.quantity,
+      })),
+      pincode: data.address.pincode,
+      cod: data.payment_method === "cod",
       subtotal,
-      address: data.address,
-      itemCount: items.reduce((s, i) => s + i.quantity, 0),
     });
-    const rate = rates.find((r) => r.id === data.shipping_rate_id);
+    if (!quote.serviceable) {
+      throw new Error(quote.message ?? "Delivery is unavailable for this pincode.");
+    }
+    const rate = quote.rates.find((r) => r.id === data.shipping_rate_id) ?? quote.rates[0];
     if (!rate) throw new Error("Selected shipping option is no longer available.");
     const shipping = Math.round(Number(rate.price) * 100) / 100;
     const total = Math.round((subtotal + shipping) * 100) / 100;
+
 
     // 7) Insert order + items using the user-scoped client (RLS enforces ownership).
     const { data: order, error: orderErr } = await supabase
