@@ -24,6 +24,8 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { OffersModal } from "@/components/marketing/OffersModal";
 import { CinematicIntro } from "@/components/marketing/CinematicIntro";
 import { supabase } from "@/integrations/supabase/client";
+import { useReferralCapture } from "@/hooks/useReferralCapture";
+
 
 function NotFoundComponent() {
   return (
