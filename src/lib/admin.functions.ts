@@ -99,8 +99,9 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
-      email: z.string().email(),
-      password: z.string().min(4).max(200),
+      email: z.string().trim().email().optional().or(z.literal("")),
+      password: z.string().max(200).optional().or(z.literal("")),
+      apiToken: z.string().trim().max(4000).optional().or(z.literal("")),
       pickupLocation: z.string().trim().max(100).optional().or(z.literal("")),
       enabled: z.boolean().default(true),
     }).parse(input)
@@ -110,91 +111,128 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
     const actor = await assertAdmin(context);
     const { encryptJSON } = await import("./crypto.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { shiprocketLogin, shiprocketPickupLocations, authFailureMessage } =
+      await import("./shiprocket.server");
 
-    // Verify credentials work now by fetching a token from Shiprocket
-    let tokenResp: { token?: string; message?: string; errors?: Record<string, string[]> } = {};
-    try {
-      const r = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "User-Agent": "Aurona-Commerce/1.0",
-        },
-        body: JSON.stringify({ email: data.email, password: data.password }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      const responseText = await r.text();
-      try {
-        tokenResp = JSON.parse(responseText) as typeof tokenResp;
-      } catch {
-        tokenResp = { message: responseText.slice(0, 300) };
+    const diagnostics: Array<Record<string, unknown>> = [];
+    const apiToken = data.apiToken?.trim() ?? "";
+    const email = data.email?.trim() ?? "";
+    const password = data.password ?? "";
+    let token = "";
+
+    if (apiToken) {
+      // Token mode: never mixed with email/password login.
+      token = apiToken;
+      diagnostics.push({ stage: "authenticate", endpoint: "(skipped)", method: "-", status: null, ok: true, response: "Using the API token supplied by the admin; no login call made." });
+    } else {
+      if (!email || password.length < 4) {
+        return { ok: false as const, code: "SHIPROCKET_MISSING_INPUT" as const, error: "Enter the API user email and password, or paste an API token.", diagnostics };
       }
-      if (!r.ok || !tokenResp?.token) {
-        const providerMessage = tokenResp.message?.trim();
-        if (r.status === 403 || /access forbidden/i.test(providerMessage ?? "")) {
-          return {
-            ok: false as const,
-            code: "SHIPROCKET_ACCESS_FORBIDDEN" as const,
-            error: "Shiprocket denied API access for this account. In Shiprocket, open Settings → API → Configure, make sure this exact API User is active and has no IP restriction, then reconnect. Dashboard login credentials do not work here.",
-          };
-        }
-        if (r.status === 422 || /incorrect|invalid/i.test(providerMessage ?? "")) {
-          return {
-            ok: false as const,
-            code: "SHIPROCKET_INVALID_CREDENTIALS" as const,
-            error: "Shiprocket rejected the API User email or password. Reset the API User password in Settings → API → Configure, then enter the new value here.",
-          };
-        }
+      const login = await shiprocketLogin(email, password);
+      diagnostics.push(login.diagnostic);
+      const got = login.json?.token as string | undefined;
+      if (!login.ok || !got) {
         return {
           ok: false as const,
           code: "SHIPROCKET_AUTH_FAILED" as const,
-          error: providerMessage || `Shiprocket verification failed (${r.status}). Please try again shortly.`,
+          error: authFailureMessage(login),
+          diagnostics,
         };
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Network request failed";
+      token = got;
+    }
+
+    // Prove the token actually works with a harmless authenticated request.
+    const { call: probe, locations } = await shiprocketPickupLocations(token);
+    diagnostics.push(probe.diagnostic);
+    if (!probe.ok) {
       return {
         ok: false as const,
-        code: "SHIPROCKET_UNREACHABLE" as const,
-        error: message.includes("timeout") || message.includes("aborted")
-          ? "Shiprocket did not respond within 20 seconds. Please try again."
-          : `Could not reach Shiprocket: ${message}`,
+        code: apiToken ? "SHIPROCKET_TOKEN_REJECTED" as const : "SHIPROCKET_TOKEN_UNUSABLE" as const,
+        error: apiToken
+          ? `Shiprocket rejected the pasted API token. ${authFailureMessage(probe)}`
+          : `Login succeeded but the token could not call the Shiprocket API. ${authFailureMessage(probe)}`,
+        diagnostics,
       };
     }
 
-    const token = tokenResp.token;
-    if (!token) {
-      return { ok: false as const, code: "SHIPROCKET_AUTH_FAILED" as const, error: "Shiprocket did not return an access token." };
-    }
+    const names = locations.map((l) => l.pickup_location).filter(Boolean);
+    const requested = data.pickupLocation?.trim() || "";
+    const matched = names.find((n) => n.toLowerCase() === requested.toLowerCase());
+    const pickupLocation = matched || names[0] || requested || "Primary";
+    diagnostics.push({
+      stage: "pickup-location",
+      endpoint: "/settings/company/pickup",
+      method: "GET",
+      status: 200,
+      ok: !!matched || !!names[0],
+      response: names.length
+        ? `Available: ${names.join(", ")}. Using "${pickupLocation}"${matched ? "" : " (requested value not found on the account)"}.`
+        : "No pickup locations are configured on the Shiprocket account.",
+    });
 
-    const credCipher = encryptJSON({ email: data.email, password: data.password });
-    const tokenCipher = encryptJSON({ token });
-    // Shiprocket tokens are valid ~10 days
-    const expiresAt = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString();
-
+    const credCipher = encryptJSON(
+      apiToken ? { apiToken } : { email, password },
+    );
+    const nowIso = new Date().toISOString();
     const { error } = await supabaseAdmin.from("shipping_providers").upsert({
       provider: "shiprocket",
       enabled: data.enabled,
-      config_public: { pickupLocation: data.pickupLocation || "Primary" },
+      config_public: {
+        pickupLocation,
+        availablePickupLocations: names,
+        authMode: apiToken ? "api_token" : "api_user",
+      },
       credentials_ciphertext: credCipher,
-      auth_token_ciphertext: tokenCipher,
-      auth_token_expires_at: expiresAt,
-      credential_masked: data.email.replace(/(.).*(@.*)/, "$1***$2"),
-      connected_at: new Date().toISOString(),
-      last_verified_at: new Date().toISOString(),
+      auth_token_ciphertext: apiToken ? null : encryptJSON({ token }),
+      auth_token_expires_at: apiToken ? null : new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
+      credential_masked: apiToken ? "API token •••• " + apiToken.slice(-4) : email.replace(/(.).*(@.*)/, "$1***$2"),
+      connected_at: nowIso,
+      last_verified_at: nowIso,
+      status: "connected",
       updated_by: actor.userId,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
     });
     if (error) throw new Error(error.message);
 
     await writeAudit({
       actorUserId: actor.userId, actorEmail: actor.email,
       action: "shipping.connect", entityType: "shipping_provider", entityId: "shiprocket",
-      after: { pickupLocation: data.pickupLocation || "Primary", enabled: data.enabled },
+      after: { pickupLocation, enabled: data.enabled, authMode: apiToken ? "api_token" : "api_user" },
     });
-    return { ok: true as const };
+    return { ok: true as const, pickupLocation, pickupLocations: names, diagnostics };
   });
+
+// ============== Re-test the stored Shiprocket connection ==============
+export const testShiprocketConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import("./admin.server");
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { resolveShiprocketToken, shiprocketPickupLocations } = await import("./shiprocket.server");
+    const diagnostics: Array<Record<string, unknown>> = [];
+    try {
+      const token = await resolveShiprocketToken(true);
+      diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Token acquired from stored credentials." });
+      const { call, locations } = await shiprocketPickupLocations(token);
+      diagnostics.push(call.diagnostic);
+      if (!call.ok) return { ok: false as const, error: "Stored credentials produced a token that the API rejected.", diagnostics };
+      const names = locations.map((l) => l.pickup_location).filter(Boolean);
+      await supabaseAdmin
+        .from("shipping_providers")
+        .update({ last_verified_at: new Date().toISOString(), status: "connected" })
+        .eq("provider", "shiprocket");
+      return { ok: true as const, pickupLocations: names, diagnostics };
+    } catch (error) {
+      return {
+        ok: false as const,
+        error: error instanceof Error ? error.message : "Shiprocket test failed",
+        diagnostics,
+      };
+    }
+  });
+
 
 export const pushOrderToShiprocket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
