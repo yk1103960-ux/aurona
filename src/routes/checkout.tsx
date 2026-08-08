@@ -277,24 +277,100 @@ function CheckoutPage() {
 
           {step === 1 && (
             <section className="rounded-2xl border border-border p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-eyebrow">Delivery address</div>
-                <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={detect} disabled={detecting}>
-                  {detecting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-2 h-3.5 w-3.5" />}
-                  Detect my location
-                </Button>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <F label="Full name" v={f.full_name} on={(v) => setF({ ...f, full_name: v })} />
-                <F label="Phone" v={f.phone} on={(v) => setF({ ...f, phone: v })} />
-                <F label="Email" v={f.email} on={(v) => setF({ ...f, email: v })} type="email" full />
-                <F label="Address" v={f.address} on={(v) => setF({ ...f, address: v })} full />
-                <F label="City" v={f.city} on={(v) => setF({ ...f, city: v })} />
-                <F label="State" v={f.state} on={(v) => setF({ ...f, state: v })} />
-                <F label="Pincode" v={f.pincode} on={(v) => setF({ ...f, pincode: v })} />
-              </div>
+              {savedRows.length > 0 && !addingNew && (
+                <>
+                  <div className="text-eyebrow">Select a delivery address</div>
+                  <div className="mt-4 grid gap-2">
+                    {savedRows.map((a) => (
+                      <label
+                        key={a.id}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition",
+                          selectedAddressId === a.id ? "border-primary bg-primary/5" : "border-border hover:bg-surface",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="addr"
+                          className="mt-1"
+                          checked={selectedAddressId === a.id}
+                          onChange={() => applySaved(a)}
+                        />
+                        <div>
+                          <div className="font-semibold text-foreground">
+                            {a.full_name}
+                            {a.label ? <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">{a.label}</span> : null}
+                            {a.is_default ? <span className="ml-2 text-[10px] font-bold uppercase tracking-widest text-primary">Default</span> : null}
+                          </div>
+                          <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            {a.line1}{a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.state} — {a.pincode}
+                            <br />Phone: {a.phone}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 rounded-full"
+                    onClick={() => { setAddingNew(true); setSelectedAddressId(null); setF({ ...f, full_name: "", phone: "", address: "", city: "", state: "", pincode: "" }); }}
+                  >
+                    <MapPin className="mr-2 h-3.5 w-3.5" /> Use a different address
+                  </Button>
+                </>
+              )}
+
+              {(savedRows.length === 0 || addingNew) && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="text-eyebrow">{savedRows.length > 0 ? "New delivery address" : "Delivery address"}</div>
+                    <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={detect} disabled={detecting}>
+                      {detecting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-2 h-3.5 w-3.5" />}
+                      Detect my location
+                    </Button>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <F label="Full name" v={f.full_name} on={(v) => setF({ ...f, full_name: v })} error={touched.full_name ? errors.full_name : undefined} onBlur={() => touch("full_name")} />
+                    <F
+                      label="Phone number"
+                      v={f.phone}
+                      on={(v) => setF({ ...f, phone: v.replace(/\D/g, "").slice(0, 10) })}
+                      onBlur={() => touch("phone")}
+                      error={touched.phone ? errors.phone : undefined}
+                      hint="10-digit Indian mobile number"
+                      inputMode="numeric"
+                      maxLength={10}
+                    />
+                    <F label="Email" v={f.email} on={(v) => setF({ ...f, email: v })} type="email" full onBlur={() => touch("email")} error={touched.email ? errors.email : undefined} />
+                    <F label="Address (house, street, area)" v={f.address} on={(v) => setF({ ...f, address: v })} full onBlur={() => touch("address")} error={touched.address ? errors.address : undefined} />
+                    <F label="City" v={f.city} on={(v) => setF({ ...f, city: v })} onBlur={() => touch("city")} error={touched.city ? errors.city : undefined} />
+                    <F label="State" v={f.state} on={(v) => setF({ ...f, state: v })} onBlur={() => touch("state")} error={touched.state ? errors.state : undefined} />
+                    <F
+                      label="Pincode"
+                      v={f.pincode}
+                      on={(v) => setF({ ...f, pincode: v.replace(/\D/g, "").slice(0, 6) })}
+                      onBlur={() => touch("pincode")}
+                      error={touched.pincode ? errors.pincode : undefined}
+                      inputMode="numeric"
+                      maxLength={6}
+                    />
+                  </div>
+                  <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm">
+                    <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} />
+                    Save this address for faster checkout next time
+                  </label>
+                  {savedRows.length > 0 && (
+                    <Button type="button" variant="ghost" size="sm" className="mt-3 rounded-full" onClick={() => setAddingNew(false)}>
+                      Back to saved addresses
+                    </Button>
+                  )}
+                </>
+              )}
             </section>
           )}
+
 
           {step === 2 && (
             <section className="rounded-2xl border border-border p-6">
