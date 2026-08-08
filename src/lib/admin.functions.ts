@@ -248,7 +248,7 @@ export const pushOrderToShiprocket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { assertAdmin, getShiprocketToken, writeAudit } = await import("./admin.server");
+    const { assertAdmin, writeAudit } = await import("./admin.server");
     const actor = await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: order }, { data: items }, { data: sp }] = await Promise.all([
@@ -258,7 +258,6 @@ export const pushOrderToShiprocket = createServerFn({ method: "POST" })
     ]);
     if (!order) throw new Error("Order not found");
 
-    const token = await getShiprocketToken();
     const pickupLocation = (sp?.config_public as any)?.pickupLocation || "Primary";
     const nameParts = order.full_name.split(" ");
     const payload = {
