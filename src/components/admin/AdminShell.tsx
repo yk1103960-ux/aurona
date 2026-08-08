@@ -40,7 +40,9 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/customers", label: "Customers", icon: Users },
   { to: "/aurona-console-9f2x7k/media", label: "Media", icon: ImageIcon },
   { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
+  { to: "/aurona-console-9f2x7k/affiliates", label: "Affiliates", icon: Handshake },
   { to: "/aurona-console-9f2x7k/content", label: "Content", icon: Megaphone },
+
   { to: "/aurona-console-9f2x7k/payments", label: "Payments", icon: CreditCard },
   { to: "/aurona-console-9f2x7k/shipping", label: "Shipping", icon: Truck },
   { to: "/aurona-console-9f2x7k/integrations", label: "Integrations", icon: Plug },
