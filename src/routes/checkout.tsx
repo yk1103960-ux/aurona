@@ -210,10 +210,47 @@ function CheckoutPage() {
 
   const canNext = (() => {
     if (step === 0) return cart.items.length > 0;
-    if (step === 1) return Boolean(f.full_name && f.phone && f.address && f.city && f.state && /^\d{6}$/.test(f.pincode.trim()));
+    if (step === 1) return addressValid;
     if (step === 2) return !!selectedRate;
     return true;
   })();
+
+  const goNext = () => {
+    if (step === 1 && !addressValid) {
+      setTouched({ full_name: true, phone: true, email: true, address: true, city: true, state: true, pincode: true });
+      toast.error(errors.phone ?? "Please correct the highlighted fields.");
+      return;
+    }
+    setStep((s) => Math.min(3, (s + 1) as Step) as Step);
+  };
+
+  const persistAddress = async () => {
+    if (!user || selectedAddressId || !saveAddr) return;
+    try {
+      const { data, error } = await supabase
+        .from("addresses")
+        .insert({
+          user_id: user.id,
+          label: "Home",
+          full_name: f.full_name.trim(),
+          phone: f.phone.trim(),
+          line1: f.address.trim(),
+          city: f.city.trim(),
+          state: f.state.trim(),
+          pincode: f.pincode.trim(),
+          is_default: savedRows.length === 0,
+        })
+        .select("id")
+        .single();
+      if (!error && data) {
+        setSelectedAddressId(data.id);
+        savedQuery.refetch();
+      }
+    } catch {
+      // Saving the address book entry must never block the order.
+    }
+  };
+
 
   const detect = async () => {
     setDetecting(true);
