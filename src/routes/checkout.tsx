@@ -61,6 +61,14 @@ function CheckoutPage() {
   const [shipMsg, setShipMsg] = useState<string | null>(null);
   const [quoting, setQuoting] = useState(false);
 
+  // Saved address book
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [saveAddr, setSaveAddr] = useState(true);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => setTouched((t) => ({ ...t, [k]: true }));
+
+
 
   // NOTE: every hook must run on every render — no early returns above this
   // block, otherwise React throws "Rendered more hooks than during the
