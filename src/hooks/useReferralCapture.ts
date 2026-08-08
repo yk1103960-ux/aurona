@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { trackReferralVisit, claimReferral } from "@/lib/affiliate.functions";
+import {
+  trackReferralVisit,
+  claimReferral,
+  trackProductReferralClick,
+} from "@/lib/affiliate.functions";
 import { useAuth } from "./useAuth";
+
 
 const VISITOR_KEY = "aurona_visitor_id";
 const REF_KEY = "aurona_ref_code";
