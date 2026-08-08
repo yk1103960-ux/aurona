@@ -177,6 +177,37 @@ export async function claimReferralForUser(visitorId: string, userId: string) {
   return { ok: true as const, claimed: true };
 }
 
+/**
+ * Logs a product-scoped affiliate click and also lays down the normal
+ * attribution row, so a product link both earns and tracks.
+ */
+export async function recordProductClick(params: {
+  code: string;
+  visitorId: string;
+  productId: string | null;
+  landingPath: string | null;
+  referrer: string | null;
+}) {
+  const res = await recordReferral({
+    code: params.code,
+    visitorId: params.visitorId,
+    landingPath: params.landingPath,
+    referrer: params.referrer,
+  });
+  if (!res.ok || !res.affiliateId) return { ok: false as const };
+  const db = await admin();
+  await db.from("affiliate_product_clicks").insert({
+    affiliate_id: res.affiliateId,
+    product_id: params.productId,
+    visitor_id: params.visitorId,
+    landing_path: params.landingPath,
+    referrer: params.referrer,
+    source: "product_link",
+  });
+  return { ok: true as const };
+}
+
+
 export type ProductAffiliateRule = {
   enabled: boolean;
   kind: "percentage" | "fixed";
