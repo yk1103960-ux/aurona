@@ -19,6 +19,8 @@ import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
 import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar";
+import { useProductReferralClick } from "@/hooks/useReferralCapture";
+
 import type { ProductFamily } from "@/lib/queries";
 
 
@@ -89,6 +91,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const skus = useMemo(() => family.variants.map((v) => v.sku).filter(Boolean), [family]);
   const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
+  useProductReferralClick(productId);
+
 
   const role = useMyRole();
   const { data: priceMap } = useVisiblePrices([variant.sku]);
@@ -368,6 +372,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
 
 function LegacyPDP({ slug }: { slug: string }) {
   const product = useSuspenseQuery(productQuery(slug)).data!;
+  useProductReferralClick(product.id);
+
   const cats = useSuspenseQuery(categoriesQuery).data;
   const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === product.category_id);
