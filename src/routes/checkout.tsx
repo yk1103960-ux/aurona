@@ -570,14 +570,52 @@ function CheckoutPage() {
   );
 }
 
-function F({ label, v, on, type = "text", full }: { label: string; v: string; on: (v: string) => void; type?: string; full?: boolean }) {
+function F({
+  label,
+  v,
+  on,
+  type = "text",
+  full,
+  error,
+  hint,
+  onBlur,
+  inputMode,
+  maxLength,
+}: {
+  label: string;
+  v: string;
+  on: (v: string) => void;
+  type?: string;
+  full?: boolean;
+  error?: string;
+  hint?: string;
+  onBlur?: () => void;
+  inputMode?: "text" | "numeric" | "tel" | "email";
+  maxLength?: number;
+}) {
+  const invalid = Boolean(error);
   return (
     <div className={full ? "sm:col-span-2" : ""}>
       <Label className="text-xs">{label}</Label>
-      <Input value={v} onChange={(e) => on(e.target.value)} type={type} required className="mt-1 h-11" />
+      <Input
+        value={v}
+        onChange={(e) => on(e.target.value)}
+        onBlur={onBlur}
+        type={type}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        aria-invalid={invalid}
+        className={cn("mt-1 h-11", invalid && "border-destructive focus-visible:ring-destructive/40")}
+      />
+      {invalid ? (
+        <p className="mt-1 text-xs font-medium text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }
+
 function Row({ l, v, bold }: { l: string; v: string; bold?: boolean }) {
   return (
     <div className={"flex justify-between " + (bold ? "text-base font-semibold" : "text-muted-foreground")}>
