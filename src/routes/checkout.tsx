@@ -9,10 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import {
-  detectAddressFromGeolocation,
-  type ShippingRate,
-} from "@/lib/shipping";
+import { detectAddressFromGeolocation } from "@/lib/shipping";
+
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
 import { quoteShipping } from "@/lib/shipping.functions";
@@ -57,10 +55,12 @@ function CheckoutPage() {
     payment_method: "cod",
   });
 
-  const [rates, setRates] = useState<ShippingRate[]>([]);
+  type DeliveryOption = { id: string; label: string; eta: string; price: number };
+  const [rates, setRates] = useState<DeliveryOption[]>([]);
   const [rateId, setRateId] = useState<string | null>(null);
   const [shipMsg, setShipMsg] = useState<string | null>(null);
   const [quoting, setQuoting] = useState(false);
+
 
   // NOTE: every hook must run on every render — no early returns above this
   // block, otherwise React throws "Rendered more hooks than during the
