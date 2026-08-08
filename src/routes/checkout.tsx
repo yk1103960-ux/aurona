@@ -575,8 +575,8 @@ function CheckoutPage() {
               <Button
                 type="button"
                 className="rounded-full"
-                disabled={!canNext}
-                onClick={() => setStep((s) => Math.min(3, (s + 1) as Step) as Step)}
+                disabled={step !== 1 && !canNext}
+                onClick={goNext}
               >
                 Continue <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
