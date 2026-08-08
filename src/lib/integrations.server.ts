@@ -199,8 +199,8 @@ export async function syncWooCustomers(maxPages = 20): Promise<SyncSummary> {
 export async function testShiprocket(): Promise<string> {
   const sec = await readSecrets<{ email: string; password: string; apiToken?: string }>("shiprocket");
   const apiToken = sec?.apiToken;
-  const email = process.env["SHIPROCKET_EMAIL"] ?? sec?.email;
-  const password = process.env["SHIPROCKET_PASSWORD"] ?? sec?.password;
+  const email = sec?.email ?? process.env["SHIPROCKET_EMAIL"];
+  const password = sec?.password ?? process.env["SHIPROCKET_PASSWORD"];
   if (!email || !password) throw new Error("Shiprocket credentials are not saved");
   if (apiToken) {
     const r = await fetch("https://apiv2.shiprocket.in/v1/external/orders?per_page=1", {
