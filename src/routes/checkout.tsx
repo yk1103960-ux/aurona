@@ -274,27 +274,35 @@ function CheckoutPage() {
   };
 
   const place = async () => {
+    if (!addressValid) {
+      setTouched({ full_name: true, phone: true, email: true, address: true, city: true, state: true, pincode: true });
+      setStep(1);
+      toast.error(errors.phone ?? "Please correct your delivery address before paying.");
+      return;
+    }
     if (!selectedRate) {
-      toast.error("Please select a shipping method.");
+      toast.error("Please select a delivery option.");
       return;
     }
     setPlacing(true);
     try {
+      await persistAddress();
       const result = await placeOrderFn({
         data: {
           address: {
-            full_name: f.full_name,
-            phone: f.phone,
-            email: f.email,
-            address: f.address,
-            city: f.city,
-            state: f.state,
-            pincode: f.pincode,
+            full_name: f.full_name.trim(),
+            phone: f.phone.trim(),
+            email: f.email.trim(),
+            address: f.address.trim(),
+            city: f.city.trim(),
+            state: f.state.trim(),
+            pincode: f.pincode.trim(),
           },
           payment_method: f.payment_method as "cod" | "upi" | "card",
           shipping_rate_id: selectedRate.id,
         },
       });
+
       await cart.clear.mutateAsync().catch(() => {});
 
       if (f.payment_method !== "cod" && onlineEnabled) {
