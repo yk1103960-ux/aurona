@@ -198,7 +198,7 @@ export async function syncWooCustomers(maxPages = 20): Promise<SyncSummary> {
 // ---------------- Shiprocket ----------------
 export async function testShiprocket(): Promise<string> {
   const sec = await readSecrets<{ email: string; password: string; apiToken?: string }>("shiprocket");
-  const pub = await readPublic<{ pickupLocation?: string }>("shiprocket");
+  const pub = await readPublic<{ pickupLocation?: string; enabled?: boolean }>("shiprocket");
   const apiToken = sec?.apiToken?.trim();
   const email = sec?.email ?? process.env["SHIPROCKET_EMAIL"];
   const password = sec?.password ?? process.env["SHIPROCKET_PASSWORD"];
