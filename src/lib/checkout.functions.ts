@@ -150,8 +150,17 @@ export const placeOrder = createServerFn({ method: "POST" })
       throw new Error("Unable to place your order. Please try again.");
     }
 
-    // 8) Clear the cart.
+    // 8) Affiliate commission (no-op when the buyer isn't attributed).
+    try {
+      const { recordCommissionForOrder } = await import("./affiliate.server");
+      await recordCommissionForOrder(order.id);
+    } catch {
+      // Commission accounting must never block a paid order.
+    }
+
+    // 9) Clear the cart.
     await supabase.from("cart_items").delete().eq("user_id", context.userId);
+
 
     return { orderId: order.id, orderNumber: order.order_number, total };
   });
