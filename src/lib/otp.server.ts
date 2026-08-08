@@ -58,26 +58,12 @@ export async function sendSms(to: string, message: string): Promise<void> {
     );
   }
 
-  // MSG91 queues messages with pause code 211 when the account has no SMS
-  // credits — the API still answers "success" while nothing is delivered.
-  try {
-    const balRes = await fetch(
-      `https://control.msg91.com/api/balance.php?authkey=${encodeURIComponent(apiKey)}&type=4`,
-    );
-    const bal = Number((await balRes.text()).trim());
-    if (Number.isFinite(bal) && bal <= 0) {
-      throw new Error(
-        "SMS OTP can’t be sent right now — the SMS account has no credits left, so the carrier will not deliver the code. Please use “Email OTP”, or recharge the SMS provider account.",
-      );
-    }
-  } catch (err) {
-    if (err instanceof Error && err.message.startsWith("SMS OTP can’t be sent")) throw err;
-    // Balance check itself failed — continue and let the send attempt decide.
-  }
-
   const url = new URL("https://control.msg91.com/api/v5/otp");
 
-  url.searchParams.set("mobile", mobile);
+  // MSG91 routes on the full country code; a bare 10-digit Indian number is
+  // mis-detected as another country and blocked, so always send 91XXXXXXXXXX.
+  const normalized = mobile.length === 10 ? `91${mobile}` : mobile;
+  url.searchParams.set("mobile", normalized);
   url.searchParams.set("otp", code);
   url.searchParams.set("template_id", templateId);
   if (pub?.senderId?.trim()) url.searchParams.set("sender", pub.senderId.trim());
