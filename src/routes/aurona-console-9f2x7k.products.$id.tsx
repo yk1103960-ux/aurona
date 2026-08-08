@@ -150,6 +150,79 @@ function ProductEditor() {
           <Field label="Warranty"><Input value={f.warranty} onChange={(e) => upd("warranty", e.target.value)} /></Field>
         </Section>
 
+        <Section title="Affiliate Commission">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={f.affiliate_enabled}
+              onChange={(e) => upd("affiliate_enabled", e.target.checked)}
+            />{" "}
+            Affiliates can earn on this product
+          </label>
+          <Field label="Commission type">
+            <select
+              className="w-full h-10 border rounded-md px-3 text-sm bg-white"
+              value={f.affiliate_commission_kind}
+              onChange={(e) =>
+                upd("affiliate_commission_kind", e.target.value as ProductForm["affiliate_commission_kind"])
+              }
+            >
+              <option value="">Inherit program default</option>
+              <option value="percentage">Percentage of item value</option>
+              <option value="fixed">Fixed ₹ per unit</option>
+            </select>
+          </Field>
+          <Field label={f.affiliate_commission_kind === "fixed" ? "Commission (₹ per unit)" : "Commission (%)"}>
+            <Input
+              type="number"
+              value={f.affiliate_commission_value ?? ""}
+              placeholder="Leave blank to inherit"
+              onChange={(e) =>
+                upd("affiliate_commission_value", e.target.value === "" ? null : Number(e.target.value))
+              }
+            />
+          </Field>
+          <Field label="Max commission per order line (₹, optional)">
+            <Input
+              type="number"
+              value={f.affiliate_max_commission ?? ""}
+              placeholder="No cap"
+              onChange={(e) =>
+                upd("affiliate_max_commission", e.target.value === "" ? null : Number(e.target.value))
+              }
+            />
+          </Field>
+          <div className="text-xs text-slate-500">
+            Payouts to affiliates are approved and paid from the Affiliates console.
+          </div>
+        </Section>
+
+        <Section title="Shipping Dimensions">
+          <Field label="Weight (grams)">
+            <Input
+              type="number"
+              value={f.weight_g ?? ""}
+              placeholder="Uses default weight when blank"
+              onChange={(e) => upd("weight_g", e.target.value === "" ? null : Number(e.target.value))}
+            />
+          </Field>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Length (cm)">
+              <Input type="number" value={f.dim_l ?? ""} onChange={(e) => upd("dim_l", e.target.value === "" ? null : Number(e.target.value))} />
+            </Field>
+            <Field label="Width (cm)">
+              <Input type="number" value={f.dim_w ?? ""} onChange={(e) => upd("dim_w", e.target.value === "" ? null : Number(e.target.value))} />
+            </Field>
+            <Field label="Height (cm)">
+              <Input type="number" value={f.dim_h ?? ""} onChange={(e) => upd("dim_h", e.target.value === "" ? null : Number(e.target.value))} />
+            </Field>
+          </div>
+          <div className="text-xs text-slate-500">
+            Used to calculate live delivery charges at checkout.
+          </div>
+        </Section>
+
+
         <Section title="Visibility & Flags">
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.is_published} onChange={(e) => upd("is_published", e.target.checked)} /> Published</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.is_featured} onChange={(e) => upd("is_featured", e.target.checked)} /> Featured</label>
