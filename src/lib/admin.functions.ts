@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+type Diagnostic = {
+  stage: string;
+  endpoint: string;
+  method: string;
+  status: number | null;
+  ok: boolean;
+  response: string;
+};
+
+
 // ============== Audit query ==============
 export const listAuditLogs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
