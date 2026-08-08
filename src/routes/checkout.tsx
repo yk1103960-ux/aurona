@@ -221,6 +221,7 @@ function CheckoutPage() {
       toast.error(errors.phone ?? "Please correct the highlighted fields.");
       return;
     }
+    if (step === 1) void persistAddress();
     setStep((s) => Math.min(3, (s + 1) as Step) as Step);
   };
 
