@@ -10,6 +10,8 @@ import { useCart } from "@/hooks/useCart";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { detectAddressFromGeolocation } from "@/lib/shipping";
+import { supabase } from "@/integrations/supabase/client";
+import type { AddressRow } from "@/components/account/AddressManager";
 
 import { useServerFn } from "@tanstack/react-start";
 import { placeOrder } from "@/lib/checkout.functions";
@@ -61,6 +63,14 @@ function CheckoutPage() {
   const [shipMsg, setShipMsg] = useState<string | null>(null);
   const [quoting, setQuoting] = useState(false);
 
+  // Saved address book
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [saveAddr, setSaveAddr] = useState(true);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => setTouched((t) => ({ ...t, [k]: true }));
+
+
 
   // NOTE: every hook must run on every render — no early returns above this
   // block, otherwise React throws "Rendered more hooks than during the
@@ -79,6 +89,60 @@ function CheckoutPage() {
   useEffect(() => {
     if (user?.email && !f.email) setF((prev) => ({ ...prev, email: user.email ?? "" }));
   }, [user, f.email]);
+
+  // Saved address book — remembered between orders so we never ask twice.
+  const savedQuery = useQuery({
+    queryKey: ["addresses", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as AddressRow[];
+    },
+  });
+  const savedRows = savedQuery.data ?? [];
+
+  const applySaved = (a: AddressRow) => {
+    setSelectedAddressId(a.id);
+    setAddingNew(false);
+    setF((prev) => ({
+      ...prev,
+      full_name: a.full_name,
+      phone: (a.phone || "").replace(/\D/g, "").slice(-10),
+      address: [a.line1, a.line2].filter(Boolean).join(", "),
+      city: a.city,
+      state: a.state,
+      pincode: a.pincode,
+    }));
+  };
+
+  // Preselect the default/most recent saved address once.
+  useEffect(() => {
+    if (selectedAddressId || addingNew || savedRows.length === 0) return;
+    applySaved(savedRows[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedRows.length]);
+
+  const errors: Record<string, string | undefined> = {
+    full_name: f.full_name.trim().length < 3 ? "Enter your full name (at least 3 characters)" : undefined,
+    phone: !/^[6-9]\d{9}$/.test(f.phone.trim())
+      ? "Enter a valid 10-digit mobile number starting with 6-9"
+      : undefined,
+    email:
+      f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email.trim())
+        ? "Enter a valid email address"
+        : undefined,
+    address: f.address.trim().length < 8 ? "Enter house / street / area (at least 8 characters)" : undefined,
+    city: f.city.trim().length < 2 ? "Enter your city" : undefined,
+    state: f.state.trim().length < 2 ? "Enter your state" : undefined,
+    pincode: !/^\d{6}$/.test(f.pincode.trim()) ? "Enter a valid 6-digit pincode" : undefined,
+  };
+  const addressValid = Object.values(errors).every((e) => !e);
+
 
   // Live, server-authoritative shipping rates for the destination pincode.
   const cod = f.payment_method === "cod";
@@ -146,10 +210,48 @@ function CheckoutPage() {
 
   const canNext = (() => {
     if (step === 0) return cart.items.length > 0;
-    if (step === 1) return Boolean(f.full_name && f.phone && f.address && f.city && f.state && /^\d{6}$/.test(f.pincode.trim()));
+    if (step === 1) return addressValid;
     if (step === 2) return !!selectedRate;
     return true;
   })();
+
+  const goNext = () => {
+    if (step === 1 && !addressValid) {
+      setTouched({ full_name: true, phone: true, email: true, address: true, city: true, state: true, pincode: true });
+      toast.error(errors.phone ?? "Please correct the highlighted fields.");
+      return;
+    }
+    if (step === 1) void persistAddress();
+    setStep((s) => Math.min(3, (s + 1) as Step) as Step);
+  };
+
+  const persistAddress = async () => {
+    if (!user || selectedAddressId || !saveAddr) return;
+    try {
+      const { data, error } = await supabase
+        .from("addresses")
+        .insert({
+          user_id: user.id,
+          label: "Home",
+          full_name: f.full_name.trim(),
+          phone: f.phone.trim(),
+          line1: f.address.trim(),
+          city: f.city.trim(),
+          state: f.state.trim(),
+          pincode: f.pincode.trim(),
+          is_default: savedRows.length === 0,
+        })
+        .select("id")
+        .single();
+      if (!error && data) {
+        setSelectedAddressId(data.id);
+        savedQuery.refetch();
+      }
+    } catch {
+      // Saving the address book entry must never block the order.
+    }
+  };
+
 
   const detect = async () => {
     setDetecting(true);
@@ -173,27 +275,35 @@ function CheckoutPage() {
   };
 
   const place = async () => {
+    if (!addressValid) {
+      setTouched({ full_name: true, phone: true, email: true, address: true, city: true, state: true, pincode: true });
+      setStep(1);
+      toast.error(errors.phone ?? "Please correct your delivery address before paying.");
+      return;
+    }
     if (!selectedRate) {
-      toast.error("Please select a shipping method.");
+      toast.error("Please select a delivery option.");
       return;
     }
     setPlacing(true);
     try {
+      await persistAddress();
       const result = await placeOrderFn({
         data: {
           address: {
-            full_name: f.full_name,
-            phone: f.phone,
-            email: f.email,
-            address: f.address,
-            city: f.city,
-            state: f.state,
-            pincode: f.pincode,
+            full_name: f.full_name.trim(),
+            phone: f.phone.trim(),
+            email: f.email.trim(),
+            address: f.address.trim(),
+            city: f.city.trim(),
+            state: f.state.trim(),
+            pincode: f.pincode.trim(),
           },
           payment_method: f.payment_method as "cod" | "upi" | "card",
           shipping_rate_id: selectedRate.id,
         },
       });
+
       await cart.clear.mutateAsync().catch(() => {});
 
       if (f.payment_method !== "cod" && onlineEnabled) {
@@ -277,24 +387,100 @@ function CheckoutPage() {
 
           {step === 1 && (
             <section className="rounded-2xl border border-border p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-eyebrow">Delivery address</div>
-                <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={detect} disabled={detecting}>
-                  {detecting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-2 h-3.5 w-3.5" />}
-                  Detect my location
-                </Button>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <F label="Full name" v={f.full_name} on={(v) => setF({ ...f, full_name: v })} />
-                <F label="Phone" v={f.phone} on={(v) => setF({ ...f, phone: v })} />
-                <F label="Email" v={f.email} on={(v) => setF({ ...f, email: v })} type="email" full />
-                <F label="Address" v={f.address} on={(v) => setF({ ...f, address: v })} full />
-                <F label="City" v={f.city} on={(v) => setF({ ...f, city: v })} />
-                <F label="State" v={f.state} on={(v) => setF({ ...f, state: v })} />
-                <F label="Pincode" v={f.pincode} on={(v) => setF({ ...f, pincode: v })} />
-              </div>
+              {savedRows.length > 0 && !addingNew && (
+                <>
+                  <div className="text-eyebrow">Select a delivery address</div>
+                  <div className="mt-4 grid gap-2">
+                    {savedRows.map((a) => (
+                      <label
+                        key={a.id}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition",
+                          selectedAddressId === a.id ? "border-primary bg-primary/5" : "border-border hover:bg-surface",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="addr"
+                          className="mt-1"
+                          checked={selectedAddressId === a.id}
+                          onChange={() => applySaved(a)}
+                        />
+                        <div>
+                          <div className="font-semibold text-foreground">
+                            {a.full_name}
+                            {a.label ? <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">{a.label}</span> : null}
+                            {a.is_default ? <span className="ml-2 text-[10px] font-bold uppercase tracking-widest text-primary">Default</span> : null}
+                          </div>
+                          <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            {a.line1}{a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.state} — {a.pincode}
+                            <br />Phone: {a.phone}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 rounded-full"
+                    onClick={() => { setAddingNew(true); setSelectedAddressId(null); setF({ ...f, full_name: "", phone: "", address: "", city: "", state: "", pincode: "" }); }}
+                  >
+                    <MapPin className="mr-2 h-3.5 w-3.5" /> Use a different address
+                  </Button>
+                </>
+              )}
+
+              {(savedRows.length === 0 || addingNew) && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="text-eyebrow">{savedRows.length > 0 ? "New delivery address" : "Delivery address"}</div>
+                    <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={detect} disabled={detecting}>
+                      {detecting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-2 h-3.5 w-3.5" />}
+                      Detect my location
+                    </Button>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <F label="Full name" v={f.full_name} on={(v) => setF({ ...f, full_name: v })} error={touched.full_name ? errors.full_name : undefined} onBlur={() => touch("full_name")} />
+                    <F
+                      label="Phone number"
+                      v={f.phone}
+                      on={(v) => setF({ ...f, phone: v.replace(/\D/g, "").slice(0, 10) })}
+                      onBlur={() => touch("phone")}
+                      error={touched.phone ? errors.phone : undefined}
+                      hint="10-digit Indian mobile number"
+                      inputMode="numeric"
+                      maxLength={10}
+                    />
+                    <F label="Email" v={f.email} on={(v) => setF({ ...f, email: v })} type="email" full onBlur={() => touch("email")} error={touched.email ? errors.email : undefined} />
+                    <F label="Address (house, street, area)" v={f.address} on={(v) => setF({ ...f, address: v })} full onBlur={() => touch("address")} error={touched.address ? errors.address : undefined} />
+                    <F label="City" v={f.city} on={(v) => setF({ ...f, city: v })} onBlur={() => touch("city")} error={touched.city ? errors.city : undefined} />
+                    <F label="State" v={f.state} on={(v) => setF({ ...f, state: v })} onBlur={() => touch("state")} error={touched.state ? errors.state : undefined} />
+                    <F
+                      label="Pincode"
+                      v={f.pincode}
+                      on={(v) => setF({ ...f, pincode: v.replace(/\D/g, "").slice(0, 6) })}
+                      onBlur={() => touch("pincode")}
+                      error={touched.pincode ? errors.pincode : undefined}
+                      inputMode="numeric"
+                      maxLength={6}
+                    />
+                  </div>
+                  <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm">
+                    <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} />
+                    Save this address for faster checkout next time
+                  </label>
+                  {savedRows.length > 0 && (
+                    <Button type="button" variant="ghost" size="sm" className="mt-3 rounded-full" onClick={() => setAddingNew(false)}>
+                      Back to saved addresses
+                    </Button>
+                  )}
+                </>
+              )}
             </section>
           )}
+
 
           {step === 2 && (
             <section className="rounded-2xl border border-border p-6">
@@ -398,8 +584,8 @@ function CheckoutPage() {
               <Button
                 type="button"
                 className="rounded-full"
-                disabled={!canNext}
-                onClick={() => setStep((s) => Math.min(3, (s + 1) as Step) as Step)}
+                disabled={step !== 1 && !canNext}
+                onClick={goNext}
               >
                 Continue <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
@@ -430,14 +616,52 @@ function CheckoutPage() {
   );
 }
 
-function F({ label, v, on, type = "text", full }: { label: string; v: string; on: (v: string) => void; type?: string; full?: boolean }) {
+function F({
+  label,
+  v,
+  on,
+  type = "text",
+  full,
+  error,
+  hint,
+  onBlur,
+  inputMode,
+  maxLength,
+}: {
+  label: string;
+  v: string;
+  on: (v: string) => void;
+  type?: string;
+  full?: boolean;
+  error?: string;
+  hint?: string;
+  onBlur?: () => void;
+  inputMode?: "text" | "numeric" | "tel" | "email";
+  maxLength?: number;
+}) {
+  const invalid = Boolean(error);
   return (
     <div className={full ? "sm:col-span-2" : ""}>
       <Label className="text-xs">{label}</Label>
-      <Input value={v} onChange={(e) => on(e.target.value)} type={type} required className="mt-1 h-11" />
+      <Input
+        value={v}
+        onChange={(e) => on(e.target.value)}
+        onBlur={onBlur}
+        type={type}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        aria-invalid={invalid}
+        className={cn("mt-1 h-11", invalid && "border-destructive focus-visible:ring-destructive/40")}
+      />
+      {invalid ? (
+        <p className="mt-1 text-xs font-medium text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }
+
 function Row({ l, v, bold }: { l: string; v: string; bold?: boolean }) {
   return (
     <div className={"flex justify-between " + (bold ? "text-base font-semibold" : "text-muted-foreground")}>
