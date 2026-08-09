@@ -214,7 +214,7 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
       action: "shipping.connect", entityType: "shipping_provider", entityId: "shiprocket",
       after: { pickupLocation, enabled: data.enabled, authMode: apiToken ? "api_token" : "api_user" },
     });
-    return { ok: true as const, pickupLocation, pickupLocations: names, diagnostics };
+    return { ok: true as const, pickupLocation, pickupLocations: names, warning, diagnostics };
   });
 
 // ============== Re-test the stored Shiprocket connection ==============
