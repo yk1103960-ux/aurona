@@ -13,21 +13,8 @@ import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 
 type Row = Product & { categories: { slug: string; name: string; icon?: string | null } | null };
 
-/**
- * "Mon, 12 Aug" — 3 working days out, matches the delivery promise on aurona.in.
- * Pinned to IST so the server-rendered date always matches what the browser
- * renders (a floating locale/timezone caused hydration mismatches).
- */
-function deliveryEstimate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 3);
-  return d.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    timeZone: "Asia/Kolkata",
-  });
-}
+
+
 
 
 export function ProductCard({
