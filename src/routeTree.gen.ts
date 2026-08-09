@@ -41,6 +41,7 @@ import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-co
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
 import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
@@ -226,6 +227,11 @@ const PartnerTypeRoute = PartnerTypeRouteImport.update({
   path: '/$type',
   getParentRoute: () => PartnerRoute,
 } as any)
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/orders/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
@@ -406,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -460,6 +467,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -518,6 +526,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -577,6 +586,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/shipping'
     | '/blogs/$slug'
     | '/category/$slug'
+    | '/orders/$orderId'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -631,6 +641,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/shipping'
     | '/blogs/$slug'
     | '/category/$slug'
+    | '/orders/$orderId'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/shipping'
     | '/blogs/$slug'
     | '/category/$slug'
+    | '/orders/$orderId'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -731,6 +743,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
   ApiPublicPhonepeCallbackRoute: typeof ApiPublicPhonepeCallbackRoute
@@ -962,6 +975,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/$type'
       preLoaderRoute: typeof PartnerTypeRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/category/$slug': {
       id: '/category/$slug'
@@ -1256,6 +1276,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,
   ApiPublicPhonepeCallbackRoute: ApiPublicPhonepeCallbackRoute,
