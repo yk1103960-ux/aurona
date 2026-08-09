@@ -227,12 +227,23 @@ function Card({ r, patch }: { r: any; patch: (id: string, v: Record<string, unkn
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        {r.status === "requested" && (
-          <>
-            <Button size="sm" onClick={() => decide("approved")}>Approve</Button>
-            <Button size="sm" variant="outline" onClick={() => decide("rejected")}>Reject</Button>
-          </>
-        )}
+        {r.status === "requested" &&
+          (isCancellation ? (
+            <>
+              <Button size="sm" disabled={busy} onClick={() => rule("approve")}>
+                {busy ? "Working…" : "Approve & cancel order"}
+              </Button>
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => rule("reject")}>
+                Reject request
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="sm" onClick={() => decide("approved")}>Approve</Button>
+              <Button size="sm" variant="outline" onClick={() => decide("rejected")}>Reject</Button>
+            </>
+          ))}
+
         {r.kind !== "cancellation" && (
           <>
             <Button size="sm" variant="outline" onClick={() => decide("pickup_scheduled")}>Schedule pickup</Button>
