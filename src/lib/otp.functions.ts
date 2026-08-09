@@ -19,6 +19,20 @@ async function findAuthUser(email: string): Promise<{ id: string; confirmed: boo
 const EXPIRY_SECONDS = 300;
 const MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN = 60;
+const MAX_PER_HOUR = 5;
+
+/** Hard cap on OTP requests per mobile number per hour (abuse / cost protection). */
+async function hourlyQuotaExceeded(phoneE164: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const since = new Date(Date.now() - 3_600_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("auth_otp_challenges")
+    .select("id", { count: "exact", head: true })
+    .eq("phone", phoneE164)
+    .gte("created_at", since);
+  return (count ?? 0) >= MAX_PER_HOUR;
+}
+
 
 /** Sends a 6-digit code by SMS to the mobile number used at registration. */
 export const sendSignupSmsOtp = createServerFn({ method: "POST" })
