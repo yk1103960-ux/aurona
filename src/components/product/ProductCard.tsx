@@ -145,10 +145,9 @@ export function ProductCard({
 
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Truck className="h-3.5 w-3.5 text-success" />
-          <span>
-            Delivery by <span className="font-semibold text-foreground">{deliveryEstimate()}</span>
-          </span>
+          <span>Delivery charges calculated at checkout</span>
         </div>
+
         {lowStock && (
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">
             <Zap className="h-3.5 w-3.5" /> Only {stock} left
