@@ -129,7 +129,7 @@ export function AddressManager({ userId }: { userId: string }) {
           }}
           className="mt-5 grid gap-3 rounded-2xl border border-border bg-surface p-5 sm:grid-cols-2"
         >
-          <F label="Label" v={form.label} set={(v) => setForm({ ...form, label: v })} />
+          <F label="Address type (Home/Office)" v={form.label} set={(v) => setForm({ ...form, label: v })} />
           <F label="Full name" v={form.full_name} set={(v) => setForm({ ...form, full_name: v })} required />
           <F label="Phone" v={form.phone} set={(v) => setForm({ ...form, phone: v })} required />
           <F label="Pincode" v={form.pincode} set={(v) => setForm({ ...form, pincode: v.replace(/\D/g, "").slice(0, 6) })} required />
@@ -138,6 +138,9 @@ export function AddressManager({ userId }: { userId: string }) {
           </div>
           <div className="sm:col-span-2">
             <F label="Address line 2 (optional)" v={form.line2} set={(v) => setForm({ ...form, line2: v })} />
+          </div>
+          <div className="sm:col-span-2">
+            <F label="Landmark (optional)" v={form.landmark} set={(v) => setForm({ ...form, landmark: v })} />
           </div>
           <F label="City" v={form.city} set={(v) => setForm({ ...form, city: v })} required />
           <F label="State" v={form.state} set={(v) => setForm({ ...form, state: v })} required />
