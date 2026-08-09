@@ -240,17 +240,18 @@ export const testShiprocketConnection = createServerFn({ method: "POST" })
         token = await resolveShiprocketToken(true);
         diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Fresh token acquired from stored credentials." });
       }
-      const { call, locations } = await shiprocketPickupLocations(token);
+      const probe = await shiprocketPickupLocations(token);
       // If the cached token was rejected (401/403), try one fresh login before giving up.
-      let finalCall = call;
-      if (call.status === 401 || call.status === 403) {
+      let finalCall = probe.call;
+      let locations = probe.locations;
+      if (probe.call.status === 401 || probe.call.status === 403) {
         token = await resolveShiprocketToken(true);
         const retry = await shiprocketPickupLocations(token);
         diagnostics.push(retry.call.diagnostic);
         finalCall = retry.call;
         locations = retry.locations;
       } else {
-        diagnostics.push(call.diagnostic);
+        diagnostics.push(probe.call.diagnostic);
       }
       const names = locations.map((l) => l.pickup_location).filter(Boolean);
       await supabaseAdmin
