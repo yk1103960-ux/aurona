@@ -25,11 +25,14 @@ export const cancelOrder = createServerFn({ method: "POST" })
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, order_number, status, payment_status, payment_method, total, awb_code, shipment_status")
+      .select(
+        "id, user_id, order_number, status, payment_status, payment_method, total, awb_code, shipment_status",
+      )
       .eq("id", data.orderId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!order) throw new Error("We couldn’t find that order on your account.");
+
 
     const shipmentStatus = (order.shipment_status ?? "").toLowerCase();
     const dispatched =
