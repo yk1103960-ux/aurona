@@ -11,6 +11,8 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { inr } from "@/lib/format";
 import { AddressManager } from "@/components/account/AddressManager";
+import { AvatarUpload } from "@/components/account/AvatarUpload";
+import { useAvatarUrl } from "@/hooks/useAvatarUrl";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
@@ -189,9 +191,8 @@ function AccountPage() {
         <div className="bg-nav px-6 py-7 text-nav-foreground sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="grid h-16 w-16 place-items-center rounded-full border border-white/25 bg-white/10 text-xl font-bold">
-                {initials}
-              </div>
+              <HeaderAvatar path={profile.data?.avatar_url as string | null | undefined} initials={initials} />
+
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.24em] opacity-70">My Dashboard</div>
                 <div className="text-display mt-1 text-3xl leading-none">{name}</div>
@@ -587,8 +588,18 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
 
 /* ---------- Profile ---------- */
 
+function HeaderAvatar({ path, initials }: { path?: string | null; initials: string }) {
+  const signed = useAvatarUrl(path);
+  return (
+    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full border border-white/25 bg-white/10 text-xl font-bold">
+      {signed.data ? <img src={signed.data} alt="Your profile picture" className="h-full w-full object-cover" /> : initials}
+    </div>
+  );
+}
+
 function ProfilePanel({ userId, email, data }: { userId: string; email: string; data: any }) {
   const qc = useQueryClient();
+
   const [full, setFull] = useState<string>(data?.full_name ?? "");
   const [phone, setPhone] = useState<string>(data?.phone ?? "");
   const [business, setBusiness] = useState<string>(data?.business_name ?? "");
@@ -622,9 +633,15 @@ function ProfilePanel({ userId, email, data }: { userId: string; email: string; 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const initials = (full || email).trim().split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
   return (
     <Panel title="Profile" sub="Your account details">
+      <div className="mb-4">
+        <AvatarUpload userId={userId} avatarPath={data?.avatar_url ?? null} initials={initials} />
+      </div>
       <form
+
         onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
         className="grid gap-4 rounded-2xl border border-border bg-card p-6 sm:grid-cols-2"
       >
