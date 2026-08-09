@@ -13,6 +13,7 @@ import { FlowSteps } from "@/components/shop/FlowSteps";
 import { EmptyState } from "@/components/empty/EmptyState";
 import { detectAddressFromGeolocation } from "@/lib/shipping";
 import { cn } from "@/lib/utils";
+import { INDIAN_STATES } from "@/lib/indian-states";
 import type { AddressRow } from "@/components/account/AddressManager";
 import { PageLoading } from "@/components/layout/PageLoading";
 
