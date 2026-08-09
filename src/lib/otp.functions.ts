@@ -10,6 +10,7 @@ import {
   OTP_RESEND_COOLDOWN,
   safeEqual,
   sendSms,
+  invalidateOpenChallenges,
 } from "./otp.server";
 import { normalisePhone } from "./auth-security";
 
@@ -47,6 +48,7 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
       return { ok: false, message: `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN - waited)}s before requesting another code.` };
     }
 
+    await invalidateOpenChallenges(supabaseAdmin, { purpose: "signup", email: data.email });
     const code = generateCode();
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000).toISOString();
     const { data: row, error } = await supabaseAdmin
@@ -176,6 +178,7 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
       return { ok: false, message: `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN - waited)}s before requesting another code.` };
     }
 
+    await invalidateOpenChallenges(supabaseAdmin, { purpose: "login", phone: phoneE164 });
     const code = generateCode();
     const { data: row, error } = await supabaseAdmin
       .from("auth_otp_challenges")
