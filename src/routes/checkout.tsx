@@ -102,8 +102,10 @@ function CheckoutPage() {
                 <br />
                 <span className="text-muted-foreground">
                   {s.address.line1}
-                  {s.address.line2 ? `, ${s.address.line2}` : ""}, {s.address.city}, {s.address.state} —{" "}
-                  {s.address.pincode}
+                  {s.address.line2 ? `, ${s.address.line2}` : ""}
+                  {s.address.landmark ? `, Landmark: ${s.address.landmark}` : ""}
+                  <br />
+                  {s.address.city}, {s.address.state} — {s.address.pincode}
                   <br />
                   Mobile: {s.address.phone}
                 </span>
