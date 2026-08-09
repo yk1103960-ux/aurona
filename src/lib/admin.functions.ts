@@ -231,28 +231,14 @@ export const testShiprocketConnection = createServerFn({ method: "POST" })
       // token is missing/expired or the pickup probe rejects it — avoids forcing
       // a fresh login every time, which can trip Shiprocket's "Inactive User"
       // status or lockout protection on the API user account.
-      let token: string;
-      try {
-        token = await resolveShiprocketToken(false);
-        diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Using cached Shiprocket token (still valid)." });
-      } catch {
-        // Cache miss/expired — fall back to a fresh login.
-        token = await resolveShiprocketToken(true);
-        diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Fresh token acquired from stored credentials." });
-      }
+      const token = await resolveShiprocketToken(false);
+      diagnostics.push({ stage: "authenticate", endpoint: "token cache", method: "-", status: 200, ok: true, response: "Using the saved Shiprocket token. No forced login was made." });
       const probe = await shiprocketPickupLocations(token);
-      // If the cached token was rejected (401/403), try one fresh login before giving up.
-      let finalCall = probe.call;
-      let locations = probe.locations;
-      if (probe.call.status === 401 || probe.call.status === 403) {
-        token = await resolveShiprocketToken(true);
-        const retry = await shiprocketPickupLocations(token);
-        diagnostics.push(retry.call.diagnostic);
-        finalCall = retry.call;
-        locations = retry.locations;
-      } else {
-        diagnostics.push(probe.call.diagnostic);
-      }
+      // Never turn a failed probe into another login attempt. The admin can
+      // explicitly reconnect once the API user is unlocked.
+      const finalCall = probe.call;
+      const locations = probe.locations;
+      diagnostics.push(probe.call.diagnostic);
       const names = locations.map((l) => l.pickup_location).filter(Boolean);
       await supabaseAdmin
         .from("shipping_providers")

@@ -102,15 +102,37 @@ export function authFailureMessage(call: ShiprocketCall): string {
 
 export type Creds = { email?: string; password?: string; apiToken?: string };
 
+// Shiprocket locks API users after repeated authentication failures. Keep a
+// server-side circuit breaker so concurrent quotes/tests cannot fan out into
+// repeated login attempts. A manual Connect submission remains one attempt.
+const LOGIN_COOLDOWN_MS = 30 * 60 * 1000;
+let loginBlockedUntil = 0;
+let loginInFlight: Promise<ShiprocketCall> | null = null;
+
 /** Authenticate with API-user email + password. Token-only setups skip this. */
 export async function shiprocketLogin(email: string, password: string) {
-  return shiprocketCall({
-    stage: "authenticate",
-    path: "/auth/login",
-    method: "POST",
-    body: { email, password },
-    redact: [password],
-  });
+  if (Date.now() < loginBlockedUntil) {
+    const minutes = Math.max(1, Math.ceil((loginBlockedUntil - Date.now()) / 60_000));
+    throw new Error(`Shiprocket login paused for ${minutes} minutes after a failed attempt to prevent another account lock.`);
+  }
+  if (loginInFlight) return loginInFlight;
+
+  loginInFlight = shiprocketCall({
+      stage: "authenticate",
+      path: "/auth/login",
+      method: "POST",
+      body: { email, password },
+      redact: [password],
+    })
+    .then((call) => {
+      if (!call.ok || !call.json?.token) loginBlockedUntil = Date.now() + LOGIN_COOLDOWN_MS;
+      else loginBlockedUntil = 0;
+      return call;
+    })
+    .finally(() => {
+      loginInFlight = null;
+    });
+  return loginInFlight;
 }
 
 /** Harmless authenticated probe that also returns configured pickup locations. */
@@ -189,18 +211,14 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
   return token;
 }
 
-/** Authenticated request that transparently re-authenticates once on 401/403. */
+/** Authenticated request. Never auto-login after a rejected API call: doing so
+ * can lock the API user when several shipping requests arrive together. */
 export async function shiprocketAuthed(opts: {
   stage: string;
   path: string;
   method?: "GET" | "POST" | "PATCH";
   body?: unknown;
 }): Promise<ShiprocketCall> {
-  let token = await resolveShiprocketToken();
-  let call = await shiprocketCall({ ...opts, token });
-  if (call.status === 401 || call.status === 403) {
-    token = await resolveShiprocketToken(true);
-    call = await shiprocketCall({ ...opts, stage: `${opts.stage}-retry`, token });
-  }
-  return call;
+  const token = await resolveShiprocketToken();
+  return shiprocketCall({ ...opts, token });
 }
