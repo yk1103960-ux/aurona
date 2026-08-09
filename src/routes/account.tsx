@@ -11,6 +11,8 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { inr } from "@/lib/format";
 import { AddressManager } from "@/components/account/AddressManager";
+import { AvatarUpload } from "@/components/account/AvatarUpload";
+import { useAvatarUrl } from "@/hooks/useAvatarUrl";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
