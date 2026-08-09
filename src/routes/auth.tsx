@@ -421,7 +421,7 @@ function AuthPage() {
                   </p>
                 </form>
               ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: email, channel: "email" as const }} />
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: email }} />
               )}
 
             </TabsContent>
