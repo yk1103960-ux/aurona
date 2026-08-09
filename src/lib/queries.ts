@@ -365,7 +365,34 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         .eq("slug", categorySlug)
         .maybeSingle();
       if (!cat?.id) return [];
+
+      // Prefer model families (JOY, RAZER, ZELLY, ZIO ...) — model name only, no variant text
+      const { data: fams } = await supabase
+        .from("product_families")
+        .select("slug, main_sku, name, image_seed, min_price, min_mrp")
+        .eq("category_id", cat.id)
+        .order("name")
+        .limit(24);
+      const famRows = (fams ?? []) as {
+        slug: string; main_sku: string; name: string; image_seed: string | null;
+        min_price: number | null; min_mrp: number | null;
+      }[];
+      if (famRows.length > 0) {
+        return famRows.map((f) => ({
+          slug: f.slug,
+          name: f.name,
+          sku: f.main_sku,
+          image_seed: f.image_seed,
+          family_slug: f.slug,
+          price: f.min_price ?? null,
+          mrp: f.min_mrp ?? null,
+          wattage: null,
+          stock: null,
+        }));
+      }
+
       const { data } = await supabase
+
         .from("products")
         .select("slug, sku, name, image_seed, price, mrp, wattage, stock")
         .eq("category_id", cat.id)
