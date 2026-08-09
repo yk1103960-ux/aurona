@@ -1961,6 +1961,59 @@ export type Database = {
           },
         ]
       }
+      shipment_events: {
+        Row: {
+          awb_code: string | null
+          courier_name: string | null
+          created_at: string
+          event_key: string
+          event_time: string | null
+          id: string
+          location: string | null
+          order_id: string | null
+          payload: Json | null
+          provider: string
+          shipment_status: string | null
+          status_code: string | null
+        }
+        Insert: {
+          awb_code?: string | null
+          courier_name?: string | null
+          created_at?: string
+          event_key: string
+          event_time?: string | null
+          id?: string
+          location?: string | null
+          order_id?: string | null
+          payload?: Json | null
+          provider?: string
+          shipment_status?: string | null
+          status_code?: string | null
+        }
+        Update: {
+          awb_code?: string | null
+          courier_name?: string | null
+          created_at?: string
+          event_key?: string
+          event_time?: string | null
+          id?: string
+          location?: string | null
+          order_id?: string | null
+          payload?: Json | null
+          provider?: string
+          shipment_status?: string | null
+          status_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_providers: {
         Row: {
           auth_token_ciphertext: string | null
