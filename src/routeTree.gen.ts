@@ -28,6 +28,7 @@ import { Route as BestsellersRouteImport } from './routes/bestsellers'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuronaConsole9f2x7kRouteImport } from './routes/aurona-console-9f2x7k'
 import { Route as AffiliateRouteImport } from './routes/affiliate'
+import { Route as AddressRouteImport } from './routes/address'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -155,6 +156,11 @@ const AuronaConsole9f2x7kRoute = AuronaConsole9f2x7kRouteImport.update({
 const AffiliateRoute = AffiliateRouteImport.update({
   id: '/affiliate',
   path: '/affiliate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddressRoute = AddressRouteImport.update({
+  id: '/address',
+  path: '/address',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -349,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
+  '/address': typeof AddressRoute
   '/affiliate': typeof AffiliateRoute
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
+  '/address': typeof AddressRoute
   '/affiliate': typeof AffiliateRoute
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
+  '/address': typeof AddressRoute
   '/affiliate': typeof AffiliateRoute
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/account'
+    | '/address'
     | '/affiliate'
     | '/aurona-console-9f2x7k'
     | '/auth'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/account'
+    | '/address'
     | '/affiliate'
     | '/auth'
     | '/bestsellers'
@@ -616,6 +627,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/account'
+    | '/address'
     | '/affiliate'
     | '/aurona-console-9f2x7k'
     | '/auth'
@@ -671,6 +683,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
+  AddressRoute: typeof AddressRoute
   AffiliateRoute: typeof AffiliateRoute
   AuronaConsole9f2x7kRoute: typeof AuronaConsole9f2x7kRouteWithChildren
   AuthRoute: typeof AuthRoute
@@ -831,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/affiliate'
       fullPath: '/affiliate'
       preLoaderRoute: typeof AffiliateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/address': {
+      id: '/address'
+      path: '/address'
+      fullPath: '/address'
+      preLoaderRoute: typeof AddressRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -1172,6 +1192,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
+  AddressRoute: AddressRoute,
   AffiliateRoute: AffiliateRoute,
   AuronaConsole9f2x7kRoute: AuronaConsole9f2x7kRouteWithChildren,
   AuthRoute: AuthRoute,
