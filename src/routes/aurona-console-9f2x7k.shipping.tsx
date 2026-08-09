@@ -94,7 +94,9 @@ function ShippingAdmin() {
       const result = await retest({});
       setDiagnostics((result.diagnostics ?? []) as Diagnostic[]);
       if (!result.ok) toast.error(result.error, { duration: 14_000 });
+      else if (result.warning) toast.warning(result.warning, { duration: 14_000 });
       else toast.success(`Connection healthy · pickup locations: ${result.pickupLocations?.join(", ") || "none"}`);
+
       await qc.invalidateQueries({ queryKey: ["admin-shipping"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Test failed");
