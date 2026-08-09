@@ -1,40 +1,84 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Sparkles, X, Copy, Check } from "lucide-react";
 
 const STORAGE_KEY = "aurona.offers.seen.v1";
+const INTRO_KEY = "aurona_intro_played";
 
 export function OffersModal() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // The welcome offer belongs on the home page only, and never while the
+  // cinematic intro is still on screen — otherwise its backdrop silently
+  // swallows taps on the header, cart and bottom navigation.
+  const onHome = pathname === "/";
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      if (sessionStorage.getItem(STORAGE_KEY)) return;
-    } catch {
-      /* private mode — still show once */
+    if (!onHome) {
+      setOpen(false);
+      return;
     }
-    const t = window.setTimeout(() => setOpen(true), 900);
-    return () => window.clearTimeout(t);
-  }, []);
+    let cancelled = false;
+    const seen = () => {
+      try {
+        return Boolean(sessionStorage.getItem(STORAGE_KEY));
+      } catch {
+        return false;
+      }
+    };
+    if (seen()) return;
+
+    const show = () => {
+      if (cancelled) return;
+      // Mark it seen as soon as it is shown so it can never come back and
+      // block a later page.
+      try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch { /* noop */ }
+      setOpen(true);
+    };
+
+    const introDone = () => {
+      try {
+        return Boolean(sessionStorage.getItem(INTRO_KEY));
+      } catch {
+        return true;
+      }
+    };
+
+    if (introDone()) {
+      const t = window.setTimeout(show, 900);
+      return () => { cancelled = true; window.clearTimeout(t); };
+    }
+
+    // Poll until the intro finishes, then show shortly after.
+    const poll = window.setInterval(() => {
+      if (introDone()) {
+        window.clearInterval(poll);
+        window.setTimeout(show, 1200);
+      }
+    }, 400);
+    return () => { cancelled = true; window.clearInterval(poll); };
+  }, [onHome]);
 
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
   function close() {
     setOpen(false);
+    document.body.style.overflow = "";
     try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch { /* noop */ }
   }
+
 
   function copyCode() {
     try {
