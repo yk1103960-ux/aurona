@@ -27,7 +27,9 @@ export const Route = createFileRoute("/payment-status")({
 function PaymentStatusPage() {
   const { order } = useSearch({ from: "/payment-status" });
   const check = useServerFn(checkPhonePePayment);
-  const [state, setState] = useState<"loading" | "paid" | "pending" | "failed">("loading");
+  const [state, setState] = useState<
+    "loading" | "paid" | "pending" | "failed" | "cancelled" | "expired"
+  >("loading");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,19 +37,37 @@ function PaymentStatusPage() {
       setState("failed");
       return;
     }
-    let cancelled = false;
-    (async () => {
+    let stopped = false;
+    let attempts = 0;
+    const map = {
+      COMPLETED: "paid",
+      FAILED: "failed",
+      CANCELLED: "cancelled",
+      EXPIRED: "expired",
+      PENDING: "pending",
+    } as const;
+
+    const poll = async () => {
+      attempts += 1;
       try {
         const res = await check({ data: { orderId: order } });
-        if (cancelled) return;
+        if (stopped) return;
         setOrderNumber(res.orderNumber ?? null);
-        setState(res.paid ? "paid" : res.state === "FAILED" ? "failed" : "pending");
+        const next = map[res.state as keyof typeof map] ?? "pending";
+        setState(res.paid ? "paid" : next);
+        // A bank may confirm a few seconds late — keep verifying server-side
+        // instead of guessing from the browser redirect.
+        if (!res.paid && next === "pending" && attempts < 6) {
+          setTimeout(poll, 4000);
+        }
       } catch {
-        if (!cancelled) setState("failed");
+        if (!stopped) setState(attempts < 3 ? "pending" : "failed");
+        if (!stopped && attempts < 3) setTimeout(poll, 4000);
       }
-    })();
+    };
+    poll();
     return () => {
-      cancelled = true;
+      stopped = true;
     };
   }, [order, check]);
 
@@ -69,12 +89,25 @@ function PaymentStatusPage() {
           </p>
         </>
       )}
+      {(state === "cancelled" || state === "expired") && (
+        <>
+          <XCircle className="h-12 w-12 text-destructive" />
+          <h1 className="text-display mt-6 text-2xl">
+            {state === "cancelled" ? "Payment cancelled" : "Payment session expired"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            No amount has been confirmed for order {orderNumber ?? "this order"}. You can retry
+            payment from your orders page.
+          </p>
+        </>
+      )}
       {state === "pending" && (
         <>
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <h1 className="text-display mt-6 text-2xl">Payment is still processing</h1>
+          <h1 className="text-display mt-6 text-2xl">Your payment is being verified</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            We’ll update order {orderNumber ?? "your order"} as soon as the bank confirms.
+            We’re confirming order {orderNumber ?? "your order"} with your bank. This page updates
+            automatically — no amount is confirmed until verification completes.
           </p>
         </>
       )}
@@ -83,7 +116,8 @@ function PaymentStatusPage() {
           <XCircle className="h-12 w-12 text-destructive" />
           <h1 className="text-display mt-6 text-2xl">Payment not completed</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            No amount was captured. You can retry from your orders page.
+            Payment failed. No amount has been confirmed for this order. You can retry from your
+            orders page.
           </p>
         </>
       )}
