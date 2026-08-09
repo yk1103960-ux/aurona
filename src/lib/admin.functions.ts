@@ -231,13 +231,21 @@ export const testShiprocketConnection = createServerFn({ method: "POST" })
       diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Token acquired from stored credentials." });
       const { call, locations } = await shiprocketPickupLocations(token);
       diagnostics.push(call.diagnostic);
-      if (!call.ok) return { ok: false as const, error: "Stored credentials produced a token that the API rejected.", diagnostics };
       const names = locations.map((l) => l.pickup_location).filter(Boolean);
       await supabaseAdmin
         .from("shipping_providers")
         .update({ last_verified_at: new Date().toISOString() })
         .eq("provider", "shiprocket");
-      return { ok: true as const, pickupLocations: names, diagnostics };
+      // Auth is what matters. A blocked pickup-list endpoint is only a warning.
+      return {
+        ok: true as const,
+        pickupLocations: names,
+        warning: call.ok
+          ? null
+          : "Authentication works. Pickup locations could not be read — enable the Settings/Locations module for this API user in Shiprocket.",
+        diagnostics,
+      };
+
     } catch (error) {
       return {
         ok: false as const,
