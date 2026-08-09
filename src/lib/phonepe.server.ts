@@ -228,3 +228,222 @@ export async function phonePeV2Status(
   };
 }
 
+
+// ---------------- Diagnostics & environment integrity ----------------
+
+/**
+ * PhonePe serves its hosted checkout from two rings:
+ *   production  -> mercury.phonepe.com / api.phonepe.com
+ *   test (UAT)  -> mercury-t2.phonepe.com, *-t2.phonepe.com, *preprod*
+ * A merchant whose account is still provisioned in the UAT ring gets a
+ * `mercury-t2` URL back even from the production API. That page loads and then
+ * dies with "Something went wrong" as soon as an instrument is selected, which
+ * is exactly the failure reported from the live site.
+ */
+export function classifyCheckoutRing(url: string): "production" | "test" | "unknown" {
+  let host = "";
+  try {
+    host = new URL(url).host.toLowerCase();
+  } catch {
+    return "unknown";
+  }
+  if (/-t2\.|(^|\.)t2\.|preprod|sandbox|uat/.test(host)) return "test";
+  if (host.endsWith("phonepe.com")) return "production";
+  return "unknown";
+}
+
+export function checkoutHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
+}
+
+/** Trims provider text so nothing secret or oversized ever reaches a log row. */
+export function sanitizeProviderMessage(input: unknown): string {
+  const text = typeof input === "string" ? input : JSON.stringify(input ?? "");
+  return text
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "[redacted]")
+    .replace(/([0-9a-f]{40,})/gi, "[redacted]")
+    .slice(0, 500);
+}
+
+export type PaymentEvent = {
+  orderId?: string | null;
+  merchantTxnId?: string | null;
+  stage: "creation" | "redirect" | "verification" | "webhook" | "config_test";
+  environment?: string | null;
+  endpoint?: string | null;
+  method?: string | null;
+  status?: number | null;
+  ok: boolean;
+  checkoutHost?: string | null;
+  amount?: number | null;
+  providerCode?: string | null;
+  providerMessage?: string | null;
+  paymentState?: string | null;
+};
+
+/** Writes a sanitized diagnostic row. Never throws — diagnostics must not break payments. */
+export async function logPaymentEvent(e: PaymentEvent): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("payment_events").insert({
+      provider: "phonepe",
+      order_id: e.orderId ?? null,
+      merchant_txn_id: e.merchantTxnId ?? null,
+      stage: e.stage,
+      environment: e.environment ?? null,
+      endpoint: e.endpoint ?? null,
+      http_method: e.method ?? null,
+      http_status: e.status ?? null,
+      ok: e.ok,
+      checkout_host: e.checkoutHost ?? null,
+      amount: e.amount ?? null,
+      provider_code: e.providerCode ?? null,
+      provider_message: e.providerMessage ? sanitizeProviderMessage(e.providerMessage) : null,
+      payment_state: e.paymentState ?? null,
+    });
+  } catch {
+    /* diagnostics are best-effort */
+  }
+}
+
+/** Records the ring PhonePe answered with so the storefront can hide broken options. */
+export async function recordCheckoutRing(ring: "production" | "test" | "unknown", note: string) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("integrations")
+      .select("config_public")
+      .eq("provider", "phonepe")
+      .maybeSingle();
+    const pub = (data?.config_public ?? {}) as Record<string, unknown>;
+    await supabaseAdmin
+      .from("integrations")
+      .update({
+        config_public: { ...pub, checkoutRing: ring },
+        status: ring === "production" ? "connected" : "error",
+        last_tested_at: new Date().toISOString(),
+        last_test_message: sanitizeProviderMessage(note),
+      })
+      .eq("provider", "phonepe");
+  } catch {
+    /* best-effort */
+  }
+}
+
+export type LegacyPayResult = {
+  ok: boolean;
+  status: number;
+  code: string | null;
+  message: string | null;
+  url: string | null;
+  endpoint: string;
+};
+
+/** Legacy (hermes) PAY_PAGE creation with full sanitized diagnostics. */
+export async function phonePeLegacyPay(params: {
+  cfg: PhonePeConfig;
+  merchantTransactionId: string;
+  merchantUserId: string;
+  amountPaise: number;
+  redirectUrl: string;
+  callbackUrl: string;
+  mobileNumber?: string;
+}): Promise<LegacyPayResult> {
+  const { cfg } = params;
+  const payload: Record<string, unknown> = {
+    merchantId: cfg.merchantId,
+    merchantTransactionId: params.merchantTransactionId,
+    merchantUserId: params.merchantUserId,
+    amount: params.amountPaise,
+    redirectUrl: params.redirectUrl,
+    redirectMode: "REDIRECT",
+    callbackUrl: params.callbackUrl,
+    paymentInstrument: { type: "PAY_PAGE" },
+  };
+  if (params.mobileNumber && /^\d{10}$/.test(params.mobileNumber)) {
+    payload["mobileNumber"] = params.mobileNumber;
+  }
+  const b64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+  const path = "/pg/v1/pay";
+  const endpoint = `${phonePeBase(cfg.env)}${path}`;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      accept: "application/json",
+      "X-VERIFY": xVerify(b64, path, cfg.saltKey, cfg.saltIndex),
+    },
+    body: JSON.stringify({ request: b64 }),
+  });
+  const j = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    code?: string;
+    message?: string;
+    data?: { instrumentResponse?: { redirectInfo?: { url?: string } } };
+  };
+  return {
+    ok: res.ok && j.success === true && Boolean(j.data?.instrumentResponse?.redirectInfo?.url),
+    status: res.status,
+    code: j.code ?? null,
+    message: j.message ?? null,
+    url: j.data?.instrumentResponse?.redirectInfo?.url ?? null,
+    endpoint,
+  };
+}
+
+export type PaymentState = "COMPLETED" | "FAILED" | "PENDING" | "CANCELLED" | "EXPIRED";
+
+export type LegacyStatusResult = {
+  ok: boolean;
+  status: number;
+  code: string | null;
+  message: string | null;
+  state: PaymentState;
+  transactionId: string | null;
+  endpoint: string;
+};
+
+export async function phonePeLegacyStatus(
+  cfg: PhonePeConfig,
+  merchantTransactionId: string,
+): Promise<LegacyStatusResult> {
+  const path = `/pg/v1/status/${cfg.merchantId}/${merchantTransactionId}`;
+  const endpoint = `${phonePeBase(cfg.env)}${path}`;
+  const res = await fetch(endpoint, {
+    headers: {
+      "Content-Type": "application/json",
+      "X-VERIFY": xVerify("", path, cfg.saltKey, cfg.saltIndex),
+      "X-MERCHANT-ID": cfg.merchantId,
+    },
+  });
+  const j = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    code?: string;
+    message?: string;
+    data?: { state?: string; responseCode?: string; transactionId?: string };
+  };
+  return {
+    ok: res.ok,
+    status: res.status,
+    code: j.code ?? null,
+    message: j.message ?? null,
+    state: normalizePaymentState(j.data?.state ?? j.data?.responseCode ?? j.code ?? "PENDING"),
+    transactionId: j.data?.transactionId ?? null,
+    endpoint,
+  };
+}
+
+/** Maps every PhonePe state/code onto the five states the UI understands. */
+export function normalizePaymentState(raw: string): PaymentState {
+  const s = (raw || "").toUpperCase();
+  if (s === "COMPLETED" || s === "PAYMENT_SUCCESS" || s === "SUCCESS") return "COMPLETED";
+  if (s.includes("CANCEL")) return "CANCELLED";
+  if (s.includes("EXPIRE") || s === "TIMED_OUT") return "EXPIRED";
+  if (s === "FAILED" || s === "PAYMENT_ERROR" || s === "PAYMENT_DECLINED" || s.includes("ERROR"))
+    return "FAILED";
+  return "PENDING";
+}

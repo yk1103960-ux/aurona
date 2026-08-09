@@ -43,7 +43,19 @@ export const Route = createFileRoute("/api/public/phonepe-callback")({
                   }
                 : { payment_status: "failed" },
             )
-            .eq("payment_provider_order_id", orderId);
+            .eq("payment_provider_order_id", orderId)
+            .neq("payment_status", "paid");
+          const { logPaymentEvent } = await import("@/lib/phonepe.server");
+          await logPaymentEvent({
+            merchantTxnId: `${orderId}-WH${Date.now().toString(36)}`,
+            stage: "webhook",
+            environment: v2.env,
+            endpoint: "/api/public/phonepe-callback",
+            method: "POST",
+            status: 200,
+            ok: paidV2,
+            paymentState: paidV2 ? "COMPLETED" : (evt.payload?.state ?? "FAILED"),
+          });
           return new Response("ok");
         }
 
@@ -87,7 +99,21 @@ export const Route = createFileRoute("/api/public/phonepe-callback")({
                 }
               : { payment_status: "failed" },
           )
-          .eq("payment_provider_order_id", txnId);
+          .eq("payment_provider_order_id", txnId)
+          .neq("payment_status", "paid");
+
+        const { logPaymentEvent } = await import("@/lib/phonepe.server");
+        await logPaymentEvent({
+          merchantTxnId: `${txnId}-WH${Date.now().toString(36)}`,
+          stage: "webhook",
+          environment: cfg.env,
+          endpoint: "/api/public/phonepe-callback",
+          method: "POST",
+          status: 200,
+          ok: paid,
+          providerCode: decoded?.code ?? null,
+          paymentState: paid ? "COMPLETED" : (decoded?.data?.state ?? "FAILED"),
+        });
 
         return new Response("ok");
       },
