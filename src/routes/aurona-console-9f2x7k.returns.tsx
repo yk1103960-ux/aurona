@@ -133,9 +133,14 @@ function AdminReturns() {
 }
 
 function Card({ r, patch }: { r: any; patch: (id: string, v: Record<string, unknown>) => Promise<unknown> }) {
+  const qc = useQueryClient();
   const [note, setNote] = useState<string>(r.admin_note ?? "");
   const [amount, setAmount] = useState<string>(String(r.refund_amount ?? 0));
   const [reference, setReference] = useState<string>(r.refund_reference ?? "");
+  const [busy, setBusy] = useState(false);
+  const decideCancellation = useServerFn(decideOrderCancellation);
+
+  const isCancellation = r.kind === "cancellation";
 
   const decide = (status: string) =>
     patch(r.id, {
@@ -145,6 +150,30 @@ function Card({ r, patch }: { r: any; patch: (id: string, v: Record<string, unkn
       refund_reference: reference.trim() || null,
       reviewed_at: new Date().toISOString(),
     });
+
+  /** Cancellations must go through the server fn — it is what actually cancels the order. */
+  const rule = async (decision: "approve" | "reject") => {
+    setBusy(true);
+    try {
+      const res = await decideCancellation({
+        data: { requestId: r.id, decision, note: note.trim() || undefined },
+      });
+      toast.success(
+        decision === "reject"
+          ? "Cancellation rejected — the order stays active."
+          : res.refundPending
+            ? "Order cancelled. Refund marked as initiated."
+            : "Order cancelled successfully.",
+      );
+      qc.invalidateQueries({ queryKey: ["admin-returns"] });
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update this request.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
