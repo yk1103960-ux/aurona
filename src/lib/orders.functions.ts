@@ -2,15 +2,39 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Statuses at which a customer may still cancel on their own. */
+/** Statuses at which a customer may still ask for a cancellation. */
 const CANCELLABLE = new Set(["pending", "confirmed", "processing"]);
 
+type OrderRow = {
+  id: string;
+  user_id: string | null;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  total: number;
+  awb_code: string | null;
+  shipment_status: string | null;
+};
+
+function isDispatched(order: OrderRow) {
+  const s = (order.shipment_status ?? "").toLowerCase();
+  return (
+    Boolean(order.awb_code) ||
+    s.includes("picked") ||
+    s.includes("transit") ||
+    s.includes("shipped") ||
+    s.includes("out for delivery") ||
+    s.includes("delivered")
+  );
+}
+
 /**
- * Customer-initiated cancellation. Allowed only while the order has not been
- * handed to the courier — once it is shipped/out for delivery/delivered the
- * customer must raise a return instead.
+ * Customer-initiated cancellation REQUEST. The order is not cancelled here —
+ * it stays live until an admin approves the request in the console. Requests
+ * are only accepted while the order has not been handed to the courier.
  */
-export const cancelOrder = createServerFn({ method: "POST" })
+export const requestOrderCancellation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
@@ -33,57 +57,117 @@ export const cancelOrder = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!order) throw new Error("We couldn’t find that order on your account.");
 
-
-    const shipmentStatus = (order.shipment_status ?? "").toLowerCase();
-    const dispatched =
-      Boolean(order.awb_code) ||
-      shipmentStatus.includes("picked") ||
-      shipmentStatus.includes("transit") ||
-      shipmentStatus.includes("shipped") ||
-      shipmentStatus.includes("out for delivery") ||
-      shipmentStatus.includes("delivered");
-
     if (order.status === "cancelled" || order.status === "canceled") {
-      return { ok: true as const, alreadyCancelled: true, refundPending: false };
+      return { ok: true as const, alreadyCancelled: true, pending: false };
     }
-    if (!CANCELLABLE.has(order.status) || dispatched) {
+    if (!CANCELLABLE.has(order.status) || isDispatched(order as OrderRow)) {
       throw new Error(
         "This order has already been shipped, so it can no longer be cancelled. Please raise a return once it is delivered.",
       );
     }
 
-    const paid = order.payment_status === "paid";
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // The row was already fetched under the caller's RLS (own order, or admin),
-    // so match on the order id only — re-filtering by the caller's own id would
-    // silently update nothing when an admin cancels on a customer's behalf.
+    // One open request per order — don't let a customer stack duplicates.
+    const { data: existing } = await supabaseAdmin
+      .from("return_requests")
+      .select("id, status")
+      .eq("order_id", order.id)
+      .eq("kind", "cancellation")
+      .in("status", ["requested", "approved", "refund_initiated"])
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return { ok: true as const, alreadyCancelled: false, pending: true };
+    }
+
+    const paid = order.payment_status === "paid";
+    const { error: insErr } = await supabaseAdmin.from("return_requests").insert({
+      order_id: order.id,
+      user_id: order.user_id ?? userId,
+      kind: "cancellation",
+      status: "requested",
+      reason: data.reason,
+      refund_amount: paid ? Number(order.total) : 0,
+      refund_method: paid ? order.payment_method : null,
+    });
+    if (insErr) throw new Error("We couldn’t submit your cancellation request. Please contact support.");
+
+    return { ok: true as const, alreadyCancelled: false, pending: true };
+  });
+
+/**
+ * Admin decision on a cancellation request. Approving is the only path that
+ * actually cancels the order (and flags a refund for prepaid orders).
+ */
+export const decideOrderCancellation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        requestId: z.string().uuid(),
+        decision: z.enum(["approve", "reject"]),
+        note: z.string().trim().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import("./admin.server");
+    const admin = await assertAdmin(context as never);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: req, error } = await supabaseAdmin
+      .from("return_requests")
+      .select("id, order_id, status, kind, refund_amount")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!req) throw new Error("Cancellation request not found.");
+    if (req.kind !== "cancellation") throw new Error("This request is not a cancellation.");
+    if (req.status !== "requested") throw new Error("This request has already been decided.");
+
+    const now = new Date().toISOString();
+
+    if (data.decision === "reject") {
+      await supabaseAdmin
+        .from("return_requests")
+        .update({
+          status: "rejected",
+          admin_note: data.note ?? null,
+          reviewed_by: admin.userId,
+          reviewed_at: now,
+        })
+        .eq("id", req.id);
+      return { ok: true as const, cancelled: false };
+    }
+
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select("id, status, payment_status, payment_method, total, awb_code, shipment_status, user_id, order_number")
+      .eq("id", req.order_id)
+      .maybeSingle();
+    if (!order) throw new Error("The linked order no longer exists.");
+
+    const paid = order.payment_status === "paid";
     const { data: updated, error: upErr } = await supabaseAdmin
       .from("orders")
       .update({
         status: "cancelled",
-        // A paid order needs a refund; COD/unpaid orders simply close out.
         payment_status: paid ? "refund_pending" : order.payment_status,
       })
       .eq("id", order.id)
       .select("id");
     if (upErr) throw new Error(upErr.message);
-    if (!updated || updated.length === 0) {
-      throw new Error("We couldn’t cancel this order. Please contact support.");
-    }
+    if (!updated || updated.length === 0) throw new Error("We couldn’t cancel this order. Please retry.");
 
-    // Keep a request record so support/admin can follow the refund through the
-    // same returns workflow used for post-delivery cases.
-    await supabaseAdmin.from("return_requests").insert({
-      order_id: order.id,
-      user_id: order.user_id ?? userId,
-      kind: "cancellation",
-      status: paid ? "refund_initiated" : "completed",
-      reason: data.reason,
-      refund_amount: paid ? Number(order.total) : 0,
-      refund_method: paid ? order.payment_method : null,
-    });
+    await supabaseAdmin
+      .from("return_requests")
+      .update({
+        status: paid ? "refund_initiated" : "completed",
+        admin_note: data.note ?? null,
+        reviewed_by: admin.userId,
+        reviewed_at: now,
+      })
+      .eq("id", req.id);
 
-
-    return { ok: true as const, alreadyCancelled: false, refundPending: paid };
+    return { ok: true as const, cancelled: true, refundPending: paid };
   });
