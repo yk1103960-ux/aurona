@@ -141,22 +141,15 @@ function AuthPage() {
   };
 
   // ---------- Registration ----------
-  const deliverSignupOtp = async (via: "email" | "sms") => {
-    if (via === "sms") {
-      const res = await sendSignupSmsOtp({ data: { email, phone } });
-      if (!res.ok) { toast.error(res.message); return false; }
-      setChannel("sms");
-      startOtp();
-      toast.success(res.message);
-      return true;
-    }
+  /** Email OTP is the only verification channel for launch. */
+  const deliverSignupOtp = async () => {
     const { error } = await supabase.auth.resend({ type: "signup", email });
     if (error && !/already confirmed/i.test(error.message)) { toast.error(error.message); return false; }
-    setChannel("email");
     startOtp();
     toast.success(`We sent a 6-digit code to ${email}. It expires in ${Math.round(policy.otpExpirySeconds / 60)} minutes.`);
     return true;
   };
+
 
   const register = async (e: React.FormEvent) => {
     e.preventDefault();
