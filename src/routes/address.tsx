@@ -158,7 +158,7 @@ function AddressPage() {
       phone: (a.phone || "").replace(/\D/g, "").slice(-10),
       house: (house ?? "").trim(),
       street: rest.join(",").trim(),
-      landmark: a.line2 ?? "",
+      landmark: a.landmark ?? a.line2 ?? "",
       city: a.city,
       state: a.state,
       pincode: a.pincode,
