@@ -182,6 +182,7 @@ export function AddressManager({ userId }: { userId: string }) {
               <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {a.line1}{a.line2 ? `, ${a.line2}` : ""}<br />
                 {a.city}, {a.state} — {a.pincode}<br />
+                {a.landmark ? <>Landmark: {a.landmark}<br /></> : null}
                 {a.phone}
               </div>
               <div className="mt-4 flex items-center gap-3">
