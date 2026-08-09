@@ -31,18 +31,14 @@ export const OTP_MAX_PER_HOUR = 5;
  * NOT a DLT template id. A DLT id here returns `type: "success"` + request_id and is
  * then dropped, so nothing reaches the handset.
  *
- *   MSG91 template (flow) id : 67978567d6fc0554473309a4   <-- send this (Delivered)
- *   maps to DLT template id  : 1007630933578375890
+ *   MSG91 template (flow) id : 6a7826ee25e4a56c84021ea2   <-- send this
+ *   maps to DLT template id  : 1077436770064246433
  *   DLT header / sender id   : AURONA
- *
- * Newer flow 6a7826ee25e4a56c84021ea2 (intended for Airtel DLT 1077436770064246433)
- * currently FAILS with "Template Id not found on DLT" because the flow stores a
- * truncated DLT id (107743677006426433, 18 digits). Verified 2026-08-09 in MSG91 OTP
- * logs. Switch MSG91_TEMPLATE_ID to it only after that DLT id is corrected in MSG91
- * and a test send reports Delivered.
+ * The flow's ##OTP## placeholder is mapped by MSG91 to the approved DLT
+ * {#numeric#} variable. There is intentionally no fallback template.
  */
-export const MSG91_TEMPLATE_ID = "67978567d6fc0554473309a4";
-export const MSG91_DLT_TEMPLATE_ID = "1007630933578375890";
+export const MSG91_TEMPLATE_ID = "6a7826ee25e4a56c84021ea2";
+export const MSG91_DLT_TEMPLATE_ID = "1077436770064246433";
 export const MSG91_SENDER_ID = "AURONA";
 
 
@@ -89,8 +85,7 @@ export async function sendSms(to: string, code: string): Promise<{ requestId: st
   }
 
   // MSG91 v5 expects its own synced OTP template/Flow ID in `template_id`, not
-  // an Airtel DLT template ID. Keep this deterministic until MSG91 confirms a
-  // Flow mapping for the new Airtel DLT template 1077436770064246433.
+  // the numeric Airtel DLT ID. This is deliberately fixed with no fallback.
   const templateId = MSG91_TEMPLATE_ID;
   const sender = MSG91_SENDER_ID;
 
@@ -150,6 +145,23 @@ export async function sendSms(to: string, code: string): Promise<{ requestId: st
     `type=${providerType || "none"} request_id=${requestId ?? "none"} provider=${JSON.stringify(providerMessage || "(none)")}`;
   if (ok) console.info(diagnostic);
   else console.error(diagnostic);
+
+  // Safe admin diagnostic: no auth key, recipient, or OTP is persisted.
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("integrations")
+      .update({
+        last_tested_at: new Date().toISOString(),
+        last_test_message:
+          `Template ID used: ${templateId} · Sender: ${sender} · ` +
+          `MSG91 response: HTTP ${res.status}, ${providerType || "unknown"}, request ${requestId ?? "none"}`,
+        status: ok ? "connected" : "error",
+      })
+      .eq("provider", "sms");
+  } catch {
+    console.error(`[msg91] diagnostic_persist_failed template=${templateId} sender=${sender}`);
+  }
 
   if (!ok) {
     throw new Error("SMS OTP could not be sent. Please try again.");
