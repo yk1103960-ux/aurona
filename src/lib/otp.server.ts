@@ -1,6 +1,6 @@
 // Server-only OTP helpers: code hashing + SMS delivery through the configured provider.
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
-import { readPublic, readSecrets } from "./integrations.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export function generateCode(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -18,6 +18,11 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
+export const OTP_EXPIRY_SECONDS = 600;
+export const OTP_MAX_ATTEMPTS = 5;
+export const OTP_RESEND_COOLDOWN = 60;
+export const OTP_MAX_PER_HOUR = 5;
+
 /**
  * MSG91 OTP identity — verified against the live account (aurona2) on 2026-08-09.
  *
@@ -34,7 +39,35 @@ export function safeEqual(a: string, b: string): boolean {
  * (1007807652032669441 / 1077436770064246433) here.
  */
 export const MSG91_TEMPLATE_ID = "67978567d6fc0554473309a4";
+export const MSG91_DLT_TEMPLATE_ID = "1007630933578375890";
 export const MSG91_SENDER_ID = "AURONA";
+
+export async function findAuthUser(email: string): Promise<{ id: string; confirmed: boolean } | null> {
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!url || !key) return null;
+  const res = await fetch(`${url}/auth/v1/admin/users?per_page=5&filter=${encodeURIComponent(email)}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { users?: { id: string; email?: string; email_confirmed_at?: string | null }[] };
+  const hit = (body.users ?? []).find((user) => (user.email ?? "").toLowerCase() === email.toLowerCase());
+  return hit ? { id: hit.id, confirmed: Boolean(hit.email_confirmed_at) } : null;
+}
+
+export async function hourlyQuotaExceeded(supabaseAdmin: SupabaseClient, phoneE164: string): Promise<boolean> {
+  const since = new Date(Date.now() - 3_600_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("auth_otp_challenges")
+    .select("id", { count: "exact", head: true })
+    .eq("phone", phoneE164)
+    .gte("created_at", since);
+  return (count ?? 0) >= OTP_MAX_PER_HOUR;
+}
+
+function maskMobile(mobile: string): string {
+  return `+91******${mobile.slice(-4)}`;
+}
 
 /**
  * Sends an OTP SMS through MSG91.
@@ -43,16 +76,18 @@ export const MSG91_SENDER_ID = "AURONA";
  * No silent fallbacks: the exact provider response is logged and surfaced.
  */
 export async function sendSms(to: string, code: string): Promise<{ requestId: string | null }> {
-  const sec = await readSecrets<{ apiKey?: string }>("sms");
-  const pub = await readPublic<{ senderId?: string; templateId?: string }>("sms");
-  const apiKey = sec?.apiKey ?? process.env["MSG91_AUTH_KEY"];
+  const apiKey = process.env["MSG91_AUTH_KEY"];
 
   if (!apiKey) {
-    throw new Error("SMS OTP is not configured. An administrator must add the MSG91 auth key in Admin → Integrations.");
+    console.error("[msg91] configuration_error reason=missing_auth_key");
+    throw new Error("SMS OTP could not be sent. Please try again.");
   }
 
-  const templateId = (process.env["MSG91_TEMPLATE_ID"] ?? "").trim() || (pub?.templateId ?? "").trim() || MSG91_TEMPLATE_ID;
-  const sender = (pub?.senderId ?? "").trim() || MSG91_SENDER_ID;
+  // MSG91 v5 expects its own synced OTP template/Flow ID in `template_id`, not
+  // an Airtel DLT template ID. Keep this deterministic until MSG91 confirms a
+  // Flow mapping for the new Airtel DLT template 1077436770064246433.
+  const templateId = MSG91_TEMPLATE_ID;
+  const sender = MSG91_SENDER_ID;
 
   const digits = to.replace(/\D/g, "");
   const mobile = digits.length === 10 ? `91${digits}` : digits;
@@ -73,38 +108,46 @@ export async function sendSms(to: string, code: string): Promise<{ requestId: st
     res = await fetch(url.toString(), {
       method: "POST",
       headers: { authkey: apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ otp_expiry: 5 }),
+      body: JSON.stringify({ otp_expiry: 10 }),
     });
     text = await res.text();
   } catch {
-    console.error(`[msg91] otp transport failure template=${templateId} mobile=***${mobile.slice(-4)}`);
-    throw new Error("Could not reach the SMS provider. Please try again in a moment.");
+    console.error(
+      `[msg91] transport_error template=${templateId} dlt=${MSG91_DLT_TEMPLATE_ID} sender=${sender} recipient=${maskMobile(mobile)}`,
+    );
+    throw new Error("SMS OTP could not be sent. Please try again.");
   }
 
   let requestId: string | null = null;
   let providerMessage = "";
-  let ok = res.ok;
+  let providerType = "";
+  let ok = false;
   try {
-    const j = JSON.parse(text) as { type?: string; message?: string; request_id?: string; errors?: unknown };
+    const j = JSON.parse(text) as { type?: string; message?: unknown; request_id?: string; errors?: unknown };
     requestId = j.request_id ?? null;
-    providerMessage = typeof j.message === "string" ? j.message : typeof j.errors === "string" ? j.errors : "";
-    if (j.type === "error") ok = false;
+    providerType = j.type ?? "";
+    providerMessage =
+      typeof j.message === "string"
+        ? j.message
+        : typeof j.errors === "string"
+          ? j.errors
+          : j.message || j.errors
+            ? JSON.stringify(j.message ?? j.errors).slice(0, 240)
+            : "";
+    ok = res.ok && providerType.toLowerCase() === "success" && Boolean(requestId);
   } catch {
     providerMessage = text.slice(0, 200);
   }
 
-  // Diagnostics only: endpoint, template, sender, masked recipient, status, request id and
-  // the provider's own message. Never the auth key and never the OTP.
-  console.info(
-    `[msg91] POST /api/v5/otp ${ok ? "accepted" : "rejected"} template=${templateId} sender=${sender} mobile=***${mobile.slice(-4)} http=${res.status} request_id=${requestId ?? "none"} provider="${providerMessage || "(none)"}"`,
-  );
+  const diagnostic =
+    `[msg91] ${ok ? "accepted" : "rejected"} endpoint=/api/v5/otp template=${templateId} ` +
+    `dlt=${MSG91_DLT_TEMPLATE_ID} sender=${sender} recipient=${maskMobile(mobile)} http=${res.status} ` +
+    `type=${providerType || "none"} request_id=${requestId ?? "none"} provider=${JSON.stringify(providerMessage || "(none)")}`;
+  if (ok) console.info(diagnostic);
+  else console.error(diagnostic);
 
   if (!ok) {
-    throw new Error(
-      providerMessage
-        ? `SMS provider rejected the request: ${providerMessage}`
-        : `SMS provider rejected the request (HTTP ${res.status}).`,
-    );
+    throw new Error("SMS OTP could not be sent. Please try again.");
   }
   return { requestId };
 }
