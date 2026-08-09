@@ -55,7 +55,10 @@ export const cancelOrder = createServerFn({ method: "POST" })
     const paid = order.payment_status === "paid";
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { error: upErr } = await supabaseAdmin
+    // The row was already fetched under the caller's RLS (own order, or admin),
+    // so match on the order id only — re-filtering by the caller's own id would
+    // silently update nothing when an admin cancels on a customer's behalf.
+    const { data: updated, error: upErr } = await supabaseAdmin
       .from("orders")
       .update({
         status: "cancelled",
@@ -63,20 +66,24 @@ export const cancelOrder = createServerFn({ method: "POST" })
         payment_status: paid ? "refund_pending" : order.payment_status,
       })
       .eq("id", order.id)
-      .eq("user_id", userId);
+      .select("id");
     if (upErr) throw new Error(upErr.message);
+    if (!updated || updated.length === 0) {
+      throw new Error("We couldn’t cancel this order. Please contact support.");
+    }
 
     // Keep a request record so support/admin can follow the refund through the
     // same returns workflow used for post-delivery cases.
     await supabaseAdmin.from("return_requests").insert({
       order_id: order.id,
-      user_id: userId,
+      user_id: order.user_id ?? userId,
       kind: "cancellation",
       status: paid ? "refund_initiated" : "completed",
       reason: data.reason,
       refund_amount: paid ? Number(order.total) : 0,
       refund_method: paid ? order.payment_method : null,
     });
+
 
     return { ok: true as const, alreadyCancelled: false, refundPending: paid };
   });
