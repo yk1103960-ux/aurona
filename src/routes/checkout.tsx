@@ -85,6 +85,9 @@ function CheckoutPage() {
     staleTime: 5 * 60 * 1000,
   });
   const onlineEnabled = Boolean(pay?.phonepe);
+  // Online payment options are only offered when the gateway is genuinely usable,
+  // so a customer is never shown a payment button that cannot complete.
+  const onlineUnavailableLabel = "Temporarily unavailable";
 
   useEffect(() => {
     if (user?.email && !f.email) setF((prev) => ({ ...prev, email: user.email ?? "" }));
@@ -275,6 +278,11 @@ function CheckoutPage() {
   };
 
   const place = async () => {
+    if (f.payment_method !== "cod" && !onlineEnabled) {
+      setF((prev) => ({ ...prev, payment_method: "cod" }));
+      toast.error("Online payment is temporarily unavailable. Please continue with Cash on Delivery.");
+      return;
+    }
     if (!addressValid) {
       setTouched({ full_name: true, phone: true, email: true, address: true, city: true, state: true, pincode: true });
       setStep(1);
@@ -315,8 +323,12 @@ function CheckoutPage() {
             window.location.href = pp.redirectUrl;
             return;
           }
-        } catch {
-          toast.error("Could not open the payment page. Your order is saved as pending payment.");
+        } catch (e) {
+          toast.error(
+            e instanceof Error && e.message
+              ? e.message
+              : "Unable to start payment. Please try again.",
+          );
         }
       }
       setDone(result.orderNumber);
@@ -534,14 +546,14 @@ function CheckoutPage() {
                   { v: "cod", l: "Cash on Delivery" },
                   {
                     v: "upi",
-                    l: onlineEnabled ? "UPI — PhonePe, GPay, Paytm" : "UPI (coming soon)",
+                    l: onlineEnabled ? "UPI — PhonePe, GPay, Paytm" : `UPI — ${onlineUnavailableLabel}`,
                     d: !onlineEnabled,
                   },
                   {
                     v: "card",
                     l: onlineEnabled
                       ? "Card / Netbanking — secured by PhonePe"
-                      : "Card — Visa / Mastercard (coming soon)",
+                      : `Card / Netbanking — ${onlineUnavailableLabel}`,
                     d: !onlineEnabled,
                   },
                 ].map((opt) => (

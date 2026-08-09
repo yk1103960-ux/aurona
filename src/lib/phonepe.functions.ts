@@ -2,15 +2,38 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Public: tells the storefront which online payment options are live right now. */
+/**
+ * Public: tells the storefront which online payment options are actually usable.
+ * A gateway that is configured but answering with a *test-ring* checkout page is
+ * reported as unavailable, so the customer is never handed a payment page that
+ * dies with "Something went wrong".
+ */
 export const getPaymentAvailability = createServerFn({ method: "GET" }).handler(async () => {
   const { getPhonePeConfig, getPhonePeV2Config } = await import("./phonepe.server");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
   const v2 = await getPhonePeV2Config().catch(() => null);
-  if (v2) return { phonepe: true, mode: v2.env };
-  const cfg = await getPhonePeConfig().catch(() => null);
-  return { phonepe: Boolean(cfg), mode: cfg?.env ?? null };
+  const cfg = v2 ? null : await getPhonePeConfig().catch(() => null);
+  if (!v2 && !cfg) return { phonepe: false, mode: null as string | null, reason: "not_configured" };
+
+  const env = v2?.env ?? cfg?.env ?? null;
+  const { data } = await supabaseAdmin
+    .from("integrations")
+    .select("config_public")
+    .eq("provider", "phonepe")
+    .maybeSingle();
+  const ring = (data?.config_public as { checkoutRing?: string } | null)?.checkoutRing;
+
+  if (env === "live" && ring === "test") {
+    return { phonepe: false, mode: env, reason: "environment_mismatch" };
+  }
+  return { phonepe: true, mode: env, reason: null };
 });
 
+// Short-lived memo so a double-tap on "Pay" reuses the same PhonePe session
+// instead of creating a second one.
+const inFlight = new Map<string, { url: string; at: number }>();
+const IN_FLIGHT_MS = 90_000;
 
 /** Creates a PhonePe payment for an existing order and returns the hosted checkout URL. */
 export const startPhonePePayment = createServerFn({ method: "POST" })
@@ -20,22 +43,16 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const {
-      getPhonePeConfig,
-      getPhonePeV2Config,
-      phonePeV2Pay,
-      phonePeBase,
-      xVerify,
-      newMerchantTxnId,
-    } = await import("./phonepe.server");
+    const pp = await import("./phonepe.server");
 
-    const v2 = await getPhonePeV2Config();
-    const cfg = v2 ? null : await getPhonePeConfig();
+    const v2 = await pp.getPhonePeV2Config();
+    const cfg = v2 ? null : await pp.getPhonePeConfig();
     if (!v2 && !cfg) {
       throw new Error(
-        "Online payments are not configured. An administrator must add the payment gateway credentials in Admin → Integrations before online payment can be used.",
+        "Online payment is not available right now. Please choose Cash on Delivery, or try again later.",
       );
     }
+    const env = v2?.env ?? cfg!.env;
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -46,91 +63,148 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
     if (order.user_id !== context.userId) throw new Error("Forbidden");
     if (order.payment_status === "paid") return { alreadyPaid: true as const, redirectUrl: null };
 
+    // Amount is always recomputed from the server-side order row — never the browser.
     const amountPaise = Math.round(Number(order.total) * 100);
     if (!Number.isFinite(amountPaise) || amountPaise < 100) {
       throw new Error("This order amount cannot be paid online. Please contact support.");
     }
 
-    // Always a brand-new id: PhonePe rejects a reused merchant order id, which
-    // is what produced the hosted page failing right after "Pay".
-    const txnId = newMerchantTxnId(order.order_number);
+    const memo = inFlight.get(order.id);
+    if (memo && Date.now() - memo.at < IN_FLIGHT_MS) {
+      return { alreadyPaid: false as const, redirectUrl: memo.url };
+    }
+
+    // PhonePe treats the merchant order id as immutable, so every attempt gets a
+    // brand-new unique id while the order row keeps the id currently in flight.
+    const txnId = pp.newMerchantTxnId(order.order_number);
     const origin = new URL(data.origin).origin;
+    const redirectUrl = `${origin}/payment-status?order=${order.id}`;
+    const callbackUrl = `${origin}/api/public/phonepe-callback`;
+
+    let checkoutUrl: string | null = null;
 
     if (v2) {
-      const url = await phonePeV2Pay({
-        cfg: v2,
-        merchantOrderId: txnId,
+      try {
+        checkoutUrl = await pp.phonePeV2Pay({
+          cfg: v2,
+          merchantOrderId: txnId,
+          amountPaise,
+          redirectUrl,
+          message: `Aurona order ${order.order_number}`,
+        });
+      } catch (e) {
+        await pp.logPaymentEvent({
+          orderId: order.id,
+          merchantTxnId: txnId,
+          stage: "creation",
+          environment: env,
+          endpoint: "checkout/v2/pay",
+          method: "POST",
+          status: null,
+          ok: false,
+          amount: Number(order.total),
+          providerMessage: e instanceof Error ? e.message : String(e),
+        });
+        throw new Error("Unable to start payment. Please try again.");
+      }
+    } else {
+      const res = await pp.phonePeLegacyPay({
+        cfg: cfg!,
+        merchantTransactionId: txnId,
+        merchantUserId: order.user_id.replace(/-/g, "").slice(0, 32),
         amountPaise,
-        redirectUrl: `${origin}/payment-status?order=${order.id}`,
-        message: `Aurona order ${order.order_number}`,
+        redirectUrl,
+        callbackUrl,
+        mobileNumber: (order.phone ?? "").replace(/\D/g, "").slice(-10),
+      });
+      await pp.logPaymentEvent({
+        orderId: order.id,
+        merchantTxnId: txnId,
+        stage: "creation",
+        environment: env,
+        endpoint: res.endpoint,
+        method: "POST",
+        status: res.status,
+        ok: res.ok,
+        checkoutHost: res.url ? pp.checkoutHost(res.url) : null,
+        amount: Number(order.total),
+        providerCode: res.code,
+        providerMessage: res.message,
+      });
+      if (!res.ok || !res.url) {
+        throw new Error("Unable to start payment. Please try again.");
+      }
+      checkoutUrl = res.url;
+    }
+
+    // Environment integrity: production credentials must yield a production
+    // checkout page. A UAT/test page here is the root cause of the customer
+    // seeing PhonePe's "Something went wrong" screen.
+    const ring = pp.classifyCheckoutRing(checkoutUrl);
+    await pp.recordCheckoutRing(
+      ring,
+      ring === "production"
+        ? `Live checkout session created on ${pp.checkoutHost(checkoutUrl)}`
+        : `PhonePe returned a ${ring} checkout page (${pp.checkoutHost(checkoutUrl)}) for a "${env}" configuration. The merchant account is not activated for production payments.`,
+    );
+
+    if (env === "live" && ring !== "production") {
+      await pp.logPaymentEvent({
+        orderId: order.id,
+        merchantTxnId: `${txnId}-RING`,
+        stage: "redirect",
+        environment: env,
+        endpoint: checkoutUrl.split("?")[0] ?? null,
+        method: "GET",
+        ok: false,
+        checkoutHost: pp.checkoutHost(checkoutUrl),
+        amount: Number(order.total),
+        providerCode: "ENVIRONMENT_MISMATCH",
+        providerMessage:
+          "PhonePe served a test-ring checkout page for a live configuration; the payment page would fail at instrument selection.",
       });
       await supabaseAdmin
         .from("orders")
-        .update({ payment_provider_order_id: txnId })
+        .update({ payment_status: "pending" })
         .eq("id", order.id);
-      return { alreadyPaid: false as const, redirectUrl: url };
-    }
-    if (!cfg) throw new Error("Online payments are not configured yet.");
-
-
-    const payload = {
-      merchantId: cfg.merchantId,
-      merchantTransactionId: txnId,
-      merchantUserId: order.user_id.replace(/-/g, "").slice(0, 32),
-      amount: Math.round(Number(order.total) * 100),
-      redirectUrl: `${origin}/payment-status?order=${order.id}`,
-      redirectMode: "REDIRECT",
-      callbackUrl: `${origin}/api/public/phonepe-callback`,
-      mobileNumber: (order.phone ?? "").replace(/\D/g, "").slice(-10),
-      paymentInstrument: { type: "PAY_PAGE" },
-    };
-    const b64 = Buffer.from(JSON.stringify(payload)).toString("base64");
-    const path = "/pg/v1/pay";
-    const res = await fetch(`${phonePeBase(cfg.env)}${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        accept: "application/json",
-        "X-VERIFY": xVerify(b64, path, cfg.saltKey, cfg.saltIndex),
-      },
-      body: JSON.stringify({ request: b64 }),
-    });
-    const j = (await res.json()) as {
-      success?: boolean;
-      message?: string;
-      data?: { instrumentResponse?: { redirectInfo?: { url?: string } } };
-    };
-    const url = j?.data?.instrumentResponse?.redirectInfo?.url;
-    if (!res.ok || !j.success || !url) {
-      throw new Error(j?.message || `PhonePe rejected the payment request (${res.status})`);
+      throw new Error(
+        "Online payment is temporarily unavailable. Your order is saved — please choose Cash on Delivery or contact us to complete payment.",
+      );
     }
 
     await supabaseAdmin
       .from("orders")
       .update({ payment_provider_order_id: txnId })
       .eq("id", order.id);
+    await pp.logPaymentEvent({
+      orderId: order.id,
+      merchantTxnId: txnId,
+      stage: "redirect",
+      environment: env,
+      endpoint: checkoutUrl.split("?")[0] ?? null,
+      method: "GET",
+      ok: true,
+      checkoutHost: pp.checkoutHost(checkoutUrl),
+      amount: Number(order.total),
+      paymentState: "PENDING",
+    });
 
-    return { alreadyPaid: false as const, redirectUrl: url };
+    inFlight.set(order.id, { url: checkoutUrl, at: Date.now() });
+    return { alreadyPaid: false as const, redirectUrl: checkoutUrl };
   });
 
-/** Confirms the payment state with PhonePe and updates the order. */
+/** Confirms the payment state with PhonePe (server-side truth) and updates the order. */
 export const checkPhonePePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const {
-      getPhonePeConfig,
-      getPhonePeV2Config,
-      phonePeV2Status,
-      phonePeBase,
-      xVerify,
-      merchantTxnId,
-    } = await import("./phonepe.server");
+    const pp = await import("./phonepe.server");
 
-    const v2 = await getPhonePeV2Config();
-    const cfg = v2 ? null : await getPhonePeConfig();
-    if (!v2 && !cfg) throw new Error("Online payments are not configured yet.");
+    const v2 = await pp.getPhonePeV2Config();
+    const cfg = v2 ? null : await pp.getPhonePeConfig();
+    if (!v2 && !cfg) throw new Error("Online payment is not available right now.");
+    const env = v2?.env ?? cfg!.env;
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -140,59 +214,70 @@ export const checkPhonePePayment = createServerFn({ method: "POST" })
     if (error || !order) throw new Error("Order not found");
     if (order.user_id !== context.userId) throw new Error("Forbidden");
     if (order.payment_status === "paid") {
-      return { state: "COMPLETED", paid: true, orderNumber: order.order_number };
+      return { state: "COMPLETED" as const, paid: true, orderNumber: order.order_number };
     }
 
-    const txnId = order.payment_provider_order_id || merchantTxnId(order.order_number);
+    const txnId = order.payment_provider_order_id || pp.merchantTxnId(order.order_number);
+
+    let state: "COMPLETED" | "FAILED" | "PENDING" | "CANCELLED" | "EXPIRED" = "PENDING";
+    let transactionId: string | null = null;
+    let status: number | null = null;
+    let endpoint: string | null = null;
+    let providerCode: string | null = null;
+    let providerMessage: string | null = null;
 
     if (v2) {
-      const { state, transactionId } = await phonePeV2Status(v2, txnId);
-      const paid = state === "COMPLETED";
-      if (paid) {
-        await supabaseAdmin
-          .from("orders")
-          .update({
-            payment_status: "paid",
-            status: "confirmed",
-            payment_provider_payment_id: transactionId ?? txnId,
-          })
-          .eq("id", order.id);
-      } else if (state === "FAILED") {
-        await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
+      try {
+        const r = await pp.phonePeV2Status(v2, txnId);
+        state = pp.normalizePaymentState(r.state);
+        transactionId = r.transactionId;
+        endpoint = "checkout/v2/order/status";
+      } catch (e) {
+        providerMessage = e instanceof Error ? e.message : String(e);
       }
-      return { state, paid, orderNumber: order.order_number };
+    } else {
+      const r = await pp.phonePeLegacyStatus(cfg!, txnId);
+      state = r.state;
+      transactionId = r.transactionId;
+      status = r.status;
+      endpoint = r.endpoint;
+      providerCode = r.code;
+      providerMessage = r.message;
     }
-    if (!cfg) throw new Error("Online payments are not configured yet.");
 
-    const path = `/pg/v1/status/${cfg.merchantId}/${txnId}`;
-
-    const res = await fetch(`${phonePeBase(cfg.env)}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        "X-VERIFY": xVerify("", path, cfg.saltKey, cfg.saltIndex),
-        "X-MERCHANT-ID": cfg.merchantId,
-      },
-    });
-    const j = (await res.json()) as {
-      success?: boolean;
-      code?: string;
-      data?: { state?: string; transactionId?: string };
-    };
-    const state = j?.data?.state ?? j?.code ?? "PENDING";
-    const paid = j?.success === true && (state === "COMPLETED" || j?.code === "PAYMENT_SUCCESS");
-
-    if (paid) {
+    // Only PhonePe's own verification can mark an order paid — never the redirect.
+    if (state === "COMPLETED") {
       await supabaseAdmin
         .from("orders")
         .update({
           payment_status: "paid",
           status: "confirmed",
-          payment_provider_payment_id: j?.data?.transactionId ?? txnId,
+          payment_provider_payment_id: transactionId ?? txnId,
         })
-        .eq("id", order.id);
-    } else if (state === "FAILED" || j?.code === "PAYMENT_ERROR") {
-      await supabaseAdmin.from("orders").update({ payment_status: "failed" }).eq("id", order.id);
+        .eq("id", order.id)
+        .neq("payment_status", "paid");
+    } else if (state === "FAILED" || state === "CANCELLED" || state === "EXPIRED") {
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_status: "failed" })
+        .eq("id", order.id)
+        .neq("payment_status", "paid");
     }
 
-    return { state, paid, orderNumber: order.order_number };
+    await pp.logPaymentEvent({
+      orderId: order.id,
+      merchantTxnId: `${txnId}-V${Date.now().toString(36)}`,
+      stage: "verification",
+      environment: env,
+      endpoint,
+      method: "GET",
+      status,
+      ok: state === "COMPLETED",
+      amount: Number(order.total),
+      providerCode,
+      providerMessage,
+      paymentState: state,
+    });
+
+    return { state, paid: state === "COMPLETED", orderNumber: order.order_number };
   });

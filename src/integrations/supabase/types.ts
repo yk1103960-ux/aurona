@@ -1266,6 +1266,74 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_events: {
+        Row: {
+          amount: number | null
+          checkout_host: string | null
+          created_at: string
+          currency: string
+          endpoint: string | null
+          environment: string | null
+          http_method: string | null
+          http_status: number | null
+          id: string
+          merchant_txn_id: string | null
+          ok: boolean
+          order_id: string | null
+          payment_state: string | null
+          provider: string
+          provider_code: string | null
+          provider_message: string | null
+          stage: string
+        }
+        Insert: {
+          amount?: number | null
+          checkout_host?: string | null
+          created_at?: string
+          currency?: string
+          endpoint?: string | null
+          environment?: string | null
+          http_method?: string | null
+          http_status?: number | null
+          id?: string
+          merchant_txn_id?: string | null
+          ok?: boolean
+          order_id?: string | null
+          payment_state?: string | null
+          provider?: string
+          provider_code?: string | null
+          provider_message?: string | null
+          stage: string
+        }
+        Update: {
+          amount?: number | null
+          checkout_host?: string | null
+          created_at?: string
+          currency?: string
+          endpoint?: string | null
+          environment?: string | null
+          http_method?: string | null
+          http_status?: number | null
+          id?: string
+          merchant_txn_id?: string | null
+          ok?: boolean
+          order_id?: string | null
+          payment_state?: string | null
+          provider?: string
+          provider_code?: string | null
+          provider_message?: string | null
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_gateways: {
         Row: {
           config_public: Json

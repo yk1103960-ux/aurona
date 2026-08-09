@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { CreditCard, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { saveRazorpayCredentials, setRazorpayEnabled } from "@/lib/admin.functions";
+import { listPaymentDiagnostics, testPhonePeConfiguration } from "@/lib/payments-admin.functions";
+import { Activity, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/payments")({
   component: PaymentsAdmin,
@@ -102,12 +104,15 @@ function PaymentsAdmin() {
         </div>
       </div>
 
+      <PhonePeDiagnostics />
+
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900">
         <div className="font-semibold mb-1">Webhook URL</div>
         Configure in your Razorpay dashboard → Settings → Webhooks:<br/>
         <code className="font-mono bg-white px-2 py-1 rounded mt-1 inline-block">{typeof window !== "undefined" ? window.location.origin : ""}/api/public/razorpay-webhook</code>
         <br/>Subscribe to <code>payment.captured</code>. Paste the same webhook secret in the form above.
       </div>
+
 
       <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
         <DialogContent className="max-w-md">
@@ -127,6 +132,86 @@ function PaymentsAdmin() {
           <DialogFooter><Button variant="ghost" onClick={() => setConnectOpen(false)}>Cancel</Button><Button onClick={connect} disabled={busy}>{busy ? "Saving…" : "Save & Connect"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function PhonePeDiagnostics() {
+  const runTest = useServerFn(testPhonePeConfiguration);
+  const listEvents = useServerFn(listPaymentDiagnostics);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof runTest>> | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  const { data: events, refetch } = useQuery({
+    queryKey: ["payment-diagnostics"],
+    queryFn: () => listEvents({ data: { limit: 15 } }),
+  });
+
+  const run = async () => {
+    setTesting(true);
+    try {
+      const r = await runTest({ data: undefined });
+      setResult(r);
+      r.ok ? toast.success("PhonePe configuration verified") : toast.error("PhonePe configuration problem detected");
+      refetch();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Test failed");
+    }
+    setTesting(false);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="font-semibold flex items-center gap-2"><Activity className="w-4 h-4" /> PhonePe diagnostics</div>
+          <div className="text-xs text-slate-500 mt-1">Creates a ₹1 payment <em>session</em> to verify credentials, environment and checkout ring. No money is charged.</div>
+        </div>
+        <Button onClick={run} disabled={testing}>{testing ? "Testing…" : "Test Payment Configuration"}</Button>
+      </div>
+
+      {result && (
+        <div className={`rounded-lg border p-4 text-xs space-y-1 ${result.ok ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+          <div className="font-semibold flex items-center gap-2">
+            {result.ok ? "Status: Connected" : <><AlertTriangle className="w-4 h-4" /> Status: Error</>}
+          </div>
+          <div>API: {result.api ?? "—"}</div>
+          <div>Environment: <span className="font-mono">{result.environment ?? "—"}</span></div>
+          <div>Merchant reference: <span className="font-mono">{result.merchantRef ?? "—"}</span></div>
+          <div>Stage: {result.stage}</div>
+          <div>HTTP status: {result.httpStatus ?? "—"}</div>
+          <div>Checkout host: <span className="font-mono">{result.checkoutHost ?? "—"}</span> {result.ring ? `(${result.ring} ring)` : ""}</div>
+          <div>Transaction ID: <span className="font-mono">{result.txnId ?? "—"}</span></div>
+          <div>Last test: {new Date(result.testedAt).toLocaleString()}</div>
+          <div className="pt-1">Provider message: {result.message}</div>
+        </div>
+      )}
+
+      <div>
+        <div className="text-xs font-semibold text-slate-600 mb-2">Recent payment events (sanitised)</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="text-slate-500 text-left">
+              <tr><th className="py-1 pr-3">When</th><th className="pr-3">Stage</th><th className="pr-3">Env</th><th className="pr-3">HTTP</th><th className="pr-3">State</th><th className="pr-3">Host</th><th className="pr-3">Txn</th><th>Message</th></tr>
+            </thead>
+            <tbody>
+              {(events ?? []).map((e: any) => (
+                <tr key={e.id} className="border-t border-slate-100">
+                  <td className="py-1 pr-3 whitespace-nowrap">{new Date(e.created_at).toLocaleString()}</td>
+                  <td className="pr-3">{e.stage}</td>
+                  <td className="pr-3">{e.environment ?? "—"}</td>
+                  <td className={`pr-3 ${e.ok ? "text-emerald-600" : "text-red-600"}`}>{e.http_status ?? "—"}</td>
+                  <td className="pr-3">{e.payment_state ?? "—"}</td>
+                  <td className="pr-3 font-mono">{e.checkout_host ?? "—"}</td>
+                  <td className="pr-3 font-mono">{e.merchant_txn_id ?? "—"}</td>
+                  <td className="text-slate-500">{e.provider_code ? `${e.provider_code}: ` : ""}{e.provider_message ?? ""}</td>
+                </tr>
+              ))}
+              {(events ?? []).length === 0 && <tr><td colSpan={8} className="py-3 text-slate-400">No payment attempts recorded yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
