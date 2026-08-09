@@ -102,12 +102,15 @@ function PaymentsAdmin() {
         </div>
       </div>
 
+      <PhonePeDiagnostics />
+
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900">
         <div className="font-semibold mb-1">Webhook URL</div>
         Configure in your Razorpay dashboard → Settings → Webhooks:<br/>
         <code className="font-mono bg-white px-2 py-1 rounded mt-1 inline-block">{typeof window !== "undefined" ? window.location.origin : ""}/api/public/razorpay-webhook</code>
         <br/>Subscribe to <code>payment.captured</code>. Paste the same webhook secret in the form above.
       </div>
+
 
       <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
         <DialogContent className="max-w-md">
