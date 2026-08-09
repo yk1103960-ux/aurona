@@ -66,6 +66,7 @@ import { Route as AuronaConsole9f2x7kOrdersIdRouteImport } from './routes/aurona
 import { Route as ApiPublicShiprocketWebhookRouteImport } from './routes/api/public/shiprocket-webhook'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
+import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public/delivery-status'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -375,6 +376,11 @@ const ApiPublicPhonepeCallbackRoute =
     path: '/api/public/phonepe-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDeliveryStatusRoute = ApiPublicDeliveryStatusRouteImport.update({
+  id: '/api/public/delivery-status',
+  path: '/api/public/delivery-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -427,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/api/public/delivery-status': typeof ApiPublicDeliveryStatusRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/api/public/shiprocket-webhook': typeof ApiPublicShiprocketWebhookRoute
@@ -483,6 +490,7 @@ export interface FileRoutesByTo {
   '/blogs': typeof BlogsIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/api/public/delivery-status': typeof ApiPublicDeliveryStatusRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/api/public/shiprocket-webhook': typeof ApiPublicShiprocketWebhookRoute
@@ -543,6 +551,7 @@ export interface FileRoutesById {
   '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/api/public/delivery-status': typeof ApiPublicDeliveryStatusRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/api/public/shiprocket-webhook': typeof ApiPublicShiprocketWebhookRoute
@@ -604,6 +613,7 @@ export interface FileRouteTypes {
     | '/blogs/'
     | '/partner/'
     | '/products/'
+    | '/api/public/delivery-status'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
     | '/api/public/shiprocket-webhook'
@@ -660,6 +670,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/partner'
     | '/products'
+    | '/api/public/delivery-status'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
     | '/api/public/shiprocket-webhook'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/blogs/'
     | '/partner/'
     | '/products/'
+    | '/api/public/delivery-status'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
     | '/api/public/shiprocket-webhook'
@@ -759,6 +771,7 @@ export interface RootRouteChildren {
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
+  ApiPublicDeliveryStatusRoute: typeof ApiPublicDeliveryStatusRoute
   ApiPublicPhonepeCallbackRoute: typeof ApiPublicPhonepeCallbackRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicShiprocketWebhookRoute: typeof ApiPublicShiprocketWebhookRoute
@@ -1165,6 +1178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPhonepeCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/delivery-status': {
+      id: '/api/public/delivery-status'
+      path: '/api/public/delivery-status'
+      fullPath: '/api/public/delivery-status'
+      preLoaderRoute: typeof ApiPublicDeliveryStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1300,6 +1320,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersOrderIdRoute: OrdersOrderIdRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,
+  ApiPublicDeliveryStatusRoute: ApiPublicDeliveryStatusRoute,
   ApiPublicPhonepeCallbackRoute: ApiPublicPhonepeCallbackRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicShiprocketWebhookRoute: ApiPublicShiprocketWebhookRoute,
