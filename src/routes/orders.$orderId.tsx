@@ -116,12 +116,17 @@ function OrderTrackingPage() {
 
   const { order, items } = q.data;
   const stage = stageOf(order.status, order.payment_status, order.shipment_status);
+  const cancelled = order.status === "cancelled" || order.status === "canceled";
+  // Customers may cancel themselves right up to hand-over to the courier.
+  const canCancel =
+    !cancelled && stage < 3 && ["pending", "confirmed", "processing"].includes(order.status) && !order.awb_code;
   const placed = new Date(order.created_at).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
     timeZone: "Asia/Kolkata",
   });
+
 
   return (
     <div className="pb-10">
