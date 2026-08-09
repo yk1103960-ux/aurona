@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, Home, MapPin, Plus, Star, Trash2, X } from "lucide-react";
+import { INDIAN_STATES } from "@/lib/indian-states";
 
 export type AddressRow = {
   id: string;
