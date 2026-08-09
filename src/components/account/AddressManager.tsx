@@ -167,7 +167,24 @@ export function AddressManager({ userId }: { userId: string }) {
             <F label="Landmark (optional)" v={form.landmark} set={(v) => setForm({ ...form, landmark: v })} />
           </div>
           <F label="City" v={form.city} set={(v) => setForm({ ...form, city: v })} required />
-          <F label="State" v={form.state} set={(v) => setForm({ ...form, state: v })} required />
+          <div>
+            <Label className="text-xs">State</Label>
+            <select
+              value={form.state}
+              onChange={(e) => setForm({ ...form, state: e.target.value })}
+              required
+              className="mt-1 flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="" disabled>
+                Select state
+              </option>
+              {INDIAN_STATES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="sm:col-span-2">
             <Button type="submit" disabled={save.isPending} className="mt-1 h-11 w-full rounded-full">
               {save.isPending ? "Saving…" : "Save address"}
