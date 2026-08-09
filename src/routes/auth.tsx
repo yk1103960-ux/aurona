@@ -18,6 +18,12 @@ import {
   registerSession,
   getAuthPolicy,
 } from "@/lib/auth.functions";
+import {
+  sendSignupSmsOtp,
+  verifySignupSmsOtp,
+  sendLoginSmsOtp,
+  verifyLoginSmsOtp,
+} from "@/lib/otp.functions";
 
 
 export const Route = createFileRoute("/auth")({
@@ -67,6 +73,8 @@ function AuthPage() {
 
   const [role, setRole] = useState<Role>("customer");
   const [mode, setMode] = useState<"in" | "up">("in");
+  // "password" = email + password, "otp" = mobile number + SMS OTP
+  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   
 
   const [email, setEmail] = useState("");
@@ -139,12 +147,12 @@ function AuthPage() {
   };
 
   // ---------- Registration ----------
-  /** Email OTP is the only verification channel for launch. */
+  /** Mobile OTP over MSG91 is the single production verification channel. */
   const deliverSignupOtp = async () => {
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    if (error && !/already confirmed/i.test(error.message)) { toast.error(error.message); return false; }
+    const res = await sendSignupSmsOtp({ data: { email, phone } });
+    if (!res.ok) { toast.error(res.message); return false; }
     startOtp();
-    toast.success(`We sent a 6-digit code to ${email}. It expires in ${Math.round(policy.otpExpirySeconds / 60)} minutes.`);
+    toast.success(res.message);
     return true;
   };
 
@@ -198,10 +206,26 @@ function AuthPage() {
     if (cooldown > 0) return toast.error(`Please wait ${cooldown}s before requesting another code.`);
     setBusy(true);
     try {
-      await deliverSignupOtp();
+      if (mode === "up") await deliverSignupOtp();
+      else await requestLoginOtp();
     } finally {
       setBusy(false);
     }
+  };
+
+  /** Sign-in by mobile OTP — same MSG91 verified template as registration. */
+  const requestLoginOtp = async () => {
+    const res = await sendLoginSmsOtp({ data: { phone } });
+    if (!res.ok) { toast.error(res.message); return false; }
+    startOtp();
+    toast.success(res.message);
+    return true;
+  };
+
+  const startLoginOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try { await requestLoginOtp(); } finally { setBusy(false); }
   };
 
 
@@ -213,20 +237,22 @@ function AuthPage() {
     const token = otp.trim();
 
     try {
-      {
-        const res = await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
-
-        if (res.error) {
+      if (mode === "up") {
+        const res = await verifySignupSmsOtp({ data: { email, code: token } });
+        if (!res.ok) {
           setAttempts((a) => a + 1);
-          const left = policy.otpMaxAttempts - (attempts + 1);
-          return toast.error(left > 0
-            ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left`
-            : "Too many invalid attempts. Please request a new code.");
+          return toast.error(res.message);
         }
-        if (!res.data.session && password) {
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) return toast.error("Verified — please sign in to continue.");
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return toast.error("Mobile verified — please sign in to continue.");
+      } else {
+        const res = await verifyLoginSmsOtp({ data: { phone, code: token } });
+        if (!res.ok || !res.tokenHash) {
+          setAttempts((a) => a + 1);
+          return toast.error(res.message);
         }
+        const { error } = await supabase.auth.verifyOtp({ token_hash: res.tokenHash, type: "magiclink" });
+        if (error) return toast.error("Verified, but sign-in failed. Please use your password.");
       }
 
 
@@ -351,6 +377,33 @@ function AuthPage() {
 
             {/* ---------------- SIGN IN ---------------- */}
             <TabsContent value="in" className="pt-4">
+              <div className="mb-3 grid grid-cols-2 gap-2 rounded-full bg-muted/60 p-1 text-xs font-semibold">
+                {(["password", "otp"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => { setLoginMode(m); setOtpSent(false); setErrors({}); }}
+                    className={cn("h-8 rounded-full transition", loginMode === m ? "bg-card shadow-soft text-primary" : "text-muted-foreground")}
+                  >
+                    {m === "password" ? "Email & password" : "Mobile OTP"}
+                  </button>
+                ))}
+              </div>
+              {loginMode === "otp" ? (
+                otpSent ? (
+                  <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
+                ) : (
+                  <form onSubmit={startLoginOtp} className="space-y-3">
+                    <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
+                    <p className="text-[11px] text-muted-foreground">
+                      We’ll SMS a 6-digit code from <b>AURONA</b> to your registered mobile number.
+                    </p>
+                    <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                      {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending OTP…</> : "Send OTP"}
+                    </Button>
+                  </form>
+                )
+              ) : (
               <form onSubmit={signIn} className="space-y-3">
                 <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
                 <Field
@@ -370,6 +423,7 @@ function AuthPage() {
                   {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
                 </Button>
               </form>
+              )}
             </TabsContent>
 
 
@@ -407,9 +461,9 @@ function AuthPage() {
                     </div>
                   )}
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Email verification</div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Mobile verification</div>
                     <p className="mt-2 text-[11px] text-muted-foreground">
-                      We’ll email a 6-digit code to <b>{email || "your email address"}</b>. Verification is
+                      We’ll SMS a 6-digit code to <b>{phone || "your mobile number"}</b>. Verification is
                       mandatory — the account stays locked until the code is verified.
                     </p>
                   </div>
@@ -417,11 +471,11 @@ function AuthPage() {
                     {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…</> : `Create ${active.title} account`}
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
-                    We verify your email is real and deliverable before creating the account.
+                    We verify your email and mobile number are real before creating the account.
                   </p>
                 </form>
               ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: email }} />
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
               )}
 
             </TabsContent>

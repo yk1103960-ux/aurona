@@ -18,70 +18,80 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-/** Sends an SMS through whichever provider the admin saved in Admin → Integrations. */
-export async function sendSms(to: string, message: string): Promise<void> {
+/**
+ * The single production SMS template.
+ * DLT (Airtel) approved header/sender: AURONA
+ * DLT approved template id: 1077436770064246433 — this same id is registered in
+ * MSG91 as the "Verified by DLT" OTP template that carries MSG91's ##OTP## variable.
+ * Do NOT replace with the older rejected template ids.
+ */
+export const MSG91_DLT_TEMPLATE_ID = "1077436770064246433";
+export const MSG91_SENDER_ID = "AURONA";
+
+/** Sends an OTP SMS through MSG91 using the DLT-verified template. */
+export async function sendSms(to: string, code: string): Promise<{ requestId: string | null }> {
   const sec = await readSecrets<{ apiKey?: string; authToken?: string; accountSid?: string }>("sms");
   const pub = await readPublic<{ providerName?: string; senderId?: string; templateId?: string }>("sms");
-  const provider = (pub?.providerName ?? "").toLowerCase();
   const apiKey = sec?.apiKey ?? process.env["MSG91_AUTH_KEY"];
 
   if (!apiKey) {
-    throw new Error(
-      "SMS OTP is not configured yet. Please choose “Email OTP”, or ask an administrator to add SMS credentials in Admin → Integrations.",
-    );
+    throw new Error("SMS OTP is not configured. An administrator must add the MSG91 auth key in Admin → Integrations.");
   }
 
-  if (provider.includes("twilio")) {
-    const sid = sec?.accountSid ?? apiKey;
-    const token = sec?.authToken ?? "";
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ To: to, From: pub?.senderId ?? "", Body: message }),
-    });
-    if (!res.ok) throw new Error(`SMS delivery failed (${res.status}). Please try Email OTP.`);
-    return;
-  }
+  // Template/sender are pinned to the DLT-approved pair. Admin overrides are only
+  // honoured when they are actually set; anything stale falls back to the verified ids.
+  const templateId = (process.env["MSG91_TEMPLATE_ID"] ?? "").trim() || MSG91_DLT_TEMPLATE_ID;
+  const sender = (pub?.senderId ?? "").trim() || MSG91_SENDER_ID;
 
-  // Default: MSG91. In India, carriers only deliver against a DLT-approved
-  // template, so without a template ID MSG91 accepts the request and returns
-  // "success" while the message is silently dropped. Refuse instead of lying.
-  const code = message.match(/\d{6}/)?.[0] ?? message;
-  const mobile = to.replace(/\D/g, "");
-  const templateId = (pub?.templateId ?? process.env["MSG91_TEMPLATE_ID"] ?? "").trim();
-  if (!templateId) {
-    throw new Error(
-      "SMS OTP can’t be delivered yet — the SMS provider still needs a DLT-approved template ID. Please use “Email OTP” for now, or add the template ID in Admin → Integrations → SMS / OTP.",
-    );
-  }
+  const digits = to.replace(/\D/g, "");
+  // MSG91 routes on the full country code; always send 91XXXXXXXXXX for Indian numbers.
+  const mobile = digits.length === 10 ? `91${digits}` : digits;
 
   const url = new URL("https://control.msg91.com/api/v5/otp");
-
-  // MSG91 routes on the full country code; a bare 10-digit Indian number is
-  // mis-detected as another country and blocked, so always send 91XXXXXXXXXX.
-  const normalized = mobile.length === 10 ? `91${mobile}` : mobile;
-  url.searchParams.set("mobile", normalized);
-  url.searchParams.set("otp", code);
   url.searchParams.set("template_id", templateId);
-  if (pub?.senderId?.trim()) url.searchParams.set("sender", pub.senderId.trim());
+  url.searchParams.set("mobile", mobile);
+  url.searchParams.set("otp", code); // maps to MSG91's ##OTP## variable
+  url.searchParams.set("sender", sender);
+  url.searchParams.set("realTimeResponse", "1");
 
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: { authkey: apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ otp_expiry: 5 }),
-  });
-  const text = await res.text();
+  let res: Response;
+  let text: string;
+  try {
+    res = await fetch(url.toString(), {
+      method: "POST",
+      headers: { authkey: apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ otp_expiry: 5 }),
+    });
+    text = await res.text();
+  } catch {
+    throw new Error("Could not reach the SMS provider. Please try again in a moment.");
+  }
+
+  let requestId: string | null = null;
+  let providerMessage = "";
   let ok = res.ok;
   try {
-    const j = JSON.parse(text) as { type?: string; message?: string };
-    ok = res.ok && j.type !== "error";
-    if (!ok) throw new Error(`SMS delivery failed: ${j.message ?? text}. Please try Email OTP.`);
-  } catch (err) {
-    if (err instanceof Error && err.message.startsWith("SMS delivery failed")) throw err;
-    if (!res.ok) throw new Error(`SMS delivery failed (${res.status}). Please try Email OTP.`);
+    const j = JSON.parse(text) as { type?: string; message?: string; request_id?: string; errors?: unknown };
+    requestId = j.request_id ?? null;
+    providerMessage = typeof j.message === "string" ? j.message : typeof j.errors === "string" ? j.errors : "";
+    if (j.type === "error") ok = false;
+  } catch {
+    providerMessage = text.slice(0, 200);
   }
+
+  // Diagnostics only — the mobile tail and provider request id, never the OTP or the auth key.
+  console.info(
+    `[msg91] otp send ${ok ? "accepted" : "rejected"} template=${templateId} sender=${sender} mobile=***${mobile.slice(-4)} status=${res.status} request_id=${requestId ?? "none"}${providerMessage ? ` provider="${providerMessage}"` : ""}`,
+  );
+
+  if (!ok) {
+    throw new Error(
+      providerMessage
+        ? `SMS provider rejected the request: ${providerMessage}`
+        : `SMS provider rejected the request (HTTP ${res.status}).`,
+    );
+  }
+  return { requestId };
 }
+
 
