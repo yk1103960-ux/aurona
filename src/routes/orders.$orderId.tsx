@@ -103,6 +103,25 @@ function OrderTrackingPage() {
 
   });
 
+  // Live tracking: courier updates arrive via the Shiprocket webhook, which
+  // writes to `orders` — refresh this page the moment that row changes.
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`order-track-${orderId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
+        () => qc.invalidateQueries({ queryKey: ["order-detail", orderId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, user, qc]);
+
+
   if (loading) return <PageLoading label="Loading your order" />;
   if (!user)
     return (
