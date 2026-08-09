@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { assessPassword, normalisePhone } from "@/lib/auth-security";
+import { assessPassword } from "@/lib/auth-security";
 import {
   validateRegistration,
   loginGuard,
