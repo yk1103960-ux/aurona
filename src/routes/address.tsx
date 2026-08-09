@@ -248,8 +248,8 @@ function AddressPage() {
                       )}
                     </div>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {a.line1}
-                      {a.line2 ? `, ${a.line2}` : ""}
+                      {a.line1}{a.line2 ? `, ${a.line2}` : ""}
+                      {(a.landmark ?? null) ? <> · Landmark: {a.landmark}</> : ""}
                       <br />
                       {a.city}, {a.state} — {a.pincode}
                       <br />
