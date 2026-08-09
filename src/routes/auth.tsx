@@ -242,25 +242,7 @@ function AuthPage() {
     const token = otp.trim();
 
     try {
-      // Registration + SMS: our own server-side challenge, then password sign-in.
-      if (mode === "up" && channel === "sms") {
-        const res = await verifySignupSmsOtp({ data: { email, code: token } });
-        if (!res.ok) {
-          setAttempts((a) => a + 1);
-          return toast.error(res.message);
-        }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return toast.error("Verified — please sign in to continue.");
-      } else if (channel === "sms") {
-        const p = normalisePhone(phone);
-        const out = await verifyLoginSmsOtp({ data: { phone: p.e164 ?? phone, code: token } });
-        if (!out.ok) {
-          setAttempts((a) => a + 1);
-          return toast.error(out.message);
-        }
-        const { error } = await supabase.auth.verifyOtp({ token_hash: out.tokenHash!, type: "magiclink" });
-        if (error) return toast.error("Verified — please sign in with your password to continue.");
-      } else {
+      {
         const res = await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
 
         if (res.error) {
@@ -275,6 +257,7 @@ function AuthPage() {
           if (error) return toast.error("Verified — please sign in to continue.");
         }
       }
+
 
       setOtpSent(false);
       setSecondsLeft(0);
