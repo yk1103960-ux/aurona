@@ -77,7 +77,14 @@ export const startPhonePePayment = createServerFn({ method: "POST" })
     // PhonePe treats the merchant order id as immutable, so every attempt gets a
     // brand-new unique id while the order row keeps the id currently in flight.
     const txnId = pp.newMerchantTxnId(order.order_number);
-    const origin = new URL(data.origin).origin;
+    // PhonePe only allows payments from the URL approved on the merchant account
+    // (https://aurona.in). Preview/staging origins get rejected with a
+    // "Mismatch in Onboarding & Transacting URL" notice, so we always build
+    // PhonePe-facing URLs from the approved origin, never the caller's origin.
+    const approvedOrigin = new URL(
+      process.env["PHONEPE_APPROVED_ORIGIN"] || "https://aurona.in",
+    ).origin;
+    const origin = approvedOrigin;
     const redirectUrl = `${origin}/payment-status?order=${order.id}`;
     const callbackUrl = `${origin}/api/public/phonepe-callback`;
 
