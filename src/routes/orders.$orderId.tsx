@@ -273,6 +273,23 @@ function OrderTrackingPage() {
               <span className="text-xl font-bold">{inr(Number(order.total))}</span>
             </div>
           </section>
+
+          {canCancel && (
+            <CancelOrderCard orderId={order.id} paid={order.payment_status === "paid"} onDone={() => q.refetch()} />
+          )}
+          {cancelled && (
+            <section className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+              <div className="flex items-center gap-2 font-bold text-destructive">
+                <XCircle className="h-4 w-4" /> Order cancelled
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {order.payment_status === "refund_pending"
+                  ? "Your refund has been initiated and reaches your original payment method in 3–7 working days."
+                  : "No payment was captured for this order."}
+              </p>
+            </section>
+          )}
+
           <Button asChild variant="outline" className="h-12 w-full rounded-full">
             <Link to="/products">Continue shopping</Link>
           </Button>
@@ -281,6 +298,108 @@ function OrderTrackingPage() {
     </div>
   );
 }
+
+const CANCEL_REASONS = [
+  "Ordered by mistake",
+  "Found a better price elsewhere",
+  "Delivery is taking too long",
+  "Want to change address or items",
+  "Other reason",
+] as const;
+
+function CancelOrderCard({
+  orderId,
+  paid,
+  onDone,
+}: {
+  orderId: string;
+  paid: boolean;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<string>(CANCEL_REASONS[0]);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const cancel = useServerFn(cancelOrder);
+
+  async function submit() {
+    setBusy(true);
+    try {
+      const finalReason = note.trim() ? `${reason} — ${note.trim()}` : reason;
+      const res = await cancel({ data: { orderId, reason: finalReason } });
+      setOpen(false);
+      toast.success(
+        res.refundPending
+          ? "Order cancelled. Your refund has been initiated."
+          : "Order cancelled successfully.",
+      );
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "We couldn’t cancel this order. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-border p-4">
+      <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        Need to cancel?
+      </h2>
+      <p className="mt-2 text-xs text-muted-foreground">
+        You can cancel this order free of charge until it is handed to the courier.
+        {paid ? " Paid amounts are refunded to your original payment method." : ""}
+      </p>
+      <Button
+        variant="outline"
+        className="mt-3 h-11 w-full rounded-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => setOpen(true)}
+      >
+        <XCircle className="mr-2 h-4 w-4" /> Cancel order
+      </Button>
+
+      <Dialog open={open} onOpenChange={(v) => !busy && setOpen(v)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel this order?</DialogTitle>
+            <DialogDescription>
+              Tell us why you’re cancelling. This cannot be undone — you’ll need to place a new order.
+            </DialogDescription>
+          </DialogHeader>
+
+          <RadioGroup value={reason} onValueChange={setReason} className="gap-2.5">
+            {CANCEL_REASONS.map((r) => (
+              <div key={r} className="flex items-center gap-2.5">
+                <RadioGroupItem value={r} id={`reason-${r}`} />
+                <Label htmlFor={`reason-${r}`} className="text-sm font-medium">
+                  {r}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Anything else we should know? (optional)"
+            maxLength={240}
+            className="min-h-20"
+          />
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" className="rounded-full" onClick={() => setOpen(false)} disabled={busy}>
+              Keep my order
+            </Button>
+            <Button variant="destructive" className="rounded-full" onClick={submit} disabled={busy}>
+              {busy ? "Cancelling…" : "Confirm cancellation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
 
 function Line({ label, value, success }: { label: string; value: string; success?: boolean }) {
   return (
