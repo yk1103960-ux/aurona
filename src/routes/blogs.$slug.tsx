@@ -19,6 +19,8 @@ export const Route = createFileRoute("/blogs/$slug")({
           { property: "og:description", content: loaderData.excerpt },
           { property: "og:type", content: "article" },
           { name: "twitter:card", content: "summary_large_image" },
+          { property: "og:image", content: `https://aurona.in${loaderData.cover}` },
+          { name: "twitter:image", content: `https://aurona.in${loaderData.cover}` },
         ]
       : [],
   }),
@@ -66,7 +68,9 @@ function BlogPostPage() {
           </div>
 
           {/* Featured image */}
-          <div className={`mt-8 aspect-[16/8] w-full rounded-2xl bg-gradient-to-br ${post.tone} ring-1 ring-border`} />
+          <div className="mt-8 aspect-[16/8] w-full overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+            <img src={post.cover} alt={post.title} width={1280} height={720} className="h-full w-full object-cover" />
+          </div>
 
           <div className="mt-8 space-y-5">
             {post.body.map((b: BlogPost["body"][number], i: number) => (
