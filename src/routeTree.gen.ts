@@ -14,6 +14,7 @@ import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PaymentStatusRouteImport } from './routes/payment-status'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as OrderSuccessRouteImport } from './routes/order-success'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as LeadershipRouteImport } from './routes/leadership'
 import { Route as FeaturedRouteImport } from './routes/featured'
@@ -87,6 +88,11 @@ const PaymentRoute = PaymentRouteImport.update({
 const PartnerRoute = PartnerRouteImport.update({
   id: '/partner',
   path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderSuccessRoute = OrderSuccessRouteImport.update({
+  id: '/order-success',
+  path: '/order-success',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewArrivalsRoute = NewArrivalsRouteImport.update({
@@ -377,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/order-success': typeof OrderSuccessRoute
   '/partner': typeof PartnerRouteWithChildren
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/order-success': typeof OrderSuccessRoute
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/wishlist': typeof WishlistRoute
@@ -487,6 +495,7 @@ export interface FileRoutesById {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/order-success': typeof OrderSuccessRoute
   '/partner': typeof PartnerRouteWithChildren
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/order-success'
     | '/partner'
     | '/payment'
     | '/payment-status'
@@ -600,6 +610,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/order-success'
     | '/payment'
     | '/payment-status'
     | '/wishlist'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/order-success'
     | '/partner'
     | '/payment'
     | '/payment-status'
@@ -711,6 +723,7 @@ export interface RootRouteChildren {
   FeaturedRoute: typeof FeaturedRoute
   LeadershipRoute: typeof LeadershipRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
+  OrderSuccessRoute: typeof OrderSuccessRoute
   PartnerRoute: typeof PartnerRouteWithChildren
   PaymentRoute: typeof PaymentRoute
   PaymentStatusRoute: typeof PaymentStatusRoute
@@ -759,6 +772,13 @@ declare module '@tanstack/react-router' {
       path: '/partner'
       fullPath: '/partner'
       preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-success': {
+      id: '/order-success'
+      path: '/order-success'
+      fullPath: '/order-success'
+      preLoaderRoute: typeof OrderSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-arrivals': {
@@ -1228,6 +1248,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturedRoute: FeaturedRoute,
   LeadershipRoute: LeadershipRoute,
   NewArrivalsRoute: NewArrivalsRoute,
+  OrderSuccessRoute: OrderSuccessRoute,
   PartnerRoute: PartnerRouteWithChildren,
   PaymentRoute: PaymentRoute,
   PaymentStatusRoute: PaymentStatusRoute,
