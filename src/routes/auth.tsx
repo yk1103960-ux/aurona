@@ -421,7 +421,7 @@ function AuthPage() {
                   </p>
                 </form>
               ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: email, channel: "email" as const }} />
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: email }} />
               )}
 
             </TabsContent>
@@ -475,10 +475,9 @@ function StrengthMeter({ verdict }: { verdict: ReturnType<typeof assessPassword>
 function OtpPanel(props: {
   otp: string; setOtp: (v: string) => void; verifyOtp: (e: React.FormEvent) => void;
   busy: boolean; expired: boolean; locked: boolean; mmss: string; attempts: number; maxAttempts: number;
-  resend: () => void; cooldown: number; target: string; channel: "email" | "sms";
-  setChannel?: (c: "email" | "sms") => void;
+  resend: () => void; cooldown: number; target: string;
 }) {
-  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target, channel, setChannel } = props;
+  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target } = props;
   return (
     <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
@@ -487,22 +486,6 @@ function OtpPanel(props: {
           {expired ? "Code expired" : `Expires in ${mmss}`}
         </div>
       </div>
-
-      {setChannel && (
-        <div className="flex gap-1 rounded-full bg-background p-1">
-          {(["email", "sms"] as const).map((c) => (
-            <button
-              key={c} type="button" onClick={() => setChannel(c)}
-              className={cn(
-                "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
-                channel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              {c === "email" ? "Email OTP" : "Mobile SMS OTP"}
-            </button>
-          ))}
-        </div>
-      )}
 
       <p className="text-[11px] text-muted-foreground">
         Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.
@@ -527,8 +510,9 @@ function OtpPanel(props: {
         type="button" onClick={resend} disabled={busy || cooldown > 0}
         className="w-full text-center text-[11px] font-semibold text-primary underline disabled:opacity-50"
       >
-        {cooldown > 0 ? `Resend code in ${cooldown}s` : channel === "sms" ? "Send code by SMS" : "Resend code"}
+        {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
       </button>
+
     </form>
   );
 }
