@@ -141,11 +141,14 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
     .eq("provider", "shiprocket")
     .maybeSingle();
 
+  // A directly-injected static API token (env secret) always wins — no DB/login needed.
+  if (process.env["SHIPROCKET_API_TOKEN"]) return process.env["SHIPROCKET_API_TOKEN"].trim();
+
   const stored = row?.credentials_ciphertext
     ? decryptJSON<Creds>(row.credentials_ciphertext)
     : null;
 
-  // Admin-supplied static API token wins and is never mixed with login.
+  // Admin-supplied static API token (stored in DB) wins and is never mixed with login.
   if (stored?.apiToken) return stored.apiToken;
 
   if (!force && row?.auth_token_ciphertext && row.auth_token_expires_at) {
