@@ -14,6 +14,7 @@ export type AddressRow = {
   phone: string;
   line1: string;
   line2: string | null;
+  landmark: string | null;
   city: string;
   state: string;
   pincode: string;
@@ -26,6 +27,7 @@ const EMPTY = {
   phone: "",
   line1: "",
   line2: "",
+  landmark: "",
   city: "",
   state: "",
   pincode: "",
