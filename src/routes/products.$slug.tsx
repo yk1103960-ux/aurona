@@ -156,7 +156,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 <div className="text-display text-2xl">
                   {role.isPartnerPending ? "Hidden" : inr(effectivePrice)}
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">per {productId ? "unit" : "sku"}</div>
+                {/* Constant label: variant resolution happens after hydration,
+                    so branching on it here caused a hydration mismatch. */}
+                <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">per unit</div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
@@ -265,11 +267,11 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 variant="outline"
                 className="h-12 gap-2 rounded-none"
                 onClick={() => productId && cart.add.mutate({ productId, quantity: qty })}
-                disabled={!productId || !inStock || cart.add.isPending}
+                disabled={!inStock || cart.add.isPending}
               >
                 <ShoppingCart className="h-4 w-4" /> Add to cart
               </Button>
-              <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!productId || !inStock}>
+              <Button size="lg" className="h-12 rounded-none" onClick={buyNow} disabled={!inStock}>
                 Buy now
               </Button>
             </div>

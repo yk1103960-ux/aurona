@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/empty/EmptyState";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/orders/$orderId")({
   head: () => ({
@@ -73,7 +74,7 @@ function OrderTrackingPage() {
     },
   });
 
-  if (loading) return null;
+  if (loading) return <PageLoading label="Loading your order" />;
   if (!user)
     return (
       <EmptyState
@@ -84,7 +85,7 @@ function OrderTrackingPage() {
         primary={{ label: "Sign in / Register", to: "/auth" }}
       />
     );
-  if (q.isLoading) return <div className="container-x py-16" />;
+  if (q.isLoading) return <PageLoading label="Loading your order" />;
   if (!q.data)
     return (
       <EmptyState
@@ -103,6 +104,7 @@ function OrderTrackingPage() {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 
   return (

@@ -155,7 +155,7 @@ function PolicyPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-display text-4xl md:text-5xl">{policy.title}</h1>
         {policy.intro && <p className="mt-4 text-base leading-relaxed text-muted-foreground">{policy.intro}</p>}
-        <div className="mt-2 text-xs text-muted-foreground">Last updated: {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</div>
+        <div className="mt-2 text-xs text-muted-foreground">Last updated: {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}</div>
         <div className="mt-10 space-y-8">
           {policy.sections.map((s, i) => (
             <section key={s.heading} className="rounded-2xl border border-border bg-card p-6 shadow-sm">

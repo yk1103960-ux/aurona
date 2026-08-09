@@ -33,7 +33,6 @@ const COL_2: [string, string][] = [
   ["Flood Lights", "flood-lights"],
   ["Interior Lights", "interior-lights"],
   ["Outdoor Lights", "outdoor-lights"],
-  ["Decorative Lights", "decorative-lights"],
   ["All Lighting", ""],
 ];
 

@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/empty/EmptyState";
 import { detectAddressFromGeolocation } from "@/lib/shipping";
 import { cn } from "@/lib/utils";
 import type { AddressRow } from "@/components/account/AddressManager";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/address")({
   head: () => ({
@@ -187,7 +188,7 @@ function AddressPage() {
     }
   };
 
-  if (loading) return null;
+  if (loading) return <PageLoading label="Loading your addresses" />;
   if (!user)
     return (
       <EmptyState

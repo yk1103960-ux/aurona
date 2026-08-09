@@ -26,6 +26,7 @@ import { CouponBox } from "@/components/shop/CouponBox";
 import { FlowSteps } from "@/components/shop/FlowSteps";
 import { productsQuery } from "@/lib/queries";
 import { discountPct, inr } from "@/lib/format";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -53,9 +54,9 @@ function CartPage() {
   const s = useCheckoutSummary();
   const recommended = useQuery(productsQuery({ bestseller: true, limit: 6 }));
 
-  if (loading) return null;
+  if (loading) return <PageLoading label="Loading your cart" />;
   if (!user) return <SignInPrompt />;
-  if (cart.loading && cart.items.length === 0) return <div className="container-x py-16" />;
+  if (cart.loading && cart.items.length === 0) return <PageLoading label="Loading your cart" />;
   if (cart.items.length === 0) return <EmptyCart />;
 
   const deliveryKnown = Boolean(s.address) && s.rates.length > 0;

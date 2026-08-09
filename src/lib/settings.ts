@@ -17,7 +17,7 @@ export type SiteSettings = {
   [key: string]: string;
 };
 
-const DEFAULTS: SiteSettings = {
+export const SETTINGS_DEFAULTS: SiteSettings = {
   support_phone: "+91 96025 70026",
   support_email: "support@auronalighting.com",
   notification_email: "info@auronalighting.com",
@@ -35,13 +35,19 @@ const DEFAULTS: SiteSettings = {
 export const siteSettingsQuery = queryOptions({
   queryKey: ["site-settings"],
   staleTime: 10 * 60 * 1000,
+  // Never undefined: the header/footer render contact + social links from this,
+  // and an undefined value produced dead `tel:` / `mailto:` hrefs on hydration.
+  placeholderData: SETTINGS_DEFAULTS,
   gcTime: 30 * 60 * 1000,
   queryFn: async (): Promise<SiteSettings> => {
     const { data, error } = await supabase.from("site_settings").select("key, value");
-    if (error) return DEFAULTS;
-    const map: Record<string, string> = { ...DEFAULTS };
+    if (error) return SETTINGS_DEFAULTS;
+    const map: Record<string, string> = { ...SETTINGS_DEFAULTS };
     for (const row of (data ?? []) as { key: string; value: string }[]) {
-      map[row.key] = row.value;
+      // Blank values in the settings table must not wipe out a working
+      // default — an empty phone/email produced dead `tel:` / `mailto:` links.
+      const value = (row.value ?? "").trim();
+      if (value) map[row.key] = value;
     }
     return map as SiteSettings;
   },
