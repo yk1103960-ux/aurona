@@ -191,9 +191,8 @@ function AccountPage() {
         <div className="bg-nav px-6 py-7 text-nav-foreground sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="grid h-16 w-16 place-items-center rounded-full border border-white/25 bg-white/10 text-xl font-bold">
-                {initials}
-              </div>
+              <HeaderAvatar path={profile.data?.avatar_url as string | null | undefined} initials={initials} />
+
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.24em] opacity-70">My Dashboard</div>
                 <div className="text-display mt-1 text-3xl leading-none">{name}</div>
