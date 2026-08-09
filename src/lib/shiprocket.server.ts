@@ -170,18 +170,19 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
   // Admin-supplied static API token (stored in DB) wins and is never mixed with login.
   if (stored?.apiToken) return stored.apiToken;
 
-  // Credentials saved in the admin panel always take priority over any legacy env token.
-  if (!stored?.email || !stored?.password) {
-    if (process.env["SHIPROCKET_API_TOKEN"]) return process.env["SHIPROCKET_API_TOKEN"].trim();
-  }
+  // A deliberately configured runtime token bypasses password login entirely.
+  if (process.env["SHIPROCKET_API_TOKEN"]?.trim()) return process.env["SHIPROCKET_API_TOKEN"].trim();
 
   if (!force && row?.auth_token_ciphertext && row.auth_token_expires_at) {
     const valid = new Date(row.auth_token_expires_at).getTime() > Date.now() + 60_000;
     if (valid) return decryptJSON<{ token: string }>(row.auth_token_ciphertext).token;
   }
 
-  const email = stored?.email ?? process.env["SHIPROCKET_EMAIL"];
-  const password = stored?.password ?? process.env["SHIPROCKET_PASSWORD"];
+  // Runtime credentials are the operator-controlled source of truth. This is
+  // important after a password rotation: an older encrypted admin-panel value
+  // must not silently override the newly saved production credential.
+  const email = process.env["SHIPROCKET_EMAIL"]?.trim() || stored?.email;
+  const password = process.env["SHIPROCKET_PASSWORD"] || stored?.password;
   if (!email || !password) throw new Error("Shiprocket is not connected");
 
 
