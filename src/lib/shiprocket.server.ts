@@ -165,7 +165,16 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
 
   const call = await shiprocketLogin(email, password);
   const token = call.json?.token as string | undefined;
-  if (!call.ok || !token) throw new Error(authFailureMessage(call));
+  if (!call.ok || !token) {
+    // Login can fail temporarily (lockout / inactive API user) while a cached
+    // token is still valid — prefer it over breaking shipping outright.
+    if (row?.auth_token_ciphertext && row.auth_token_expires_at) {
+      const valid = new Date(row.auth_token_expires_at).getTime() > Date.now();
+      if (valid) return decryptJSON<{ token: string }>(row.auth_token_ciphertext).token;
+    }
+    throw new Error(authFailureMessage(call));
+  }
+
 
   await supabaseAdmin
     .from("shipping_providers")
