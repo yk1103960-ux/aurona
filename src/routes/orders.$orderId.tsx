@@ -1,13 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronLeft, MapPin, Package } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { Check, ChevronLeft, MapPin, Package, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/empty/EmptyState";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageLoading } from "@/components/layout/PageLoading";
+import { cancelOrder } from "@/lib/orders.functions";
+
 
 export const Route = createFileRoute("/orders/$orderId")({
   head: () => ({
