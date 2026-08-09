@@ -22,7 +22,7 @@ import { EmptyState } from "@/components/empty/EmptyState";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageLoading } from "@/components/layout/PageLoading";
-import { cancelOrder } from "@/lib/orders.functions";
+import { requestOrderCancellation } from "@/lib/orders.functions";
 
 
 export const Route = createFileRoute("/orders/$orderId")({
