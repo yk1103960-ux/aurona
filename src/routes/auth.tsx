@@ -278,20 +278,8 @@ function AuthPage() {
     }
   };
 
-  const sendLoginOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const p = normalisePhone(phone);
-    if (!p.ok) { setErrors({ phone: p.reason! }); return; }
-    setBusy(true);
-    const res = await sendLoginSmsOtp({ data: { phone: p.e164! } }).catch(() => null);
-    setBusy(false);
-    if (!res) return toast.error("Network problem — please try again.");
-    if (!res.ok) return toast.error(res.message);
-    setChannel("sms");
-    startOtp();
-    toast.success(res.message);
 
-  };
+
 
   const active = ROLES.find((r) => r.id === role)!;
 
