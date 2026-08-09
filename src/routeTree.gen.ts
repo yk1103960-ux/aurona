@@ -63,6 +63,7 @@ import { Route as AuronaConsole9f2x7kProductsNewRouteImport } from './routes/aur
 import { Route as AuronaConsole9f2x7kProductsBulkRouteImport } from './routes/aurona-console-9f2x7k.products.bulk'
 import { Route as AuronaConsole9f2x7kProductsIdRouteImport } from './routes/aurona-console-9f2x7k.products.$id'
 import { Route as AuronaConsole9f2x7kOrdersIdRouteImport } from './routes/aurona-console-9f2x7k.orders.$id'
+import { Route as ApiPublicShiprocketWebhookRouteImport } from './routes/api/public/shiprocket-webhook'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
 
@@ -356,6 +357,12 @@ const AuronaConsole9f2x7kOrdersIdRoute =
     path: '/$id',
     getParentRoute: () => AuronaConsole9f2x7kOrdersRoute,
   } as any)
+const ApiPublicShiprocketWebhookRoute =
+  ApiPublicShiprocketWebhookRouteImport.update({
+    id: '/api/public/shiprocket-webhook',
+    path: '/api/public/shiprocket-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicRazorpayWebhookRoute =
   ApiPublicRazorpayWebhookRouteImport.update({
     id: '/api/public/razorpay-webhook',
@@ -422,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof ProductsIndexRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/shiprocket-webhook': typeof ApiPublicShiprocketWebhookRoute
   '/aurona-console-9f2x7k/orders/$id': typeof AuronaConsole9f2x7kOrdersIdRoute
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
@@ -477,6 +485,7 @@ export interface FileRoutesByTo {
   '/products': typeof ProductsIndexRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/shiprocket-webhook': typeof ApiPublicShiprocketWebhookRoute
   '/aurona-console-9f2x7k/orders/$id': typeof AuronaConsole9f2x7kOrdersIdRoute
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
@@ -536,6 +545,7 @@ export interface FileRoutesById {
   '/products/': typeof ProductsIndexRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/shiprocket-webhook': typeof ApiPublicShiprocketWebhookRoute
   '/aurona-console-9f2x7k/orders/$id': typeof AuronaConsole9f2x7kOrdersIdRoute
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
@@ -596,6 +606,7 @@ export interface FileRouteTypes {
     | '/products/'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
+    | '/api/public/shiprocket-webhook'
     | '/aurona-console-9f2x7k/orders/$id'
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
+    | '/api/public/shiprocket-webhook'
     | '/aurona-console-9f2x7k/orders/$id'
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
@@ -709,6 +721,7 @@ export interface FileRouteTypes {
     | '/products/'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
+    | '/api/public/shiprocket-webhook'
     | '/aurona-console-9f2x7k/orders/$id'
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
@@ -748,6 +761,7 @@ export interface RootRouteChildren {
   BlogsIndexRoute: typeof BlogsIndexRoute
   ApiPublicPhonepeCallbackRoute: typeof ApiPublicPhonepeCallbackRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  ApiPublicShiprocketWebhookRoute: typeof ApiPublicShiprocketWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1130,6 +1144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kOrdersIdRouteImport
       parentRoute: typeof AuronaConsole9f2x7kOrdersRoute
     }
+    '/api/public/shiprocket-webhook': {
+      id: '/api/public/shiprocket-webhook'
+      path: '/api/public/shiprocket-webhook'
+      fullPath: '/api/public/shiprocket-webhook'
+      preLoaderRoute: typeof ApiPublicShiprocketWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/razorpay-webhook': {
       id: '/api/public/razorpay-webhook'
       path: '/api/public/razorpay-webhook'
@@ -1281,17 +1302,8 @@ const rootRouteChildren: RootRouteChildren = {
   BlogsIndexRoute: BlogsIndexRoute,
   ApiPublicPhonepeCallbackRoute: ApiPublicPhonepeCallbackRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  ApiPublicShiprocketWebhookRoute: ApiPublicShiprocketWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

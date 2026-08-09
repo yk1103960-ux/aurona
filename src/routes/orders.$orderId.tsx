@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronLeft, MapPin, Package, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,25 @@ function OrderTrackingPage() {
     },
 
   });
+
+  // Live tracking: courier updates arrive via the Shiprocket webhook, which
+  // writes to `orders` — refresh this page the moment that row changes.
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`order-track-${orderId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
+        () => qc.invalidateQueries({ queryKey: ["order-detail", orderId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, user, qc]);
+
 
   if (loading) return <PageLoading label="Loading your order" />;
   if (!user)
