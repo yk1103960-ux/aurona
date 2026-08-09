@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { assessPassword, normalisePhone } from "@/lib/auth-security";
+import { assessPassword } from "@/lib/auth-security";
 import {
   validateRegistration,
   loginGuard,
@@ -18,7 +18,7 @@ import {
   registerSession,
   getAuthPolicy,
 } from "@/lib/auth.functions";
-import { sendSignupSmsOtp, verifySignupSmsOtp, sendLoginSmsOtp, verifyLoginSmsOtp } from "@/lib/otp.functions";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -67,7 +67,7 @@ function AuthPage() {
 
   const [role, setRole] = useState<Role>("customer");
   const [mode, setMode] = useState<"in" | "up">("in");
-  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
+  
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -83,8 +83,6 @@ function AuthPage() {
   // OTP state
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [channel, setChannel] = useState<"email" | "sms">("email");
-  const [signupChannel, setSignupChannel] = useState<"email" | "sms">("email");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -141,22 +139,15 @@ function AuthPage() {
   };
 
   // ---------- Registration ----------
-  const deliverSignupOtp = async (via: "email" | "sms") => {
-    if (via === "sms") {
-      const res = await sendSignupSmsOtp({ data: { email, phone } });
-      if (!res.ok) { toast.error(res.message); return false; }
-      setChannel("sms");
-      startOtp();
-      toast.success(res.message);
-      return true;
-    }
+  /** Email OTP is the only verification channel for launch. */
+  const deliverSignupOtp = async () => {
     const { error } = await supabase.auth.resend({ type: "signup", email });
     if (error && !/already confirmed/i.test(error.message)) { toast.error(error.message); return false; }
-    setChannel("email");
     startOtp();
     toast.success(`We sent a 6-digit code to ${email}. It expires in ${Math.round(policy.otpExpirySeconds / 60)} minutes.`);
     return true;
   };
+
 
   const register = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,11 +186,7 @@ function AuthPage() {
       // Never let an unverified account stay signed in, whatever the server returns.
       if (signUpData.session) await supabase.auth.signOut();
 
-      const sent = await deliverSignupOtp(signupChannel);
-      if (!sent && signupChannel === "sms") {
-        // SMS unavailable — fall back to email so verification stays mandatory.
-        await deliverSignupOtp("email");
-      }
+      await deliverSignupOtp();
     } catch (err: any) {
       toast.error(err?.message?.includes("fetch") ? "Network problem — please try again." : err?.message || "Something went wrong. Please try again.");
     } finally {
@@ -211,28 +198,12 @@ function AuthPage() {
     if (cooldown > 0) return toast.error(`Please wait ${cooldown}s before requesting another code.`);
     setBusy(true);
     try {
-      if (mode === "up") {
-        await deliverSignupOtp(channel);
-        return;
-      }
-      const p = normalisePhone(phone);
-      if (!p.ok) return toast.error(p.reason!);
-      const res = await sendLoginSmsOtp({ data: { phone: p.e164! } });
-      if (!res.ok) return toast.error(res.message);
-      startOtp();
-      toast.success(res.message);
-
+      await deliverSignupOtp();
     } finally {
       setBusy(false);
     }
   };
 
-  const switchSignupChannel = async (c: "email" | "sms") => {
-    if (c === channel || busy) return;
-    setSignupChannel(c);
-    setBusy(true);
-    try { await deliverSignupOtp(c); } finally { setBusy(false); }
-  };
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,25 +213,7 @@ function AuthPage() {
     const token = otp.trim();
 
     try {
-      // Registration + SMS: our own server-side challenge, then password sign-in.
-      if (mode === "up" && channel === "sms") {
-        const res = await verifySignupSmsOtp({ data: { email, code: token } });
-        if (!res.ok) {
-          setAttempts((a) => a + 1);
-          return toast.error(res.message);
-        }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return toast.error("Verified — please sign in to continue.");
-      } else if (channel === "sms") {
-        const p = normalisePhone(phone);
-        const out = await verifyLoginSmsOtp({ data: { phone: p.e164 ?? phone, code: token } });
-        if (!out.ok) {
-          setAttempts((a) => a + 1);
-          return toast.error(out.message);
-        }
-        const { error } = await supabase.auth.verifyOtp({ token_hash: out.tokenHash!, type: "magiclink" });
-        if (error) return toast.error("Verified — please sign in with your password to continue.");
-      } else {
+      {
         const res = await supabase.auth.verifyOtp({ email, token, type: mode === "up" ? "signup" : "email" });
 
         if (res.error) {
@@ -275,6 +228,7 @@ function AuthPage() {
           if (error) return toast.error("Verified — please sign in to continue.");
         }
       }
+
 
       setOtpSent(false);
       setSecondsLeft(0);
@@ -322,20 +276,8 @@ function AuthPage() {
     }
   };
 
-  const sendLoginOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const p = normalisePhone(phone);
-    if (!p.ok) { setErrors({ phone: p.reason! }); return; }
-    setBusy(true);
-    const res = await sendLoginSmsOtp({ data: { phone: p.e164! } }).catch(() => null);
-    setBusy(false);
-    if (!res) return toast.error("Network problem — please try again.");
-    if (!res.ok) return toast.error(res.message);
-    setChannel("sms");
-    startOtp();
-    toast.success(res.message);
 
-  };
+
 
   const active = ROLES.find((r) => r.id === role)!;
 
@@ -409,53 +351,27 @@ function AuthPage() {
 
             {/* ---------------- SIGN IN ---------------- */}
             <TabsContent value="in" className="pt-4">
-              <div className="mb-4 flex gap-1 rounded-full bg-muted p-1">
-                {(["password", "otp"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => { setLoginMode(m); setOtpSent(false); }}
-                    className={cn(
-                      "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
-                      loginMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {m === "password" ? "Email + Password" : "Mobile + OTP"}
-                  </button>
-                ))}
-              </div>
-
-              {loginMode === "password" ? (
-                <form onSubmit={signIn} className="space-y-3">
-                  <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
-                  <Field
-                    label="Password" value={password} onChange={setPassword}
-                    type={showPw ? "text" : "password"} error={errors.password}
-                    trailing={
-                      <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
-                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    }
-                  />
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
-                    Remember me on this device
-                  </label>
-                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                    {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
-                  </Button>
-                </form>
-              ) : otpSent ? (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone, channel: "sms" }} />
-              ) : (
-                <form onSubmit={sendLoginOtp} className="space-y-3">
-                  <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
-                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                    {busy ? "Sending…" : "Send OTP"}
-                  </Button>
-                </form>
-              )}
+              <form onSubmit={signIn} className="space-y-3">
+                <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
+                <Field
+                  label="Password" value={password} onChange={setPassword}
+                  type={showPw ? "text" : "password"} error={errors.password}
+                  trailing={
+                    <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
+                      {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  }
+                />
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
+                  Remember me on this device
+                </label>
+                <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                  {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
+                </Button>
+              </form>
             </TabsContent>
+
 
             {/* ---------------- REGISTER ---------------- */}
             <TabsContent value="up" className="pt-4">
@@ -491,22 +407,10 @@ function AuthPage() {
                     </div>
                   )}
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Send my OTP by</div>
-                    <div className="mt-2 flex gap-1 rounded-full bg-background p-1">
-                      {(["sms", "email"] as const).map((c) => (
-                        <button
-                          key={c} type="button" onClick={() => setSignupChannel(c)}
-                          className={cn(
-                            "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
-                            signupChannel === c ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-                          )}
-                        >
-                          {c === "sms" ? "Mobile (SMS)" : "Email"}
-                        </button>
-                      ))}
-                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Email verification</div>
                     <p className="mt-2 text-[11px] text-muted-foreground">
-                      Verification is mandatory — the account stays locked until the code is verified.
+                      We’ll email a 6-digit code to <b>{email || "your email address"}</b>. Verification is
+                      mandatory — the account stays locked until the code is verified.
                     </p>
                   </div>
                   <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm}>
@@ -517,8 +421,9 @@ function AuthPage() {
                   </p>
                 </form>
               ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: channel === "sms" ? phone : email, channel, setChannel: switchSignupChannel }} />
+                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: email, channel: "email" as const }} />
               )}
+
             </TabsContent>
           </Tabs>
 

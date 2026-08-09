@@ -561,16 +561,17 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
                     Track shipment {o.courier_name ? `(${o.courier_name})` : ""}
                   </a>
                 )}
-                {/* Self-service cancellation stays available only until dispatch. */}
+                {/* Cancellation is requested here and approved by our team. */}
                 {["pending", "confirmed", "processing"].includes(o.status) && !o.awb_code && (
                   <Link
                     to="/orders/$orderId"
                     params={{ orderId: o.id }}
                     className="text-[11px] font-semibold text-destructive"
                   >
-                    Cancel order
+                    Request cancellation
                   </Link>
                 )}
+
                 <Link to="/customer-service" className="ml-auto text-[11px] text-muted-foreground hover:text-primary">
                   Need help with this order?
                 </Link>
