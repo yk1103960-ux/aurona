@@ -135,7 +135,7 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
         }
 
         const trackingUrl = awb ? `https://shiprocket.co/tracking/${awb}` : null;
-        const update: Record<string, unknown> = {
+        const update: Record<string, string | null> = {
           shipment_provider: "shiprocket",
           shipment_status: status || null,
           shipment_synced_at: new Date().toISOString(),
@@ -150,7 +150,7 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
         const terminal = new Set(["delivered", "returned", "cancelled", "refunded"]);
         if (mapped && !terminal.has(order.status)) update["status"] = mapped;
 
-        const { error: updateError } = await supabaseAdmin.from("orders").update(update).eq("id", order.id);
+        const { error: updateError } = await supabaseAdmin.from("orders").update(update as never).eq("id", order.id);
         if (updateError) {
           console.log(`[shiprocket-webhook] order update failed: ${updateError.message}`);
           return new Response("Update error", { status: 500 });
