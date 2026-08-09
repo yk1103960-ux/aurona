@@ -129,7 +129,30 @@ export function AddressManager({ userId }: { userId: string }) {
           }}
           className="mt-5 grid gap-3 rounded-2xl border border-border bg-surface p-5 sm:grid-cols-2"
         >
-          <F label="Address type (Home/Office)" v={form.label} set={(v) => setForm({ ...form, label: v })} />
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Address type</Label>
+            <div className="mt-1 flex gap-2">
+              {[
+                { v: "Home", icon: Home },
+                { v: "Office", icon: Building2 },
+                { v: "Others", icon: MapPin },
+              ].map(({ v, icon: Icon }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setForm({ ...form, label: v })}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                    form.label === v
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/40"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
           <F label="Full name" v={form.full_name} set={(v) => setForm({ ...form, full_name: v })} required />
           <F label="Phone" v={form.phone} set={(v) => setForm({ ...form, phone: v })} required />
           <F label="Pincode" v={form.pincode} set={(v) => setForm({ ...form, pincode: v.replace(/\D/g, "").slice(0, 6) })} required />
