@@ -13,21 +13,8 @@ import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 
 type Row = Product & { categories: { slug: string; name: string; icon?: string | null } | null };
 
-/**
- * "Mon, 12 Aug" — 3 working days out, matches the delivery promise on aurona.in.
- * Pinned to IST so the server-rendered date always matches what the browser
- * renders (a floating locale/timezone caused hydration mismatches).
- */
-function deliveryEstimate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 3);
-  return d.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    timeZone: "Asia/Kolkata",
-  });
-}
+
+
 
 
 export function ProductCard({
@@ -158,10 +145,9 @@ export function ProductCard({
 
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Truck className="h-3.5 w-3.5 text-success" />
-          <span>
-            Delivery by <span className="font-semibold text-foreground">{deliveryEstimate()}</span>
-          </span>
+          <span>Delivery charges calculated at checkout</span>
         </div>
+
         {lowStock && (
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">
             <Zap className="h-3.5 w-3.5" /> Only {stock} left
