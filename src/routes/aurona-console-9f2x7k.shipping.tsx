@@ -74,7 +74,9 @@ function ShippingAdmin() {
         toast.error(result.error, { duration: 14_000 });
         return;
       }
-      toast.success(`Shiprocket connected · pickup location "${result.pickupLocation}"`);
+      if (result.warning) toast.warning(result.warning, { duration: 14_000 });
+      else toast.success(`Shiprocket connected · pickup location "${result.pickupLocation}"`);
+
       setOpen(false);
       setForm({ email: "", password: "", apiToken: "", pickupLocation: "", enabled: true });
       await qc.invalidateQueries({ queryKey: ["admin-shipping"] });
