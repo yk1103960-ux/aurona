@@ -1,0 +1,2 @@
+DELETE FROM public.shipment_events WHERE awb_code IN ('TEST123','TESTAWB9');
+UPDATE public.orders SET awb_code = NULL, courier_name = NULL, tracking_url = NULL, shipment_status = NULL, shipment_provider = NULL, shipment_synced_at = NULL WHERE awb_code = 'TESTAWB9';
