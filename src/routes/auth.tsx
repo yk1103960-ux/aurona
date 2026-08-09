@@ -188,11 +188,7 @@ function AuthPage() {
       // Never let an unverified account stay signed in, whatever the server returns.
       if (signUpData.session) await supabase.auth.signOut();
 
-      const sent = await deliverSignupOtp(signupChannel);
-      if (!sent && signupChannel === "sms") {
-        // SMS unavailable — fall back to email so verification stays mandatory.
-        await deliverSignupOtp("email");
-      }
+      await deliverSignupOtp();
     } catch (err: any) {
       toast.error(err?.message?.includes("fetch") ? "Network problem — please try again." : err?.message || "Something went wrong. Please try again.");
     } finally {
@@ -204,28 +200,12 @@ function AuthPage() {
     if (cooldown > 0) return toast.error(`Please wait ${cooldown}s before requesting another code.`);
     setBusy(true);
     try {
-      if (mode === "up") {
-        await deliverSignupOtp(channel);
-        return;
-      }
-      const p = normalisePhone(phone);
-      if (!p.ok) return toast.error(p.reason!);
-      const res = await sendLoginSmsOtp({ data: { phone: p.e164! } });
-      if (!res.ok) return toast.error(res.message);
-      startOtp();
-      toast.success(res.message);
-
+      await deliverSignupOtp();
     } finally {
       setBusy(false);
     }
   };
 
-  const switchSignupChannel = async (c: "email" | "sms") => {
-    if (c === channel || busy) return;
-    setSignupChannel(c);
-    setBusy(true);
-    try { await deliverSignupOtp(c); } finally { setBusy(false); }
-  };
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
