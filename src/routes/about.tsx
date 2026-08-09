@@ -28,6 +28,52 @@ function About() {
       </section>
 
       <section className="container-x py-16">
+        <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+          <article>
+            <h2 className="text-display text-3xl sm:text-4xl">Who we are</h2>
+            <div className="mt-4 space-y-4 text-muted-foreground">
+              <p>
+                Aurona Lighting Industries is a trusted manufacturer and supplier of premium LED lighting products and
+                home appliances based in Neem Ka Thana, Rajasthan. Since our establishment, we have been dedicated to
+                offering innovative, energy-efficient lighting solutions that cater to homes, businesses and industries
+                across India.
+              </p>
+              <p>
+                We pride ourselves on being “The Architects of Luminosity”, delivering top-quality LED lighting
+                solutions for every need. Our products range from 3W to 200W, available in a spectrum of vibrant
+                colours, suitable for both indoor and outdoor applications.
+              </p>
+              <p>
+                As an ISO 9001:2015 certified company, we guarantee the highest standards of quality, safety and
+                performance. Alongside manufacturing, we also support entrepreneurs through OEM services and
+                consultancy for setting up LED businesses.
+              </p>
+            </div>
+          </article>
+
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-border bg-surface p-6">
+              <h2 className="text-display text-2xl">Our vision</h2>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                To illuminate every home, business and industry with premium LED lighting solutions that are
+                energy-efficient, innovative and sustainable. We aim to be India’s leading provider of lighting
+                products and home appliances, while also empowering entrepreneurs to build successful lighting
+                businesses.
+              </p>
+            </div>
+            <div className="rounded-2xl border-l-2 border-gold bg-card p-6">
+              <h2 className="text-display text-2xl">Our motto</h2>
+              <p className="mt-3 text-lg font-semibold">“Brightening Lives with Innovation, Affordability, and Excellence.”</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                We strive to provide innovative, energy-efficient lighting solutions at affordable prices, contributing
+                to a brighter and more sustainable future for society.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="container-x pb-4">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { Icon: Award, k: "17+", l: "Years of excellence" },
@@ -43,6 +89,7 @@ function About() {
           ))}
         </div>
       </section>
+
 
       <section className="container-x py-16">
         <h2 className="text-display text-3xl sm:text-4xl">Our journey</h2>
