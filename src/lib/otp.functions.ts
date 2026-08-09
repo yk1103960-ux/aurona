@@ -1,37 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateCode, hashCode, safeEqual, sendSms } from "./otp.server";
+import {
+  findAuthUser,
+  generateCode,
+  hashCode,
+  hourlyQuotaExceeded,
+  OTP_EXPIRY_SECONDS,
+  OTP_MAX_ATTEMPTS,
+  OTP_RESEND_COOLDOWN,
+  safeEqual,
+  sendSms,
+} from "./otp.server";
 import { normalisePhone } from "./auth-security";
-
-async function findAuthUser(email: string): Promise<{ id: string; confirmed: boolean } | null> {
-  const url = process.env["SUPABASE_URL"];
-  const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  if (!url || !key) return null;
-  const res = await fetch(`${url}/auth/v1/admin/users?per_page=5&filter=${encodeURIComponent(email)}`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  });
-  if (!res.ok) return null;
-  const j = (await res.json()) as { users?: { id: string; email?: string; email_confirmed_at?: string | null }[] };
-  const hit = (j.users ?? []).find((u) => (u.email ?? "").toLowerCase() === email.toLowerCase());
-  return hit ? { id: hit.id, confirmed: Boolean(hit.email_confirmed_at) } : null;
-}
-
-const EXPIRY_SECONDS = 300;
-const MAX_ATTEMPTS = 5;
-const RESEND_COOLDOWN = 60;
-const MAX_PER_HOUR = 5;
-
-/** Hard cap on OTP requests per mobile number per hour (abuse / cost protection). */
-async function hourlyQuotaExceeded(phoneE164: string): Promise<boolean> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const since = new Date(Date.now() - 3_600_000).toISOString();
-  const { count } = await supabaseAdmin
-    .from("auth_otp_challenges")
-    .select("id", { count: "exact", head: true })
-    .eq("phone", phoneE164)
-    .gte("created_at", since);
-  return (count ?? 0) >= MAX_PER_HOUR;
-}
 
 
 /** Sends a 6-digit code by SMS to the mobile number used at registration. */
@@ -47,9 +27,11 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const p = normalisePhone(data.phone);
     if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const phoneE164 = p.e164;
+    if (!phoneE164) return { ok: false, message: "Enter a valid mobile number." };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    if (await hourlyQuotaExceeded(p.e164!)) {
+    if (await hourlyQuotaExceeded(supabaseAdmin, phoneE164)) {
       return { ok: false, message: "Too many OTP requests for this number. Please try again after an hour." };
     }
 
@@ -61,17 +43,17 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
       .limit(1);
     const last = recent?.[0]?.created_at ? new Date(recent[0].created_at).getTime() : 0;
     const waited = (Date.now() - last) / 1000;
-    if (last && waited < RESEND_COOLDOWN) {
-      return { ok: false, message: `Please wait ${Math.ceil(RESEND_COOLDOWN - waited)}s before requesting another code.` };
+    if (last && waited < OTP_RESEND_COOLDOWN) {
+      return { ok: false, message: `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN - waited)}s before requesting another code.` };
     }
 
     const code = generateCode();
-    const expiresAt = new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000).toISOString();
     const { data: row, error } = await supabaseAdmin
       .from("auth_otp_challenges")
       .insert({
         email: data.email,
-        phone: p.e164,
+        phone: phoneE164,
         channel: "sms",
         purpose: "signup",
         code_hash: "pending",
@@ -87,13 +69,13 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
       .eq("id", row.id);
 
     try {
-      await sendSms(p.e164!, code);
+      await sendSms(phoneE164, code);
     } catch (err: unknown) {
       await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
-      return { ok: false, message: err instanceof Error ? err.message : "SMS delivery failed. Please use Email OTP." };
+      return { ok: false, message: "SMS OTP could not be sent. Please try again.", fallback: "email" as const };
     }
 
-    return { ok: true, message: `Code sent by SMS to ${p.e164}`, expirySeconds: EXPIRY_SECONDS, maxAttempts: MAX_ATTEMPTS };
+    return { ok: true, message: "SMS OTP request accepted.", expirySeconds: OTP_EXPIRY_SECONDS, maxAttempts: OTP_MAX_ATTEMPTS };
   });
 
 /**
@@ -124,13 +106,13 @@ export const verifySignupSmsOtp = createServerFn({ method: "POST" })
     if (new Date(ch.expires_at).getTime() < Date.now()) {
       return { ok: false, message: "This code has expired. Please request a new one." };
     }
-    if ((ch.attempts ?? 0) >= MAX_ATTEMPTS) {
+    if ((ch.attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
       return { ok: false, message: "Too many incorrect attempts. Please request a new code." };
     }
     if (!safeEqual(ch.code_hash, hashCode(data.code, ch.id))) {
       const attempts = (ch.attempts ?? 0) + 1;
       await supabaseAdmin.from("auth_otp_challenges").update({ attempts }).eq("id", ch.id);
-      const left = Math.max(0, MAX_ATTEMPTS - attempts);
+      const left = Math.max(0, OTP_MAX_ATTEMPTS - attempts);
       return {
         ok: false,
         message: left > 0 ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left.` : "Too many incorrect attempts. Please request a new code.",
@@ -165,9 +147,11 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const p = normalisePhone(data.phone);
     if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const phoneE164 = p.e164;
+    if (!phoneE164) return { ok: false, message: "Enter a valid mobile number." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const last10 = p.e164!.slice(-10);
-    if (await hourlyQuotaExceeded(p.e164!)) {
+    const last10 = phoneE164.slice(-10);
+    if (await hourlyQuotaExceeded(supabaseAdmin, phoneE164)) {
       return { ok: false, message: "Too many OTP requests for this number. Please try again after an hour." };
     }
 
@@ -182,26 +166,26 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
     const { data: recent } = await supabaseAdmin
       .from("auth_otp_challenges")
       .select("created_at")
-      .eq("phone", p.e164!)
+      .eq("phone", phoneE164)
       .eq("purpose", "login")
       .order("created_at", { ascending: false })
       .limit(1);
     const last = recent?.[0]?.created_at ? new Date(recent[0].created_at).getTime() : 0;
     const waited = (Date.now() - last) / 1000;
-    if (last && waited < RESEND_COOLDOWN) {
-      return { ok: false, message: `Please wait ${Math.ceil(RESEND_COOLDOWN - waited)}s before requesting another code.` };
+    if (last && waited < OTP_RESEND_COOLDOWN) {
+      return { ok: false, message: `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN - waited)}s before requesting another code.` };
     }
 
     const code = generateCode();
     const { data: row, error } = await supabaseAdmin
       .from("auth_otp_challenges")
       .insert({
-        email: `sms:${p.e164}`,
-        phone: p.e164,
+        email: `sms:${phoneE164}`,
+        phone: phoneE164,
         channel: "sms",
         purpose: "login",
         code_hash: "pending",
-        expires_at: new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString(),
+        expires_at: new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000).toISOString(),
       })
       .select("id")
       .single();
@@ -209,12 +193,12 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
     await supabaseAdmin.from("auth_otp_challenges").update({ code_hash: hashCode(code, row.id) }).eq("id", row.id);
 
     try {
-      await sendSms(p.e164!, code);
+      await sendSms(phoneE164, code);
     } catch (err: unknown) {
       await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
-      return { ok: false, message: err instanceof Error ? err.message : "SMS delivery failed. Please sign in with your password." };
+      return { ok: false, message: "SMS OTP could not be sent. Please try again.", fallback: "email" as const };
     }
-    return { ok: true, message: `Code sent by SMS to ${p.e164}`, expirySeconds: EXPIRY_SECONDS, maxAttempts: MAX_ATTEMPTS };
+    return { ok: true, message: "SMS OTP request accepted.", expirySeconds: OTP_EXPIRY_SECONDS, maxAttempts: OTP_MAX_ATTEMPTS };
   });
 
 /** Verifies a login code and returns a one-time token the browser exchanges for a session. */
@@ -225,12 +209,14 @@ export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const p = normalisePhone(data.phone);
     if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const phoneE164 = p.e164;
+    if (!phoneE164) return { ok: false, message: "Enter a valid mobile number." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: rows } = await supabaseAdmin
       .from("auth_otp_challenges")
       .select("id, code_hash, attempts, expires_at")
-      .eq("phone", p.e164!)
+      .eq("phone", phoneE164)
       .eq("purpose", "login")
       .is("consumed_at", null)
       .order("created_at", { ascending: false })
@@ -238,18 +224,18 @@ export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
     const ch = rows?.[0];
     if (!ch) return { ok: false, message: "No active code. Please request a new one." };
     if (new Date(ch.expires_at).getTime() < Date.now()) return { ok: false, message: "This code has expired. Please request a new one." };
-    if ((ch.attempts ?? 0) >= MAX_ATTEMPTS) return { ok: false, message: "Too many incorrect attempts. Please request a new code." };
+    if ((ch.attempts ?? 0) >= OTP_MAX_ATTEMPTS) return { ok: false, message: "Too many incorrect attempts. Please request a new code." };
     if (!safeEqual(ch.code_hash, hashCode(data.code, ch.id))) {
       const attempts = (ch.attempts ?? 0) + 1;
       await supabaseAdmin.from("auth_otp_challenges").update({ attempts }).eq("id", ch.id);
-      const left = Math.max(0, MAX_ATTEMPTS - attempts);
+      const left = Math.max(0, OTP_MAX_ATTEMPTS - attempts);
       return {
         ok: false,
         message: left > 0 ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left.` : "Too many incorrect attempts. Please request a new code.",
       };
     }
 
-    const last10 = p.e164!.slice(-10);
+    const last10 = phoneE164.slice(-10);
     const { data: prof } = await supabaseAdmin.from("profiles").select("id").ilike("phone", `%${last10}`).limit(1);
     const userId = prof?.[0]?.id;
     if (!userId) return { ok: false, message: "No account found with this mobile number." };

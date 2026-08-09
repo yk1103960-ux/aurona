@@ -138,11 +138,11 @@ function AuthPage() {
     if (result.error) toast.error(result.error.message || "Google sign-in failed");
   };
 
-  const startOtp = () => {
+  const startOtp = (expirySeconds = 600) => {
     setOtpSent(true);
     setOtp("");
     setAttempts(0);
-    setSecondsLeft(policy.otpExpirySeconds);
+    setSecondsLeft(expirySeconds);
     setCooldown(policy.otpResendCooldown);
   };
 
@@ -151,7 +151,7 @@ function AuthPage() {
   const deliverSignupOtp = async () => {
     const res = await sendSignupSmsOtp({ data: { email, phone } });
     if (!res.ok) { toast.error(res.message); return false; }
-    startOtp();
+    startOtp(res.expirySeconds);
     toast.success(res.message);
     return true;
   };
@@ -217,7 +217,7 @@ function AuthPage() {
   const requestLoginOtp = async () => {
     const res = await sendLoginSmsOtp({ data: { phone } });
     if (!res.ok) { toast.error(res.message); return false; }
-    startOtp();
+    startOtp(res.expirySeconds);
     toast.success(res.message);
     return true;
   };
