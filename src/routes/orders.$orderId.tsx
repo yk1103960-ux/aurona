@@ -288,8 +288,14 @@ function OrderTrackingPage() {
           </section>
 
           {canCancel && (
-            <CancelOrderCard orderId={order.id} paid={order.payment_status === "paid"} onDone={() => q.refetch()} />
+            <CancelOrderCard
+              orderId={order.id}
+              paid={order.payment_status === "paid"}
+              pending={q.data.cancelPending}
+              onDone={() => q.refetch()}
+            />
           )}
+
           {cancelled && (
             <section className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
               <div className="flex items-center gap-2 font-bold text-destructive">
