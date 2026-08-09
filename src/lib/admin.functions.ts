@@ -152,19 +152,23 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
       token = got;
     }
 
-    // Prove the token actually works with a harmless authenticated request.
+    // Probe pickup locations. If the account can't read them (module/PII limits),
+    // that's a warning — a token we already obtained is still valid for shipping calls.
     const { call: probe, locations } = await shiprocketPickupLocations(token);
     diagnostics.push(probe.diagnostic);
+    let warning: string | null = null;
     if (!probe.ok) {
-      return {
-        ok: false as const,
-        code: apiToken ? "SHIPROCKET_TOKEN_REJECTED" as const : "SHIPROCKET_TOKEN_UNUSABLE" as const,
-        error: apiToken
-          ? `Shiprocket rejected the pasted API token. ${authFailureMessage(probe)}`
-          : `Login succeeded but the token could not call the Shiprocket API. ${authFailureMessage(probe)}`,
-        diagnostics,
-      };
+      if (apiToken) {
+        return {
+          ok: false as const,
+          code: "SHIPROCKET_TOKEN_REJECTED" as const,
+          error: `Shiprocket rejected the pasted API token. ${authFailureMessage(probe)}`,
+          diagnostics,
+        };
+      }
+      warning = `Login succeeded and the connection is saved, but pickup locations could not be read. ${authFailureMessage(probe)}`;
     }
+
 
     const names = locations.map((l) => l.pickup_location).filter(Boolean);
     const requested = data.pickupLocation?.trim() || "";
