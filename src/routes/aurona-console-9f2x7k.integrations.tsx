@@ -451,10 +451,11 @@ function SmsCard({ row, busy, onSave, onTest }: {
         <Field label="API Key / Auth Key / Account SID" value={apiKey} onChange={setApiKey} type="password" placeholder={row?.secret_masked ?? "Leave blank to keep saved"} />
         <Field label="Auth Token (Twilio only)" value={authToken} onChange={setAuthToken} type="password" />
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-          <div><b className="text-foreground">Active MSG91 Flow:</b> 6a7826ee25e4a56c84021ea2</div>
-          <div className="mt-1"><b className="text-foreground">Mapped DLT template:</b> 1077436770064246433 (AURONAA)</div>
-          <div className="mt-1">Sender / DLT header: AURONA. Send the MSG91 Flow ID to the API, never the numeric DLT ID.</div>
+          <div><b className="text-foreground">Active MSG91 Flow:</b> 67978567d6fc0554473309a4 (Delivered)</div>
+          <div className="mt-1"><b className="text-foreground">Mapped DLT template:</b> 1007630933578375890 · sender AURONA</div>
+          <div className="mt-1">Flow 6a7826ee25e4a56c84021ea2 fails with "Template Id not found on DLT" — its DLT id is saved as 107743677006426433 instead of 1077436770064246433. Fix in MSG91, then switch.</div>
         </div>
+
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="OTP length" value={otpLength} onChange={setOtpLength} />

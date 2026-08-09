@@ -28,19 +28,23 @@ export const OTP_MAX_PER_HOUR = 5;
  * MSG91 OTP identity.
  *
  * MSG91's /api/v5/otp `template_id` parameter expects MSG91's OWN template (flow) id,
- * NOT a DLT template id. Passing a DLT id is accepted with `type: "success"` and a
- * request_id, but MSG91 then silently drops the message and emails "SMS API Failed –
- * error code 400", so nothing reaches the handset.
+ * NOT a DLT template id. A DLT id here returns `type: "success"` + request_id and is
+ * then dropped, so nothing reaches the handset.
  *
- *   MSG91 template (flow) id : 6a7826ee25e4a56c84021ea2   <-- send this
- *   maps to DLT template id  : 1077436770064246433 (Airtel, template AURONAA)
+ *   MSG91 template (flow) id : 67978567d6fc0554473309a4   <-- send this (Delivered)
+ *   maps to DLT template id  : 1007630933578375890
  *   DLT header / sender id   : AURONA
  *
- * Do NOT put the numeric DLT id in MSG91_TEMPLATE_ID.
+ * Newer flow 6a7826ee25e4a56c84021ea2 (intended for Airtel DLT 1077436770064246433)
+ * currently FAILS with "Template Id not found on DLT" because the flow stores a
+ * truncated DLT id (107743677006426433, 18 digits). Verified 2026-08-09 in MSG91 OTP
+ * logs. Switch MSG91_TEMPLATE_ID to it only after that DLT id is corrected in MSG91
+ * and a test send reports Delivered.
  */
-export const MSG91_TEMPLATE_ID = "6a7826ee25e4a56c84021ea2";
-export const MSG91_DLT_TEMPLATE_ID = "1077436770064246433";
+export const MSG91_TEMPLATE_ID = "67978567d6fc0554473309a4";
+export const MSG91_DLT_TEMPLATE_ID = "1007630933578375890";
 export const MSG91_SENDER_ID = "AURONA";
+
 
 
 export async function findAuthUser(email: string): Promise<{ id: string; confirmed: boolean } | null> {
