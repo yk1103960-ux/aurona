@@ -610,6 +610,15 @@ function BrowsePanel({
 
   const { data: products = [], isLoading } = useQuery(browseProductsByCategoryQuery(activeSlug));
 
+  // Default the preview column to the first model of the active category
+  useEffect(() => {
+    if (products.length === 0) return;
+    if (!hoverProduct || !products.some((p) => p.slug === hoverProduct.slug)) {
+      setHoverProduct(products[0]);
+    }
+  }, [products, hoverProduct]);
+
+
   return (
     <div
       className={cn(

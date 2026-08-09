@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, Loader2, TrendingUp, Users, Wallet, BadgeCheck } from "lucide-react";
@@ -40,12 +42,31 @@ export const Route = createFileRoute("/affiliate")({
 
 function AffiliatePage() {
   const { user, loading } = useAuth();
+  const queryClient = useQueryClient();
   const myAffiliateFn = useServerFn(getMyAffiliate);
   const { data, isLoading } = useQuery({
     queryKey: ["my-affiliate", user?.id],
     enabled: !!user,
     queryFn: () => myAffiliateFn({}),
   });
+
+  // Real-time sync: refresh whenever the affiliate account, commissions or payouts change
+  useEffect(() => {
+    if (!user) return;
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ["my-affiliate", user.id] });
+    };
+    const channel = supabase
+      .channel(`affiliate-sync-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "affiliates" }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "affiliate_commissions" }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "affiliate_withdrawals" }, invalidate)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
 
   return (
     <div>
