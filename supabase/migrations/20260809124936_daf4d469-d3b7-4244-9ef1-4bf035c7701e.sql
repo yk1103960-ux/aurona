@@ -1,0 +1,1 @@
+UPDATE public.shipping_providers SET credentials_ciphertext = NULL, credential_masked = NULL WHERE provider = 'shiprocket';
