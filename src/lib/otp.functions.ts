@@ -49,6 +49,9 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
     if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (await hourlyQuotaExceeded(p.e164!)) {
+      return { ok: false, message: "Too many OTP requests for this number. Please try again after an hour." };
+    }
 
     const { data: recent } = await supabaseAdmin
       .from("auth_otp_challenges")
@@ -84,7 +87,7 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
       .eq("id", row.id);
 
     try {
-      await sendSms(p.e164!, `${code} is your Aurona verification code. It expires in 5 minutes. Do not share it.`);
+      await sendSms(p.e164!, code);
     } catch (err: unknown) {
       await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
       return { ok: false, message: err instanceof Error ? err.message : "SMS delivery failed. Please use Email OTP." };
@@ -164,6 +167,9 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
     if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const last10 = p.e164!.slice(-10);
+    if (await hourlyQuotaExceeded(p.e164!)) {
+      return { ok: false, message: "Too many OTP requests for this number. Please try again after an hour." };
+    }
 
     const { data: prof } = await supabaseAdmin
       .from("profiles")
@@ -203,7 +209,7 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
     await supabaseAdmin.from("auth_otp_challenges").update({ code_hash: hashCode(code, row.id) }).eq("id", row.id);
 
     try {
-      await sendSms(p.e164!, `${code} is your Aurona login code. It expires in 5 minutes. Do not share it.`);
+      await sendSms(p.e164!, code);
     } catch (err: unknown) {
       await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
       return { ok: false, message: err instanceof Error ? err.message : "SMS delivery failed. Please sign in with your password." };
