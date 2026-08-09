@@ -433,11 +433,10 @@ function SmsCard({ row, busy, onSave, onTest }: {
   row?: Row; busy: string | null; onSave: SaveFn; onTest: (p: string) => void;
 }) {
   const pub = (row?.config_public ?? {}) as {
-    providerName?: string; senderId?: string; otpLength?: string; otpExpiryMinutes?: string; templateId?: string;
+    providerName?: string; senderId?: string; otpLength?: string; otpExpiryMinutes?: string;
   };
   const [providerName, setProviderName] = useState(pub.providerName ?? "msg91");
   const [senderId, setSenderId] = useState(pub.senderId ?? "AURONA");
-  const [templateId, setTemplateId] = useState(pub.templateId ?? "");
   const [otpLength, setOtpLength] = useState(pub.otpLength ?? "6");
   const [expiry, setExpiry] = useState(pub.otpExpiryMinutes ?? "10");
   const [apiKey, setApiKey] = useState("");
@@ -451,7 +450,11 @@ function SmsCard({ row, busy, onSave, onTest }: {
         <Field label="Sender ID" value={senderId} onChange={setSenderId} placeholder="AURONA" />
         <Field label="API Key / Auth Key / Account SID" value={apiKey} onChange={setApiKey} type="password" placeholder={row?.secret_masked ?? "Leave blank to keep saved"} />
         <Field label="Auth Token (Twilio only)" value={authToken} onChange={setAuthToken} type="password" />
-        <Field label="Template / DLT ID" value={templateId} onChange={setTemplateId} />
+        <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <div><b className="text-foreground">Verified MSG91 Flow:</b> 67978567d6fc0554473309a4</div>
+          <div className="mt-1"><b className="text-foreground">Current synced DLT mapping:</b> 1007630933578375890</div>
+          <div className="mt-1">New DLT 1077436770064246433 must be mapped to a new MSG91 Flow before activation.</div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <Field label="OTP length" value={otpLength} onChange={setOtpLength} />
           <Field label="Expiry (minutes)" value={expiry} onChange={setExpiry} />
@@ -460,7 +463,7 @@ function SmsCard({ row, busy, onSave, onTest }: {
       <SaveRow provider="sms" busy={busy} enabled={enabled} setEnabled={setEnabled}
         onSave={() => onSave("sms", enabled, {
           providerName: providerName.trim().toLowerCase(), senderId: senderId.trim(),
-          templateId: templateId.trim(), otpLength: otpLength.trim(), otpExpiryMinutes: expiry.trim(),
+          otpLength: otpLength.trim(), otpExpiryMinutes: expiry.trim(),
         }, { apiKey, authToken }, "apiKey")}
         onTest={() => onTest("sms")} />
     </Card>
