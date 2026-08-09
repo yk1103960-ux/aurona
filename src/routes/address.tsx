@@ -98,7 +98,8 @@ function AddressPage() {
         full_name: form.full_name.trim(),
         phone: form.phone.trim(),
         line1: `${form.house.trim()}, ${form.street.trim()}`,
-        line2: form.landmark.trim() || null,
+        line2: null,
+        landmark: form.landmark.trim() || null,
         city: form.city.trim(),
         state: form.state.trim(),
         pincode: form.pincode.trim(),
@@ -157,7 +158,7 @@ function AddressPage() {
       phone: (a.phone || "").replace(/\D/g, "").slice(-10),
       house: (house ?? "").trim(),
       street: rest.join(",").trim(),
-      landmark: a.line2 ?? "",
+      landmark: a.landmark ?? a.line2 ?? "",
       city: a.city,
       state: a.state,
       pincode: a.pincode,
@@ -247,8 +248,8 @@ function AddressPage() {
                       )}
                     </div>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {a.line1}
-                      {a.line2 ? `, ${a.line2}` : ""}
+                      {a.line1}{a.line2 ? `, ${a.line2}` : ""}
+                      {(a.landmark ?? null) ? <> · Landmark: {a.landmark}</> : ""}
                       <br />
                       {a.city}, {a.state} — {a.pincode}
                       <br />

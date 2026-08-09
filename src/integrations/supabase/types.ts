@@ -22,6 +22,7 @@ export type Database = {
           id: string
           is_default: boolean
           label: string | null
+          landmark: string | null
           line1: string
           line2: string | null
           phone: string
@@ -37,6 +38,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           label?: string | null
+          landmark?: string | null
           line1: string
           line2?: string | null
           phone: string
@@ -52,6 +54,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           label?: string | null
+          landmark?: string | null
           line1?: string
           line2?: string | null
           phone?: string

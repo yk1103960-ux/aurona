@@ -14,6 +14,7 @@ export type AddressRow = {
   phone: string;
   line1: string;
   line2: string | null;
+  landmark: string | null;
   city: string;
   state: string;
   pincode: string;
@@ -26,6 +27,7 @@ const EMPTY = {
   phone: "",
   line1: "",
   line2: "",
+  landmark: "",
   city: "",
   state: "",
   pincode: "",
@@ -62,6 +64,7 @@ export function AddressManager({ userId }: { userId: string }) {
         phone: form.phone.trim(),
         line1: form.line1.trim(),
         line2: form.line2.trim() || null,
+        landmark: form.landmark.trim() || null,
         city: form.city.trim(),
         state: form.state.trim(),
         pincode: form.pincode.trim(),
@@ -126,7 +129,7 @@ export function AddressManager({ userId }: { userId: string }) {
           }}
           className="mt-5 grid gap-3 rounded-2xl border border-border bg-surface p-5 sm:grid-cols-2"
         >
-          <F label="Label" v={form.label} set={(v) => setForm({ ...form, label: v })} />
+          <F label="Address type (Home/Office)" v={form.label} set={(v) => setForm({ ...form, label: v })} />
           <F label="Full name" v={form.full_name} set={(v) => setForm({ ...form, full_name: v })} required />
           <F label="Phone" v={form.phone} set={(v) => setForm({ ...form, phone: v })} required />
           <F label="Pincode" v={form.pincode} set={(v) => setForm({ ...form, pincode: v.replace(/\D/g, "").slice(0, 6) })} required />
@@ -135,6 +138,9 @@ export function AddressManager({ userId }: { userId: string }) {
           </div>
           <div className="sm:col-span-2">
             <F label="Address line 2 (optional)" v={form.line2} set={(v) => setForm({ ...form, line2: v })} />
+          </div>
+          <div className="sm:col-span-2">
+            <F label="Landmark (optional)" v={form.landmark} set={(v) => setForm({ ...form, landmark: v })} />
           </div>
           <F label="City" v={form.city} set={(v) => setForm({ ...form, city: v })} required />
           <F label="State" v={form.state} set={(v) => setForm({ ...form, state: v })} required />
@@ -176,6 +182,7 @@ export function AddressManager({ userId }: { userId: string }) {
               <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {a.line1}{a.line2 ? `, ${a.line2}` : ""}<br />
                 {a.city}, {a.state} — {a.pincode}<br />
+                {a.landmark ? <>Landmark: {a.landmark}<br /></> : null}
                 {a.phone}
               </div>
               <div className="mt-4 flex items-center gap-3">
