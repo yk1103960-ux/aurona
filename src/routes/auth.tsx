@@ -83,8 +83,6 @@ function AuthPage() {
   // OTP state
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [channel, setChannel] = useState<"email" | "sms">("email");
-  const [signupChannel, setSignupChannel] = useState<"email" | "sms">("email");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [attempts, setAttempts] = useState(0);
