@@ -409,53 +409,27 @@ function AuthPage() {
 
             {/* ---------------- SIGN IN ---------------- */}
             <TabsContent value="in" className="pt-4">
-              <div className="mb-4 flex gap-1 rounded-full bg-muted p-1">
-                {(["password", "otp"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => { setLoginMode(m); setOtpSent(false); }}
-                    className={cn(
-                      "flex-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
-                      loginMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    {m === "password" ? "Email + Password" : "Mobile + OTP"}
-                  </button>
-                ))}
-              </div>
-
-              {loginMode === "password" ? (
-                <form onSubmit={signIn} className="space-y-3">
-                  <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
-                  <Field
-                    label="Password" value={password} onChange={setPassword}
-                    type={showPw ? "text" : "password"} error={errors.password}
-                    trailing={
-                      <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
-                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    }
-                  />
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
-                    Remember me on this device
-                  </label>
-                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                    {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
-                  </Button>
-                </form>
-              ) : otpSent ? (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone, channel: "sms" }} />
-              ) : (
-                <form onSubmit={sendLoginOtp} className="space-y-3">
-                  <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
-                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                    {busy ? "Sending…" : "Send OTP"}
-                  </Button>
-                </form>
-              )}
+              <form onSubmit={signIn} className="space-y-3">
+                <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
+                <Field
+                  label="Password" value={password} onChange={setPassword}
+                  type={showPw ? "text" : "password"} error={errors.password}
+                  trailing={
+                    <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
+                      {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  }
+                />
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
+                  Remember me on this device
+                </label>
+                <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                  {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
+                </Button>
+              </form>
             </TabsContent>
+
 
             {/* ---------------- REGISTER ---------------- */}
             <TabsContent value="up" className="pt-4">
