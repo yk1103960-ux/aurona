@@ -351,7 +351,31 @@ function AddressPage() {
                   maxLength={6}
                 />
                 <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} error={touched.city ? errors.city : undefined} onBlur={() => setTouched({ ...touched, city: true })} />
-                <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} error={touched.state ? errors.state : undefined} onBlur={() => setTouched({ ...touched, state: true })} />
+                <div>
+                  <Label className="text-xs">State</Label>
+                  <select
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    onBlur={() => setTouched({ ...touched, state: true })}
+                    aria-invalid={Boolean(touched.state ? errors.state : undefined)}
+                    className={cn(
+                      "mt-1 flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring",
+                      touched.state && errors.state && "border-destructive focus-visible:ring-destructive/40",
+                    )}
+                  >
+                    <option value="" disabled>
+                      Select state
+                    </option>
+                    {INDIAN_STATES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  {touched.state && errors.state && (
+                    <p className="mt-1 text-xs font-medium text-destructive">{errors.state}</p>
+                  )}
+                </div>
               </div>
               <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm">
                 <input
