@@ -86,8 +86,21 @@ function OrderTrackingPage() {
         .from("order_items")
         .select("id, product_name, price, quantity")
         .eq("order_id", orderId);
-      return { order, items: (items ?? []) as OrderItemRow[] };
+      // Any open cancellation request awaiting admin approval.
+      const { data: reqs } = await supabase
+        .from("return_requests")
+        .select("id, status")
+        .eq("order_id", orderId)
+        .eq("kind", "cancellation")
+        .in("status", ["requested", "approved", "refund_initiated"])
+        .limit(1);
+      return {
+        order,
+        items: (items ?? []) as OrderItemRow[],
+        cancelPending: (reqs ?? []).length > 0,
+      };
     },
+
   });
 
   if (loading) return <PageLoading label="Loading your order" />;
