@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/empty/EmptyState";
 import { inr } from "@/lib/format";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/order-success")({
   validateSearch: z.object({ order: z.string().optional() }),
@@ -31,7 +32,7 @@ function expectedRange() {
   from.setDate(from.getDate() + 3);
   const to = new Date();
   to.setDate(to.getDate() + 6);
-  const fmt = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  const fmt = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
   return `${fmt(from)} – ${fmt(to)}`;
 }
 
@@ -53,7 +54,7 @@ function OrderSuccessPage() {
     },
   });
 
-  if (loading) return null;
+  if (loading) return <PageLoading label="Loading your order" />;
   if (!order || (!q.isLoading && !q.data))
     return (
       <EmptyState

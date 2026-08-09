@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { ProductCard } from "@/components/product/ProductCard";
 import { EmptyState } from "@/components/empty/EmptyState";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({ meta: [{ title: "Wishlist — Aurona" }] }),
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/wishlist")({
 function WishPage() {
   const { user, loading } = useAuth();
   const wl = useWishlist();
-  if (loading) return null;
+  if (loading) return <PageLoading label="Loading your wishlist" />;
   if (!user)
     return (
       <EmptyState

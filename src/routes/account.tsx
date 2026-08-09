@@ -13,6 +13,8 @@ import { inr } from "@/lib/format";
 import { AddressManager } from "@/components/account/AddressManager";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
+import { PageLoading } from "@/components/layout/PageLoading";
+import { EmptyState } from "@/components/empty/EmptyState";
 import { ProductImage } from "@/components/product/ProductImage";
 import {
   LogOut, Package, Heart, ShoppingBag, MapPin, Headphones, CreditCard, Bell,
@@ -156,7 +158,18 @@ function AccountPage() {
     return items.sort((a, b) => +new Date(b.at) - +new Date(a.at)).slice(0, 6);
   }, [rows, tickets.data]);
 
-  if (!user) return null;
+  if (loading) return <PageLoading label="Loading your dashboard" />;
+  if (!user)
+    return (
+      <EmptyState
+        icon={LogOut}
+        eyebrow="Sign in required"
+        title="Sign in to your Aurona account"
+        description="Track orders, manage addresses, saved items, invoices and support from one dashboard."
+        primary={{ label: "Sign in / Register", to: "/auth" }}
+        secondary={{ label: "Continue shopping", to: "/products" }}
+      />
+    );
 
   const meta = (user.user_metadata ?? {}) as Record<string, string | undefined>;
   const name = (profile.data?.full_name as string | null) || meta['full_name'] || user.email?.split("@")[0] || "Customer";

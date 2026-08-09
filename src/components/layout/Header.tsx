@@ -11,12 +11,11 @@ const BROWSE_ICONS: Record<string, LucideIcon> = {
   "interior-lights": LampDesk,
   "deep-lights": Sun,
   "flood-lights": Zap,
-  "decorative-lights": Sparkles,
   "tube-lights": Grid3x3,
   "outdoor-lights": TreePine,
   "concealed-lights": LampCeiling,
   "pedestal-fans": Fan,
-  "immersion-water-heater": Droplets,
+  "immersion-heaters": Droplets,
   "ceiling-fans": Fan,
   "water-geysers": Bath,
   "exhaust-fans": Wind,
@@ -57,7 +56,7 @@ const LED_COLUMNS: MegaGroup[][] = [
     { heading: "Flood Light", slug: "flood-lights", items: ["Nova", "AuraLUX"] },
   ],
   [
-    { heading: "Decorative", slug: "decorative-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
+    { heading: "Decorative", slug: "interior-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
     { heading: "Tubelight", slug: "tube-lights", items: ["Batten"] },
     { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden"] },
   ],
@@ -70,7 +69,7 @@ const LED_COLUMNS: MegaGroup[][] = [
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
     { heading: "Pedestal Fan", slug: "pedestal-fans", items: ["Breeze Master", "Ventura Spin", "Cool Crest", "Aero pulse", "Whirlflow", "Airglide"] },
-    { heading: "Immersion Water Heater", slug: "immersion-water-heater", items: ["Ecotherm"] },
+    { heading: "Immersion Water Heater", slug: "immersion-heaters", items: ["Ecotherm"] },
   ],
   [
     { heading: "Ceiling Fans", slug: "ceiling-fans", items: ["Optimus", "Optimus Deco", "Orion", "Primus", "Spinger", "Sonata", "Windsor"] },

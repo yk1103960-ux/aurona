@@ -99,7 +99,10 @@ export const productsQuery = (filter?: {
       if (filter?.bestseller) q = q.eq("is_bestseller", true);
       if (filter?.isNew) q = q.eq("is_new", true);
       if (filter?.sale) q = q.eq("is_sale", true);
-      if (filter?.search) q = q.ilike("name", `%${filter.search}%`);
+      if (filter?.search) {
+        const like = `%${filter.search.trim().replace(/[%,()]/g, " ")}%`;
+        q = q.or(`name.ilike.${like},sku.ilike.${like}`);
+      }
       if (filter?.limit) q = q.limit(filter.limit);
       const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
@@ -156,9 +159,27 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         categoryIds = [cat.id];
       }
 
+      // A search term should match the product name, its SKU, or the category
+      // it belongs to — searching "led" must return the LED Bulbs range.
+      let searchCategoryIds: string[] = [];
+      const term = filter.search?.trim();
+      if (term) {
+        const { data: cats } = await supabase
+          .from("categories")
+          .select("id")
+          .ilike("name", `%${term}%`);
+        searchCategoryIds = (cats ?? []).map((c) => c.id as string);
+      }
+
       let q = supabase.from("product_families").select(cols, { count: "exact" }).gt("min_price", 0);
       if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
-      if (filter.search) q = q.ilike("name", `%${filter.search}%`);
+      if (term) {
+        const like = `%${term.replace(/[%,()]/g, " ")}%`;
+        const clauses = [`name.ilike.${like}`, `main_sku.ilike.${like}`];
+        if (searchCategoryIds.length > 0) clauses.push(`category_id.in.(${searchCategoryIds.join(",")})`);
+        q = q.or(clauses.join(","));
+      }
+
       if (filter.min && filter.min > 0) q = q.gte("min_price", filter.min);
       if (filter.max && filter.max > 0) q = q.lte("max_price", filter.max);
 

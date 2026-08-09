@@ -19,8 +19,10 @@ export function MobileBottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden">
       <div className="grid grid-cols-5">
         {items.map(({ to, label, Icon }) => {
-          const active = path === to;
+          // Nested pages keep their tab highlighted (e.g. /products/led-bulb → Shop).
+          const active = to === "/" ? path === "/" : path === to || path.startsWith(`${to}/`);
           const count = to === "/cart" ? cart.count : 0;
+
           return (
             <Link
               key={label}

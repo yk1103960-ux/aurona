@@ -14,6 +14,7 @@ import { getPaymentAvailability, startPhonePePayment } from "@/lib/phonepe.funct
 import { clearFlow } from "@/lib/checkout-flow";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/payment")({
   head: () => ({
@@ -50,7 +51,7 @@ function PaymentPage() {
   const onlineEnabled = Boolean(availability?.phonepe);
   const method = s.method === "cod" ? "cod" : onlineEnabled ? s.method : "cod";
 
-  if (s.authLoading) return null;
+  if (s.authLoading) return <PageLoading label="Loading payment options" />;
   if (!s.user)
     return (
       <EmptyState

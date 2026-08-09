@@ -9,6 +9,7 @@ import { ProductImage } from "@/components/product/ProductImage";
 import { EmptyState } from "@/components/empty/EmptyState";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PageLoading } from "@/components/layout/PageLoading";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -32,7 +33,7 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const s = useCheckoutSummary();
 
-  if (s.authLoading) return null;
+  if (s.authLoading) return <PageLoading label="Loading checkout" />;
   if (!s.user)
     return (
       <EmptyState
