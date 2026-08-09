@@ -598,6 +598,7 @@ function HeaderAvatar({ path, initials }: { path?: string | null; initials: stri
 }
 
 function ProfilePanel({ userId, email, data }: { userId: string; email: string; data: any }) {
+  const qc = useQueryClient();
 
   const [full, setFull] = useState<string>(data?.full_name ?? "");
   const [phone, setPhone] = useState<string>(data?.phone ?? "");
