@@ -18,7 +18,9 @@ const PlaceOrderInput = z.object({
   address: AddressSchema,
   payment_method: z.enum(["cod", "upi", "card"]),
   shipping_rate_id: z.string().trim().min(1).max(60),
+  coupon_code: z.string().trim().min(2).max(64).optional(),
 });
+
 
 /**
  * Server-authoritative order placement.
