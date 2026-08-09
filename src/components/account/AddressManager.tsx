@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Plus, Star, Trash2, X } from "lucide-react";
+import { Building2, Home, MapPin, Plus, Star, Trash2, X } from "lucide-react";
 
 export type AddressRow = {
   id: string;
