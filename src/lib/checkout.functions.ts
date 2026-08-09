@@ -171,6 +171,14 @@ export const placeOrder = createServerFn({ method: "POST" })
       throw new Error("Unable to place your order. Please try again.");
     }
 
+    // 7b) Record the coupon redemption (never blocks the order).
+    if (couponId) {
+      await supabase
+        .rpc("redeem_coupon", { _coupon_id: couponId, _order_id: order.id, _amount: couponDiscount })
+        .then(() => undefined, () => undefined);
+    }
+
+
     // 8) Affiliate commission (no-op when the buyer isn't attributed).
     try {
       const { recordCommissionForOrder } = await import("./affiliate.server");
