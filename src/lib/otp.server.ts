@@ -7,7 +7,8 @@ export function generateCode(): string {
 }
 
 export function hashCode(code: string, salt: string): string {
-  const pepper = process.env["MFA_ENCRYPTION_KEY"] ?? "aurona-otp";
+  const pepper = process.env["MFA_ENCRYPTION_KEY"];
+  if (!pepper) throw new Error("OTP verification is temporarily unavailable");
   return createHash("sha256").update(`${salt}:${code}:${pepper}`).digest("hex");
 }
 
