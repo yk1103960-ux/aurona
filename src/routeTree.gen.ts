@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PaymentStatusRouteImport } from './routes/payment-status'
+import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as OrderSuccessRouteImport } from './routes/order-success'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as LeadershipRouteImport } from './routes/leadership'
 import { Route as FeaturedRouteImport } from './routes/featured'
@@ -28,6 +30,7 @@ import { Route as BestsellersRouteImport } from './routes/bestsellers'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuronaConsole9f2x7kRouteImport } from './routes/aurona-console-9f2x7k'
 import { Route as AffiliateRouteImport } from './routes/affiliate'
+import { Route as AddressRouteImport } from './routes/address'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -38,6 +41,7 @@ import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-co
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
 import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
@@ -77,9 +81,19 @@ const PaymentStatusRoute = PaymentStatusRouteImport.update({
   path: '/payment-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentRoute = PaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PartnerRoute = PartnerRouteImport.update({
   id: '/partner',
   path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderSuccessRoute = OrderSuccessRouteImport.update({
+  id: '/order-success',
+  path: '/order-success',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewArrivalsRoute = NewArrivalsRouteImport.update({
@@ -157,6 +171,11 @@ const AffiliateRoute = AffiliateRouteImport.update({
   path: '/affiliate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AddressRoute = AddressRouteImport.update({
+  id: '/address',
+  path: '/address',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -207,6 +226,11 @@ const PartnerTypeRoute = PartnerTypeRouteImport.update({
   id: '/$type',
   path: '/$type',
   getParentRoute: () => PartnerRoute,
+} as any)
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/orders/$orderId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
@@ -349,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
+  '/address': typeof AddressRoute
   '/affiliate': typeof AffiliateRoute
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
@@ -364,7 +389,9 @@ export interface FileRoutesByFullPath {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/order-success': typeof OrderSuccessRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
@@ -385,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -403,6 +431,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
+  '/address': typeof AddressRoute
   '/affiliate': typeof AffiliateRoute
   '/auth': typeof AuthRoute
   '/bestsellers': typeof BestsellersRoute
@@ -417,6 +446,8 @@ export interface FileRoutesByTo {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/order-success': typeof OrderSuccessRoute
+  '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
@@ -436,6 +467,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -455,6 +487,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
+  '/address': typeof AddressRoute
   '/affiliate': typeof AffiliateRoute
   '/aurona-console-9f2x7k': typeof AuronaConsole9f2x7kRouteWithChildren
   '/auth': typeof AuthRoute
@@ -470,7 +503,9 @@ export interface FileRoutesById {
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
+  '/order-success': typeof OrderSuccessRoute
   '/partner': typeof PartnerRouteWithChildren
+  '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
@@ -491,6 +526,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -511,6 +547,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/account'
+    | '/address'
     | '/affiliate'
     | '/aurona-console-9f2x7k'
     | '/auth'
@@ -526,7 +563,9 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/order-success'
     | '/partner'
+    | '/payment'
     | '/payment-status'
     | '/products'
     | '/wishlist'
@@ -547,6 +586,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/shipping'
     | '/blogs/$slug'
     | '/category/$slug'
+    | '/orders/$orderId'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -565,6 +605,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/account'
+    | '/address'
     | '/affiliate'
     | '/auth'
     | '/bestsellers'
@@ -579,6 +620,8 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/order-success'
+    | '/payment'
     | '/payment-status'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
@@ -598,6 +641,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/shipping'
     | '/blogs/$slug'
     | '/category/$slug'
+    | '/orders/$orderId'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -616,6 +660,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/account'
+    | '/address'
     | '/affiliate'
     | '/aurona-console-9f2x7k'
     | '/auth'
@@ -631,7 +676,9 @@ export interface FileRouteTypes {
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
+    | '/order-success'
     | '/partner'
+    | '/payment'
     | '/payment-status'
     | '/products'
     | '/wishlist'
@@ -652,6 +699,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/shipping'
     | '/blogs/$slug'
     | '/category/$slug'
+    | '/orders/$orderId'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -671,6 +719,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
+  AddressRoute: typeof AddressRoute
   AffiliateRoute: typeof AffiliateRoute
   AuronaConsole9f2x7kRoute: typeof AuronaConsole9f2x7kRouteWithChildren
   AuthRoute: typeof AuthRoute
@@ -686,12 +735,15 @@ export interface RootRouteChildren {
   FeaturedRoute: typeof FeaturedRoute
   LeadershipRoute: typeof LeadershipRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
+  OrderSuccessRoute: typeof OrderSuccessRoute
   PartnerRoute: typeof PartnerRouteWithChildren
+  PaymentRoute: typeof PaymentRoute
   PaymentStatusRoute: typeof PaymentStatusRoute
   ProductsRoute: typeof ProductsRouteWithChildren
   WishlistRoute: typeof WishlistRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
   ApiPublicPhonepeCallbackRoute: typeof ApiPublicPhonepeCallbackRoute
@@ -721,11 +773,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payment': {
+      id: '/payment'
+      path: '/payment'
+      fullPath: '/payment'
+      preLoaderRoute: typeof PaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/partner': {
       id: '/partner'
       path: '/partner'
       fullPath: '/partner'
       preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-success': {
+      id: '/order-success'
+      path: '/order-success'
+      fullPath: '/order-success'
+      preLoaderRoute: typeof OrderSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-arrivals': {
@@ -833,6 +899,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AffiliateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/address': {
+      id: '/address'
+      path: '/address'
+      fullPath: '/address'
+      preLoaderRoute: typeof AddressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account': {
       id: '/account'
       path: '/account'
@@ -902,6 +975,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/$type'
       preLoaderRoute: typeof PartnerTypeRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/category/$slug': {
       id: '/category/$slug'
@@ -1172,6 +1252,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
+  AddressRoute: AddressRoute,
   AffiliateRoute: AffiliateRoute,
   AuronaConsole9f2x7kRoute: AuronaConsole9f2x7kRouteWithChildren,
   AuthRoute: AuthRoute,
@@ -1187,12 +1268,15 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturedRoute: FeaturedRoute,
   LeadershipRoute: LeadershipRoute,
   NewArrivalsRoute: NewArrivalsRoute,
+  OrderSuccessRoute: OrderSuccessRoute,
   PartnerRoute: PartnerRouteWithChildren,
+  PaymentRoute: PaymentRoute,
   PaymentStatusRoute: PaymentStatusRoute,
   ProductsRoute: ProductsRouteWithChildren,
   WishlistRoute: WishlistRoute,
   BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,
   ApiPublicPhonepeCallbackRoute: ApiPublicPhonepeCallbackRoute,

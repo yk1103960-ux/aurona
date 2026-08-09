@@ -18,7 +18,9 @@ const PlaceOrderInput = z.object({
   address: AddressSchema,
   payment_method: z.enum(["cod", "upi", "card"]),
   shipping_rate_id: z.string().trim().min(1).max(60),
+  coupon_code: z.string().trim().min(2).max(64).optional(),
 });
+
 
 /**
  * Server-authoritative order placement.
@@ -114,7 +116,24 @@ export const placeOrder = createServerFn({ method: "POST" })
     const rate = quote.rates.find((r) => r.id === data.shipping_rate_id) ?? quote.rates[0];
     if (!rate) throw new Error("Selected shipping option is no longer available.");
     const shipping = Math.round(Number(rate.price) * 100) / 100;
-    const total = Math.round((subtotal + shipping) * 100) / 100;
+
+    // 6b) Coupon — validated server-side; the browser never supplies a discount.
+    let couponId: string | null = null;
+    let couponDiscount = 0;
+    if (data.coupon_code) {
+      const { data: rows } = await supabase.rpc("validate_coupon", {
+        _code: data.coupon_code,
+        _subtotal: subtotal,
+      });
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      if (!row?.coupon_id) {
+        throw new Error(row?.reason ?? "This coupon is not valid for your order.");
+      }
+      couponId = row.coupon_id as string;
+      couponDiscount = Math.min(subtotal, Math.max(0, Number(row.discount ?? 0)));
+    }
+
+    const total = Math.round((subtotal - couponDiscount + shipping) * 100) / 100;
 
 
     // 7) Insert order + items using the user-scoped client (RLS enforces ownership).
@@ -123,9 +142,10 @@ export const placeOrder = createServerFn({ method: "POST" })
       .insert({
         user_id: context.userId,
         subtotal,
-        discount: Math.max(0, mrpTotal - subtotal),
+        discount: Math.max(0, mrpTotal - subtotal) + couponDiscount,
         shipping,
         total,
+        discount_code: data.coupon_code ?? null,
         payment_method: data.payment_method,
         payment_status: "pending",
         status: "pending",
@@ -139,6 +159,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       })
       .select("id, order_number")
       .single();
+
     if (orderErr || !order) throw new Error("Unable to place your order. Please try again.");
 
     const { error: itemsErr } = await supabase.from("order_items").insert(
@@ -149,6 +170,14 @@ export const placeOrder = createServerFn({ method: "POST" })
       await supabase.from("orders").delete().eq("id", order.id);
       throw new Error("Unable to place your order. Please try again.");
     }
+
+    // 7b) Record the coupon redemption (never blocks the order).
+    if (couponId) {
+      await supabase
+        .rpc("redeem_coupon", { _coupon_id: couponId, _order_id: order.id, _amount: couponDiscount })
+        .then(() => undefined, () => undefined);
+    }
+
 
     // 8) Affiliate commission (no-op when the buyer isn't attributed).
     try {
