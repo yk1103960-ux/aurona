@@ -19,7 +19,7 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-export const OTP_EXPIRY_SECONDS = 600;
+export const OTP_EXPIRY_SECONDS = 300;
 export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_RESEND_COOLDOWN = 60;
 export const OTP_MAX_PER_HOUR = 5;
