@@ -25,23 +25,23 @@ export const OTP_RESEND_COOLDOWN = 60;
 export const OTP_MAX_PER_HOUR = 5;
 
 /**
- * MSG91 OTP identity — verified against the live account (aurona2) on 2026-08-09.
+ * MSG91 OTP identity.
  *
  * MSG91's /api/v5/otp `template_id` parameter expects MSG91's OWN template (flow) id,
  * NOT a DLT template id. Passing a DLT id is accepted with `type: "success"` and a
  * request_id, but MSG91 then silently drops the message and emails "SMS API Failed –
  * error code 400", so nothing reaches the handset.
  *
- *   MSG91 template (flow) id : 67978567d6fc0554473309a4   <-- send this
- *   maps to DLT template id  : 1007630933578375890
+ *   MSG91 template (flow) id : 6a7826ee25e4a56c84021ea2   <-- send this
+ *   maps to DLT template id  : 1077436770064246433 (Airtel, template AURONAA)
  *   DLT header / sender id   : AURONA
  *
- * Confirmed Delivered in MSG91's OTP logs with this id. Do NOT substitute a DLT id
- * (1007807652032669441 / 1077436770064246433) here.
+ * Do NOT put the numeric DLT id in MSG91_TEMPLATE_ID.
  */
-export const MSG91_TEMPLATE_ID = "67978567d6fc0554473309a4";
-export const MSG91_DLT_TEMPLATE_ID = "1007630933578375890";
+export const MSG91_TEMPLATE_ID = "6a7826ee25e4a56c84021ea2";
+export const MSG91_DLT_TEMPLATE_ID = "1077436770064246433";
 export const MSG91_SENDER_ID = "AURONA";
+
 
 export async function findAuthUser(email: string): Promise<{ id: string; confirmed: boolean } | null> {
   const url = process.env["SUPABASE_URL"];
