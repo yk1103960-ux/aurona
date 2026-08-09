@@ -633,9 +633,15 @@ function ProfilePanel({ userId, email, data }: { userId: string; email: string; 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const initials = (full || email).trim().split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
   return (
     <Panel title="Profile" sub="Your account details">
+      <div className="mb-4">
+        <AvatarUpload userId={userId} avatarPath={data?.avatar_url ?? null} initials={initials} />
+      </div>
       <form
+
         onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
         className="grid gap-4 rounded-2xl border border-border bg-card p-6 sm:grid-cols-2"
       >
