@@ -1,3 +1,10 @@
+import coverConcealed from "@/assets/blog/concealed-lights-guide.jpg.asset.json";
+import coverCob from "@/assets/blog/cob-vs-smd.jpg.asset.json";
+import coverLayered from "@/assets/blog/layered-lighting.jpg.asset.json";
+import coverMakeInIndia from "@/assets/blog/make-in-india-lighting.jpg.asset.json";
+import coverFan from "@/assets/blog/ceiling-fan-bee-rating.jpg.asset.json";
+import coverGeyser from "@/assets/blog/geyser-buying-guide.jpg.asset.json";
+
 export type BlogPost = {
   slug: string;
   cat: string;
@@ -6,6 +13,8 @@ export type BlogPost = {
   date: string;
   read: string;
   tone: string;
+  /** CDN-hosted cover image */
+  cover: string;
   author: string;
   /** Simple block content: h = heading, p = paragraph, li = bullet list */
   body: { h?: string; p?: string; li?: string[] }[];
@@ -14,6 +23,7 @@ export type BlogPost = {
 export const POSTS: BlogPost[] = [
   {
     slug: "concealed-lights-guide",
+    cover: coverConcealed.url,
     cat: "Lighting Guide",
     title: "Choosing the right concealed lights for your home",
     excerpt: "A practical guide to wattage, colour temperature and beam angle for Indian interiors.",
@@ -41,6 +51,7 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: "cob-vs-smd",
+    cover: coverCob.url,
     cat: "Product Knowledge",
     title: "COB vs SMD LEDs: what's the real difference?",
     excerpt: "Two dominant LED chip types — how each performs and where each shines.",
@@ -67,6 +78,7 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: "layered-lighting",
+    cover: coverLayered.url,
     cat: "Home Improvement",
     title: "Layered lighting: the pro designer approach",
     excerpt: "Ambient, task and accent lighting explained with examples for Indian homes.",
@@ -92,6 +104,7 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: "make-in-india-lighting",
+    cover: coverMakeInIndia.url,
     cat: "Industry News",
     title: "Why Make in India lighting is quietly leading exports",
     excerpt: "How Indian manufacturing scale is reshaping the global lighting market.",
@@ -113,6 +126,7 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: "ceiling-fan-bee-rating",
+    cover: coverFan.url,
     cat: "Home Appliances",
     title: "BEE star ratings on ceiling fans, decoded",
     excerpt: "What a 5-star BLDC fan actually saves you every month, with real numbers.",
@@ -134,6 +148,7 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: "geyser-buying-guide",
+    cover: coverGeyser.url,
     cat: "Home Appliances",
     title: "Water geyser buying guide for Indian bathrooms",
     excerpt: "Storage vs instant, tank capacity, and safety features worth paying for.",

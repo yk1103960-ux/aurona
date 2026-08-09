@@ -67,7 +67,9 @@ function BlogsPage() {
                   key={p.slug}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition hover:-translate-y-0.5 hover:shadow-lift"
                 >
-                  <Link to="/blogs/$slug" params={{ slug: p.slug }} className={`aspect-[16/9] bg-gradient-to-br ${p.tone}`} aria-label={p.title} />
+                  <Link to="/blogs/$slug" params={{ slug: p.slug }} className="block aspect-[16/9] overflow-hidden bg-surface" aria-label={p.title}>
+                    <img src={p.cover} alt={p.title} loading="lazy" width={1280} height={720} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                  </Link>
                   <div className="flex flex-1 flex-col p-6">
                     <div className="text-eyebrow">{p.cat}</div>
                     <h2 className="text-display mt-2 text-2xl leading-snug group-hover:text-primary">
