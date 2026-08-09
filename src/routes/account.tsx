@@ -550,6 +550,9 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-semibold text-primary">
+                  View details
+                </Link>
                 <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary">
                   <Download className="h-3.5 w-3.5" /> Download invoice
                 </button>
@@ -558,10 +561,21 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
                     Track shipment {o.courier_name ? `(${o.courier_name})` : ""}
                   </a>
                 )}
+                {/* Self-service cancellation stays available only until dispatch. */}
+                {["pending", "confirmed", "processing"].includes(o.status) && !o.awb_code && (
+                  <Link
+                    to="/orders/$orderId"
+                    params={{ orderId: o.id }}
+                    className="text-[11px] font-semibold text-destructive"
+                  >
+                    Cancel order
+                  </Link>
+                )}
                 <Link to="/customer-service" className="ml-auto text-[11px] text-muted-foreground hover:text-primary">
                   Need help with this order?
                 </Link>
               </div>
+
             </div>
           ))}
         </div>
