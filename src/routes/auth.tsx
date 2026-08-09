@@ -67,7 +67,7 @@ function AuthPage() {
 
   const [role, setRole] = useState<Role>("customer");
   const [mode, setMode] = useState<"in" | "up">("in");
-  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
+  
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
