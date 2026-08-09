@@ -310,35 +310,45 @@ const CANCEL_REASONS = [
 function CancelOrderCard({
   orderId,
   paid,
+  pending,
   onDone,
 }: {
   orderId: string;
   paid: boolean;
+  pending: boolean;
   onDone: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<string>(CANCEL_REASONS[0]);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const cancel = useServerFn(cancelOrder);
+  const cancel = useServerFn(requestOrderCancellation);
 
   async function submit() {
     setBusy(true);
     try {
       const finalReason = note.trim() ? `${reason} — ${note.trim()}` : reason;
-      const res = await cancel({ data: { orderId, reason: finalReason } });
+      await cancel({ data: { orderId, reason: finalReason } });
       setOpen(false);
-      toast.success(
-        res.refundPending
-          ? "Order cancelled. Your refund has been initiated."
-          : "Order cancelled successfully.",
-      );
+      toast.success("Cancellation request sent. Our team will review it shortly.");
       onDone();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "We couldn’t cancel this order. Please try again.");
+      toast.error(e instanceof Error ? e.message : "We couldn’t submit your request. Please try again.");
     } finally {
       setBusy(false);
     }
+  }
+
+  if (pending) {
+    return (
+      <section className="rounded-2xl border border-amber-300/60 bg-amber-50/70 p-4 text-sm">
+        <div className="font-bold text-amber-800">Cancellation requested</div>
+        <p className="mt-1 text-xs text-amber-800/80">
+          Our team is reviewing your request. You’ll see the order marked cancelled here once it is
+          approved{paid ? ", and the refund is initiated straight after" : ""}.
+        </p>
+      </section>
+    );
   }
 
   return (
@@ -347,23 +357,25 @@ function CancelOrderCard({
         Need to cancel?
       </h2>
       <p className="mt-2 text-xs text-muted-foreground">
-        You can cancel this order free of charge until it is handed to the courier.
-        {paid ? " Paid amounts are refunded to your original payment method." : ""}
+        You can request a free cancellation until the order is handed to the courier. Requests are
+        approved by our team.
+        {paid ? " Approved refunds go back to your original payment method." : ""}
       </p>
       <Button
         variant="outline"
         className="mt-3 h-11 w-full rounded-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
         onClick={() => setOpen(true)}
       >
-        <XCircle className="mr-2 h-4 w-4" /> Cancel order
+        <XCircle className="mr-2 h-4 w-4" /> Request cancellation
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => !busy && setOpen(v)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cancel this order?</DialogTitle>
+            <DialogTitle>Request cancellation?</DialogTitle>
             <DialogDescription>
-              Tell us why you’re cancelling. This cannot be undone — you’ll need to place a new order.
+              Tell us why you’re cancelling. Our team reviews the request and confirms it — usually
+              within a few hours.
             </DialogDescription>
           </DialogHeader>
 
@@ -391,7 +403,7 @@ function CancelOrderCard({
               Keep my order
             </Button>
             <Button variant="destructive" className="rounded-full" onClick={submit} disabled={busy}>
-              {busy ? "Cancelling…" : "Confirm cancellation"}
+              {busy ? "Sending…" : "Send request"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -399,6 +411,7 @@ function CancelOrderCard({
     </section>
   );
 }
+
 
 
 function Line({ label, value, success }: { label: string; value: string; success?: boolean }) {
