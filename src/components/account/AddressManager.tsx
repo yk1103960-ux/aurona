@@ -64,6 +64,7 @@ export function AddressManager({ userId }: { userId: string }) {
         phone: form.phone.trim(),
         line1: form.line1.trim(),
         line2: form.line2.trim() || null,
+        landmark: form.landmark.trim() || null,
         city: form.city.trim(),
         state: form.state.trim(),
         pincode: form.pincode.trim(),
