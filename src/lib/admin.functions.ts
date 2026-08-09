@@ -152,19 +152,23 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
       token = got;
     }
 
-    // Prove the token actually works with a harmless authenticated request.
+    // Probe pickup locations. If the account can't read them (module/PII limits),
+    // that's a warning — a token we already obtained is still valid for shipping calls.
     const { call: probe, locations } = await shiprocketPickupLocations(token);
     diagnostics.push(probe.diagnostic);
+    let warning: string | null = null;
     if (!probe.ok) {
-      return {
-        ok: false as const,
-        code: apiToken ? "SHIPROCKET_TOKEN_REJECTED" as const : "SHIPROCKET_TOKEN_UNUSABLE" as const,
-        error: apiToken
-          ? `Shiprocket rejected the pasted API token. ${authFailureMessage(probe)}`
-          : `Login succeeded but the token could not call the Shiprocket API. ${authFailureMessage(probe)}`,
-        diagnostics,
-      };
+      if (apiToken) {
+        return {
+          ok: false as const,
+          code: "SHIPROCKET_TOKEN_REJECTED" as const,
+          error: `Shiprocket rejected the pasted API token. ${authFailureMessage(probe)}`,
+          diagnostics,
+        };
+      }
+      warning = `Login succeeded and the connection is saved, but pickup locations could not be read. ${authFailureMessage(probe)}`;
     }
+
 
     const names = locations.map((l) => l.pickup_location).filter(Boolean);
     const requested = data.pickupLocation?.trim() || "";
@@ -210,7 +214,7 @@ export const saveShiprocketCredentials = createServerFn({ method: "POST" })
       action: "shipping.connect", entityType: "shipping_provider", entityId: "shiprocket",
       after: { pickupLocation, enabled: data.enabled, authMode: apiToken ? "api_token" : "api_user" },
     });
-    return { ok: true as const, pickupLocation, pickupLocations: names, diagnostics };
+    return { ok: true as const, pickupLocation, pickupLocations: names, warning, diagnostics };
   });
 
 // ============== Re-test the stored Shiprocket connection ==============
@@ -227,13 +231,21 @@ export const testShiprocketConnection = createServerFn({ method: "POST" })
       diagnostics.push({ stage: "authenticate", endpoint: "/auth/login", method: "POST", status: 200, ok: true, response: "Token acquired from stored credentials." });
       const { call, locations } = await shiprocketPickupLocations(token);
       diagnostics.push(call.diagnostic);
-      if (!call.ok) return { ok: false as const, error: "Stored credentials produced a token that the API rejected.", diagnostics };
       const names = locations.map((l) => l.pickup_location).filter(Boolean);
       await supabaseAdmin
         .from("shipping_providers")
         .update({ last_verified_at: new Date().toISOString() })
         .eq("provider", "shiprocket");
-      return { ok: true as const, pickupLocations: names, diagnostics };
+      // Auth is what matters. A blocked pickup-list endpoint is only a warning.
+      return {
+        ok: true as const,
+        pickupLocations: names,
+        warning: call.ok
+          ? null
+          : "Authentication works. Pickup locations could not be read — enable the Settings/Locations module for this API user in Shiprocket.",
+        diagnostics,
+      };
+
     } catch (error) {
       return {
         ok: false as const,

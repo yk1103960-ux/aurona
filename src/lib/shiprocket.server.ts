@@ -141,15 +141,17 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
     .eq("provider", "shiprocket")
     .maybeSingle();
 
-  // A directly-injected static API token (env secret) always wins — no DB/login needed.
-  if (process.env["SHIPROCKET_API_TOKEN"]) return process.env["SHIPROCKET_API_TOKEN"].trim();
-
   const stored = row?.credentials_ciphertext
     ? decryptJSON<Creds>(row.credentials_ciphertext)
     : null;
 
   // Admin-supplied static API token (stored in DB) wins and is never mixed with login.
   if (stored?.apiToken) return stored.apiToken;
+
+  // Credentials saved in the admin panel always take priority over any legacy env token.
+  if (!stored?.email || !stored?.password) {
+    if (process.env["SHIPROCKET_API_TOKEN"]) return process.env["SHIPROCKET_API_TOKEN"].trim();
+  }
 
   if (!force && row?.auth_token_ciphertext && row.auth_token_expires_at) {
     const valid = new Date(row.auth_token_expires_at).getTime() > Date.now() + 60_000;
@@ -159,6 +161,7 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
   const email = stored?.email ?? process.env["SHIPROCKET_EMAIL"];
   const password = stored?.password ?? process.env["SHIPROCKET_PASSWORD"];
   if (!email || !password) throw new Error("Shiprocket is not connected");
+
 
   const call = await shiprocketLogin(email, password);
   const token = call.json?.token as string | undefined;
