@@ -19,7 +19,7 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-export const OTP_EXPIRY_SECONDS = 600;
+export const OTP_EXPIRY_SECONDS = 300;
 export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_RESEND_COOLDOWN = 60;
 export const OTP_MAX_PER_HOUR = 5;
@@ -172,3 +172,21 @@ export async function sendSms(to: string, code: string): Promise<{ requestId: st
 
 
 
+
+/**
+ * Invalidates every still-open challenge for a key so that a resend makes the
+ * previous code unusable. Runs before a new challenge row is inserted.
+ */
+export async function invalidateOpenChallenges(
+  supabaseAdmin: SupabaseClient,
+  where: { purpose: "signup" | "login"; email?: string; phone?: string },
+): Promise<void> {
+  let q = supabaseAdmin
+    .from("auth_otp_challenges")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("purpose", where.purpose)
+    .is("consumed_at", null);
+  if (where.email) q = q.eq("email", where.email);
+  if (where.phone) q = q.eq("phone", where.phone);
+  await q;
+}
