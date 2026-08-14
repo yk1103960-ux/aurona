@@ -270,66 +270,34 @@ export const pushOrderToShiprocket = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertAdmin, writeAudit } = await import("./admin.server");
     const actor = await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: order }, { data: items }, { data: sp }] = await Promise.all([
-      supabaseAdmin.from("orders").select("*").eq("id", data.orderId).single(),
-      supabaseAdmin.from("order_items").select("*").eq("order_id", data.orderId),
-      supabaseAdmin.from("shipping_providers").select("config_public").eq("provider", "shiprocket").single(),
-    ]);
-    if (!order) throw new Error("Order not found");
-
-    const pickupLocation = (sp?.config_public as any)?.pickupLocation || "Primary";
-    const nameParts = order.full_name.split(" ");
-    const payload = {
-      order_id: order.order_number,
-      order_date: new Date(order.created_at).toISOString().slice(0, 10),
-      pickup_location: pickupLocation,
-      billing_customer_name: nameParts[0] || order.full_name,
-      billing_last_name: nameParts.slice(1).join(" ") || ".",
-      billing_address: order.address,
-      billing_city: order.city,
-      billing_pincode: order.pincode,
-      billing_state: order.state,
-      billing_country: "India",
-      billing_email: order.email || "orders@aurona.in",
-      billing_phone: order.phone,
-      shipping_is_billing: true,
-      order_items: (items ?? []).map((it) => ({
-        name: it.product_name,
-        sku: it.product_id || it.product_name.slice(0, 30),
-        units: it.quantity,
-        selling_price: Number(it.price),
-      })),
-      payment_method: order.payment_method === "cod" ? "COD" : "Prepaid",
-      sub_total: Number(order.subtotal),
-      length: 20, breadth: 20, height: 10, weight: 1.0,
-    };
-
-    const { shiprocketAuthed } = await import("./shiprocket.server");
-    const call = await shiprocketAuthed({
-      stage: "create-order",
-      path: "/orders/create/adhoc",
-      method: "POST",
-      body: payload,
-    });
-    const j: any = call.json ?? {};
-    if (!call.ok || j?.status_code >= 400) throw new Error(j?.message || "Shiprocket create failed");
-
-
-    await supabaseAdmin.from("orders").update({
-      shipment_provider: "shiprocket",
-      shipment_id: String(j.shipment_id ?? ""),
-      awb_code: j.awb_code ?? null,
-      courier_name: j.courier_name ?? null,
-      shipment_status: j.status ?? "pushed",
-      shipment_synced_at: new Date().toISOString(),
-      status: "shipped",
-    }).eq("id", data.orderId);
-
+    const { createShipmentForOrder } = await import("./shipment.server");
+    const result = await createShipmentForOrder(data.orderId);
     await writeAudit({
-      actorUserId: actor.userId, actorEmail: actor.email,
-      action: "shipment.push", entityType: "order", entityId: data.orderId,
-      after: { shipment_id: j.shipment_id, awb: j.awb_code },
+      actorUserId: actor.userId,
+      actorEmail: actor.email,
+      action: "shipment.push",
+      entityType: "order",
+      entityId: data.orderId,
+      after: { shipment_id: result.shipmentId, awb: result.awb, courier: result.courier },
     });
-    return { ok: true, shipmentId: j.shipment_id, awb: j.awb_code };
+    return result;
+  });
+
+export const syncOrderTracking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import("./admin.server");
+    await assertAdmin(context);
+    const { syncTrackingForOrder } = await import("./shipment.server");
+    return syncTrackingForOrder(data.orderId);
+  });
+
+export const syncAllShipments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import("./admin.server");
+    await assertAdmin(context);
+    const { syncAllOpenShipments } = await import("./shipment.server");
+    return syncAllOpenShipments(50);
   });

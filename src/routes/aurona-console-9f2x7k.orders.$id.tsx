@@ -6,8 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Printer, Truck } from "lucide-react";
-import { pushOrderToShiprocket } from "@/lib/admin.functions";
+import { ArrowLeft, Printer, RefreshCw, Truck } from "lucide-react";
+import { pushOrderToShiprocket, syncOrderTracking } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/orders/$id")({
   component: OrderDetailAdmin,
@@ -19,7 +19,9 @@ function OrderDetailAdmin() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/orders/$id" });
   const qc = useQueryClient();
   const pushShiprocket = useServerFn(pushOrderToShiprocket);
+  const syncTracking = useServerFn(syncOrderTracking);
   const [pushing, setPushing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const q = useQuery({
     queryKey: ["admin-order", id],
@@ -41,11 +43,22 @@ function OrderDetailAdmin() {
     setPushing(true);
     try {
       const r = await pushShiprocket({ data: { orderId: id } });
-      toast.success(`Pushed to Shiprocket · AWB ${r.awb || "pending"}`);
+      toast.success(`${r.message} AWB ${r.awb ?? "—"}${r.courier ? ` · ${r.courier}` : ""}`);
       qc.invalidateQueries({ queryKey: ["admin-order", id] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(e?.message || "Shipment creation failed"); }
     setPushing(false);
   };
+
+  const doSync = async () => {
+    setSyncing(true);
+    try {
+      const r = await syncTracking({ data: { orderId: id } });
+      toast.success(`Tracking updated${r.status ? ` · ${r.status}` : ""}`);
+      qc.invalidateQueries({ queryKey: ["admin-order", id] });
+    } catch (e: any) { toast.error(e?.message || "Tracking sync failed"); }
+    setSyncing(false);
+  };
+
 
   const o = q.data;
   if (!o) return <div className="p-6 text-sm text-slate-500">Loading…</div>;
@@ -63,13 +76,19 @@ function OrderDetailAdmin() {
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> Print / Invoice</Button>
           {!o.awb_code ? (
             <Button variant="outline" onClick={doPush} disabled={pushing}>
-              <Truck className="w-4 h-4 mr-1" /> {pushing ? "Pushing…" : "Push to Shiprocket"}
+              <Truck className="w-4 h-4 mr-1" /> {pushing ? "Creating shipment…" : "Create shipment (Shiprocket)"}
             </Button>
           ) : (
-            <span className="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-md border border-emerald-200">
-              AWB {o.awb_code} · {o.courier_name}
-            </span>
+            <>
+              <span className="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-md border border-emerald-200">
+                AWB {o.awb_code}{o.courier_name ? ` · ${o.courier_name}` : ""}{o.shipment_status ? ` · ${o.shipment_status}` : ""}
+              </span>
+              <Button variant="outline" onClick={doSync} disabled={syncing}>
+                <RefreshCw className={`w-4 h-4 mr-1 ${syncing ? "animate-spin" : ""}`} /> {syncing ? "Syncing…" : "Sync tracking"}
+              </Button>
+            </>
           )}
+
           <select value={o.status} onChange={(e) => setStatus(e.target.value)} className="h-10 border rounded-md px-3 text-sm bg-white">
             {FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
             <option value="cancelled">cancelled</option>
