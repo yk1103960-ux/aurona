@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -317,11 +317,6 @@ function ShiprocketCard({ row, busy, onSave, onTest }: {
   row?: Row; busy: string | null; onSave: SaveFn; onTest: (p: string) => void;
 }) {
   const pub = (row?.config_public ?? {}) as { pickupLocation?: string; channelId?: string };
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [apiToken, setApiToken] = useState("");
-  const [pickup, setPickup] = useState(pub.pickupLocation ?? "Primary");
-  const [enabled, setEnabled] = useState(row?.enabled ?? true);
 
   return (
     <Card
@@ -330,20 +325,23 @@ function ShiprocketCard({ row, busy, onSave, onTest }: {
       subtitle="Order sync, shipment creation and AWB tracking"
       badge={<StatusBadge row={row} />}
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Email / Username" value={email} onChange={setEmail} placeholder={row?.secret_masked ? "•••• saved" : "ops@aurona.in"} />
-        <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="Leave blank to keep saved" />
-        <Field label="API Token (optional)" value={apiToken} onChange={setApiToken} type="password" hint="Use instead of email/password if you generated a token" />
-        <Field label="Pickup Location" value={pickup} onChange={setPickup} placeholder="Primary" />
+      <div className="flex flex-wrap items-center justify-between gap-4 border border-slate-200 bg-slate-50 p-4">
+        <div>
+          <p className="text-sm font-medium text-slate-900">Single verified connection</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Pickup location: {pub.pickupLocation || "Not verified"}. Credentials are managed only in Shipping to prevent stale settings.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" disabled={busy === "test-shiprocket"} onClick={() => onTest("shiprocket")}>
+            {busy === "test-shiprocket" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Test
+          </Button>
+          <Button asChild>
+            <Link to="/aurona-console-9f2x7k/shipping">Manage in Shipping</Link>
+          </Button>
+        </div>
       </div>
-      <SaveRow
-        provider="shiprocket"
-        busy={busy}
-        enabled={enabled}
-        setEnabled={setEnabled}
-        onSave={() => onSave("shiprocket", enabled, { pickupLocation: pickup.trim() || "Primary" }, { email, password, apiToken }, "password")}
-        onTest={() => onTest("shiprocket")}
-      />
       <p className="mt-3 text-[11px] text-slate-500">
         Shipment creation and tracking for individual orders live in <b>Orders → order detail → Push to Shiprocket</b>.
       </p>
