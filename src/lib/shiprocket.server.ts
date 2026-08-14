@@ -150,7 +150,7 @@ export async function shiprocketPickupLocations(token: string) {
 
 /**
  * Returns a usable bearer token for server-side calls.
- * Order: stored manual API token → cached token (if unexpired) → fresh login.
+ * Order: verified admin connection → runtime fallback → fresh login.
  * `force` skips the cache, which is how expiry/401 recovery works.
  */
 export async function resolveShiprocketToken(force = false): Promise<string> {
@@ -167,22 +167,21 @@ export async function resolveShiprocketToken(force = false): Promise<string> {
     ? decryptJSON<Creds>(row.credentials_ciphertext)
     : null;
 
-  // Admin-supplied static API token (stored in DB) wins and is never mixed with login.
+  // The verified admin connection is the canonical source. This prevents an old
+  // deployment secret from silently overriding credentials rotated in Admin.
   if (stored?.apiToken) return stored.apiToken;
-
-  // A deliberately configured runtime token bypasses password login entirely.
-  if (process.env["SHIPROCKET_API_TOKEN"]?.trim()) return process.env["SHIPROCKET_API_TOKEN"].trim();
 
   if (!force && row?.auth_token_ciphertext && row.auth_token_expires_at) {
     const valid = new Date(row.auth_token_expires_at).getTime() > Date.now() + 60_000;
     if (valid) return decryptJSON<{ token: string }>(row.auth_token_ciphertext).token;
   }
 
-  // Runtime credentials are the operator-controlled source of truth. This is
-  // important after a password rotation: an older encrypted admin-panel value
-  // must not silently override the newly saved production credential.
-  const email = process.env["SHIPROCKET_EMAIL"]?.trim() || stored?.email;
-  const password = process.env["SHIPROCKET_PASSWORD"] || stored?.password;
+  // Runtime token is a fallback for deployments configured before the Admin
+  // connection screen existed. It never overrides a verified stored token.
+  if (process.env["SHIPROCKET_API_TOKEN"]?.trim()) return process.env["SHIPROCKET_API_TOKEN"].trim();
+
+  const email = stored?.email || process.env["SHIPROCKET_EMAIL"]?.trim();
+  const password = stored?.password || process.env["SHIPROCKET_PASSWORD"];
   if (!email || !password) throw new Error("Shiprocket is not connected");
 
 

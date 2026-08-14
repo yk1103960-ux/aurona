@@ -197,24 +197,10 @@ export async function syncWooCustomers(maxPages = 20): Promise<SyncSummary> {
 
 // ---------------- Shiprocket ----------------
 export async function testShiprocket(): Promise<string> {
-  const sec = await readSecrets<{ email: string; password: string; apiToken?: string }>("shiprocket");
   const pub = await readPublic<{ pickupLocation?: string; enabled?: boolean }>("shiprocket");
-  const apiToken = sec?.apiToken?.trim();
-  const email = sec?.email ?? process.env["SHIPROCKET_EMAIL"];
-  const password = sec?.password ?? process.env["SHIPROCKET_PASSWORD"];
-  const { shiprocketLogin, shiprocketPickupLocations, authFailureMessage } =
+  const { resolveShiprocketToken, shiprocketPickupLocations, authFailureMessage } =
     await import("./shiprocket.server");
-
-  let token = apiToken ?? "";
-  if (apiToken) {
-    token = apiToken;
-  } else {
-    if (!email || !password) throw new Error("Shiprocket credentials are not saved");
-    const login = await shiprocketLogin(email, password);
-    const issuedToken = login.json?.token as string | undefined;
-    if (!login.ok || !issuedToken) throw new Error(authFailureMessage(login));
-    token = issuedToken;
-  }
+  const token = await resolveShiprocketToken(false);
 
   const { call, locations } = await shiprocketPickupLocations(token);
   if (!call.ok) throw new Error(authFailureMessage(call));
@@ -229,39 +215,7 @@ export async function testShiprocket(): Promise<string> {
     throw new Error("Shiprocket authenticated successfully, but this account has no pickup location configured.");
   }
 
-  const db = await admin();
-  const now = new Date().toISOString();
-  const { error } = await db.from("shipping_providers").upsert({
-    provider: "shiprocket",
-    enabled: pub?.enabled ?? true,
-    config_public: {
-      pickupLocation,
-      availablePickupLocations: names,
-      authMode: apiToken ? "api_token" : "api_user",
-    },
-    credentials_ciphertext: encryptJSON(apiToken ? { apiToken } : { email, password }),
-    auth_token_ciphertext: apiToken ? null : encryptJSON({ token }),
-    auth_token_expires_at: apiToken
-      ? null
-      : new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
-    credential_masked: apiToken
-      ? `API token •••• ${apiToken.slice(-4)}`
-      : email?.replace(/(.).*(@.*)/, "$1***$2") ?? null,
-    connected_at: now,
-    last_verified_at: now,
-    updated_at: now,
-  });
-  if (error) throw new Error(`Shiprocket connected, but saving the verified connection failed: ${error.message}`);
-
-  await db
-    .from("integrations")
-    .update({
-      config_public: { pickupLocation },
-      updated_at: now,
-    })
-    .eq("provider", "shiprocket");
-
-  return `Connected. Authentication passed and pickup location “${pickupLocation}” was verified${names.length > 1 ? ` (${names.length} locations available)` : ""}.`;
+  return `Connected. The canonical shipping connection is valid and pickup location “${pickupLocation}” was verified${names.length > 1 ? ` (${names.length} locations available)` : ""}.`;
 }
 
 // ---------------- Payment gateways ----------------
