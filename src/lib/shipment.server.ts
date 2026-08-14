@@ -78,7 +78,7 @@ export async function createShipmentForOrder(orderId: string): Promise<ShipmentR
 
   const [{ data: order }, { data: items }, { data: sp }] = await Promise.all([
     supabaseAdmin.from("orders").select("*").eq("id", orderId).maybeSingle(),
-    supabaseAdmin.from("order_items").select("*").eq("order_id", orderId),
+    supabaseAdmin.from("order_items").select("product_name, price, quantity, products(sku)").eq("order_id", orderId),
     supabaseAdmin.from("shipping_providers").select("config_public, enabled").eq("provider", "shiprocket").maybeSingle(),
   ]);
   if (!order) throw new Error("Order not found");
@@ -105,7 +105,7 @@ export async function createShipmentForOrder(orderId: string): Promise<ShipmentR
   }
 
   const lines = (items ?? []).map((it: any) => ({
-    sku: (it.sku as string | null) ?? null,
+    sku: (it.products?.sku as string | null) ?? null,
     name: it.product_name as string,
     price: Number(it.price),
     quantity: Number(it.quantity),
@@ -298,23 +298,22 @@ export async function syncTrackingForOrder(orderId: string) {
   // Idempotent event log — event_key dedupes repeated syncs.
   for (const a of activities.slice(0, 25)) {
     const when = String(a.date ?? "");
-    await supabaseAdmin
-      .from("shipment_events")
-      .upsert(
-        {
-          order_id: orderId,
-          provider: "shiprocket",
-          event_key: `track:${order.awb_code}:${when}:${String(a["sr-status"] ?? a.status ?? "")}`,
-          awb_code: order.awb_code,
-          courier_name: track.courier_name ?? null,
-          shipment_status: String(a.activity ?? a.status ?? ""),
-          status_code: a["sr-status"] != null ? String(a["sr-status"]) : null,
-          location: a.location ?? null,
-          event_time: when ? new Date(when.replace(" ", "T")).toISOString() : null,
-          payload: a as never,
-        },
-        { onConflict: "event_key", ignoreDuplicates: true },
-      );
+    const { error } = await supabaseAdmin.from("shipment_events").insert({
+      order_id: orderId,
+      provider: "shiprocket",
+      event_key: `track:${order.awb_code}:${when}:${String(a["sr-status"] ?? a.status ?? "")}`,
+      awb_code: order.awb_code,
+      courier_name: track.courier_name ?? null,
+      shipment_status: String(a.activity ?? a.status ?? ""),
+      status_code: a["sr-status"] != null ? String(a["sr-status"]) : null,
+      location: a.location ?? null,
+      event_time: when ? new Date(when.replace(" ", "T")).toISOString() : null,
+      payload: a as never,
+    });
+    // 23505 = event already recorded by a previous sync or the webhook.
+    if (error && (error as { code?: string }).code !== "23505") {
+      console.log(`[shipment] event log skipped: ${error.message}`);
+    }
   }
 
   return {
