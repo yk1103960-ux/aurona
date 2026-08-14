@@ -19,7 +19,9 @@ function OrderDetailAdmin() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/orders/$id" });
   const qc = useQueryClient();
   const pushShiprocket = useServerFn(pushOrderToShiprocket);
+  const syncTracking = useServerFn(syncOrderTracking);
   const [pushing, setPushing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const q = useQuery({
     queryKey: ["admin-order", id],
