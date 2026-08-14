@@ -7,7 +7,7 @@ import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Printer, Truck } from "lucide-react";
-import { pushOrderToShiprocket } from "@/lib/admin.functions";
+import { pushOrderToShiprocket, syncOrderTracking } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/orders/$id")({
   component: OrderDetailAdmin,
