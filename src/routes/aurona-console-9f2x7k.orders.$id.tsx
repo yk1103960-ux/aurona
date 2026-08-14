@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ArrowLeft, Printer, Truck } from "lucide-react";
+import { ArrowLeft, Printer, RefreshCw, Truck } from "lucide-react";
 import { pushOrderToShiprocket, syncOrderTracking } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/orders/$id")({
