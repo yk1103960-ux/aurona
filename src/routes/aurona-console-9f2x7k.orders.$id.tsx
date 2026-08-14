@@ -43,11 +43,22 @@ function OrderDetailAdmin() {
     setPushing(true);
     try {
       const r = await pushShiprocket({ data: { orderId: id } });
-      toast.success(`Pushed to Shiprocket · AWB ${r.awb || "pending"}`);
+      toast.success(`${r.message} AWB ${r.awb ?? "—"}${r.courier ? ` · ${r.courier}` : ""}`);
       qc.invalidateQueries({ queryKey: ["admin-order", id] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(e?.message || "Shipment creation failed"); }
     setPushing(false);
   };
+
+  const doSync = async () => {
+    setSyncing(true);
+    try {
+      const r = await syncTracking({ data: { orderId: id } });
+      toast.success(`Tracking updated${r.status ? ` · ${r.status}` : ""}`);
+      qc.invalidateQueries({ queryKey: ["admin-order", id] });
+    } catch (e: any) { toast.error(e?.message || "Tracking sync failed"); }
+    setSyncing(false);
+  };
+
 
   const o = q.data;
   if (!o) return <div className="p-6 text-sm text-slate-500">Loading…</div>;
