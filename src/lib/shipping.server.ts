@@ -67,7 +67,7 @@ async function readSettings(): Promise<Settings> {
  * browser. Resolution order per line: variant row → parent product row →
  * admin-configured default weight.
  */
-async function computePackage(lines: CartLine[], defaultWeightG: number) {
+export async function computePackage(lines: CartLine[], defaultWeightG: number) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const skus = lines.map((l) => l.sku).filter(Boolean) as string[];
   type Dims = { weight_g: number | null; dim_l: number | null; dim_w: number | null; dim_h: number | null };
@@ -106,7 +106,7 @@ async function computePackage(lines: CartLine[], defaultWeightG: number) {
 
 /** Pickup pincode for the configured pickup location (cached briefly). */
 let pickupCache: { pincode: string; at: number } | null = null;
-async function resolvePickupPincode(configured: string | null): Promise<string | null> {
+export async function resolvePickupPincode(configured: string | null): Promise<string | null> {
   if (configured) return configured;
   if (pickupCache && Date.now() - pickupCache.at < 10 * 60 * 1000) return pickupCache.pincode;
   try {
@@ -286,4 +286,16 @@ export async function quoteShippingForCart(opts: {
 
   quoteCache.set(cacheKey, { quote, at: Date.now() });
   return quote;
+}
+
+/** Package weight + dimensions for an order's lines (server-only). */
+export async function packageForOrderLines(lines: CartLine[]) {
+  const s = await readSettings();
+  return computePackage(lines, s.defaultWeightG);
+}
+
+/** Configured (or provider-resolved) pickup pincode, or null. */
+export async function pickupPincodeForShipping() {
+  const s = await readSettings();
+  return resolvePickupPincode(s.pickupPincode);
 }
