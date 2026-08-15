@@ -30,6 +30,20 @@ type ShiprocketPayload = {
   scans?: Array<{ location?: string; date?: string; activity?: string; status?: string }>;
 };
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, X-Shiprocket-Token, Accept, Origin",
+  "Access-Control-Max-Age": "86400",
+} as const;
+
+function reply(body: BodyInit | null, init: ResponseInit = {}) {
+  return new Response(body, {
+    ...init,
+    headers: { ...CORS_HEADERS, ...init.headers },
+  });
+}
+
 /** Shiprocket status → Aurona order status. Never returns a payment status. */
 function mapOrderStatus(status: string): string | null {
   const s = status.toLowerCase();
@@ -44,11 +58,13 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
   server: {
     handlers: {
       // Shiprocket pings the URL before saving the webhook.
-      GET: async () => new Response("ok"),
+      GET: async () => reply("ok"),
+      HEAD: async () => reply(null),
+      OPTIONS: async () => reply(null, { status: 204 }),
 
       POST: async ({ request }) => {
         const expected = process.env["SHIPROCKET_WEBHOOK_TOKEN"];
-        if (!expected) return new Response("Not configured", { status: 503 });
+        if (!expected) return reply("Not configured", { status: 503 });
 
         const provided =
           request.headers.get("x-api-key") ??
@@ -60,14 +76,14 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
         const b = Buffer.from(expected);
         if (a.length !== b.length || !timingSafeEqual(a, b)) {
           console.log("[shiprocket-webhook] rejected: bad token");
-          return new Response("Unauthorized", { status: 401 });
+          return reply("Unauthorized", { status: 401 });
         }
 
         let payload: ShiprocketPayload;
         try {
           payload = (await request.json()) as ShiprocketPayload;
         } catch {
-          return new Response("Invalid JSON", { status: 400 });
+          return reply("Invalid JSON", { status: 400 });
         }
 
         const awb = payload.awb != null ? String(payload.awb).trim() : "";
@@ -78,7 +94,7 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
         const eventTime = payload.current_timestamp ? new Date(payload.current_timestamp) : new Date();
         const lastScan = payload.scans?.[payload.scans.length - 1];
 
-        if (!awb && !shipmentId && !orderRef) return new Response("Missing identifiers", { status: 400 });
+        if (!awb && !shipmentId && !orderRef) return reply("Missing identifiers", { status: 400 });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -122,16 +138,16 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
           // 23505 = duplicate event replayed by Shiprocket: acknowledge, do nothing.
           if ((insertError as { code?: string }).code === "23505") {
             console.log(`[shiprocket-webhook] duplicate event ignored (awb=${awb || "-"} status=${status || "-"})`);
-            return new Response("ok (duplicate)");
+            return reply("ok (duplicate)");
           }
           console.log(`[shiprocket-webhook] event store failed: ${insertError.message}`);
-          return new Response("Storage error", { status: 500 });
+          return reply("Storage error", { status: 500 });
         }
 
         if (!order) {
           console.log(`[shiprocket-webhook] no matching order (awb=${awb || "-"} ref=${orderRef || "-"})`);
           // 200 so Shiprocket does not retry forever; the event is stored for admin review.
-          return new Response("ok (unmatched)");
+          return reply("ok (unmatched)");
         }
 
         const trackingUrl = awb ? `https://shiprocket.co/tracking/${awb}` : null;
@@ -153,13 +169,13 @@ export const Route = createFileRoute("/api/public/shiprocket-webhook")({
         const { error: updateError } = await supabaseAdmin.from("orders").update(update as never).eq("id", order.id);
         if (updateError) {
           console.log(`[shiprocket-webhook] order update failed: ${updateError.message}`);
-          return new Response("Update error", { status: 500 });
+          return reply("Update error", { status: 500 });
         }
 
         console.log(
           `[shiprocket-webhook] ${order.order_number} awb=${awb || "-"} status="${status}" -> ${mapped ?? order.status}`,
         );
-        return new Response("ok");
+        return reply("ok");
       },
     },
   },
