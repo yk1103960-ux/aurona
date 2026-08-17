@@ -113,7 +113,7 @@ const LOGIN_COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes lockout
 export async function shiprocketLogin(email: string, password: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  // Check persistent lock from database
+  // 1. Check persistent lock from database (Circuit Breaker)
   const { data: lockRow } = await supabaseAdmin
     .from("site_settings")
     .select("value")
@@ -126,39 +126,67 @@ export async function shiprocketLogin(email: string, password: string) {
     throw new Error(`Shiprocket authentication is currently BLOCKED for ${minutes} minutes to prevent account lockout. Please wait for the lockout period to expire.`);
   }
 
-  // Atomic-ish check to prevent concurrent logins: set an 'AUTHENTICATING' marker
-  // or a short-term lock if needed. For now, we rely on the single-attempt rule.
-  
-  const call = await shiprocketCall({
-    stage: "authenticate",
-    path: "/auth/login",
-    method: "POST",
-    body: { email, password },
-    redact: [password],
-  });
+  // 2. Concurrency Lock: Prevent multiple isolates from hammering at the same millisecond.
+  // We use a short-lived (60s) 'authenticating' lock.
+  const { data: activeLock } = await supabaseAdmin
+    .from("site_settings")
+    .select("value, updated_at")
+    .eq("key", "shiprocket_auth_active_lock")
+    .maybeSingle();
 
-  if (!call.ok || !call.json?.token) {
-    // Persistent block if authentication fails
-    const newLockUntil = Date.now() + LOGIN_COOLDOWN_MS;
-    await supabaseAdmin
-      .from("site_settings")
-      .upsert({ 
-        key: "shiprocket_auth_lock_until", 
-        value: String(newLockUntil),
-        updated_at: new Date().toISOString()
-      });
-  } else {
-    // Clear lock on success
-    await supabaseAdmin
-      .from("site_settings")
-      .upsert({ 
-        key: "shiprocket_auth_lock_until", 
-        value: "0",
-        updated_at: new Date().toISOString()
-      });
+  if (activeLock?.value === "true") {
+    const lastUpdate = new Date(activeLock.updated_at).getTime();
+    if (Date.now() - lastUpdate < 60_000) {
+      throw new Error("Shiprocket authentication is already in progress. Please wait.");
+    }
   }
 
-  return call;
+  // Set active lock
+  await supabaseAdmin.from("site_settings").upsert({ 
+    key: "shiprocket_auth_active_lock", 
+    value: "true",
+    updated_at: new Date().toISOString()
+  });
+
+  try {
+    const call = await shiprocketCall({
+      stage: "authenticate",
+      path: "/auth/login",
+      method: "POST",
+      body: { email, password },
+      redact: [password],
+    });
+
+    if (!call.ok || !call.json?.token) {
+      // 3. Persistent Block on Failure: Enter BLOCKED state
+      const newLockUntil = Date.now() + LOGIN_COOLDOWN_MS;
+      await supabaseAdmin
+        .from("site_settings")
+        .upsert({ 
+          key: "shiprocket_auth_lock_until", 
+          value: String(newLockUntil),
+          updated_at: new Date().toISOString()
+        });
+    } else {
+      // Clear lock on success
+      await supabaseAdmin
+        .from("site_settings")
+        .upsert({ 
+          key: "shiprocket_auth_lock_until", 
+          value: "0",
+          updated_at: new Date().toISOString()
+        });
+    }
+
+    return call;
+  } finally {
+    // Release active lock
+    await supabaseAdmin.from("site_settings").upsert({ 
+      key: "shiprocket_auth_active_lock", 
+      value: "false",
+      updated_at: new Date().toISOString()
+    });
+  }
 }
 
 /** Harmless authenticated probe that also returns configured pickup locations. */
