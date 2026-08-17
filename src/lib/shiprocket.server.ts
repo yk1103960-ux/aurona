@@ -42,6 +42,9 @@ export async function shiprocketCall(opts: {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
+    // Use a standard browser User-Agent to bypass firewall blocks that target automated scripts.
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Referer": "https://shiprocket.in/",
   };
   if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
 
