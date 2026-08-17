@@ -94,11 +94,13 @@ export function authFailureMessage(call: ShiprocketCall): string {
     "";
   const status = call.status ?? "network";
   if (!provider) return `Shiprocket authentication failed (${status}).`;
-  if (/access forbidden/i.test(provider)) {
-    return `Shiprocket said: "${provider}" (HTTP ${status}). Shiprocket returns this when the password for this API user is wrong/outdated, or when API access for the account is switched off or IP-restricted.`;
+
+  const cleanProvider = provider.toLowerCase();
+  if (cleanProvider.includes("access forbidden") || cleanProvider.includes("disabled")) {
+    return `SHIPROCKET AUTH FAILED. Shiprocket said: "${provider}" (HTTP ${status}). This usually means the API user credentials are incorrect, or the account is disabled/restricted. STOP and check Shiprocket settings.`;
   }
-  if (/user blocked/i.test(provider)) {
-    return `Shiprocket has temporarily blocked this API user due to too many failed login attempts. Please wait 30–60 minutes before trying again. (HTTP ${status}).`;
+  if (cleanProvider.includes("blocked") || cleanProvider.includes("too many failed")) {
+    return `SHIPROCKET AUTH BLOCKED. Shiprocket said: "${provider}" (HTTP ${status}). The API user is temporarily locked. Please wait at least 60 minutes.`;
   }
   return `Shiprocket said: "${provider}" (HTTP ${status}).`;
 }
