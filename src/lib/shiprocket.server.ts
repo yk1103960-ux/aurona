@@ -97,6 +97,9 @@ export function authFailureMessage(call: ShiprocketCall): string {
   if (/access forbidden/i.test(provider)) {
     return `Shiprocket said: "${provider}" (HTTP ${status}). Shiprocket returns this when the password for this API user is wrong/outdated, or when API access for the account is switched off or IP-restricted.`;
   }
+  if (/user blocked/i.test(provider)) {
+    return `Shiprocket has temporarily blocked this API user due to too many failed login attempts. Please wait 30–60 minutes before trying again. (HTTP ${status}).`;
+  }
   return `Shiprocket said: "${provider}" (HTTP ${status}).`;
 }
 
