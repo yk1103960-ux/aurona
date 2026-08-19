@@ -187,7 +187,7 @@ function AccountPage() {
   };
 
   return (
-    <div className="container-x py-8">
+    <div className="container-x w-full overflow-hidden py-8">
       {/* Profile header */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="bg-nav px-6 py-7 text-nav-foreground sm:px-8">
