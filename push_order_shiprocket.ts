@@ -71,9 +71,10 @@ async function run() {
       total_discount: order.discount || 0,
       sub_total: order.subtotal,
       length: 10,
-      width: 10,
+      breadth: 10,
       height: 10,
       weight: 0.5
+
     };
 
     console.log("Pushing order to Shiprocket...");
