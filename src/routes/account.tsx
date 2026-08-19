@@ -836,17 +836,34 @@ function Tile({ Icon, title, body, onClick }: { Icon: any; title: string; body: 
 function Timeline({ status }: { status: string }) {
   const idx = STATUS.indexOf(status as any);
   return (
-    <div className="flex items-center gap-1 overflow-x-auto">
-      {STATUS.map((s, i) => (
-        <div key={s} className="flex items-center gap-1">
-          <div className={"flex flex-col items-center gap-1 " + (i <= idx ? "text-foreground" : "text-muted-foreground")}>
-            <div className={"h-2.5 w-2.5 rounded-full " + (i <= idx ? "bg-primary" : "bg-border")} />
-            <span className="whitespace-nowrap text-[10px] uppercase tracking-widest">{STATUS_LABEL[s]}</span>
+    <div className="flex w-full items-center justify-between gap-1 sm:gap-2">
+      {STATUS.map((s, i) => {
+        const active = i <= idx;
+        const last = i === STATUS.length - 1;
+        return (
+          <div key={s} className="flex min-w-0 flex-1 items-center gap-1">
+            <div className={cn(
+              "flex flex-col items-center gap-1 min-w-0 flex-1",
+              active ? "text-foreground" : "text-muted-foreground"
+            )}>
+              <div className={cn(
+                "h-2 w-2 shrink-0 rounded-full transition-colors sm:h-2.5 sm:w-2.5",
+                active ? "bg-primary shadow-[0_0_8px_var(--color-primary)]" : "bg-border"
+              )} />
+              <span className="w-full truncate text-center text-[8px] font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest">
+                {STATUS_LABEL[s]}
+              </span>
+            </div>
+            {!last && (
+              <div className={cn(
+                "h-px flex-1 min-w-[4px] sm:min-w-[12px]",
+                i < idx ? "bg-primary" : "bg-border"
+              )} />
+            )}
           </div>
-          {i < STATUS.length - 1 && <div className={"mx-1 h-px w-6 sm:w-10 " + (i < idx ? "bg-primary" : "bg-border")} />}
-        </div>
-      ))}
-      {idx === STATUS.length - 1 && <BadgeCheck className="ml-2 h-4 w-4 text-primary" />}
+        );
+      })}
     </div>
   );
 }
+
