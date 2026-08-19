@@ -161,7 +161,7 @@ function OrderTrackingPage() {
 
 
   return (
-    <div className="pb-10">
+    <div className="w-full overflow-hidden pb-10">
       <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="container-x flex items-center gap-3 py-3">
           <Link to="/account" className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-surface">
