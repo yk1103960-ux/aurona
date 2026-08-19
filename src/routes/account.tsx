@@ -219,20 +219,21 @@ function AccountPage() {
         </div>
 
 
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-gradient-to-r from-primary/10 via-sky/10 to-transparent px-6 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-gradient-to-r from-primary/10 via-sky/10 to-transparent px-4 py-4 sm:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground sm:h-10 sm:w-10">
               <Sparkles className="h-4 w-4" />
             </span>
-            <div>
-              <div className="text-sm font-semibold">Extra 10% off your next lighting order</div>
-              <div className="text-xs text-muted-foreground">Use code AURONA10 at checkout · limited period</div>
+            <div className="min-w-0">
+              <div className="truncate text-xs font-semibold sm:text-sm">Extra 10% off your next lighting order</div>
+              <div className="truncate text-[10px] text-muted-foreground sm:text-xs">Use code AURONA10 at checkout</div>
             </div>
           </div>
-          <Button asChild size="sm" className="rounded-full">
+          <Button asChild size="sm" className="shrink-0 rounded-full text-[10px] sm:text-xs">
             <Link to="/products">Shop now</Link>
           </Button>
         </div>
+
       </div>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[248px_minmax(0,1fr)]">
