@@ -190,31 +190,34 @@ function AccountPage() {
     <div className="container-x w-full overflow-hidden py-8">
       {/* Profile header */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="bg-nav px-6 py-7 text-nav-foreground sm:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <HeaderAvatar path={profile.data?.avatar_url as string | null | undefined} initials={initials} />
+        <div className="bg-nav px-4 py-6 text-nav-foreground sm:px-8 sm:py-7">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="shrink-0">
+                <HeaderAvatar path={profile.data?.avatar_url as string | null | undefined} initials={initials} />
+              </div>
 
-              <div>
+              <div className="min-w-0">
                 <div className="text-[10px] font-bold uppercase tracking-[0.24em] opacity-70">My Dashboard</div>
-                <div className="text-display mt-1 text-3xl leading-none">{name}</div>
-                <div className="mt-1 text-xs opacity-75">{user.email}</div>
+                <div className="mt-1 truncate text-display text-xl leading-none sm:text-3xl">{name}</div>
+                <div className="mt-1 truncate text-xs opacity-75">{user.email}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold transition hover:bg-white/20"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-semibold transition hover:bg-white/20 sm:px-4 sm:py-2 sm:text-xs"
               >
-                {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                {dark ? "Dark" : "Light"}
+                {dark ? <Moon className="h-3.5 w-3.5 sm:h-4 w-4" /> : <Sun className="h-3.5 w-3.5 sm:h-4 w-4" />}
+                <span className="hidden sm:inline">{dark ? "Dark" : "Light"}</span>
               </button>
-              <Button onClick={signOut} variant="outline" className="gap-2 rounded-full border-white/25 bg-transparent text-nav-foreground hover:bg-white/15 hover:text-nav-foreground">
-                <LogOut className="h-4 w-4" /> Sign out
+              <Button onClick={signOut} variant="outline" size="sm" className="h-8 gap-2 rounded-full border-white/25 bg-transparent px-3 text-[10px] text-nav-foreground hover:bg-white/15 hover:text-nav-foreground sm:h-9 sm:px-4 sm:text-xs">
+                <LogOut className="h-3.5 w-3.5 sm:h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
               </Button>
             </div>
           </div>
         </div>
+
 
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-gradient-to-r from-primary/10 via-sky/10 to-transparent px-6 py-4 sm:px-8">
           <div className="flex items-center gap-3">
