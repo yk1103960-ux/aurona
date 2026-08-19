@@ -161,7 +161,7 @@ function OrderTrackingPage() {
 
 
   return (
-    <div className="pb-10">
+    <div className="w-full overflow-hidden pb-10">
       <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="container-x flex items-center gap-3 py-3">
           <Link to="/account" className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-surface">
@@ -174,8 +174,9 @@ function OrderTrackingPage() {
         </div>
       </div>
 
-      <div className="container-x grid gap-5 py-5 lg:grid-cols-[1fr_380px] lg:gap-8">
-        <div className="space-y-4">
+      <div className="container-x w-full overflow-hidden py-5 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8">
+        <div className="w-full space-y-4 min-w-0">
+
           {/* Status */}
           <section className="rounded-2xl border border-border p-4">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
@@ -251,7 +252,7 @@ function OrderTrackingPage() {
             </h2>
             <ul className="divide-y divide-border">
               {items.map((it) => (
-                <li key={it.id} className="flex items-baseline justify-between gap-3 p-4 text-sm">
+                <li key={it.id} className="flex items-start justify-between gap-3 p-4 text-sm sm:items-baseline">
                   <div className="min-w-0">
                     <p className="line-clamp-2 font-semibold">{it.product_name}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">Qty {it.quantity}</p>
@@ -279,7 +280,7 @@ function OrderTrackingPage() {
           </section>
         </div>
 
-        <aside className="h-fit space-y-4 lg:sticky lg:top-24">
+        <aside className="w-full space-y-6 lg:w-80 lg:shrink-0 lg:sticky lg:top-24">
           <section className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
               Price details

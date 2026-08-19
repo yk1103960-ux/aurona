@@ -189,11 +189,12 @@ export function Header() {
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
               <button
-                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 lg:hidden"
+                className="press -ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 sm:-ml-2 sm:h-10 sm:w-10 lg:hidden"
                 aria-label="Menu"
               >
-                <Menu className="h-6 w-6" strokeWidth={1.75} />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
               </button>
+
             </SheetTrigger>
             <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
               <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
@@ -210,11 +211,12 @@ export function Header() {
               className={cn(
                 "w-auto shrink-0 object-contain object-left transition-[height,max-width] duration-500",
                 scrolled
-                  ? "h-9 max-w-[210px] lg:h-12 lg:max-w-[320px]"
-                  : "h-10 max-w-[230px] lg:h-[62px] lg:max-w-[380px]",
+                  ? "h-7 max-w-[140px] lg:h-12 lg:max-w-[320px]"
+                  : "h-8 max-w-[160px] lg:h-[62px] lg:max-w-[380px]",
               )}
             />
           </Link>
+
         </div>
 
 
@@ -239,20 +241,21 @@ export function Header() {
               </span>
             </span>
           </Link>
-          <button
-            onClick={() => document.getElementById("aurona-search-input")?.focus()}
-            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
+          <Link
+            to="/products"
+            className="grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 lg:hidden"
             aria-label="Search"
           >
-            <Search className="h-[19px] w-[19px]" strokeWidth={1.75} />
-          </button>
+            <Search className="h-[18px] w-[18px]" strokeWidth={2} />
+          </Link>
           <Link
             to={user ? "/account" : "/auth"}
-            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
+            className="hidden h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Account"
           >
             <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </Link>
+
           <Link
             to="/wishlist"
             className="relative hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid"
@@ -263,12 +266,13 @@ export function Header() {
           </Link>
           <Link
             to="/cart"
-            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
+            className="press relative -mr-1 grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:-mr-2 sm:h-10 sm:w-10 lg:mr-0 lg:h-11 lg:w-11"
             aria-label="Cart"
           >
-            <ShoppingCart className="h-6 w-6 lg:h-[19px] lg:w-[19px]" strokeWidth={1.75} />
+            <ShoppingCart className="h-5 w-5 lg:h-[19px] lg:w-[19px]" strokeWidth={2} />
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
+
         </div>
 
       </div>

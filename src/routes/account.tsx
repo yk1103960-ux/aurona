@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { inr } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { AddressManager } from "@/components/account/AddressManager";
 import { AvatarUpload } from "@/components/account/AvatarUpload";
 import { useAvatarUrl } from "@/hooks/useAvatarUrl";
@@ -23,6 +24,7 @@ import {
   BadgeCheck, Sun, Moon, ChevronRight, Sparkles, LayoutDashboard, ShieldCheck,
   UserCog, Download, TrendingUp, IndianRupee, Clock, Trash2, RotateCcw, Activity,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -185,49 +187,53 @@ function AccountPage() {
   };
 
   return (
-    <div className="container-x py-8">
+    <div className="container-x w-full overflow-hidden py-8">
       {/* Profile header */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="bg-nav px-6 py-7 text-nav-foreground sm:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <HeaderAvatar path={profile.data?.avatar_url as string | null | undefined} initials={initials} />
+        <div className="bg-nav px-4 py-6 text-nav-foreground sm:px-8 sm:py-7">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="shrink-0">
+                <HeaderAvatar path={profile.data?.avatar_url as string | null | undefined} initials={initials} />
+              </div>
 
-              <div>
+              <div className="min-w-0">
                 <div className="text-[10px] font-bold uppercase tracking-[0.24em] opacity-70">My Dashboard</div>
-                <div className="text-display mt-1 text-3xl leading-none">{name}</div>
-                <div className="mt-1 text-xs opacity-75">{user.email}</div>
+                <div className="mt-1 truncate text-display text-xl leading-none sm:text-3xl">{name}</div>
+                <div className="mt-1 truncate text-xs opacity-75">{user.email}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold transition hover:bg-white/20"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-semibold transition hover:bg-white/20 sm:px-4 sm:py-2 sm:text-xs"
               >
-                {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                {dark ? "Dark" : "Light"}
+                {dark ? <Moon className="h-3.5 w-3.5 sm:h-4 w-4" /> : <Sun className="h-3.5 w-3.5 sm:h-4 w-4" />}
+                <span className="hidden sm:inline">{dark ? "Dark" : "Light"}</span>
               </button>
-              <Button onClick={signOut} variant="outline" className="gap-2 rounded-full border-white/25 bg-transparent text-nav-foreground hover:bg-white/15 hover:text-nav-foreground">
-                <LogOut className="h-4 w-4" /> Sign out
+              <Button onClick={signOut} variant="outline" size="sm" className="h-8 gap-2 rounded-full border-white/25 bg-transparent px-3 text-[10px] text-nav-foreground hover:bg-white/15 hover:text-nav-foreground sm:h-9 sm:px-4 sm:text-xs">
+                <LogOut className="h-3.5 w-3.5 sm:h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-gradient-to-r from-primary/10 via-sky/10 to-transparent px-6 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-gradient-to-r from-primary/10 via-sky/10 to-transparent px-4 py-4 sm:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground sm:h-10 sm:w-10">
               <Sparkles className="h-4 w-4" />
             </span>
-            <div>
-              <div className="text-sm font-semibold">Extra 10% off your next lighting order</div>
-              <div className="text-xs text-muted-foreground">Use code AURONA10 at checkout · limited period</div>
+            <div className="min-w-0">
+              <div className="truncate text-xs font-semibold sm:text-sm">Extra 10% off your next lighting order</div>
+              <div className="truncate text-[10px] text-muted-foreground sm:text-xs">Use code AURONA10 at checkout</div>
             </div>
           </div>
-          <Button asChild size="sm" className="rounded-full">
+          <Button asChild size="sm" className="shrink-0 rounded-full text-[10px] sm:text-xs">
             <Link to="/products">Shop now</Link>
           </Button>
         </div>
+
       </div>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -520,63 +526,66 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
         <div className="space-y-4">
           {rows.map((o) => (
             <div key={o.id} className="rounded-2xl border border-border bg-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold">Order #{o.order_number}</div>
-                  <div className="text-xs text-muted-foreground">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-bold">Order #{o.order_number}</div>
+                  <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
                     {new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     {o.payment_method ? ` · ${String(o.payment_method).toUpperCase()}` : ""}
-                    {o.payment_status ? ` · ${o.payment_status}` : ""}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold">{inr(o.total)}</div>
-                  <div className="text-xs text-muted-foreground">{o.order_items?.length ?? 0} items</div>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-bold text-primary">{inr(o.total)}</div>
+                  <div className="text-[10px] text-muted-foreground">{o.order_items?.length ?? 0} items</div>
                 </div>
               </div>
 
+
               {(o.order_items ?? []).length > 0 && (
-                <ul className="mt-3 space-y-1">
+                <ul className="mt-4 space-y-2 border-t border-border pt-3">
                   {o.order_items.map((i: any) => (
-                    <li key={i.id} className="flex justify-between text-xs text-muted-foreground">
-                      <span className="line-clamp-1">{i.product_name} × {i.quantity}</span>
-                      <span>{inr(Number(i.price) * i.quantity)}</span>
+                    <li key={i.id} className="flex items-baseline justify-between gap-3 text-[11px] sm:text-xs">
+                      <span className="line-clamp-2 min-w-0 flex-1 text-muted-foreground">{i.product_name} <span className="text-[10px] font-bold text-foreground">× {i.quantity}</span></span>
+                      <span className="shrink-0 font-medium">{inr(Number(i.price) * i.quantity)}</span>
                     </li>
                   ))}
                 </ul>
               )}
 
+
               <div className="mt-5">
                 <Timeline status={o.status} />
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-semibold text-primary">
-                  View details
-                </Link>
-                <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary">
-                  <Download className="h-3.5 w-3.5" /> Download invoice
-                </button>
-                {o.tracking_url && (
-                  <a href={o.tracking_url} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-primary">
-                    Track shipment {o.courier_name ? `(${o.courier_name})` : ""}
-                  </a>
-                )}
-                {/* Cancellation is requested here and approved by our team. */}
-                {["pending", "confirmed", "processing"].includes(o.status) && !o.awb_code && (
-                  <Link
-                    to="/orders/$orderId"
-                    params={{ orderId: o.id }}
-                    className="text-[11px] font-semibold text-destructive"
-                  >
-                    Request cancellation
+              <div className="mt-5 grid grid-cols-1 gap-2 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                    View details
                   </Link>
-                )}
+                  <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                    <Download className="h-3 w-3" /> Invoice
+                  </button>
+                  {o.tracking_url && (
+                    <a href={o.tracking_url} target="_blank" rel="noreferrer" className="text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                      Track shipment
+                    </a>
+                  )}
+                  {["pending", "confirmed", "processing"].includes(o.status) && !o.awb_code && (
+                    <Link
+                      to="/orders/$orderId"
+                      params={{ orderId: o.id }}
+                      className="text-[11px] font-bold tracking-tight text-destructive sm:text-xs"
+                    >
+                      Cancel
+                    </Link>
+                  )}
+                </div>
 
-                <Link to="/customer-service" className="ml-auto text-[11px] text-muted-foreground hover:text-primary">
-                  Need help with this order?
+                <Link to="/customer-service" className="text-[10px] text-muted-foreground hover:text-primary sm:ml-auto">
+                  Need help?
                 </Link>
               </div>
+
 
             </div>
           ))}
@@ -836,17 +845,34 @@ function Tile({ Icon, title, body, onClick }: { Icon: any; title: string; body: 
 function Timeline({ status }: { status: string }) {
   const idx = STATUS.indexOf(status as any);
   return (
-    <div className="flex items-center gap-1 overflow-x-auto">
-      {STATUS.map((s, i) => (
-        <div key={s} className="flex items-center gap-1">
-          <div className={"flex flex-col items-center gap-1 " + (i <= idx ? "text-foreground" : "text-muted-foreground")}>
-            <div className={"h-2.5 w-2.5 rounded-full " + (i <= idx ? "bg-primary" : "bg-border")} />
-            <span className="whitespace-nowrap text-[10px] uppercase tracking-widest">{STATUS_LABEL[s]}</span>
+    <div className="flex w-full items-center justify-between gap-1 sm:gap-2">
+      {STATUS.map((s, i) => {
+        const active = i <= idx;
+        const last = i === STATUS.length - 1;
+        return (
+          <div key={s} className="flex min-w-0 flex-1 items-center gap-1">
+            <div className={cn(
+              "flex flex-col items-center gap-1 min-w-0 flex-1",
+              active ? "text-foreground" : "text-muted-foreground"
+            )}>
+              <div className={cn(
+                "h-2 w-2 shrink-0 rounded-full transition-colors sm:h-2.5 sm:w-2.5",
+                active ? "bg-primary shadow-[0_0_8px_var(--color-primary)]" : "bg-border"
+              )} />
+              <span className="w-full truncate text-center text-[8px] font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest">
+                {STATUS_LABEL[s]}
+              </span>
+            </div>
+            {!last && (
+              <div className={cn(
+                "h-px flex-1 min-w-[4px] sm:min-w-[12px]",
+                i < idx ? "bg-primary" : "bg-border"
+              )} />
+            )}
           </div>
-          {i < STATUS.length - 1 && <div className={"mx-1 h-px w-6 sm:w-10 " + (i < idx ? "bg-primary" : "bg-border")} />}
-        </div>
-      ))}
-      {idx === STATUS.length - 1 && <BadgeCheck className="ml-2 h-4 w-4 text-primary" />}
+        );
+      })}
     </div>
   );
 }
+
