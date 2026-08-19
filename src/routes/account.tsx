@@ -542,15 +542,16 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
 
 
               {(o.order_items ?? []).length > 0 && (
-                <ul className="mt-3 space-y-1">
+                <ul className="mt-4 space-y-2 border-t border-border pt-3">
                   {o.order_items.map((i: any) => (
-                    <li key={i.id} className="flex justify-between text-xs text-muted-foreground">
-                      <span className="line-clamp-1">{i.product_name} × {i.quantity}</span>
-                      <span>{inr(Number(i.price) * i.quantity)}</span>
+                    <li key={i.id} className="flex items-baseline justify-between gap-3 text-[11px] sm:text-xs">
+                      <span className="line-clamp-2 min-w-0 flex-1 text-muted-foreground">{i.product_name} <span className="text-[10px] font-bold text-foreground">× {i.quantity}</span></span>
+                      <span className="shrink-0 font-medium">{inr(Number(i.price) * i.quantity)}</span>
                     </li>
                   ))}
                 </ul>
               )}
+
 
               <div className="mt-5">
                 <Timeline status={o.status} />
