@@ -210,11 +210,12 @@ export function Header() {
               className={cn(
                 "w-auto shrink-0 object-contain object-left transition-[height,max-width] duration-500",
                 scrolled
-                  ? "h-9 max-w-[210px] lg:h-12 lg:max-w-[320px]"
-                  : "h-10 max-w-[230px] lg:h-[62px] lg:max-w-[380px]",
+                  ? "h-7 max-w-[140px] lg:h-12 lg:max-w-[320px]"
+                  : "h-8 max-w-[160px] lg:h-[62px] lg:max-w-[380px]",
               )}
             />
           </Link>
+
         </div>
 
 
