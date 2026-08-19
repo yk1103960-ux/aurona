@@ -526,20 +526,20 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
         <div className="space-y-4">
           {rows.map((o) => (
             <div key={o.id} className="rounded-2xl border border-border bg-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold">Order #{o.order_number}</div>
-                  <div className="text-xs text-muted-foreground">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-bold">Order #{o.order_number}</div>
+                  <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
                     {new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     {o.payment_method ? ` · ${String(o.payment_method).toUpperCase()}` : ""}
-                    {o.payment_status ? ` · ${o.payment_status}` : ""}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold">{inr(o.total)}</div>
-                  <div className="text-xs text-muted-foreground">{o.order_items?.length ?? 0} items</div>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-bold text-primary">{inr(o.total)}</div>
+                  <div className="text-[10px] text-muted-foreground">{o.order_items?.length ?? 0} items</div>
                 </div>
               </div>
+
 
               {(o.order_items ?? []).length > 0 && (
                 <ul className="mt-3 space-y-1">
