@@ -174,8 +174,9 @@ function OrderTrackingPage() {
         </div>
       </div>
 
-      <div className="container-x grid gap-5 py-5 lg:grid-cols-[1fr_380px] lg:gap-8">
-        <div className="space-y-4">
+      <div className="container-x w-full overflow-hidden py-5 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8">
+        <div className="w-full space-y-4 min-w-0">
+
           {/* Status */}
           <section className="rounded-2xl border border-border p-4">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
