@@ -252,7 +252,7 @@ function OrderTrackingPage() {
             </h2>
             <ul className="divide-y divide-border">
               {items.map((it) => (
-                <li key={it.id} className="flex items-baseline justify-between gap-3 p-4 text-sm">
+                <li key={it.id} className="flex items-start justify-between gap-3 p-4 text-sm sm:items-baseline">
                   <div className="min-w-0">
                     <p className="line-clamp-2 font-semibold">{it.product_name}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">Qty {it.quantity}</p>
