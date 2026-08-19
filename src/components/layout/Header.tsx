@@ -189,11 +189,12 @@ export function Header() {
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
               <button
-                className="press -ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 lg:hidden"
+                className="press -ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 sm:-ml-2 sm:h-10 sm:w-10 lg:hidden"
                 aria-label="Menu"
               >
-                <Menu className="h-6 w-6" strokeWidth={1.75} />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
               </button>
+
             </SheetTrigger>
             <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
               <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
