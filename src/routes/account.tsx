@@ -557,33 +557,35 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
                 <Timeline status={o.status} />
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-semibold text-primary">
-                  View details
-                </Link>
-                <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary">
-                  <Download className="h-3.5 w-3.5" /> Download invoice
-                </button>
-                {o.tracking_url && (
-                  <a href={o.tracking_url} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-primary">
-                    Track shipment {o.courier_name ? `(${o.courier_name})` : ""}
-                  </a>
-                )}
-                {/* Cancellation is requested here and approved by our team. */}
-                {["pending", "confirmed", "processing"].includes(o.status) && !o.awb_code && (
-                  <Link
-                    to="/orders/$orderId"
-                    params={{ orderId: o.id }}
-                    className="text-[11px] font-semibold text-destructive"
-                  >
-                    Request cancellation
+              <div className="mt-5 grid grid-cols-1 gap-2 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                    View details
                   </Link>
-                )}
+                  <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                    <Download className="h-3 w-3" /> Invoice
+                  </button>
+                  {o.tracking_url && (
+                    <a href={o.tracking_url} target="_blank" rel="noreferrer" className="text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                      Track shipment
+                    </a>
+                  )}
+                  {["pending", "confirmed", "processing"].includes(o.status) && !o.awb_code && (
+                    <Link
+                      to="/orders/$orderId"
+                      params={{ orderId: o.id }}
+                      className="text-[11px] font-bold tracking-tight text-destructive sm:text-xs"
+                    >
+                      Cancel
+                    </Link>
+                  )}
+                </div>
 
-                <Link to="/customer-service" className="ml-auto text-[11px] text-muted-foreground hover:text-primary">
-                  Need help with this order?
+                <Link to="/customer-service" className="text-[10px] text-muted-foreground hover:text-primary sm:ml-auto">
+                  Need help?
                 </Link>
               </div>
+
 
             </div>
           ))}
