@@ -240,20 +240,21 @@ export function Header() {
               </span>
             </span>
           </Link>
-          <button
-            onClick={() => document.getElementById("aurona-search-input")?.focus()}
-            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
+          <Link
+            to="/products"
+            className="grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 lg:hidden"
             aria-label="Search"
           >
-            <Search className="h-[19px] w-[19px]" strokeWidth={1.75} />
-          </button>
+            <Search className="h-[18px] w-[18px]" strokeWidth={2} />
+          </Link>
           <Link
             to={user ? "/account" : "/auth"}
-            className="hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
+            className="hidden h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Account"
           >
             <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
           </Link>
+
           <Link
             to="/wishlist"
             className="relative hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid"
