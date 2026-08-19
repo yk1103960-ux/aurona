@@ -7,19 +7,17 @@ async function run() {
   const orderId = "AUR26081583589";
   
   try {
-    // 1. Get the order from database to get the internal ID if needed, but let's try direct lookups
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, status, shipment_id, awb_number")
+      .select("id, status, shipment_id, awb_code")
       .eq("order_number", orderId)
-      .single();
+      .maybeSingle();
 
     if (!order) {
-      console.error("Order not found in database.");
-      return;
+      console.log(`Order ${orderId} not found in database. Searching Shiprocket directly...`);
+    } else {
+      console.log(`Order found: ${order.id}, Status: ${order.status}, Shipment ID: ${order.shipment_id}, AWB: ${order.awb_code}`);
     }
-
-    console.log(`Order status: ${order.status}, Shipment ID: ${order.shipment_id}, AWB: ${order.awb_number}`);
 
     // 2. Lookup order in Shiprocket to get its ID
     const searchRes = await shiprocketAuthed({
@@ -34,16 +32,15 @@ async function run() {
     }
 
     const srOrder = searchRes.json?.data;
+    // Shiprocket order object has a shipment_id directly or in shipments array
     const shipmentId = srOrder?.shipments?.[0]?.id || srOrder?.shipment_id;
 
     if (!shipmentId) {
-      console.log("No shipment found for this order. Creating custom shipment...");
-      // In a real flow, we'd call createAdhocOrder, but let's see if we can just trigger AWB for existing
-      console.error("No shipment ID available to generate AWB.");
+      console.log("No shipment found in Shiprocket data:", JSON.stringify(srOrder, null, 2).slice(0, 500));
       return;
     }
 
-    console.log(`Shipment ID found: ${shipmentId}. Requesting AWB...`);
+    console.log(`Shipment ID found in Shiprocket: ${shipmentId}. Requesting AWB...`);
 
     // 3. Generate AWB
     const awbRes = await shiprocketAuthed({
@@ -55,16 +52,18 @@ async function run() {
 
     if (awbRes.ok) {
       const awb = awbRes.json?.response?.data?.awb_code;
-      console.log("SUCCESS! AWB Generated:", awb);
+      const courier = awbRes.json?.response?.data?.courier_name;
+      console.log("SUCCESS! AWB Generated:", awb, "via", courier);
       
-      // Update database
-      await supabaseAdmin.from("orders").update({
-        shipment_id: String(shipmentId),
-        awb_number: awb,
-        status: 'shipped'
-      }).eq("id", order.id);
-      
-      console.log("Database updated.");
+      if (order) {
+        await supabaseAdmin.from("orders").update({
+          shipment_id: String(shipmentId),
+          awb_code: awb,
+          courier_name: courier,
+          status: 'shipped'
+        }).eq("id", order.id);
+        console.log("Database updated.");
+      }
     } else {
       console.log("AWB Generation failed:", sanitize(awbRes.raw));
     }
