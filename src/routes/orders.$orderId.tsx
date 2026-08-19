@@ -279,7 +279,7 @@ function OrderTrackingPage() {
           </section>
         </div>
 
-        <aside className="h-fit space-y-4 lg:sticky lg:top-24">
+        <aside className="w-full space-y-6 lg:w-80 lg:shrink-0 lg:sticky lg:top-24">
           <section className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
               Price details
