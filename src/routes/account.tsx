@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { inr } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { AddressManager } from "@/components/account/AddressManager";
 import { AvatarUpload } from "@/components/account/AvatarUpload";
 import { useAvatarUrl } from "@/hooks/useAvatarUrl";
@@ -23,6 +24,7 @@ import {
   BadgeCheck, Sun, Moon, ChevronRight, Sparkles, LayoutDashboard, ShieldCheck,
   UserCog, Download, TrendingUp, IndianRupee, Clock, Trash2, RotateCcw, Activity,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/account")({
   head: () => ({
