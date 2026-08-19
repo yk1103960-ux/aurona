@@ -265,12 +265,13 @@ export function Header() {
           </Link>
           <Link
             to="/cart"
-            className="press relative -mr-2 grid h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 lg:mr-0 lg:h-11 lg:w-11"
+            className="press relative -mr-1 grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:-mr-2 sm:h-10 sm:w-10 lg:mr-0 lg:h-11 lg:w-11"
             aria-label="Cart"
           >
-            <ShoppingCart className="h-6 w-6 lg:h-[19px] lg:w-[19px]" strokeWidth={1.75} />
+            <ShoppingCart className="h-5 w-5 lg:h-[19px] lg:w-[19px]" strokeWidth={2} />
             {cart.count > 0 && <Badge count={cart.count} />}
           </Link>
+
         </div>
 
       </div>
