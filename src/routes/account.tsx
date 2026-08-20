@@ -525,16 +525,16 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
       ) : (
         <div className="space-y-4">
           {rows.map((o) => (
-            <div key={o.id} className="rounded-2xl border border-border bg-card p-5">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                <div className="min-w-0">
+            <div key={o.id} className="w-full overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-bold">Order #{o.order_number}</div>
                   <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
                     {new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     {o.payment_method ? ` · ${String(o.payment_method).toUpperCase()}` : ""}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
+                <div className="flex items-center justify-between sm:flex-col sm:items-end sm:justify-start">
                   <div className="text-sm font-bold text-primary">{inr(o.total)}</div>
                   <div className="text-[10px] text-muted-foreground">{o.order_items?.length ?? 0} items</div>
                 </div>
@@ -864,7 +864,7 @@ function Timeline({ status }: { status: string }) {
               )}
             </div>
             <span className={cn(
-              "mt-2 w-full pr-1 text-center text-[7px] font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest",
+              "mt-2 w-full px-0.5 text-center text-[7px] leading-tight font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest",
               active ? "text-foreground" : "text-muted-foreground"
             )}>
               {STATUS_LABEL[s]}
