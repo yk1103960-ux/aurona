@@ -133,91 +133,103 @@ function CartPage() {
               const off = discountPct(it.products.mrp, it.products.price);
               return (
                 <li key={it.id} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-3 sm:p-5">
-                  <div className="flex gap-4 sm:gap-6">
-                    <Link
-                      to="/products/$slug"
-                      params={{ slug: it.products.slug }}
-                      className="shrink-0"
-                    >
-                      <ProductImage
-                        product={it.products}
-                        className="h-28 w-28 rounded-xl object-cover shadow-sm transition-transform group-hover:scale-105 sm:h-36 sm:w-36"
-                        iconClassName="h-10 w-10"
-                      />
-                    </Link>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+                    <div className="flex gap-4 sm:contents">
+                      <Link
+                        to="/products/$slug"
+                        params={{ slug: it.products.slug }}
+                        className="shrink-0"
+                      >
+                        <ProductImage
+                          product={it.products}
+                          className="h-24 w-24 rounded-xl object-cover shadow-sm transition-transform group-hover:scale-105 sm:h-36 sm:w-36"
+                          iconClassName="h-8 w-8 sm:h-10 sm:w-10"
+                        />
+                      </Link>
 
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <div className="flex items-start justify-between gap-2">
-                        <Link
-                          to="/products/$slug"
-                          params={{ slug: it.products.slug }}
-                          className="line-clamp-2 text-sm font-bold leading-snug transition-colors hover:text-primary sm:text-lg sm:leading-tight"
-                        >
-                          {it.products.name}
-                        </Link>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex items-start justify-between gap-2">
+                          <Link
+                            to="/products/$slug"
+                            params={{ slug: it.products.slug }}
+                            className="line-clamp-2 text-sm font-bold leading-snug transition-colors hover:text-primary sm:text-lg sm:leading-tight"
+                          >
+                            {it.products.name}
+                          </Link>
+                          <button
+                            onClick={() => cart.remove.mutate(it.id)}
+                            className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:hidden"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        <p className="mt-1 truncate text-[10px] tracking-wide text-muted-foreground uppercase sm:text-xs">
+                          {it.products.unit ? `${it.products.unit} · ` : ""}SKU: {it.products.sku}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-1 flex-col sm:mt-0">
+                      <div className="hidden sm:flex items-start justify-end">
                         <button
                           onClick={() => cart.remove.mutate(it.id)}
                           className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                           aria-label="Remove item"
                         >
-                          <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </div>
 
-                      <p className="mt-1 truncate text-[10px] tracking-wide text-muted-foreground uppercase sm:text-xs">
-                        {it.products.unit ? `${it.products.unit} · ` : ""}SKU: {it.products.sku}
-                      </p>
-
-                      <div className="mt-auto pt-4">
-                        <div className="flex flex-wrap items-end justify-between gap-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-black tracking-tight sm:text-2xl">{inr(it.products.price)}</span>
-                              {off > 0 && (
-                                <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-black text-success sm:text-xs">
-                                  {off}% OFF
-                                </span>
-                              )}
-                            </div>
+                      <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-2 sm:pt-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-black tracking-tight sm:text-2xl">{inr(it.products.price)}</span>
                             {off > 0 && (
-                              <div className="text-[10px] text-muted-foreground line-through sm:text-xs">
-                                MRP {inr(it.products.mrp)}
-                              </div>
+                              <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-black text-success sm:text-xs">
+                                {off}% OFF
+                              </span>
                             )}
                           </div>
-
-                          <div className="flex items-center gap-3 sm:gap-4">
-                            <button
-                              onClick={() => {
-                                wl.toggle.mutate({ productId: it.product_id, sku: it.products.sku });
-                                cart.remove.mutate(it.id);
-                              }}
-                              className="hidden items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-primary sm:flex"
-                            >
-                              <Heart className="h-4 w-4" /> Save
-                            </button>
-
-                            <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/30 p-1">
-                              <button
-                                aria-label="Decrease quantity"
-                                onClick={() =>
-                                  cart.updateQty.mutate({ id: it.id, quantity: Math.max(1, it.quantity - 1) })
-                                }
-                                className="grid h-7 w-7 place-items-center rounded-full hover:bg-background transition-colors sm:h-8 sm:w-8"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="w-6 text-center text-xs font-black sm:w-8 sm:text-sm">{it.quantity}</span>
-                              <button
-                                aria-label="Increase quantity"
-                                onClick={() =>
-                                  cart.updateQty.mutate({ id: it.id, quantity: it.quantity + 1 })
-                                }
-                                className="grid h-7 w-7 place-items-center rounded-full hover:bg-background transition-colors sm:h-8 sm:w-8"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
+                          {off > 0 && (
+                            <div className="text-[10px] text-muted-foreground line-through sm:text-xs">
+                              MRP {inr(it.products.mrp)}
                             </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <button
+                            onClick={() => {
+                              wl.toggle.mutate({ productId: it.product_id, sku: it.products.sku });
+                              cart.remove.mutate(it.id);
+                            }}
+                            className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
+                          >
+                            <Heart className="h-4 w-4" /> <span className="hidden sm:inline">Save</span>
+                          </button>
+
+                          <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/30 p-1">
+                            <button
+                              aria-label="Decrease quantity"
+                              onClick={() =>
+                                cart.updateQty.mutate({ id: it.id, quantity: Math.max(1, it.quantity - 1) })
+                              }
+                              className="grid h-7 w-7 place-items-center rounded-full hover:bg-background transition-colors sm:h-8 sm:w-8"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-6 text-center text-xs font-black sm:w-8 sm:text-sm">{it.quantity}</span>
+                            <button
+                              aria-label="Increase quantity"
+                              onClick={() =>
+                                cart.updateQty.mutate({ id: it.id, quantity: it.quantity + 1 })
+                              }
+                              className="grid h-7 w-7 place-items-center rounded-full hover:bg-background transition-colors sm:h-8 sm:w-8"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
                           </div>
                         </div>
                       </div>

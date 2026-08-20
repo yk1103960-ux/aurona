@@ -199,29 +199,30 @@ function OrderTrackingPage() {
               </span>
             </div>
 
-            <ol className="mt-5 space-y-0">
+            <ol className="mt-6 flex w-full items-start justify-between">
               {TIMELINE.map((label, i) => {
                 const done = i <= stage;
                 const last = i === TIMELINE.length - 1;
                 return (
-                  <li key={label} className="flex gap-3">
-                    <div className="flex flex-col items-center">
+                  <li key={label} className={cn("flex min-w-0 flex-1 flex-col items-center", last ? "flex-none" : "flex-1")}>
+                    <div className="flex w-full items-center">
                       <span
                         className={cn(
-                          "grid h-6 w-6 shrink-0 place-items-center rounded-full border",
+                          "grid h-6 w-6 shrink-0 place-items-center rounded-full border transition-colors sm:h-8 sm:w-8",
                           done ? "border-primary bg-primary text-primary-foreground" : "border-border",
                         )}
                       >
-                        {done && <Check className="h-3 w-3" />}
+                        {done ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-border" />}
                       </span>
                       {!last && (
-                        <span className={cn("w-px flex-1", i < stage ? "bg-primary" : "bg-border")} />
+                        <div className={cn("h-0.5 flex-1 transition-colors", i < stage ? "bg-primary" : "bg-border")} />
                       )}
                     </div>
-                    <div className={cn("pb-6", last && "pb-0")}>
-                      <div className={cn("text-sm font-semibold", !done && "text-muted-foreground")}>
-                        {label}
-                      </div>
+                    <div className={cn(
+                      "mt-2 w-full pr-1 text-center text-[7px] font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest",
+                      done ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      {label}
                     </div>
                   </li>
                 );

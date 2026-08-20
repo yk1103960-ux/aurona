@@ -43,7 +43,7 @@ export function MobileBottomNav() {
                   </span>
                 )}
               </div>
-              <span className="truncate text-[9px] font-bold tracking-tight sm:text-[10px]">
+              <span className="w-full truncate text-center text-[8px] font-bold tracking-tight sm:text-[10px]">
                 {label}
               </span>
               {active && (
