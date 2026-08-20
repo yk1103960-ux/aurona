@@ -557,16 +557,16 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
                 <Timeline status={o.status} />
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-2 sm:flex sm:items-center sm:justify-between sm:gap-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+              <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <Link to="/orders/$orderId" params={{ orderId: o.id }} className="text-[11px] font-bold tracking-tight text-primary hover:underline sm:text-xs">
                     View details
                   </Link>
-                  <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                  <button onClick={() => invoice(o)} className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-tight text-primary hover:underline sm:text-xs">
                     <Download className="h-3 w-3" /> Invoice
                   </button>
                   {o.tracking_url && (
-                    <a href={o.tracking_url} target="_blank" rel="noreferrer" className="text-[11px] font-bold tracking-tight text-primary sm:text-xs">
+                    <a href={o.tracking_url} target="_blank" rel="noreferrer" className="text-[11px] font-bold tracking-tight text-primary hover:underline sm:text-xs">
                       Track shipment
                     </a>
                   )}
@@ -574,14 +574,14 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
                     <Link
                       to="/orders/$orderId"
                       params={{ orderId: o.id }}
-                      className="text-[11px] font-bold tracking-tight text-destructive sm:text-xs"
+                      className="text-[11px] font-bold tracking-tight text-destructive hover:underline sm:text-xs"
                     >
                       Cancel
                     </Link>
                   )}
                 </div>
 
-                <Link to="/customer-service" className="text-[10px] text-muted-foreground hover:text-primary sm:ml-auto">
+                <Link to="/customer-service" className="text-[10px] font-medium text-muted-foreground hover:text-primary sm:ml-auto">
                   Need help?
                 </Link>
               </div>
@@ -845,34 +845,35 @@ function Tile({ Icon, title, body, onClick }: { Icon: any; title: string; body: 
 function Timeline({ status }: { status: string }) {
   const idx = STATUS.indexOf(status as any);
   return (
-    <div className="flex w-full items-center justify-between gap-1 sm:gap-2">
+    <div className="flex w-full items-start justify-between">
       {STATUS.map((s, i) => {
         const active = i <= idx;
         const last = i === STATUS.length - 1;
         return (
-          <div key={s} className="flex min-w-0 flex-1 items-center gap-1">
-            <div className={cn(
-              "flex flex-col items-center gap-1 min-w-0 flex-1",
-              active ? "text-foreground" : "text-muted-foreground"
-            )}>
+          <div key={s} className={cn("flex min-w-0 flex-1 flex-col items-center", last ? "flex-none" : "flex-1")}>
+            <div className="flex w-full items-center">
               <div className={cn(
                 "h-2 w-2 shrink-0 rounded-full transition-colors sm:h-2.5 sm:w-2.5",
                 active ? "bg-primary shadow-[0_0_8px_var(--color-primary)]" : "bg-border"
               )} />
-              <span className="w-full truncate text-center text-[8px] font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest">
-                {STATUS_LABEL[s]}
-              </span>
+              {!last && (
+                <div className={cn(
+                  "h-px flex-1",
+                  i < idx ? "bg-primary" : "bg-border"
+                )} />
+              )}
             </div>
-            {!last && (
-              <div className={cn(
-                "h-px flex-1 min-w-[4px] sm:min-w-[12px]",
-                i < idx ? "bg-primary" : "bg-border"
-              )} />
-            )}
+            <span className={cn(
+              "mt-2 w-full pr-1 text-center text-[7px] font-bold uppercase tracking-tighter sm:text-[10px] sm:tracking-widest",
+              active ? "text-foreground" : "text-muted-foreground"
+            )}>
+              {STATUS_LABEL[s]}
+            </span>
           </div>
         );
       })}
     </div>
   );
 }
+
 
