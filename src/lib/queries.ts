@@ -19,6 +19,8 @@ export type Product = {
   wattage: string | null;
   size: string | null;
   color_temp: string | null;
+  color?: string | null;
+  finish?: string | null;
   material: string | null;
   warranty: string | null;
   is_featured: boolean;
@@ -26,6 +28,7 @@ export type Product = {
   is_new: boolean;
   is_sale: boolean;
   image_seed: string | null;
+  image_url?: string | null;
   family_slug?: string | null;
   variations?: { sku: string; attrs: string[]; mrp: number | null; price: number | null }[] | null;
   price_from?: boolean;
