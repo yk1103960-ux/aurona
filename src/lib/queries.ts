@@ -272,6 +272,7 @@ export type ProductVariant = {
   dim_l: number | null; dim_w: number | null; dim_h: number | null;
   pack_l: number | null; pack_w: number | null; pack_h: number | null;
   image_seed: string | null;
+  image_url: string | null;
   sort_order: number;
   product_id?: string | null;
   product_slug?: string | null;
@@ -286,6 +287,7 @@ export type ProductFamily = {
   short_description: string | null;
   description: string | null;
   image_seed: string | null;
+  image_url: string | null;
   is_featured: boolean;
   is_bestseller: boolean;
   is_new: boolean;
@@ -304,7 +306,7 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
-const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at";
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, image_url, sort_order, created_at";
 
 export const familyQuery = (slug: string) =>
   queryOptions({

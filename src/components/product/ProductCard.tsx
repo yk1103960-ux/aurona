@@ -11,7 +11,12 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 
-type Row = Product & { categories: { slug: string; name: string; icon?: string | null } | null };
+type Row = Product & { 
+  categories: { slug: string; name: string; icon?: string | null } | null;
+  image_url?: string | null;
+  color?: string | null;
+  finish?: string | null;
+};
 
 
 

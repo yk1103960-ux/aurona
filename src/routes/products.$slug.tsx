@@ -124,7 +124,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-        <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} categoryIcon={cat?.icon} />
+        <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} variantImageUrl={variant.image_url} categoryIcon={cat?.icon} />
 
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
