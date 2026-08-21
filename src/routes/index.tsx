@@ -174,6 +174,7 @@ function Home() {
               <p className="mt-5 max-w-lg text-sm text-primary-foreground/70 sm:text-base">
                 1,000+ partners across 28 states. Margin, marketing kits and next-day
                 dispatch from the factory.
+              </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
               <Button asChild size="lg" className="h-12 rounded-full bg-gold px-6 text-gold-foreground hover:bg-gold/90">
