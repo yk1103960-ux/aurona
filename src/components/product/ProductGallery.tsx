@@ -5,7 +5,7 @@ import { ProductImage } from "./ProductImage";
 import type { Product } from "@/lib/queries";
 import type { ProductImageRow } from "@/lib/product-images";
 
-type FallbackProduct = Pick<Product, "image_seed" | "name" | "slug">;
+type FallbackProduct = Pick<Product, "image_seed" | "name" | "slug" | "image_url">;
 
 export function ProductGallery({
   images,
