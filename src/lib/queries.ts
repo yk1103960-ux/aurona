@@ -171,7 +171,10 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         searchCategoryIds = (cats ?? []).map((c) => c.id as string);
       }
 
-      let q = supabase.from("product_families").select(cols, { count: "exact" }).gt("min_price", 0);
+      // Families whose SKUs have no published price yet (e.g. GORDEN outdoor,
+      // Madhani, TF-CL Classic) must still be listed — the card renders
+      // "Price on request" instead of hiding a real, published product.
+      let q = supabase.from("product_families").select(cols, { count: "exact" });
       if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
       if (term) {
         const like = `%${term.replace(/[%,()]/g, " ")}%`;
@@ -396,7 +399,6 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         .from("products")
         .select("slug, sku, name, image_seed, price, mrp, wattage, stock")
         .eq("category_id", cat.id)
-        .gt("price", 0)
         .order("is_bestseller", { ascending: false })
         .order("name")
         .limit(24);
