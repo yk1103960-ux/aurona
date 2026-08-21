@@ -19,6 +19,8 @@ export type Product = {
   wattage: string | null;
   size: string | null;
   color_temp: string | null;
+  color?: string | null;
+  finish?: string | null;
   material: string | null;
   warranty: string | null;
   is_featured: boolean;
@@ -26,6 +28,7 @@ export type Product = {
   is_new: boolean;
   is_sale: boolean;
   image_seed: string | null;
+  image_url?: string | null;
   family_slug?: string | null;
   variations?: { sku: string; attrs: string[]; mrp: number | null; price: number | null }[] | null;
   price_from?: boolean;
@@ -83,7 +86,7 @@ export const productsQuery = (filter?: {
     queryFn: async () => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
+        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, image_url, color, finish, wattage, size, categories(slug, name, icon)",
       );
       let q = supabase.from("products").select(cols);
       if (filter?.categorySlug) {
@@ -145,7 +148,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
     queryFn: async (): Promise<ProductsPage> => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
+        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, image_url, categories(slug, name, icon)",
       );
 
       let categoryIds = filter.categoryIds;
@@ -203,7 +206,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         min_price: number | null; max_price: number | null; min_mrp: number | null; max_mrp: number | null;
         total_stock: number; rating: number; review_count: number;
         is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
-        image_seed: string | null;
+        image_seed: string | null; image_url: string | null;
         categories: { slug: string; name: string; icon: string | null } | null;
       };
       const fams = (data ?? []) as unknown as FamRow[];
@@ -225,6 +228,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         wattage: null, size: null, color_temp: null, material: null, warranty: null,
         is_featured: f.is_featured, is_bestseller: f.is_bestseller, is_new: f.is_new, is_sale: f.is_sale,
         image_seed: f.image_seed,
+        image_url: f.image_url,
         categories: f.categories,
         family_slug: f.slug,
         price_from: (f.min_price ?? 0) !== (f.max_price ?? 0),
@@ -268,6 +272,7 @@ export type ProductVariant = {
   dim_l: number | null; dim_w: number | null; dim_h: number | null;
   pack_l: number | null; pack_w: number | null; pack_h: number | null;
   image_seed: string | null;
+  image_url: string | null;
   sort_order: number;
   product_id?: string | null;
   product_slug?: string | null;
@@ -282,6 +287,7 @@ export type ProductFamily = {
   short_description: string | null;
   description: string | null;
   image_seed: string | null;
+  image_url: string | null;
   is_featured: boolean;
   is_bestseller: boolean;
   is_new: boolean;
@@ -300,7 +306,7 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
-const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at";
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, image_url, sort_order, created_at";
 
 export const familyQuery = (slug: string) =>
   queryOptions({

@@ -34,13 +34,14 @@ export function ProductImage({
   categoryIcon,
   eager,
 }: {
-  product: Pick<Product, "image_seed" | "name" | "slug">;
+  product: Pick<Product, "image_seed" | "name" | "slug" | "image_url">;
   className?: string;
   iconClassName?: string;
   categoryIcon?: string | null;
   eager?: boolean;
 }) {
   const photo =
+    product.image_url ||
     (product.slug && productPhotos[product.slug]) ||
     (product.image_seed && productPhotos[product.image_seed]) ||
     null;

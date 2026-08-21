@@ -1,0 +1,109 @@
+import { Link } from "@tanstack/react-router";
+import { Heart, Minus, Plus, ShoppingCart, Star, Phone, Truck, Zap } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { discountPct, inr } from "@/lib/format";
+import { ProductImage } from "./ProductImage";
+import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+export function ProductCard({ product, categoryIcon, compact, }) {
+    const cart = useCart();
+    const wl = useWishlist();
+    const reduce = useReducedMotion();
+    const role = useMyRole();
+    const { data: priceMap } = useVisiblePrices(product.sku ? [product.sku] : []);
+    const rp = product.sku ? priceMap?.[product.sku] : undefined;
+    const shownPrice = rp?.price ?? Number(product.price);
+    const shownMrp = rp?.mrp ?? Number(product.mrp);
+    const off = discountPct(shownMrp, shownPrice);
+    const icon = categoryIcon ?? product.categories?.icon ?? null;
+    const inWishlist = wl.has(product.id, product.sku);
+    const detailSlug = product.family_slug ?? product.slug;
+    const detailSearch = product.family_slug ? { v: product.sku } : {};
+    const isDistributor = role.role === "distributor";
+    const line = cart.lineFor(product.id, product.sku);
+    const qty = line?.quantity ?? 0;
+    const stock = Number(product.stock ?? 0);
+    const lowStock = stock > 0 && stock <= 8;
+    const outOfStock = stock <= 0;
+    const spec = product.wattage ?? product.size ?? null;
+    const handleAdd = () => {
+        cart.add.mutate({ productId: product.id, sku: product.sku }, { onSuccess: () => toast.success("Added to cart", { description: product.name, duration: 1600 }) });
+    };
+    const handleWishlist = () => {
+        wl.toggle.mutate({ productId: product.id, sku: product.sku });
+    };
+    return (<div className="card-lift group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] hover:border-primary/40">
+      <Link to="/products/$slug" params={{ slug: detailSlug }} search={detailSearch} className="relative block overflow-hidden bg-gradient-to-b from-white via-white to-sky-50/40" aria-label={product.name}>
+        <ProductImage product={product} categoryIcon={icon} className={cn("aspect-square w-full transform-gpu transition-transform duration-[800ms] ease-out will-change-transform group-hover:scale-[1.07]", compact && "aspect-[5/4]")} iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}/>
+        <span className="pointer-events-none absolute inset-x-6 bottom-2 h-6 rounded-full bg-primary/15 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" aria-hidden/>
+        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden/>
+      </Link>
+
+      {off > 0 && (<span className="pointer-events-none absolute left-3 top-3 rounded-full btn-gradient px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider">
+          {off}% OFF
+        </span>)}
+      {product.is_bestseller && (<span className="pointer-events-none absolute right-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent-foreground shadow-[0_4px_12px_-4px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]">
+          Bestseller
+        </span>)}
+      <motion.button onClick={handleWishlist} whileTap={reduce ? undefined : { scale: 0.88 }} animate={inWishlist && !reduce ? { scale: [1, 1.25, 1] } : { scale: 1 }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }} className={cn("press absolute right-3 top-12 grid h-10 w-10 place-items-center rounded-full bg-card/90 shadow-soft ring-1 ring-border backdrop-blur transition hover:bg-card hover:ring-primary/40", inWishlist && "text-destructive ring-destructive/30")} aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"} aria-pressed={inWishlist}>
+        <Heart className={cn("h-4 w-4 transition", inWishlist && "fill-current")}/>
+      </motion.button>
+
+      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
+        <div className="flex items-center gap-2">
+          <span className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</span>
+          {spec && (<span className="rounded-md bg-primary/8 px-1.5 py-0.5 text-[10px] font-bold text-primary">{spec}</span>)}
+        </div>
+        <Link to="/products/$slug" params={{ slug: detailSlug }} search={detailSearch} className="line-clamp-2 min-h-[2.6em] text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-primary">
+          {product.name}
+        </Link>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/8 px-2 py-0.5 text-primary">
+            <Star className="h-3 w-3 fill-primary text-primary"/>
+            <span className="font-semibold">{Number(product.rating).toFixed(1)}</span>
+          </span>
+          <span>· {product.review_count} reviews</span>
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          {product.price_from && (<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">From</span>)}
+          <span className="text-xl font-bold tracking-tight text-foreground">{inr(shownPrice)}</span>
+          {shownMrp > shownPrice && (<span className="text-xs text-muted-foreground line-through">{inr(shownMrp)}</span>)}
+          <span className="ml-auto text-[11px] text-muted-foreground">/ {product.unit}</span>
+        </div>
+        {role.role === "retailer" && (<div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Retailer price</div>)}
+
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Truck className="h-3.5 w-3.5 text-success"/>
+          <span>Delivery charges calculated at checkout</span>
+        </div>
+
+        {lowStock && (<div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">
+            <Zap className="h-3.5 w-3.5"/> Only {stock} left
+          </div>)}
+
+        {outOfStock && (<div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>)}
+
+        {isDistributor ? (<Button asChild size="sm" className="mt-2 w-full gap-2 rounded-full">
+            <a href="tel:+919602570026">
+              <Phone className="h-4 w-4"/> Contact Sales
+            </a>
+          </Button>) : qty > 0 ? (<div className="mt-2 flex h-9 items-center justify-between rounded-full btn-gradient px-1">
+            <button type="button" onClick={() => cart.updateQty.mutate({ id: line.id, quantity: qty - 1 })} className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition hover:bg-white/30" aria-label="Decrease quantity">
+              <Minus className="h-3.5 w-3.5"/>
+            </button>
+            <span className="text-sm font-bold tabular-nums" aria-live="polite">
+              {qty}
+            </span>
+            <button type="button" onClick={() => cart.updateQty.mutate({ id: line.id, quantity: qty + 1 })} className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition hover:bg-white/30" aria-label="Increase quantity">
+              <Plus className="h-3.5 w-3.5"/>
+            </button>
+          </div>) : (<Button size="sm" className="press mt-2 w-full gap-2 rounded-full" onClick={handleAdd} disabled={cart.add.isPending || outOfStock}>
+            <ShoppingCart className="h-4 w-4"/> {outOfStock ? "Notify me" : "ADD"}
+          </Button>)}
+      </div>
+    </div>);
+}

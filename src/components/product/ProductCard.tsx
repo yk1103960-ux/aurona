@@ -11,7 +11,12 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 
-type Row = Product & { categories: { slug: string; name: string; icon?: string | null } | null };
+type Row = Product & { 
+  categories: { slug: string; name: string; icon?: string | null } | null;
+  image_url?: string | null;
+  color?: string | null;
+  finish?: string | null;
+};
 
 
 
@@ -108,10 +113,16 @@ export function ProductCard({
       </motion.button>
 
       <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</span>
           {spec && (
             <span className="rounded-md bg-primary/8 px-1.5 py-0.5 text-[10px] font-bold text-primary">{spec}</span>
+          )}
+          {product.color && (
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{product.color}</span>
+          )}
+          {product.finish && (
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{product.finish}</span>
           )}
         </div>
         <Link

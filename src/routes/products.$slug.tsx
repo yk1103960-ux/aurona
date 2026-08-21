@@ -124,7 +124,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-        <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} categoryIcon={cat?.icon} />
+        <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} variantImageUrl={variant.image_url} categoryIcon={cat?.icon} />
 
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
@@ -488,8 +488,8 @@ function PriceRow({
   );
 }
 
-function FamilyGallery({ family, variantSku, variantImageSeed, categoryIcon }: {
-  family: ProductFamily; variantSku: string; variantImageSeed: string | null; categoryIcon?: string | null;
+function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, categoryIcon }: {
+  family: ProductFamily; variantSku: string; variantImageSeed: string | null; variantImageUrl: string | null; categoryIcon?: string | null;
 }) {
   const { data: all = [] } = useQuery(productImagesQuery({ familyId: family.id }));
   const filtered = all.filter((i) => !i.variant_sku || i.variant_sku === variantSku);
@@ -497,21 +497,21 @@ function FamilyGallery({ family, variantSku, variantImageSeed, categoryIcon }: {
   return (
     <ProductGallery
       images={images}
-      fallback={{ image_seed: variantImageSeed ?? family.image_seed, name: family.name, slug: family.slug }}
+      fallback={{ image_seed: variantImageSeed ?? family.image_seed, image_url: variantImageUrl ?? family.image_url, name: family.name, slug: family.slug }}
       categoryIcon={categoryIcon}
     />
   );
 }
 
 function LegacyGallery({ product, categoryIcon }: {
-  product: { id: string; name: string; slug: string; image_seed: string | null };
+  product: { id: string; name: string; slug: string; image_seed: string | null; image_url?: string | null };
   categoryIcon?: string | null;
 }) {
   const { data: images = [] } = useQuery(productImagesQuery({ productId: product.id }));
   return (
     <ProductGallery
       images={images}
-      fallback={{ image_seed: product.image_seed, name: product.name, slug: product.slug }}
+      fallback={{ image_seed: product.image_seed, image_url: product.image_url ?? null, name: product.name, slug: product.slug }}
       categoryIcon={categoryIcon}
     />
   );
