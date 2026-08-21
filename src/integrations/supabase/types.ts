@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           city: string
           created_at: string
+          district: string | null
           full_name: string
           id: string
           is_default: boolean
@@ -34,6 +35,7 @@ export type Database = {
         Insert: {
           city: string
           created_at?: string
+          district?: string | null
           full_name: string
           id?: string
           is_default?: boolean
@@ -50,6 +52,7 @@ export type Database = {
         Update: {
           city?: string
           created_at?: string
+          district?: string | null
           full_name?: string
           id?: string
           is_default?: boolean
@@ -703,6 +706,108 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          author: string
+          body: Json
+          category: string
+          cover_url: string | null
+          created_at: string
+          excerpt: string
+          id: string
+          is_published: boolean
+          published_at: string
+          read_minutes: number
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          body?: Json
+          category?: string
+          cover_url?: string | null
+          created_at?: string
+          excerpt?: string
+          id?: string
+          is_published?: boolean
+          published_at?: string
+          read_minutes?: number
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          body?: Json
+          category?: string
+          cover_url?: string | null
+          created_at?: string
+          excerpt?: string
+          id?: string
+          is_published?: boolean
+          published_at?: string
+          read_minutes?: number
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      career_programs: {
+        Row: {
+          apply_email: string | null
+          apply_url: string | null
+          created_at: string
+          department: string | null
+          description: string
+          eligibility: string | null
+          employment_type: string | null
+          id: string
+          is_published: boolean
+          kind: string
+          location: string | null
+          reward: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          apply_email?: string | null
+          apply_url?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string
+          eligibility?: string | null
+          employment_type?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: string
+          location?: string | null
+          reward?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          apply_email?: string | null
+          apply_url?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string
+          eligibility?: string | null
+          employment_type?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: string
+          location?: string | null
+          reward?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -912,6 +1017,39 @@ export type Database = {
         }
         Relationships: []
       }
+      faqs: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          id: string
+          is_published: boolean
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integrations: {
         Row: {
           config_public: Json
@@ -1014,6 +1152,39 @@ export type Database = {
           id?: string
           source?: string
           unsubscribed_at?: string | null
+        }
+        Relationships: []
+      }
+      notification_log: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          kind: string
+          provider_message: string | null
+          recipient_masked: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          kind: string
+          provider_message?: string | null
+          recipient_masked?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          provider_message?: string | null
+          recipient_masked?: string | null
+          status?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1774,6 +1945,7 @@ export type Database = {
           avatar_url: string | null
           business_name: string | null
           created_at: string
+          district: string | null
           full_name: string | null
           gstin: string | null
           id: string
@@ -1785,6 +1957,7 @@ export type Database = {
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
+          district?: string | null
           full_name?: string | null
           gstin?: string | null
           id: string
@@ -1796,6 +1969,7 @@ export type Database = {
           avatar_url?: string | null
           business_name?: string | null
           created_at?: string
+          district?: string | null
           full_name?: string | null
           gstin?: string | null
           id?: string
