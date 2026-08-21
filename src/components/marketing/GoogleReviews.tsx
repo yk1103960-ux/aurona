@@ -17,7 +17,7 @@ const REVIEWS: GReview[] = [
     initials: "RS",
     rating: 5,
     relativeTime: "2 weeks ago",
-    text: "Genuine manufacturer pricing and the LED panels are noticeably brighter than what I was using earlier. Delivery to Jaipur was faster than promised.",
+    text: "Genuine manufacturer pricing and the LED panels are noticeably brighter than what I was using earlier. Delivery was faster than promised.",
   },
   {
     author: "Aditi Verma",
@@ -80,7 +80,7 @@ export function GoogleReviews() {
             ))}
           </div>
           <span>
-            {AGGREGATE.count.toLocaleString("en-IN")} verified reviews across India
+            {AGGREGATE.count.toLocaleString("en-IN")} verified reviews
           </span>
         </div>
       </div>

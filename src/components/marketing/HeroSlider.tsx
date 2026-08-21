@@ -29,7 +29,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: "Light,",
     italic: "sculpted",
     suffix: "for India.",
-    copy: "Concealed lighting, panels and interior fixtures — engineered at our Karnataka facility.",
+    copy: "Concealed lighting, panels and interior fixtures — engineered at our Rajasthan facility.",
     ctaLabel: "Explore the collection",
     ctaTo: "/products",
   },

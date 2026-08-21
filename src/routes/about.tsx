@@ -35,8 +35,7 @@ function About() {
               <p>
                 Aurona Lighting Industries is a trusted manufacturer and supplier of premium LED lighting products and
                 home appliances based in Neem Ka Thana, Rajasthan. Since our establishment, we have been dedicated to
-                offering innovative, energy-efficient lighting solutions that cater to homes, businesses and industries
-                across India.
+                offering innovative, energy-efficient lighting solutions that cater to homes, businesses and industries.
               </p>
               <p>
                 We pride ourselves on being “The Architects of Luminosity”, delivering top-quality LED lighting

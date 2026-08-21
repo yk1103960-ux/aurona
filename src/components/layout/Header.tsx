@@ -56,12 +56,12 @@ const LED_COLUMNS: MegaGroup[][] = [
     { heading: "Flood Light", slug: "flood-lights", items: ["Nova", "AuraLUX"] },
   ],
   [
-    { heading: "Decorative", slug: "interior-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
+    { heading: "Decorative", slug: "decorative-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
     { heading: "Tubelight", slug: "tube-lights", items: ["Batten"] },
-    { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden"] },
+    { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden", "Concealed", "Razer", "Zio", "Cob", "Joy", "Nexa", "Zelly", "Zade", "Happy", "Aura"] },
   ],
   [
-    { heading: "Concealed", slug: "concealed-lights", items: ["Razer", "Zio", "Cob", "Joy", "Nexa", "Zelly", "Zade", "Happy", "Aura"] },
+    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
   ],
 ];
 

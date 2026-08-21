@@ -19,8 +19,8 @@ export const Route = createFileRoute("/blogs/$slug")({
           { property: "og:description", content: loaderData.excerpt },
           { property: "og:type", content: "article" },
           { name: "twitter:card", content: "summary_large_image" },
-          { property: "og:image", content: `https://aurona.in${loaderData.cover}` },
-          { name: "twitter:image", content: `https://aurona.in${loaderData.cover}` },
+          { property: "og:image", content: loaderData.cover },
+          { name: "twitter:image", content: loaderData.cover },
         ]
       : [],
   }),
@@ -43,7 +43,7 @@ function Missing() {
 function BlogPostPage() {
   const post = Route.useLoaderData();
   const { prev, next } = neighbours(post.slug);
-  const url = typeof window !== "undefined" ? window.location.href : `https://aurona.in/blogs/${post.slug}`;
+  const url = typeof window !== "undefined" ? window.location.href : `https://aurona.co.in/blogs/${post.slug}`;
   const shareText = encodeURIComponent(post.title);
 
   const copy = async () => {

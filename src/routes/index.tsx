@@ -97,7 +97,7 @@ function Home() {
               We don't manufacture lights. We compose <span className="italic">rooms</span>.
             </h3>
             <p className="mt-5 max-w-md text-sm text-muted-foreground sm:text-base">
-              Every fixture is engineered at our Karnataka facility — copper drivers,
+              Every fixture is engineered at our Rajasthan facility — copper drivers,
               anti-glare optics, and finishes chosen to age with your home. Warmth by
               design, not by accident.
             </p>

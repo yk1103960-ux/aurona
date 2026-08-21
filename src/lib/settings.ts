@@ -20,7 +20,7 @@ export type SiteSettings = {
 export const SETTINGS_DEFAULTS: SiteSettings = {
   support_phone: "+91 96025 70026",
   support_email: "support@auronalighting.com",
-  notification_email: "info@auronalighting.com",
+  notification_email: "support@auronalighting.com",
   notification_mobile: "+91 96025 70026",
   social_facebook: "https://facebook.com/auronalighting",
   social_instagram: "https://instagram.com/auronalighting",
