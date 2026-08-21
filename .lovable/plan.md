@@ -1,58 +1,56 @@
-# Implementation Plan - Aurona E-Commerce Master Fix & Upgrade
+# Aurona E-Commerce - Final Master Fix
 
-This plan covers Phase 2-18 of the Aurona E-Commerce upgrade, focusing on Mega Menu fixes, product routing, account/auth logic, and CMS frontends.
+This plan covers the completion of all pending requirements for the Aurona E-Commerce platform, focusing on the Retailer/Distributor workflow, real-time admin synchronization, Compare feature, UI refinements, and security audits.
 
-## User Review Required
+## 🚨 OUT OF SCOPE
+- **Payment Integration:** Intentionally untouched.
 
-> [!IMPORTANT]
-> The PhonePe payment integration is intentionally excluded from this phase as requested.
+## 1. Retailer / Distributor Registration & Flow
+- **Registration Update:**
+  - Modify `src/routes/auth.tsx` to handle the multi-step flow: Register -> Details -> Mobile OTP -> Verification.
+  - Integration with `public.partner_applications` table.
+- **Admin Application Management:**
+  - Create `src/routes/aurona-console-9f2x7k.applications.tsx` for viewing and managing applications.
+  - Implement filters (Pending, Approved, Declined) and search.
+  - Implement "Review Application" drawer with actions: Mark Under Review, Approve, Decline (with reason).
+- **Real-time Sync:**
+  - Use `useRealtime` in the admin panel to update application lists instantly.
+  - Ensure user status updates in real-time on their dashboard when an application is processed.
+- **Security:**
+  - Server-side enforcement of `account_type` pricing eligibility via `public.current_pricing_role()` and `public.get_visible_prices()`.
+  - Prevent duplicate active applications.
 
-- **Partner Workflow:** Retailer/Distributor accounts require manual verification by admin before they can see partner-specific pricing or place bulk orders.
-- **OTP Provider:** SMS OTP is configured for MSG91. Ensure the `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID` are set in the environment.
+## 2. Authentication & Account Fixes
+- **Login Audit:**
+  - Debug and fix the password comparison issue where correct passwords fail.
+  - Ensure `src/lib/auth.functions.ts` and Supabase Auth are correctly synchronized.
+- **Email Verification:**
+  - Implement a complete email verification flow with secure tokens and "Verified" status display.
+- **Account Change Notifications:**
+  - Trigger email confirmations for password, email, or mobile changes.
 
-## Proposed Changes
+## 3. Core Features & UI
+- **Compare Products:**
+  - Implement "Compare" state (max 3 items) in a new context or hook.
+  - Add Compare buttons to `ProductCard.tsx` and `PDP`.
+  - Create `/compare` route for side-by-side spec comparison.
+- **UI Refinements:**
+  - Fix "First Animation" blurriness with optimized high-res logo handling.
+  - Synchronize "Second Popup" width with the first.
+  - Add "Additional Picture Box" on PDP per requirements.
+- **CMS Verification:**
+  - Audit and verify FAQ, Blogs, and Careers dynamic frontends.
+  - Update Social Media links to pull from `site_settings` (no "#" placeholders).
 
-### Phase 2: Mega Menu & Product Routing
-- Overhaul `src/components/layout/Header.tsx` to use real database-backed slugs.
-- Map "Decorative Lights", "Interior Lights", "Outdoor Lights", "Home Appliances", "Fans", etc., to their respective families.
-- Fix broken links in the mega menu (e.g., "Bluetooth High Bass", "Rope Way" which don't exist as products yet).
-
-### Phase 3: Product Visibility & Zero-Price Handling
-- Update `src/lib/queries.ts` to include products with `min_price = 0` (e.g., Gorden, High Glow).
-- Update `src/components/product/ProductCard.tsx` and `src/routes/products.$slug.tsx` to display "Price on Request" instead of 0.00.
-- Ensure "Add to Cart" is replaced with "Contact Us" or "Inquiry" for zero-priced items.
-
-### Phase 4-6: Account & Auth Hardening
-- Implement India-only 10-digit mobile number validation in `src/routes/auth.tsx`.
-- Update profile schema to include `district` and `is_verified` status.
-- Finalize OTP verification flow (mandatory for Retailer/Distributor).
-
-### Phase 7-10: CMS Frontends
-- Build dynamic frontend pages for:
-  - `/customer-service` (FAQs from `public.faqs`)
-  - `/careers` (Jobs and Referrals from `public.career_programs`)
-  - `/blogs` (Posts from `public.blog_posts`)
-- Implement social link management from `site_settings`.
-
-### Phase 11-13: UI Refinements
-- Fix blurry logo issue in `Header.tsx` by using higher resolution source and proper CSS scaling.
-- Clean up redundant popups and refine "Picture box" layout on PDP.
-
-### Phase 14-18: Advanced Features & Admin
-- Implement "Compare Items" feature (max 3 products).
-- Set up notification logging for account changes.
-- Harden the `/aurona-console-9f2x7k` admin panel with better RBAC checks.
+## 4. Security & Quality Assurance
+- **RLS Audit:** Verify all tables have correct policies (user-owned data restricted).
+- **Responsive QA:** Test all new and existing features from 320px up to Desktop.
 
 ## Technical Details
+- **Tables:** `public.partner_applications`, `public.notification_log`, `public.audit_logs`.
+- **Functions:** `public.has_role`, `public.current_pricing_role`, `public.approve_partner`.
+- **Hooks:** `useMyRole`, `useRealtime`, `useAuth`.
 
-- **Database:** Using `public.product_families` as the primary source for product listings to handle variations correctly.
-- **Auth:** Supabase Auth with custom `user_roles` table for RBAC.
-- **Styling:** Tailwind CSS v4 with custom glassmorphism utilities.
-- **State Management:** TanStack Query for data fetching and caching.
-
-## Verification Plan
-
-- **Responsive Audit:** Run Playwright tests at 320px, 375px, and 1280px to ensure zero horizontal scrolling.
-- **Auth Flow:** Verify login/register with valid and invalid Indian phone numbers.
-- **Mega Menu:** Click every link in the mega menu to ensure they lead to existing category/product pages.
-- **Partner Pricing:** Log in as an approved Retailer to verify price changes compared to Guest view.
+## Real-time Verification Plan
+- Test application submission -> Admin notification.
+- Test Admin approval -> User dashboard update (no refresh).
