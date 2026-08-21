@@ -11,7 +11,7 @@ import { siteSettingsQuery } from "@/lib/settings";
 
 const OFFICE_ADDRESS =
   "Aurona Lighting Industries, Behind Shyam Mandir, Talab Road, Ward No-6, Neem Ka Thana, Rajasthan, PIN-332706, India";
-const SECOND_EMAIL = "auronaindustries@gmail.com";
+const SECOND_EMAIL = "auronalighting@gmail.com";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({

@@ -201,6 +201,13 @@ export function Footer() {
             </div>
           </div>
         </div>
+        <div className="container-x mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/5 py-6 text-[10px] font-bold uppercase tracking-widest text-nav-foreground/40 lg:justify-start">
+          <Link to="/" className="hover:text-gold transition-colors">Home</Link>
+          <Link to="/products" className="hover:text-gold transition-colors">Shop</Link>
+          <Link to="/cart" className="hover:text-gold transition-colors">Cart</Link>
+          <Link to="/wishlist" className="hover:text-gold transition-colors">Wishlist</Link>
+          <Link to="/account" className="hover:text-gold transition-colors">Account</Link>
+        </div>
       </div>
       <div className="h-16 lg:hidden" />
     </footer>
