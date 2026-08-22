@@ -70,6 +70,41 @@ export const categoryCountsQuery = queryOptions({
   },
 });
 
+/**
+ * Primary image lookup. Images live in `product_images` (there is no
+ * `image_url` column on `products`/`product_families`/`product_variants`),
+ * so resolve them in a second, non-fatal query.
+ */
+async function primaryImages(
+  key: "product_id" | "family_id" | "variant_sku",
+  ids: string[],
+): Promise<Record<string, string>> {
+  const list = [...new Set(ids.filter(Boolean))];
+  if (list.length === 0) return {};
+  const { data, error } = await supabase
+    .from("product_images")
+    .select(`${key}, image_url, is_primary, sort_order`)
+    .in(key, list);
+  if (error) return {};
+  const rows = (data ?? []) as unknown as {
+    image_url: string | null;
+    is_primary: boolean | null;
+    sort_order: number | null;
+    [k: string]: unknown;
+  }[];
+  const map: Record<string, { url: string; score: number }> = {};
+  for (const r of rows) {
+    const id = r[key] as string | null;
+    if (!id || !r.image_url) continue;
+    const score = (r.is_primary ? -1000 : 0) + (Number(r.sort_order) || 0);
+    const cur = map[id];
+    if (!cur || score < cur.score) map[id] = { url: r.image_url, score };
+  }
+  const out: Record<string, string> = {};
+  for (const [id, v] of Object.entries(map)) out[id] = v.url;
+  return out;
+}
+
 export const productsQuery = (filter?: {
   categorySlug?: string;
   featured?: boolean;
@@ -86,7 +121,7 @@ export const productsQuery = (filter?: {
     queryFn: async () => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, image_url, color, finish, wattage, size, categories(slug, name, icon)",
+        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, wattage, size, categories(slug, name, icon)",
       );
       let q = supabase.from("products").select(cols);
       if (filter?.categorySlug) {
@@ -110,8 +145,9 @@ export const productsQuery = (filter?: {
       const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data ?? []) as unknown as (Product & { categories: { slug: string; name: string; icon: string | null } | null })[];
+      const imgs = await primaryImages("product_id", rows.map((r) => r.id));
       const skus = [...new Set(rows.map((row) => row.sku).filter(Boolean))];
-      if (skus.length === 0) return rows;
+      if (skus.length === 0) return rows.map((row) => ({ ...row, image_url: imgs[row.id] ?? null }));
 
       const { data: links } = await supabase
         .from("product_variants")
@@ -122,7 +158,11 @@ export const productsQuery = (filter?: {
         if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
       }
 
-      return rows.map((row) => ({ ...row, family_slug: familyBySku.get(row.sku) ?? null }));
+      return rows.map((row) => ({
+        ...row,
+        image_url: imgs[row.id] ?? null,
+        family_slug: familyBySku.get(row.sku) ?? null,
+      }));
     },
   });
 
@@ -148,7 +188,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
     queryFn: async (): Promise<ProductsPage> => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, image_url, categories(slug, name, icon)",
+        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
       );
 
       let categoryIds = filter.categoryIds;
@@ -206,10 +246,11 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         min_price: number | null; max_price: number | null; min_mrp: number | null; max_mrp: number | null;
         total_stock: number; rating: number; review_count: number;
         is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
-        image_seed: string | null; image_url: string | null;
+        image_seed: string | null;
         categories: { slug: string; name: string; icon: string | null } | null;
       };
       const fams = (data ?? []) as unknown as FamRow[];
+      const famImgs = await primaryImages("family_id", fams.map((f) => f.id));
       const rows: ProductRow[] = fams.map((f) => ({
         id: f.id,
         slug: f.slug,
@@ -228,7 +269,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         wattage: null, size: null, color_temp: null, material: null, warranty: null,
         is_featured: f.is_featured, is_bestseller: f.is_bestseller, is_new: f.is_new, is_sale: f.is_sale,
         image_seed: f.image_seed,
-        image_url: f.image_url,
+        image_url: famImgs[f.id] ?? null,
         categories: f.categories,
         family_slug: f.slug,
         price_from: (f.min_price ?? 0) !== (f.max_price ?? 0),
@@ -250,7 +291,10 @@ export const productQuery = (slug: string) =>
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
-      return data as (Product & { categories: { slug: string; name: string; icon: string | null } | null }) | null;
+      if (!data) return null;
+      const row = data as unknown as Product & { categories: { slug: string; name: string; icon: string | null } | null };
+      const imgs = await primaryImages("product_id", [row.id]);
+      return { ...row, image_url: imgs[row.id] ?? null };
     },
   });
 
@@ -306,7 +350,7 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
-const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, image_url, sort_order, created_at";
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at";
 
 export const familyQuery = (slug: string) =>
   queryOptions({
@@ -326,6 +370,12 @@ export const familyQuery = (slug: string) =>
       const f = data as unknown as ProductFamily;
       f.variants = [...(f.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
       f.axes = [...(f.axes ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+      const [famImg, variantImgs] = await Promise.all([
+        primaryImages("family_id", [f.id]),
+        primaryImages("variant_sku", f.variants.map((v) => v.sku)),
+      ]);
+      f.image_url = famImg[f.id] ?? null;
+      f.variants = f.variants.map((v) => ({ ...v, image_url: variantImgs[v.sku] ?? null }));
       return f;
     },
   });
