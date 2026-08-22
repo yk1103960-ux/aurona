@@ -370,6 +370,12 @@ export const familyQuery = (slug: string) =>
       const f = data as unknown as ProductFamily;
       f.variants = [...(f.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
       f.axes = [...(f.axes ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+      const [famImg, variantImgs] = await Promise.all([
+        primaryImages("family_id", [f.id]),
+        primaryImages("variant_sku", f.variants.map((v) => v.sku)),
+      ]);
+      f.image_url = famImg[f.id] ?? null;
+      f.variants = f.variants.map((v) => ({ ...v, image_url: variantImgs[v.sku] ?? null }));
       return f;
     },
   });
