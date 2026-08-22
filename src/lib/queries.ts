@@ -145,8 +145,9 @@ export const productsQuery = (filter?: {
       const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data ?? []) as unknown as (Product & { categories: { slug: string; name: string; icon: string | null } | null })[];
+      const imgs = await primaryImages("product_id", rows.map((r) => r.id));
       const skus = [...new Set(rows.map((row) => row.sku).filter(Boolean))];
-      if (skus.length === 0) return rows;
+      if (skus.length === 0) return rows.map((row) => ({ ...row, image_url: imgs[row.id] ?? null }));
 
       const { data: links } = await supabase
         .from("product_variants")
@@ -157,7 +158,11 @@ export const productsQuery = (filter?: {
         if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
       }
 
-      return rows.map((row) => ({ ...row, family_slug: familyBySku.get(row.sku) ?? null }));
+      return rows.map((row) => ({
+        ...row,
+        image_url: imgs[row.id] ?? null,
+        family_slug: familyBySku.get(row.sku) ?? null,
+      }));
     },
   });
 
