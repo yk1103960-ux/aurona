@@ -59,6 +59,7 @@ import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-
 import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
 import { Route as AuronaConsole9f2x7kCategoriesRouteImport } from './routes/aurona-console-9f2x7k.categories'
 import { Route as AuronaConsole9f2x7kAuditRouteImport } from './routes/aurona-console-9f2x7k.audit'
+import { Route as AuronaConsole9f2x7kApplicationsRouteImport } from './routes/aurona-console-9f2x7k.applications'
 import { Route as AuronaConsole9f2x7kAffiliatesRouteImport } from './routes/aurona-console-9f2x7k.affiliates'
 import { Route as AuronaConsole9f2x7kProductsNewRouteImport } from './routes/aurona-console-9f2x7k.products.new'
 import { Route as AuronaConsole9f2x7kProductsBulkRouteImport } from './routes/aurona-console-9f2x7k.products.bulk'
@@ -335,6 +336,12 @@ const AuronaConsole9f2x7kAuditRoute =
     path: '/audit',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kApplicationsRoute =
+  AuronaConsole9f2x7kApplicationsRouteImport.update({
+    id: '/applications',
+    path: '/applications',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kAffiliatesRoute =
   AuronaConsole9f2x7kAffiliatesRouteImport.update({
     id: '/affiliates',
@@ -422,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
+  '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
@@ -481,6 +489,7 @@ export interface FileRoutesByTo {
   '/payment-status': typeof PaymentStatusRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
+  '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
@@ -544,6 +553,7 @@ export interface FileRoutesById {
   '/products': typeof ProductsRouteWithChildren
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
+  '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
@@ -608,6 +618,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
+    | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/categories'
     | '/aurona-console-9f2x7k/content'
@@ -667,6 +678,7 @@ export interface FileRouteTypes {
     | '/payment-status'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
+    | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/categories'
     | '/aurona-console-9f2x7k/content'
@@ -729,6 +741,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
+    | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/categories'
     | '/aurona-console-9f2x7k/content'
@@ -1155,6 +1168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kAuditRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/applications': {
+      id: '/aurona-console-9f2x7k/applications'
+      path: '/applications'
+      fullPath: '/aurona-console-9f2x7k/applications'
+      preLoaderRoute: typeof AuronaConsole9f2x7kApplicationsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/affiliates': {
       id: '/aurona-console-9f2x7k/affiliates'
       path: '/affiliates'
@@ -1262,6 +1282,7 @@ const AuronaConsole9f2x7kProductsRouteWithChildren =
 
 interface AuronaConsole9f2x7kRouteChildren {
   AuronaConsole9f2x7kAffiliatesRoute: typeof AuronaConsole9f2x7kAffiliatesRoute
+  AuronaConsole9f2x7kApplicationsRoute: typeof AuronaConsole9f2x7kApplicationsRoute
   AuronaConsole9f2x7kAuditRoute: typeof AuronaConsole9f2x7kAuditRoute
   AuronaConsole9f2x7kCategoriesRoute: typeof AuronaConsole9f2x7kCategoriesRoute
   AuronaConsole9f2x7kContentRoute: typeof AuronaConsole9f2x7kContentRoute
@@ -1281,6 +1302,7 @@ interface AuronaConsole9f2x7kRouteChildren {
 
 const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
   AuronaConsole9f2x7kAffiliatesRoute: AuronaConsole9f2x7kAffiliatesRoute,
+  AuronaConsole9f2x7kApplicationsRoute: AuronaConsole9f2x7kApplicationsRoute,
   AuronaConsole9f2x7kAuditRoute: AuronaConsole9f2x7kAuditRoute,
   AuronaConsole9f2x7kCategoriesRoute: AuronaConsole9f2x7kCategoriesRoute,
   AuronaConsole9f2x7kContentRoute: AuronaConsole9f2x7kContentRoute,
