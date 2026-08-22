@@ -246,10 +246,11 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         min_price: number | null; max_price: number | null; min_mrp: number | null; max_mrp: number | null;
         total_stock: number; rating: number; review_count: number;
         is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
-        image_seed: string | null; image_url: string | null;
+        image_seed: string | null;
         categories: { slug: string; name: string; icon: string | null } | null;
       };
       const fams = (data ?? []) as unknown as FamRow[];
+      const famImgs = await primaryImages("family_id", fams.map((f) => f.id));
       const rows: ProductRow[] = fams.map((f) => ({
         id: f.id,
         slug: f.slug,
@@ -268,7 +269,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
         wattage: null, size: null, color_temp: null, material: null, warranty: null,
         is_featured: f.is_featured, is_bestseller: f.is_bestseller, is_new: f.is_new, is_sale: f.is_sale,
         image_seed: f.image_seed,
-        image_url: f.image_url,
+        image_url: famImgs[f.id] ?? null,
         categories: f.categories,
         family_slug: f.slug,
         price_from: (f.min_price ?? 0) !== (f.max_price ?? 0),
@@ -290,7 +291,10 @@ export const productQuery = (slug: string) =>
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
-      return data as (Product & { categories: { slug: string; name: string; icon: string | null } | null }) | null;
+      if (!data) return null;
+      const row = data as unknown as Product & { categories: { slug: string; name: string; icon: string | null } | null };
+      const imgs = await primaryImages("product_id", [row.id]);
+      return { ...row, image_url: imgs[row.id] ?? null };
     },
   });
 
