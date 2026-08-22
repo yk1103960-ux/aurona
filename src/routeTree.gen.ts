@@ -21,6 +21,7 @@ import { Route as FeaturedRouteImport } from './routes/featured'
 import { Route as DealsRouteImport } from './routes/deals'
 import { Route as CustomerServiceRouteImport } from './routes/customer-service'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as CompanyInformationRouteImport } from './routes/company-information'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriesRouteImport } from './routes/categories'
@@ -127,6 +128,11 @@ const CustomerServiceRoute = CustomerServiceRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompanyInformationRoute = CompanyInformationRouteImport.update({
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
   '/company-information': typeof CompanyInformationRoute
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
@@ -462,6 +469,7 @@ export interface FileRoutesByTo {
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
   '/company-information': typeof CompanyInformationRoute
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
@@ -522,6 +530,7 @@ export interface FileRoutesById {
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
   '/company-information': typeof CompanyInformationRoute
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
@@ -585,6 +594,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/checkout'
     | '/company-information'
+    | '/compare'
     | '/contact'
     | '/customer-service'
     | '/deals'
@@ -645,6 +655,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/checkout'
     | '/company-information'
+    | '/compare'
     | '/contact'
     | '/customer-service'
     | '/deals'
@@ -704,6 +715,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/checkout'
     | '/company-information'
+    | '/compare'
     | '/contact'
     | '/customer-service'
     | '/deals'
@@ -766,6 +778,7 @@ export interface RootRouteChildren {
   CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
   CompanyInformationRoute: typeof CompanyInformationRoute
+  CompareRoute: typeof CompareRoute
   ContactRoute: typeof ContactRoute
   CustomerServiceRoute: typeof CustomerServiceRoute
   DealsRoute: typeof DealsRoute
@@ -874,6 +887,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/company-information': {
@@ -1323,6 +1343,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
   CompanyInformationRoute: CompanyInformationRoute,
+  CompareRoute: CompareRoute,
   ContactRoute: ContactRoute,
   CustomerServiceRoute: CustomerServiceRoute,
   DealsRoute: DealsRoute,
