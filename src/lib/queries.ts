@@ -121,7 +121,7 @@ export const productsQuery = (filter?: {
     queryFn: async () => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, image_url, color, finish, wattage, size, categories(slug, name, icon)",
+        "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, wattage, size, categories(slug, name, icon)",
       );
       let q = supabase.from("products").select(cols);
       if (filter?.categorySlug) {
@@ -183,7 +183,7 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
     queryFn: async (): Promise<ProductsPage> => {
       const sel = (s: string): string => s;
       const cols = sel(
-        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, image_url, categories(slug, name, icon)",
+        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)",
       );
 
       let categoryIds = filter.categoryIds;
@@ -341,7 +341,7 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
-const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, image_url, sort_order, created_at";
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at";
 
 export const familyQuery = (slug: string) =>
   queryOptions({
