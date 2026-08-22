@@ -70,6 +70,41 @@ export const categoryCountsQuery = queryOptions({
   },
 });
 
+/**
+ * Primary image lookup. Images live in `product_images` (there is no
+ * `image_url` column on `products`/`product_families`/`product_variants`),
+ * so resolve them in a second, non-fatal query.
+ */
+async function primaryImages(
+  key: "product_id" | "family_id" | "variant_sku",
+  ids: string[],
+): Promise<Record<string, string>> {
+  const list = [...new Set(ids.filter(Boolean))];
+  if (list.length === 0) return {};
+  const { data, error } = await supabase
+    .from("product_images")
+    .select(`${key}, image_url, is_primary, sort_order`)
+    .in(key, list);
+  if (error) return {};
+  const rows = (data ?? []) as unknown as {
+    image_url: string | null;
+    is_primary: boolean | null;
+    sort_order: number | null;
+    [k: string]: unknown;
+  }[];
+  const map: Record<string, { url: string; score: number }> = {};
+  for (const r of rows) {
+    const id = r[key] as string | null;
+    if (!id || !r.image_url) continue;
+    const score = (r.is_primary ? -1000 : 0) + (Number(r.sort_order) || 0);
+    const cur = map[id];
+    if (!cur || score < cur.score) map[id] = { url: r.image_url, score };
+  }
+  const out: Record<string, string> = {};
+  for (const [id, v] of Object.entries(map)) out[id] = v.url;
+  return out;
+}
+
 export const productsQuery = (filter?: {
   categorySlug?: string;
   featured?: boolean;
