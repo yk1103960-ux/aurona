@@ -47,7 +47,7 @@ function Home() {
       {/* ============ COUNTERS ============ */}
       <section className="border-b border-border bg-background">
         <div className="container-x grid grid-cols-2 gap-6 py-8 sm:grid-cols-4 lg:py-10">
-          <Counter to={17} suffix="+" label="'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            I have approved the plan" />
+          <Counter to={17} suffix="+" label={`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            I have approved the plan`} />
           <Counter to={150} suffix="+" label="Products shipped" />
           <Counter to={1000} suffix="+" label="Retail partners" />
           <Counter to={28} label="States delivered" />
