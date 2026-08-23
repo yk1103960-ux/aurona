@@ -162,13 +162,15 @@ export function Header() {
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
             <div className="flex items-center gap-2.5">
               {([
+                [settings?.social_youtube, Youtube, "YouTube"],
                 [settings?.social_facebook, Facebook, "Facebook"],
                 [settings?.social_instagram, Instagram, "Instagram"],
-                [settings?.social_twitter, Twitter, "X"],
-                [settings?.social_youtube, Youtube, "YouTube"],
                 [settings?.social_linkedin, Linkedin, "LinkedIn"],
-              ] as [string | undefined, LucideIcon, string][]).map(([href, Icn, label]) => (
-                <a key={label} href={href ?? "#"} target="_blank" rel="noreferrer" aria-label={label} className="transition-transform hover:-translate-y-0.5 hover:text-gold">
+                [settings?.social_twitter, Twitter, "X"],
+              ] as [string | undefined, LucideIcon, string][])
+                .filter(([href]) => Boolean(href) && href !== "#")
+                .map(([href, Icn, label]) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="transition-transform hover:-translate-y-0.5 hover:text-gold">
                   <Icn className="h-3.5 w-3.5" strokeWidth={2} />
                 </a>
               ))}

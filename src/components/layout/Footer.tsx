@@ -53,13 +53,16 @@ export function Footer() {
   const [subscribed, setSubscribed] = useState(false);
 
 
-  const socials: [string, React.ComponentType<{ className?: string }>, string][] = [
-    [s?.social_facebook ?? "#", Facebook, "Facebook"],
-    [s?.social_twitter ?? "#", Twitter, "X (Twitter)"],
-    [s?.social_instagram ?? "#", Instagram, "Instagram"],
-    [s?.social_youtube ?? "#", Youtube, "YouTube"],
-    [s?.social_linkedin ?? "#", Linkedin, "LinkedIn"],
-  ];
+  // Only official, configured profiles render — a "#" placeholder is never shown.
+  const socials = ([
+    [s?.social_youtube, Youtube, "YouTube"],
+    [s?.social_facebook, Facebook, "Facebook"],
+    [s?.social_instagram, Instagram, "Instagram"],
+    [s?.social_linkedin, Linkedin, "LinkedIn"],
+    [s?.social_twitter, Twitter, "X (Twitter)"],
+  ] as [string | undefined, React.ComponentType<{ className?: string }>, string][])
+    .filter((x): x is [string, React.ComponentType<{ className?: string }>, string] =>
+      Boolean(x[0]) && x[0] !== "#");
 
   return (
     <footer className="relative mt-24">
