@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter } from "lucide-react";
+import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -93,6 +93,7 @@ export function Header() {
   const wl = useWishlist();
   const { user } = useAuth();
   const [q, setQ] = useState("");
+  const [openSearch, setOpenSearch] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
   const [openMenu, setOpenMenu] = useState<null | "led" | "appliance" | "browse">(null);
   const megaOpen = openMenu !== null;
@@ -105,6 +106,7 @@ export function Header() {
 
   useEffect(() => setOpenMobile(false), [pathname]);
   useEffect(() => setOpenMenu(null), [pathname]);
+  useEffect(() => setOpenSearch(false), [pathname]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,13 +243,14 @@ export function Header() {
               </span>
             </span>
           </Link>
-          <Link
-            to="/products"
+          <button
+            type="button"
+            onClick={() => setOpenSearch(true)}
             className="grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 active:scale-90 lg:hidden"
             aria-label="Search"
           >
             <Search className="h-4 w-4" strokeWidth={2.5} />
-          </Link>
+          </button>
           <Link
             to={user ? "/account" : "/auth"}
             className="hidden h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
@@ -338,29 +341,45 @@ export function Header() {
       {/* Mobile inline search — appears once scrolled */}
       {scrolled && (
         <div className="border-t border-primary/8 bg-white/60 px-3 py-2 backdrop-blur-xl lg:hidden">
-          <form onSubmit={submit}>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} />
-              <Input
-                id="aurona-search-input"
+          <button
+            type="button"
+            onClick={() => setOpenSearch(true)}
+            className="flex h-11 w-full items-center gap-3 rounded-full border border-primary/15 bg-white px-4 text-left text-[13px] text-muted-foreground"
+          >
+            <Search className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            Search premium lighting…
+          </button>
+        </div>
+      )}
+
+      {/* Mobile full-screen search overlay */}
+      {openSearch && (
+        <div className="fixed inset-0 z-[60] bg-background lg:hidden">
+          <div className="flex items-center gap-2 border-b border-border px-3 py-3">
+            <button
+              type="button"
+              onClick={() => setOpenSearch(false)}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-foreground hover:bg-surface"
+              aria-label="Close search"
+            >
+              <X className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <SearchBox
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search premium lighting…"
-                className="h-11 rounded-full border-primary/15 bg-white pl-11 pr-16 text-[13px] font-medium text-foreground placeholder:font-normal placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:ring-primary/25"
+                onChange={setQ}
+                onSubmit={(e) => { setOpenSearch(false); submit(e); }}
+                autoFocus
+                inputId="aurona-search-input-mobile"
               />
-              <button
-                type="submit"
-                className="absolute right-1.5 top-1/2 grid h-8 -translate-y-1/2 place-items-center rounded-full bg-primary px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.97]"
-              >
-                Go
-              </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
     </header>
   );
 }
+
 
 function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
   return (
@@ -794,8 +813,8 @@ function BrowsePanel({
 }
 
 
-function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v: string) => void; onSubmit: (e: React.FormEvent) => void }) {
-  const [focused, setFocused] = useState(false);
+function SearchBox({ value, onChange, onSubmit, autoFocus = false, inputId = "aurona-search-input" }: { value: string; onChange: (v: string) => void; onSubmit: (e: React.FormEvent) => void; autoFocus?: boolean; inputId?: string }) {
+  const [focused, setFocused] = useState(autoFocus);
   const [debounced, setDebounced] = useState(value);
   const box = useRef<HTMLDivElement>(null);
   const { data: allCats = [] } = useQuery(categoriesQuery);
@@ -822,10 +841,11 @@ function SearchBox({ value, onChange, onSubmit }: { value: string; onChange: (v:
         <div className="relative">
           <Search className="pointer-events-none absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-primary/70" strokeWidth={2} />
           <Input
-            id="aurona-search-input"
+            id={inputId}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onFocus={() => setFocused(true)}
+            autoFocus={autoFocus}
             placeholder="Search LED bulbs, panel lights, ceiling fans, geysers or SKU…"
             className="h-[52px] rounded-full border-primary/20 bg-white pl-[52px] pr-[112px] text-[14px] font-medium text-foreground shadow-[0_2px_14px_-10px_oklch(0.55_0.14_240/0.55)] placeholder:font-normal placeholder:text-muted-foreground focus-visible:border-primary/45 focus-visible:ring-primary/25"
             autoComplete="off"
