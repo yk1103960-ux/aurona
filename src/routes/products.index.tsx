@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useEffect, useMemo, useState } from "react";
@@ -70,7 +70,11 @@ function ProductsPage() {
   const nav = Route.useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
   const filter = useMemo(() => buildFilter(sp, cats), [sp, cats]);
-  const { rows, total } = useSuspenseQuery(productsPageQuery(filter)).data;
+  // keepPreviousData stops the page from suspending (and remounting the search
+  // input) every time the query/filters change — that remount stole focus.
+  const page = useQuery({ ...productsPageQuery(filter), placeholderData: keepPreviousData }).data;
+  const rows = page?.rows ?? [];
+  const total = page?.total ?? 0;
 
   const setSearch = (patch: Partial<SP>, resetPage = true) =>
     nav({ search: (s: any) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }), replace: true });
