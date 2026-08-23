@@ -72,10 +72,9 @@ function ProductsPage() {
   const filter = useMemo(() => buildFilter(sp, cats), [sp, cats]);
   // keepPreviousData stops the page from suspending (and remounting the search
   // input) every time the query/filters change — that remount stole focus.
-  const { rows, total } = useSuspenseQuery({
-    ...productsPageQuery(filter),
-    placeholderData: keepPreviousData,
-  }).data;
+  const page = useQuery({ ...productsPageQuery(filter), placeholderData: keepPreviousData }).data;
+  const rows = page?.rows ?? [];
+  const total = page?.total ?? 0;
 
   const setSearch = (patch: Partial<SP>, resetPage = true) =>
     nav({ search: (s: any) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }), replace: true });
