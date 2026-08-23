@@ -14,7 +14,7 @@ export type SiteSettings = {
   social_whatsapp: string;
   business_hours: string;
   address_line: string;
-  [key: string]: string;
+  [key: string]: string | undefined;
 };
 
 export const SETTINGS_DEFAULTS: SiteSettings = {
