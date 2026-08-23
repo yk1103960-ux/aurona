@@ -70,7 +70,12 @@ function ProductsPage() {
   const nav = Route.useNavigate();
   const cats = useSuspenseQuery(categoriesQuery).data;
   const filter = useMemo(() => buildFilter(sp, cats), [sp, cats]);
-  const { rows, total } = useSuspenseQuery(productsPageQuery(filter)).data;
+  // keepPreviousData stops the page from suspending (and remounting the search
+  // input) every time the query/filters change — that remount stole focus.
+  const { rows, total } = useSuspenseQuery({
+    ...productsPageQuery(filter),
+    placeholderData: keepPreviousData,
+  }).data;
 
   const setSearch = (patch: Partial<SP>, resetPage = true) =>
     nav({ search: (s: any) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }), replace: true });
