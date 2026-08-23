@@ -8,9 +8,9 @@ export type SiteSettings = {
   notification_mobile: string;
   social_facebook: string;
   social_instagram: string;
-  social_linkedin: string;
+  social_linkedin?: string;
   social_youtube: string;
-  social_twitter: string;
+  social_twitter?: string;
   social_whatsapp: string;
   business_hours: string;
   address_line: string;
