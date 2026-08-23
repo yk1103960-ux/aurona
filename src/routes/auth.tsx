@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   validateRegistration,
   loginGuard,
@@ -161,7 +162,9 @@ function AuthPage() {
     e.preventDefault();
     setErrors({});
     const local: Record<string, string> = {};
-    if (password !== confirm) local.confirm = "Passwords do not match.";
+    if (phone.replace(/\D/g, "").length !== 10) local.phone = "Enter a valid 10-digit Indian mobile number.";
+    if (!confirm) local.confirm = "Please re-enter your password.";
+    else if (password !== confirm) local.confirm = "Passwords do not match.";
     if (role !== "customer" && business.trim().length < 3) local.business = "Enter your business name.";
     if (Object.keys(local).length) { setErrors(local); return; }
 
@@ -394,7 +397,7 @@ function AuthPage() {
                   <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
                 ) : (
                   <form onSubmit={startLoginOtp} className="space-y-3">
-                    <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
+                    <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
                     <p className="text-[11px] text-muted-foreground">
                       We’ll SMS a 6-digit code from <b>AURONA</b> to your registered mobile number.
                     </p>
@@ -433,7 +436,7 @@ function AuthPage() {
                 <form onSubmit={register} className="space-y-3">
                   <Field label="Full name" value={name} onChange={setName} error={errors.fullName} />
                   <Field label="Email address" value={email} onChange={setEmail} type="email" error={errors.email} />
-                  <Field label="Mobile number" value={phone} onChange={setPhone} error={errors.phone} />
+                  <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
                   {role !== "customer" && (
                     <Field
                       label={role === "retailer" ? "Shop / Store name" : "Company / Distribution firm"}
@@ -451,8 +454,12 @@ function AuthPage() {
                   />
                   {password.length > 0 && <StrengthMeter verdict={verdict} />}
                   <Field label="Confirm password" value={confirm} onChange={setConfirm} type={showPw ? "text" : "password"} error={errors.confirm} />
-                  {confirm.length > 0 && confirm === password && (
-                    <div className="flex items-center gap-1 text-[11px] font-semibold text-primary"><Check className="h-3 w-3" /> Passwords match</div>
+                  {confirm.length > 0 && (
+                    confirm === password ? (
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-primary"><Check className="h-3 w-3" /> Passwords match</div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-destructive"><X className="h-3 w-3" /> Passwords do not match</div>
+                    )
                   )}
                   {role !== "customer" && (
                     <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-[11px] text-muted-foreground">
@@ -467,7 +474,7 @@ function AuthPage() {
                       mandatory — the account stays locked until the code is verified.
                     </p>
                   </div>
-                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm}>
+                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm || phone.length !== 10}>
                     {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…</> : `Create ${active.title} account`}
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
@@ -585,6 +592,19 @@ function Field({ label, value, onChange, type = "text", error, trailing }: {
         {trailing && <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span>}
       </div>
       {error && <div className="mt-1 text-[11px] text-destructive">{error}</div>}
+    </div>
+  );
+}
+
+function PhoneField({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string }) {
+  const short = value.length > 0 && value.length < 10;
+  return (
+    <div>
+      <Label className="text-xs">Mobile number</Label>
+      <PhoneInput value={value} onChange={onChange} required invalid={Boolean(error) || short} autoComplete="tel-national" />
+      {(error || short) && (
+        <div className="mt-1 text-[11px] text-destructive">{error ?? "Mobile number must be exactly 10 digits."}</div>
+      )}
     </div>
   );
 }
