@@ -30,19 +30,18 @@ export function assessPassword(pw: string, opts: { email?: string; name?: string
     number: /\d/.test(pw),
     special: /[^A-Za-z0-9]/.test(pw),
   };
+
+  // Only genuinely unsafe passwords are blocked. Uppercase / special characters
+  // are shown as strength hints, never as hard requirements — the previous rules
+  // rejected perfectly good passwords and blocked account creation.
   const problems: string[] = [];
-  if (!checks.length) problems.push("Use at least 8 characters (12+ recommended)");
-  if (!checks.upper) problems.push("Add an uppercase letter");
-  if (!checks.lower) problems.push("Add a lowercase letter");
-  if (!checks.number) problems.push("Add a number");
-  if (!checks.special) problems.push("Add a special character (e.g. @ # !)");
+  if (!checks.length) problems.push("Use at least 8 characters");
+  if (!/[A-Za-z]/.test(pw)) problems.push("Include at least one letter");
+  if (!checks.number) problems.push("Include at least one number");
 
   const lower = pw.toLowerCase();
   if (COMMON_PASSWORDS.has(lower)) problems.push("This password is too common");
   if (/^(.)\1+$/.test(pw)) problems.push("Avoid repeating a single character");
-  if (/(0123|1234|2345|3456|4567|5678|6789|abcd|qwer|asdf)/.test(lower)) {
-    problems.push("Avoid keyboard or number sequences");
-  }
 
   const localPart = (opts.email ?? "").split("@")[0]?.toLowerCase() ?? "";
   const nameParts = (opts.name ?? "").toLowerCase().split(/\s+/).filter((p) => p.length >= 4);
@@ -53,9 +52,8 @@ export function assessPassword(pw: string, opts: { email?: string; name?: string
 
   const passed = Object.values(checks).filter(Boolean).length;
   let score = 0;
-  score += Math.min(2, Math.floor(pw.length / 8)); // length weight
+  score += Math.min(2, Math.floor(pw.length / 8));
   score += passed >= 5 ? 2 : passed >= 4 ? 1 : 0;
-  if (problems.length > 5 - passed) score = Math.min(score, 1);
   if (COMMON_PASSWORDS.has(lower)) score = 0;
   const clamped = Math.max(0, Math.min(4, score)) as PasswordVerdict["score"];
   const labels = ["Very weak", "Weak", "Medium", "Strong", "Very strong"] as const;
@@ -65,41 +63,28 @@ export function assessPassword(pw: string, opts: { email?: string; name?: string
     label: labels[clamped],
     checks,
     problems,
-    ok: passed === 5 && problems.length === 0 && clamped >= 2,
+    ok: problems.length === 0,
   };
 }
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
-/** Heuristic detection of machine-mashed / throwaway local parts. */
+/**
+ * Blocks only disposable domains and obvious placeholder addresses. Random-looking
+ * but real addresses (e.g. "rk9821@gmail.com") must be accepted.
+ */
 export function looksFakeEmail(email: string): { fake: boolean; reason?: string } {
   const [rawLocal, domain] = email.toLowerCase().trim().split("@");
   if (!rawLocal || !domain) return { fake: true, reason: "Invalid email format" };
   if (DISPOSABLE_DOMAINS.has(domain)) return { fake: true, reason: "Disposable email addresses are not allowed" };
 
   const local = rawLocal.replace(/[.+_-]/g, "");
-  const letters = local.replace(/[^a-z]/g, "");
-
-  if (/^(test|tests|testing|abc|xyz|asdf|qwerty|admin|demo|sample|fake|dummy|noreply|nomail)/.test(local)) {
+  if (/^(test|testing|abcd|xyz|asdf|qwerty|demo|sample|fake|dummy|noreply|nomail)$/.test(local)) {
     return { fake: true, reason: "Placeholder email addresses are not allowed" };
-  }
-  if (/(.)\1{3,}/.test(local)) return { fake: true, reason: "Email looks randomly generated" };
-  if (/(qwer|asdf|zxcv|hjkl|uiop)/.test(local)) return { fake: true, reason: "Email looks randomly generated" };
-
-  const digits = local.replace(/\D/g, "").length;
-  if (local.length > 6 && digits / local.length > 0.55) {
-    return { fake: true, reason: "Email looks randomly generated" };
-  }
-  // Long runs without a vowel, or almost no vowels overall → keyboard mash.
-  if (letters.length >= 6) {
-    const vowels = (letters.match(/[aeiouy]/g) ?? []).length;
-    if (vowels / letters.length < 0.18) return { fake: true, reason: "Email looks randomly generated" };
-    if (/[bcdfghjklmnpqrstvwxz]{5,}/.test(letters)) return { fake: true, reason: "Email looks randomly generated" };
-    // Repeating 2-char syllable spam: "ajnsnsnsns", "hahahaha"
-    if (/(..)\1{2,}/.test(letters)) return { fake: true, reason: "Email looks randomly generated" };
   }
   return { fake: false };
 }
+
 
 export function normalisePhone(raw: string): { ok: boolean; e164?: string; reason?: string } {
   const digits = raw.replace(/\D/g, "");
