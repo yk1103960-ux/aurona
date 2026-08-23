@@ -16,6 +16,16 @@ export function CinematicIntro() {
   const logoRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
+    // Skip the heavy canvas intro on phones / low-power devices and when the
+    // visitor prefers reduced motion — it made first load feel sluggish.
+    const heavyOk =
+      window.innerWidth >= 1024 &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      (navigator.hardwareConcurrency ?? 8) >= 4;
+    if (!heavyOk) {
+      try { sessionStorage.setItem("aurona_intro_played", "1"); } catch { /* ignore */ }
+      return;
+    }
     try {
       setShow(!sessionStorage.getItem("aurona_intro_played"));
     } catch {
@@ -87,7 +97,7 @@ export function CinematicIntro() {
       tx: number; ty: number;
       size: number; hue: number; life: number; born: number;
     };
-    const NUM = Math.min(1400, Math.floor((W * H) / 1400));
+    const NUM = Math.min(900, Math.floor((W * H) / 2200));
     const particles: P[] = [];
     const cx = W / 2, cy = H / 2;
     for (let i = 0; i < NUM; i++) {

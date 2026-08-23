@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SearchX, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +73,18 @@ function ProductsPage() {
   const { rows, total } = useSuspenseQuery(productsPageQuery(filter)).data;
 
   const setSearch = (patch: Partial<SP>, resetPage = true) =>
-    nav({ search: (s: any) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }) });
+    nav({ search: (s: any) => ({ ...s, ...patch, ...(resetPage ? { page: 1 } : {}) }), replace: true });
+
+  // Local, uncontrolled-by-URL search text so typing never loses focus or
+  // pushes a history entry per keystroke (which made "back" feel broken).
+  const [term, setTerm] = useState(sp.q);
+  useEffect(() => setTerm(sp.q), [sp.q]);
+  useEffect(() => {
+    if (term === sp.q) return;
+    const t = window.setTimeout(() => setSearch({ q: term }), 350);
+    return () => window.clearTimeout(t);
+  }, [term]);
+
 
   const groupLabel: Record<string, string> = {
     "led-lighting": "LED Lighting",
@@ -99,13 +110,13 @@ function ProductsPage() {
           <div className="relative w-full min-w-0 sm:w-64">
 
             <Input
-              value={sp.q}
-              onChange={(e) => setSearch({ q: e.target.value })}
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
               placeholder="Search products…"
               className="h-10 pr-8"
             />
-            {sp.q && (
-              <button onClick={() => setSearch({ q: "" })} className="absolute right-2 top-1/2 -translate-y-1/2">
+            {term && (
+              <button onClick={() => setTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2">
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
