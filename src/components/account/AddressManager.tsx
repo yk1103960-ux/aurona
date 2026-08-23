@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, Home, MapPin, Plus, Star, Trash2, X } from "lucide-react";
 import { INDIAN_STATES } from "@/lib/indian-states";
+import { PhoneInput, sanitiseMobile } from "@/components/ui/phone-input";
 
 export type AddressRow = {
   id: string;
@@ -18,6 +19,7 @@ export type AddressRow = {
   landmark: string | null;
   city: string;
   state: string;
+  district: string | null;
   pincode: string;
   is_default: boolean;
 };
@@ -30,6 +32,7 @@ const EMPTY = {
   line2: "",
   landmark: "",
   city: "",
+  district: "",
   state: "",
   pincode: "",
 };
@@ -57,16 +60,17 @@ export function AddressManager({ userId }: { userId: string }) {
   const save = useMutation({
     mutationFn: async () => {
       if (!/^\d{6}$/.test(form.pincode)) throw new Error("Enter a valid 6-digit pincode");
-      if (!/^\d{10}$/.test(form.phone.replace(/\D/g, "").slice(-10))) throw new Error("Enter a valid 10-digit phone");
+      if (sanitiseMobile(form.phone).length !== 10) throw new Error("Enter a valid 10-digit mobile number");
       const { error } = await supabase.from("addresses").insert({
         user_id: userId,
         label: form.label.trim() || null,
         full_name: form.full_name.trim(),
-        phone: form.phone.trim(),
+        phone: sanitiseMobile(form.phone),
         line1: form.line1.trim(),
         line2: form.line2.trim() || null,
         landmark: form.landmark.trim() || null,
         city: form.city.trim(),
+        district: form.district.trim() || null,
         state: form.state.trim(),
         pincode: form.pincode.trim(),
         is_default: (list.data ?? []).length === 0,
@@ -155,7 +159,10 @@ export function AddressManager({ userId }: { userId: string }) {
             </div>
           </div>
           <F label="Full name" v={form.full_name} set={(v) => setForm({ ...form, full_name: v })} required />
-          <F label="Phone" v={form.phone} set={(v) => setForm({ ...form, phone: v })} required />
+          <div>
+            <Label className="text-xs">Phone</Label>
+            <PhoneInput value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required />
+          </div>
           <F label="Pincode" v={form.pincode} set={(v) => setForm({ ...form, pincode: v.replace(/\D/g, "").slice(0, 6) })} required />
           <div className="sm:col-span-2">
             <F label="Address line 1" v={form.line1} set={(v) => setForm({ ...form, line1: v })} required />
@@ -167,6 +174,7 @@ export function AddressManager({ userId }: { userId: string }) {
             <F label="Landmark (optional)" v={form.landmark} set={(v) => setForm({ ...form, landmark: v })} />
           </div>
           <F label="City" v={form.city} set={(v) => setForm({ ...form, city: v })} required />
+          <F label="District (optional)" v={form.district} set={(v) => setForm({ ...form, district: v })} />
           <div>
             <Label className="text-xs">State</Label>
             <select
