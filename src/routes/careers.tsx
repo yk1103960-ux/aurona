@@ -1,13 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck } from "lucide-react";
-
-const JOBS = [
-  { t: "Production Engineer", d: "Manufacturing", loc: "Delhi NCR", type: "Full-time" },
-  { t: "Retail Sales Manager", d: "Sales", loc: "Mumbai", type: "Full-time" },
-  { t: "Product Designer", d: "Design", loc: "Bangalore", type: "Full-time" },
-  { t: "Warehouse Executive", d: "Operations", loc: "Chennai", type: "Full-time" },
-];
+import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase } from "lucide-react";
+import { careersQuery, jobAnchor, applyHref } from "@/lib/careers";
 
 const REFERRALS = [
   {
@@ -64,6 +59,8 @@ export const Route = createFileRoute("/careers")({
 });
 
 function CareersPage() {
+  const { data: jobs = [], isLoading } = useQuery(careersQuery);
+  const openings = jobs.filter((j) => j.kind === "job");
   return (
     <div className="container-x py-16">
       <div className="text-eyebrow">Careers</div>
@@ -73,19 +70,46 @@ function CareersPage() {
       </p>
 
       <div className="mt-12 space-y-3">
-        {JOBS.map((j) => (
-          <div key={j.t} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border p-5 transition hover:shadow-lift">
-            <div>
-              <div className="font-semibold">{j.t}</div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{j.d}</span>
-                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.loc}</span>
-                <span>{j.type}</span>
-              </div>
-            </div>
-            <Button size="sm" className="rounded-full">Apply</Button>
+        {isLoading && <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">Loading open roles…</div>}
+        {!isLoading && openings.length === 0 && (
+          <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
+            No open positions right now. Write to us and we'll keep your profile on file.
           </div>
-        ))}
+        )}
+        {openings.map((j) => {
+          const href = applyHref(j);
+          return (
+            <div
+              key={j.id}
+              id={jobAnchor(j.id)}
+              className="scroll-mt-28 rounded-xl border border-border p-5 transition hover:shadow-lift"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Briefcase className="h-4 w-4 shrink-0 text-primary" /> {j.title}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    {j.department && <span>{j.department}</span>}
+                    {j.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
+                    {j.employment_type && <span>{j.employment_type}</span>}
+                  </div>
+                </div>
+                {href ? (
+                  <Button asChild size="sm" className="rounded-full">
+                    <a href={href} target={j.apply_url ? "_blank" : undefined} rel="noopener noreferrer">Apply</a>
+                  </Button>
+                ) : (
+                  <Button asChild size="sm" className="rounded-full">
+                    <a href="/contact">Apply</a>
+                  </Button>
+                )}
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">{j.description}</p>
+              {j.eligibility && <p className="mt-2 text-xs text-muted-foreground"><b>Eligibility:</b> {j.eligibility}</p>}
+            </div>
+          );
+        })}
       </div>
 
       {/* Referral programs */}

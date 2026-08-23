@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { careersQuery, jobAnchor } from "@/lib/careers";
 
 
 const BROWSE_ICONS: Record<string, LucideIcon> = {
@@ -304,7 +305,7 @@ export function Header() {
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/affiliate">Affiliate With Us</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <NavItem to="/careers">Career With Us</NavItem>
+            <CareerMenu />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/blogs">Blogs</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
@@ -382,6 +383,93 @@ export function Header() {
   );
 }
 
+
+/** Career With Us — dynamic dropdown of published openings (hover on desktop, tap on mobile). */
+function CareerMenu() {
+  const [open, setOpen] = useState(false);
+  const { data: jobs = [] } = useQuery(careersQuery);
+  const openings = jobs.filter((j) => j.kind === "job");
+
+  return (
+    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className={cn(
+          "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[14px] font-bold tracking-[0.01em] transition-colors",
+          open ? "text-primary" : "text-foreground/85 hover:text-primary",
+        )}
+      >
+        Career With Us
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} strokeWidth={2.5} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 w-72 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-lift">
+          {openings.length === 0 ? (
+            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-surface">
+              View careers & referral programs
+            </Link>
+          ) : (
+            <>
+              {openings.map((j) => (
+                <Link
+                  key={j.id}
+                  to="/careers"
+                  hash={jobAnchor(j.id)}
+                  onClick={() => setOpen(false)}
+                  className="block rounded-lg px-3 py-2 hover:bg-surface"
+                >
+                  <span className="block text-sm font-semibold text-foreground">{j.title}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {[j.department, j.location, j.employment_type].filter(Boolean).join(" · ")}
+                  </span>
+                </Link>
+              ))}
+              <Link
+                to="/careers"
+                onClick={() => setOpen(false)}
+                className="mt-1 block border-t border-border px-3 py-2 text-[12px] font-semibold text-primary"
+              >
+                View all openings & referral programs
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileCareers({ onClose }: { onClose: () => void }) {
+  const { data: jobs = [] } = useQuery(careersQuery);
+  const openings = jobs.filter((j) => j.kind === "job");
+  if (openings.length === 0) return <MobileLink to="/careers" onClose={onClose}>Career With Us</MobileLink>;
+  return (
+    <details className="border-t border-border">
+      <summary className="flex cursor-pointer items-center justify-between px-3 py-3 text-sm font-semibold">
+        Career With Us <ChevronDown className="h-4 w-4" />
+      </summary>
+      <div className="pb-2">
+        {openings.map((j) => (
+          <Link
+            key={j.id}
+            to="/careers"
+            hash={jobAnchor(j.id)}
+            onClick={onClose}
+            className="block px-6 py-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {j.title}
+          </Link>
+        ))}
+        <Link to="/careers" onClick={onClose} className="block px-6 py-2 text-sm font-semibold text-primary">
+          All openings
+        </Link>
+      </div>
+    </details>
+  );
+}
 
 function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
   return (
@@ -465,7 +553,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
         ))}
         <div className="mt-2 border-t border-border">
           <MobileLink to="/affiliate" onClose={onClose}>Affiliate With Us</MobileLink>
-          <MobileLink to="/careers" onClose={onClose}>Career With Us</MobileLink>
+          <MobileCareers onClose={onClose} />
           <MobileLink to="/blogs" onClose={onClose}>Blogs</MobileLink>
           <MobileLink to="/about" onClose={onClose}>About Us</MobileLink>
           <MobileLink to="/contact" onClose={onClose}>Contact Us</MobileLink>

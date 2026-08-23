@@ -8,13 +8,13 @@ export type SiteSettings = {
   notification_mobile: string;
   social_facebook: string;
   social_instagram: string;
-  social_linkedin: string;
+  social_linkedin?: string;
   social_youtube: string;
-  social_twitter: string;
+  social_twitter?: string;
   social_whatsapp: string;
   business_hours: string;
   address_line: string;
-  [key: string]: string;
+  [key: string]: string | undefined;
 };
 
 export const SETTINGS_DEFAULTS: SiteSettings = {
@@ -40,7 +40,7 @@ export const siteSettingsQuery = queryOptions({
   queryFn: async (): Promise<SiteSettings> => {
     const { data, error } = await supabase.from("site_settings").select("key, value");
     if (error) return SETTINGS_DEFAULTS;
-    const map: Record<string, string> = { ...SETTINGS_DEFAULTS };
+    const map: Record<string, string | undefined> = { ...SETTINGS_DEFAULTS };
     for (const row of (data ?? []) as { key: string; value: string }[]) {
       // Blank values in the settings table must not wipe out a working
       // default — an empty phone/email produced dead `tel:` / `mailto:` links.
