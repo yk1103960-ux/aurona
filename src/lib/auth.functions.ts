@@ -8,6 +8,7 @@ const registrationInput = z.object({
   email: z.string().trim().toLowerCase().max(200),
   phone: z.string().trim().max(20),
   password: z.string().min(1).max(200),
+  role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
 });
 
 type Issue = { field: "fullName" | "email" | "phone" | "password"; message: string };
@@ -94,8 +95,11 @@ export const validateRegistration = createServerFn({ method: "POST" })
         const domain = email.split("@")[1]!;
         if (!(await hasMxRecord(domain))) {
           issues.push({ field: "email", message: `“${domain}” cannot receive email. Please use a valid personal/business email address.` });
-        } else if (await emailExists(email)) {
-          issues.push({ field: "email", message: "An account already exists with this email. Try signing in instead." });
+        } else if (await emailExists(roleEmail(email, data.role))) {
+          issues.push({
+            field: "email",
+            message: `You already have a ${data.role} account with this email. Try signing in instead.`,
+          });
         }
       }
     }
@@ -104,15 +108,17 @@ export const validateRegistration = createServerFn({ method: "POST" })
     if (!phone.ok) {
       issues.push({ field: "phone", message: phone.reason! });
     } else {
+      // The same mobile number may back one account per role, never two of the same role.
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const last10 = phone.e164!.slice(-10);
       const { data: dup } = await supabaseAdmin
         .from("profiles")
         .select("id")
         .ilike("phone", `%${last10}`)
+        .eq("account_type", data.role)
         .limit(1);
       if (dup && dup.length > 0) {
-        issues.push({ field: "phone", message: "This mobile number is already registered." });
+        issues.push({ field: "phone", message: `This mobile number already has a ${data.role} account.` });
       }
     }
 
