@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assessPassword, looksFakeEmail, normalisePhone, EMAIL_RE } from "./auth-security";
+import { roleEmail } from "./role-identity";
 
 const registrationInput = z.object({
   fullName: z.string().trim().min(3).max(80),

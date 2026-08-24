@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
+import { roleEmail } from "@/lib/role-identity";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
   validateRegistration,
@@ -150,7 +151,7 @@ function AuthPage() {
   // ---------- Registration ----------
   /** Mobile OTP over MSG91 is the single production verification channel. */
   const deliverSignupOtp = async () => {
-    const res = await sendSignupSmsOtp({ data: { email, phone } });
+    const res = await sendSignupSmsOtp({ data: { email: roleEmail(email, role), phone } });
     if (!res.ok) { toast.error(res.message); return false; }
     startOtp(res.expirySeconds);
     toast.success(res.message);
@@ -170,14 +171,16 @@ function AuthPage() {
 
     setBusy(true);
     try {
-      const check = await validateRegistration({ data: { fullName: name, email, phone, password } });
+      const check = await validateRegistration({ data: { fullName: name, email, phone, password, role } });
       if (!check.ok) {
         setErrors(Object.fromEntries(check.issues.map((i) => [i.field, i.message])));
         toast.error(check.issues[0]?.message ?? "Please correct the highlighted fields.");
         return;
       }
+      // Each role gets its own Auth identity, so the same credentials work for
+      // a customer, a retailer and a distributor account — but never twice per role.
       const { data: signUpData, error } = await supabase.auth.signUp({
-        email,
+        email: roleEmail(email, role),
         password,
         options: {
           emailRedirectTo: window.location.origin,
@@ -218,7 +221,7 @@ function AuthPage() {
 
   /** Sign-in by mobile OTP — same MSG91 verified template as registration. */
   const requestLoginOtp = async () => {
-    const res = await sendLoginSmsOtp({ data: { phone } });
+    const res = await sendLoginSmsOtp({ data: { phone, role } });
     if (!res.ok) { toast.error(res.message); return false; }
     startOtp(res.expirySeconds);
     toast.success(res.message);
@@ -241,15 +244,15 @@ function AuthPage() {
 
     try {
       if (mode === "up") {
-        const res = await verifySignupSmsOtp({ data: { email, code: token } });
+        const res = await verifySignupSmsOtp({ data: { email: roleEmail(email, role), code: token } });
         if (!res.ok) {
           setAttempts((a) => a + 1);
           return toast.error(res.message);
         }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: roleEmail(email, role), password });
         if (error) return toast.error("Mobile verified — please sign in to continue.");
       } else {
-        const res = await verifyLoginSmsOtp({ data: { phone, code: token } });
+        const res = await verifyLoginSmsOtp({ data: { phone, code: token, role } });
         if (!res.ok || !res.tokenHash) {
           setAttempts((a) => a + 1);
           return toast.error(res.message);
@@ -278,19 +281,20 @@ function AuthPage() {
     setErrors({});
     setBusy(true);
     try {
-      const guard = await loginGuard({ data: { identifier: email } }).catch(() => null);
+      const authEmail = roleEmail(email, role);
+      const guard = await loginGuard({ data: { identifier: authEmail } }).catch(() => null);
       if (guard?.locked) {
         toast.error(`Too many failed attempts. Try again in ${guard.lockMinutes} minutes or reset your password.`);
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
       if (error) {
-        await recordLoginAttempt({ data: { identifier: email, method: "password", success: false, reason: error.message, device: deviceLabel() } }).catch(() => null);
+        await recordLoginAttempt({ data: { identifier: authEmail, method: "password", success: false, reason: error.message, device: deviceLabel() } }).catch(() => null);
         const left = guard ? Math.max(0, guard.remaining - 1) : null;
         const msg = /email not confirmed/i.test(error.message)
           ? "Please verify your email with the OTP we sent before signing in."
           : /invalid login/i.test(error.message)
-            ? `Incorrect email or password${left !== null ? ` — ${left} attempt${left === 1 ? "" : "s"} left before a temporary lock` : ""}.`
+            ? `Incorrect email or password${left !== null ? ` — ${left} attempt${left === 1 ? "" : "s"} left before a temporary lock` : ""} — check you picked the right account type.`
             : error.message;
         setErrors({ password: msg });
         toast.error(msg);
