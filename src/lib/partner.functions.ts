@@ -42,6 +42,19 @@ export const submitPartnerApplication = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    // #7 Logged applicant acknowledgement (also mirrors admin alert below).
+    try {
+      const { notifyPartnerStatus } = await import("./notify.server");
+      await notifyPartnerStatus({
+        email: data.email,
+        name: data.full_name,
+        partnerType: data.partner_type,
+        status: "received",
+        mobile: data.mobile,
+      });
+    } catch {
+      /* notifications are never fatal */
+    }
     // Email notification via Resend can be wired here once the connector is linked.
     // Reads process.env.RESEND_API_KEY inside this handler; no-op if missing.
     try {
