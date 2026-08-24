@@ -623,19 +623,28 @@ function ProfilePanel({ userId, email, data }: { userId: string; email: string; 
     setGstin(data?.gstin ?? "");
   }, [data]);
 
+  const notifySecurity = useServerFn(notifySecurityEvent);
+
   const save = useMutation({
     mutationFn: async () => {
       if (full.trim().length < 2) throw new Error("Please enter your full name");
+      const previousPhone = (data?.phone ?? "").trim();
+      const nextPhone = phone.trim();
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: full.trim(),
-          phone: phone.trim() || null,
+          phone: nextPhone || null,
           business_name: business.trim() || null,
           gstin: gstin.trim() || null,
         })
         .eq("id", userId);
       if (error) throw error;
+      if (nextPhone && nextPhone !== previousPhone) {
+        await notifySecurity({
+          data: { change: "mobile", device: navigator.userAgent.slice(0, 300) },
+        }).catch(() => null);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["profile"] });
