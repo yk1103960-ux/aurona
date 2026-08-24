@@ -681,6 +681,8 @@ function SecurityPanel({ onSignOut }: { onSignOut: () => void }) {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
+  const notifySecurity = useServerFn(notifySecurityEvent);
+
 
   const change = useMutation({
     mutationFn: async () => {
