@@ -163,7 +163,14 @@ export const verifySignupSmsOtp = createServerFn({ method: "POST" })
 
 /** Sends a login code by SMS using our own provider (Supabase has no phone provider). */
 export const sendLoginSmsOtp = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ phone: z.string().trim().max(20) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        phone: z.string().trim().max(20),
+        role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
+      })
+      .parse(input),
+  )
   .handler(async ({ data }) => {
     const p = normalisePhone(data.phone);
     if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
@@ -179,9 +186,12 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
       .from("profiles")
       .select("id")
       .ilike("phone", `%${last10}`)
+      .eq("account_type", data.role)
       .limit(1);
     const userId = prof?.[0]?.id;
-    if (!userId) return { ok: false, message: "No account found with this mobile number. Please register first." };
+    if (!userId) {
+      return { ok: false, message: `No ${data.role} account found with this mobile number. Please register first.` };
+    }
 
     const { data: recent } = await supabaseAdmin
       .from("auth_otp_challenges")
@@ -225,7 +235,13 @@ export const sendLoginSmsOtp = createServerFn({ method: "POST" })
 /** Verifies a login code and returns a one-time token the browser exchanges for a session. */
 export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
-    z.object({ phone: z.string().trim().max(20), code: z.string().trim().regex(/^\d{6}$/) }).parse(input),
+    z
+      .object({
+        phone: z.string().trim().max(20),
+        code: z.string().trim().regex(/^\d{6}$/),
+        role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const p = normalisePhone(data.phone);
@@ -257,9 +273,14 @@ export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
     }
 
     const last10 = phoneE164.slice(-10);
-    const { data: prof } = await supabaseAdmin.from("profiles").select("id").ilike("phone", `%${last10}`).limit(1);
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("phone", `%${last10}`)
+      .eq("account_type", data.role)
+      .limit(1);
     const userId = prof?.[0]?.id;
-    if (!userId) return { ok: false, message: "No account found with this mobile number." };
+    if (!userId) return { ok: false, message: `No ${data.role} account found with this mobile number.` };
 
     const url = process.env["SUPABASE_URL"];
     const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
