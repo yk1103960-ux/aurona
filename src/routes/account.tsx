@@ -686,10 +686,11 @@ function SecurityPanel({ onSignOut }: { onSignOut: () => void }) {
       if (pw !== pw2) throw new Error("Passwords do not match");
       const { error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw error;
+      await notifySecurity({ data: { change: "password", device: navigator.userAgent.slice(0, 300) } }).catch(() => null);
     },
     onSuccess: () => {
       setPw(""); setPw2("");
-      toast.success("Password updated");
+      toast.success("Password updated — we've emailed you a security alert");
     },
     onError: (e: Error) => toast.error(e.message),
   });
