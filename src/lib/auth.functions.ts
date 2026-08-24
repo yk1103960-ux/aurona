@@ -8,6 +8,7 @@ const registrationInput = z.object({
   email: z.string().trim().toLowerCase().max(200),
   phone: z.string().trim().max(20),
   password: z.string().min(1).max(200),
+  role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
 });
 
 type Issue = { field: "fullName" | "email" | "phone" | "password"; message: string };
