@@ -141,15 +141,22 @@ export function ProductCard({
           <span>· {product.review_count} reviews</span>
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          {product.price_from && (
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">From</span>
+          {shownPrice > 0 ? (
+            <>
+              {product.price_from && (
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">From</span>
+              )}
+              <span className="text-xl font-bold tracking-tight text-foreground">{inr(shownPrice)}</span>
+              {shownMrp > shownPrice && (
+                <span className="text-xs text-muted-foreground line-through">{inr(shownMrp)}</span>
+              )}
+              <span className="ml-auto text-[11px] text-muted-foreground">/ {product.unit}</span>
+            </>
+          ) : (
+            <span className="text-sm font-semibold uppercase tracking-wider text-primary">Price on request</span>
           )}
-          <span className="text-xl font-bold tracking-tight text-foreground">{inr(shownPrice)}</span>
-          {shownMrp > shownPrice && (
-            <span className="text-xs text-muted-foreground line-through">{inr(shownMrp)}</span>
-          )}
-          <span className="ml-auto text-[11px] text-muted-foreground">/ {product.unit}</span>
         </div>
+
         {role.role === "retailer" && (
           <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Retailer price</div>
         )}
