@@ -104,8 +104,9 @@ export function ProductGallery({
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-        {(hasReal ? slides : Array.from({ length: 4 })).map((s, i) => (
+      <div className="grid grid-cols-5 gap-2">
+        {(hasReal ? slides : Array.from({ length: 5 })).map((s, i) => (
+
           <button
             key={hasReal ? (s as ProductImageRow).id : i}
             type="button"
