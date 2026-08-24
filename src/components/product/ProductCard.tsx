@@ -176,10 +176,10 @@ export function ProductCard({
           <div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>
         )}
 
-        {isDistributor ? (
+        {isDistributor || shownPrice <= 0 ? (
           <Button asChild size="sm" className="mt-2 w-full gap-2 rounded-full">
             <a href="tel:+919602570026">
-              <Phone className="h-4 w-4" /> Contact Sales
+              <Phone className="h-4 w-4" /> {shownPrice <= 0 ? "Product enquiry" : "Contact Sales"}
             </a>
           </Button>
         ) : qty > 0 ? (
