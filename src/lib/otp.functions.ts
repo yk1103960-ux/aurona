@@ -140,6 +140,24 @@ export const verifySignupSmsOtp = createServerFn({ method: "POST" })
       updated_at: now,
     } as never);
 
+    // #5 Welcome notification (email now, SMS/WhatsApp intent logged).
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .maybeSingle();
+      const { notifyWelcome } = await import("./notify.server");
+      await notifyWelcome({
+        userId: user.id,
+        email: data.email,
+        name: profile?.full_name ?? null,
+        mobile: profile?.phone ?? ch.phone ?? null,
+      });
+    } catch {
+      /* notifications are never fatal */
+    }
+
     return { ok: true, message: "Mobile verified — signing you in…" };
   });
 
