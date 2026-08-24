@@ -20,7 +20,7 @@ export function ProductGallery({
 }) {
   const slides = useMemo(() => images.filter((i) => !!i.image_url), [images]);
   const hasReal = slides.length > 0;
-  const count = hasReal ? slides.length : 4; // 4 fallback thumbs from generated tile
+  const count = hasReal ? slides.length : 5; // 5 fallback thumbs from generated tile
   const [idx, setIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
   const [lightbox, setLightbox] = useState(false);
@@ -104,8 +104,9 @@ export function ProductGallery({
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-        {(hasReal ? slides : Array.from({ length: 4 })).map((s, i) => (
+      <div className="grid grid-cols-5 gap-2">
+        {(hasReal ? slides : Array.from({ length: 5 })).map((s, i) => (
+
           <button
             key={hasReal ? (s as ProductImageRow).id : i}
             type="button"
