@@ -107,6 +107,30 @@ export const reviewPartnerApplication = createServerFn({ method: "POST" })
         .eq("id", before.user_id);
     }
 
+    // #7 Applicant notification on every status decision.
+    try {
+      const { notifyPartnerStatus } = await import("./notify.server");
+      const statusMap = {
+        under_review: "under_review",
+        approved: "approved",
+        rejected: "rejected",
+      } as const;
+      const mapped = statusMap[data.decision as keyof typeof statusMap];
+      if (mapped) {
+        await notifyPartnerStatus({
+          userId: before.user_id,
+          email: before.email,
+          name: before.full_name,
+          partnerType: before.partner_type,
+          status: mapped,
+          note: data.note ?? null,
+          mobile: before.mobile,
+        });
+      }
+    } catch {
+      /* notifications are never fatal */
+    }
+
     await writeAudit({
       actorUserId: actor.userId,
       actorEmail: actor.email,

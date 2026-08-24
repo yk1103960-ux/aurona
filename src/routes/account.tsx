@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { notifySecurityEvent } from "@/lib/notify.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -621,19 +623,28 @@ function ProfilePanel({ userId, email, data }: { userId: string; email: string; 
     setGstin(data?.gstin ?? "");
   }, [data]);
 
+  const notifySecurity = useServerFn(notifySecurityEvent);
+
   const save = useMutation({
     mutationFn: async () => {
       if (full.trim().length < 2) throw new Error("Please enter your full name");
+      const previousPhone = (data?.phone ?? "").trim();
+      const nextPhone = phone.trim();
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: full.trim(),
-          phone: phone.trim() || null,
+          phone: nextPhone || null,
           business_name: business.trim() || null,
           gstin: gstin.trim() || null,
         })
         .eq("id", userId);
       if (error) throw error;
+      if (nextPhone && nextPhone !== previousPhone) {
+        await notifySecurity({
+          data: { change: "mobile", device: navigator.userAgent.slice(0, 300) },
+        }).catch(() => null);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["profile"] });
@@ -679,6 +690,8 @@ function SecurityPanel({ onSignOut }: { onSignOut: () => void }) {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
+  const notifySecurity = useServerFn(notifySecurityEvent);
+
 
   const change = useMutation({
     mutationFn: async () => {
@@ -686,10 +699,11 @@ function SecurityPanel({ onSignOut }: { onSignOut: () => void }) {
       if (pw !== pw2) throw new Error("Passwords do not match");
       const { error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw error;
+      await notifySecurity({ data: { change: "password", device: navigator.userAgent.slice(0, 300) } }).catch(() => null);
     },
     onSuccess: () => {
       setPw(""); setPw2("");
-      toast.success("Password updated");
+      toast.success("Password updated — we've emailed you a security alert");
     },
     onError: (e: Error) => toast.error(e.message),
   });
