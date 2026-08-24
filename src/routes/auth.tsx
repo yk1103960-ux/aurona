@@ -294,7 +294,7 @@ function AuthPage() {
         const msg = /email not confirmed/i.test(error.message)
           ? "Please verify your email with the OTP we sent before signing in."
           : /invalid login/i.test(error.message)
-            ? `Incorrect email or password${left !== null ? ` — ${left} attempt${left === 1 ? "" : "s"} left before a temporary lock` : ""}.`
+            ? `Incorrect email or password${left !== null ? ` — ${left} attempt${left === 1 ? "" : "s"} left before a temporary lock` : ""} — check you picked the right account type.`
             : error.message;
         setErrors({ password: msg });
         toast.error(msg);
