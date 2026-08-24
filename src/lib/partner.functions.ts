@@ -76,21 +76,7 @@ export const submitPartnerApplication = createServerFn({ method: "POST" })
             html: renderApplicationEmail(data),
           }),
         }).catch(() => {});
-        // acknowledgement to applicant
-        await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${lovableKey}`,
-            "X-Connection-Api-Key": resendKey,
-          },
-          body: JSON.stringify({
-            from: "Aurona <onboarding@resend.dev>",
-            to: [data.email],
-            subject: "We received your application — Aurona",
-            html: `<p>Hi ${data.full_name},</p><p>Thanks for applying to the Aurona ${data.partner_type} program. Our team will review your application and reach out within 3 business days.</p><p>— Team Aurona</p>`,
-          }),
-        }).catch(() => {});
+        // Applicant acknowledgement is sent + logged by notifyPartnerStatus above.
       }
     } catch { /* email failures are non-fatal */ }
     return { id: row.id as string };
