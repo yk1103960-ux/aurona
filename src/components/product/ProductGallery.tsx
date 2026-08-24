@@ -20,7 +20,7 @@ export function ProductGallery({
 }) {
   const slides = useMemo(() => images.filter((i) => !!i.image_url), [images]);
   const hasReal = slides.length > 0;
-  const count = hasReal ? slides.length : 4; // 4 fallback thumbs from generated tile
+  const count = hasReal ? slides.length : 5; // 5 fallback thumbs from generated tile
   const [idx, setIdx] = useState(0);
   const [zoom, setZoom] = useState(false);
   const [lightbox, setLightbox] = useState(false);
