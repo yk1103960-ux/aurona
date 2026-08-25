@@ -71,6 +71,10 @@ function Home() {
       {/* ============ CATEGORY CIRCLES — premium round tiles ============ */}
       <CategoryCircles categories={cats} />
 
+      {/* ============ SALE OF THE DAY — rotates every IST midnight ============ */}
+      <SalesOfTheDay />
+
+
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
       <section className="relative overflow-hidden bg-surface py-16 lg:py-24">
         <div className="pointer-events-none absolute inset-0 editorial-grid opacity-30" aria-hidden />
