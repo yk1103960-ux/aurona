@@ -550,6 +550,8 @@ function CareerMenu() {
   const [open, setOpen] = useState(false);
   const { data: jobs = [] } = useQuery(careersQuery);
   const openings = jobs.filter((j) => j.kind === "job");
+  const referrals = jobs.filter((j) => j.kind !== "job");
+
 
   return (
     <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
