@@ -193,6 +193,10 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* ============ FAQs ============ */}
+      <FaqSection />
+
     </div>
   );
 }
