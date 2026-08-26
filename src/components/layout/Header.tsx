@@ -795,17 +795,18 @@ function MegaPanel({
                   </Link>
                   <ul className="mt-3 space-y-2">
                     {group.items.map((item) => (
-                      <li key={item}>
+                      <li key={item.slug}>
                         <Link
-                          to="/products"
-                          search={{ q: item, cat: group.slug } as never}
+                          to="/products/$slug"
+                          params={{ slug: item.slug }}
                           className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
+
                 </div>
               );
             })}
