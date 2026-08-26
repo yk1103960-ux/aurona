@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { siteSettingsQuery } from "@/lib/settings";
 import { submitSupportTicket } from "@/lib/support.functions";
 import { validateEmail } from "@/lib/email-validation";
+import { AURONA_FAQS as FAQS } from "@/components/marketing/FaqSection";
 
 export const Route = createFileRoute("/customer-service")({
   loader: ({ context }) => context.queryClient.ensureQueryData(siteSettingsQuery),
@@ -25,12 +26,6 @@ export const Route = createFileRoute("/customer-service")({
   component: CustomerService,
 });
 
-const FAQS = [
-  { q: "How long does shipping take?", a: "3–7 business days across India. Metro cities usually receive within 2–4 days." },
-  { q: "What is your return policy?", a: "7-day return on manufacturing defects. Products must be unused and in original packaging." },
-  { q: "How do I claim warranty?", a: "Raise a support ticket with your order ID, product photos, and issue description. Approved claims ship within 5 business days." },
-  { q: "Do you deliver PAN India?", a: "Yes, we ship to all serviceable pincodes in India via Shiprocket." },
-];
 
 const POLICIES = [
   { slug: "shipping", label: "Shipping Policy" },
