@@ -1,5 +1,6 @@
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { useState } from "react";
+import { validateEmail } from "@/lib/email-validation";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -51,6 +52,7 @@ export function Footer() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [invalid, setInvalid] = useState<string | null>(null);
 
 
   // Only official, configured profiles render — a "#" placeholder is never shown.

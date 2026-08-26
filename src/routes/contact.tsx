@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, MessageCircle, Clock, Facebook, Instagram, Youtube, Linkedin, Twitter } from "lucide-react";
 import { toast } from "sonner";
 import { siteSettingsQuery } from "@/lib/settings";
+import { validateEmail } from "@/lib/email-validation";
 
 const OFFICE_ADDRESS =
   "Aurona Lighting Industries, Behind Shyam Mandir, Talab Road, Ward No-6, Neem Ka Thana, Rajasthan, PIN-332706, India";
@@ -50,6 +51,12 @@ function Contact() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
+    const emailValue = String(new FormData(form).get("email") ?? "");
+    const check = validateEmail(emailValue);
+    if (!check.ok) {
+      toast.error(check.reason ?? "Enter a valid email address.");
+      return;
+    }
     setBusy(true);
     setTimeout(() => {
       setBusy(false);
@@ -99,7 +106,7 @@ function Contact() {
           <div className="grid gap-3 sm:grid-cols-2">
             <F l="Full name" />
             <F l="Phone" />
-            <F l="Email" type="email" full />
+            <F l="Email" name="email" type="email" full />
             <div className="sm:col-span-2">
               <Label className="text-xs">Category</Label>
               <select className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" required>
@@ -124,11 +131,11 @@ function Contact() {
   );
 }
 
-function F({ l, type = "text", full }: { l: string; type?: string; full?: boolean }) {
+function F({ l, name, type = "text", full }: { l: string; name?: string; type?: string; full?: boolean }) {
   return (
     <div className={full ? "sm:col-span-2" : ""}>
       <Label className="text-xs">{l}</Label>
-      <Input required type={type} className="mt-1 h-11" />
+      <Input required name={name} type={type} className="mt-1 h-11" />
     </div>
   );
 }

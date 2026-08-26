@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { siteSettingsQuery } from "@/lib/settings";
 import { submitSupportTicket } from "@/lib/support.functions";
+import { validateEmail } from "@/lib/email-validation";
 
 export const Route = createFileRoute("/customer-service")({
   loader: ({ context }) => context.queryClient.ensureQueryData(siteSettingsQuery),
@@ -49,6 +50,11 @@ function CustomerService() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const check = validateEmail(String(fd.get("email") ?? ""));
+    if (!check.ok) {
+      toast.error(check.reason ?? "Enter a valid email address.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await submit({
