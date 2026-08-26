@@ -39,54 +39,213 @@ import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 
-// Mega menu — matches client reference (6 columns, family names under each heading)
-type MegaGroup = { heading: string; slug: string; items: string[] };
+// Mega menu — every item links to the real product family page (verified slugs).
+type MegaItem = { label: string; slug: string };
+type MegaGroup = { heading: string; slug: string; items: MegaItem[] };
 const LED_COLUMNS: MegaGroup[][] = [
   [
-    { heading: "LED Bulbs", slug: "led-bulbs", items: ["Power+ Night Bulb", "High Glow", "Hammer", "Inverter Bulbs"] },
+    {
+      heading: "LED Bulbs",
+      slug: "led-bulbs",
+      items: [
+        { label: "Night Bulbs", slug: "night-bulbs-b-nb" },
+        { label: "High Glow", slug: "high-glow-b-hg" },
+        { label: "Rechargeable Bulbs", slug: "inverter-bulbs-b-rb" },
+      ],
+    },
+    {
+      heading: "Tubelight",
+      slug: "tube-lights",
+      items: [{ label: "Batten", slug: "batten-tl-ba" }],
+    },
   ],
   [
-    { heading: "Street Lights", slug: "street-lights", items: ["Lens", "Glass", "Slim Lens"] },
-    { heading: "Panel Lights", slug: "panel-lights", items: ["Slim Panel", "Backlit Panel", "Adjustable Panel"] },
+    {
+      heading: "Street Lights",
+      slug: "street-lights",
+      items: [
+        { label: "Lens", slug: "lens-sl-le" },
+        { label: "Glass", slug: "glass-sl-gl" },
+        { label: "Slim Lens", slug: "slim-lens-sl-sl" },
+      ],
+    },
+    {
+      heading: "Panel Lights",
+      slug: "panel-lights",
+      items: [
+        { label: "Backlit Surface", slug: "backlit-surface-sp-bls" },
+        { label: "Moon Surface", slug: "moon-surface-sp-ms" },
+        { label: "Rimless Surface", slug: "rimless-surface-sp-rls" },
+      ],
+    },
   ],
   [
-    { heading: "Interior Lights", slug: "interior-lights", items: ["Delta COB", "Surface COB Cylinder", "Half Moon", "Mr. Four", "Mr. Four Small", "Mr. One", "Mr. Two", "Track Light"] },
+    {
+      heading: "Interior Lights",
+      slug: "interior-lights",
+      items: [
+        { label: "Delta COB", slug: "delta-cob-il-cob" },
+        { label: "Surface COB Cylinder", slug: "cylinder-il-cyl" },
+        { label: "Half Moon", slug: "half-moon-il-hm" },
+        { label: "Mr. Four", slug: "mr-four-il-mf" },
+        { label: "Mr. Four Small", slug: "mr-four-small-il-mfs" },
+        { label: "Mr. One", slug: "mr-one-il-mo" },
+        { label: "Mr. Two", slug: "mr-two-il-mt" },
+        { label: "Track Light: COB", slug: "track-light-cob-il-tra-cob" },
+        { label: "Track Light: Glass", slug: "track-light-glass-il-tra-gla" },
+        { label: "Track Light: Lens", slug: "track-light-lens-il-tra-len" },
+      ],
+    },
   ],
   [
-    { heading: "Deep Light", slug: "deep-lights", items: ["Mini Junction", "Royal", "Hexa"] },
-    { heading: "Flood Light", slug: "flood-lights", items: ["Nova", "AuraLUX"] },
+    {
+      heading: "Deep Light",
+      slug: "deep-lights",
+      items: [
+        { label: "Mini Junction", slug: "mini-junction-dl-mj" },
+        { label: "Royal", slug: "royal-dl-ro" },
+        { label: "Hexa", slug: "hexa-dl-he" },
+      ],
+    },
+    {
+      heading: "Flood Light",
+      slug: "flood-lights",
+      items: [
+        { label: "Nova", slug: "nova-fl-no" },
+        { label: "AuraLUX", slug: "auralux-fl-al" },
+      ],
+    },
+    {
+      heading: "Outdoor Light",
+      slug: "outdoor-lights",
+      items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
+    },
   ],
   [
-    { heading: "Decorative", slug: "decorative-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
-    { heading: "Tubelight", slug: "tube-lights", items: ["Batten"] },
-    { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden", "Concealed", "Razer", "Zio", "Cob", "Joy", "Nexa", "Zelly", "Zade", "Happy", "Aura"] },
+    {
+      heading: "Concealed Lights",
+      slug: "concealed-lights",
+      items: [
+        { label: "Razer", slug: "razer-cl-ra" },
+        { label: "Zio", slug: "zio-cl-zi" },
+        { label: "COB", slug: "cob-cl-co" },
+        { label: "Joy", slug: "joy-cl-jo" },
+        { label: "Nexa", slug: "nexa-cl-ne" },
+        { label: "Zelly", slug: "zelly-cl-ze" },
+        { label: "Zade", slug: "zade-cl-za" },
+        { label: "Happy", slug: "happy-cl-ha" },
+        { label: "Aura", slug: "aura-cl-au" },
+      ],
+    },
   ],
   [
-    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
+    {
+      heading: "Madhani",
+      slug: "madhani",
+      items: [
+        { label: "Mini", slug: "mini-ma-al-06" },
+        { label: "Mini DLX", slug: "mini-dlx-ma-co-06" },
+        { label: "Virat", slug: "virat-ma-al-01" },
+        { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
+      ],
+    },
   ],
 ];
 
 // Home Appliances mega menu — matches client reference (image 2)
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
-    { heading: "Pedestal Fan", slug: "pedestal-fans", items: ["Breeze Master", "Ventura Spin", "Cool Crest", "Aero pulse", "Whirlflow", "Airglide"] },
-    { heading: "Immersion Water Heater", slug: "immersion-heaters", items: ["Ecotherm"] },
+    {
+      heading: "Pedestal Fan",
+      slug: "pedestal-fans",
+      items: [
+        { label: "Breeze Master", slug: "breeze-master-pf-bm" },
+        { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
+        { label: "Cool Crest", slug: "cool-crest-pf-cc" },
+        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
+        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
+        { label: "Air Glide", slug: "air-glide-pf-ag" },
+      ],
+    },
+    {
+      heading: "Immersion Water Heater",
+      slug: "immersion-heaters",
+      items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
+    },
   ],
   [
-    { heading: "Ceiling Fans", slug: "ceiling-fans", items: ["Optimus", "Optimus Deco", "Orion", "Primus", "Spinger", "Sonata", "Windsor"] },
+    {
+      heading: "Ceiling Fans",
+      slug: "ceiling-fans",
+      items: [
+        { label: "Optimus", slug: "optimus-cf-opt" },
+        { label: "Optimus Deco", slug: "optimus-deco-cf-optdec" },
+        { label: "Orion", slug: "orion-cf-ori" },
+        { label: "Primus", slug: "primus-cf-pri" },
+        { label: "Springer", slug: "springer-cf-spr" },
+        { label: "Sonata", slug: "sonata-cf-son" },
+        { label: "Windsor", slug: "windsor-cf-win" },
+      ],
+    },
   ],
   [
-    { heading: "Water Geysers", slug: "water-geysers", items: ["InstaHeat Plus", "Magma", "Heathub", "WarmNest", "ThermoFLEX"] },
-    { heading: "Exhaust Fans", slug: "exhaust-fans", items: ["Vento", "Vento Plus"] },
+    {
+      heading: "Water Geysers",
+      slug: "water-geysers",
+      items: [
+        { label: "InstaHeat Plus", slug: "instaheat-plus-wg-ihp" },
+        { label: "Magma", slug: "magma-wg-mag" },
+        { label: "Heathub", slug: "heathub-wg-hh" },
+        { label: "WarmNest", slug: "warmnest-wg-wn" },
+      ],
+    },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
   ],
   [
-    { heading: "Room Heater", slug: "heaters", items: ["Sun Heater", "Tower", "Warmwhiz", "Radio", "Omega", "Maximus"] },
+    {
+      heading: "Room Heater",
+      slug: "room-heaters",
+      items: [
+        { label: "Sun Heater", slug: "sun-heater-rh-sun" },
+        { label: "Tower", slug: "tower-rh-tow-20" },
+        { label: "Warmwhiz", slug: "warmwhiz-rh-war" },
+        { label: "Radio", slug: "radio-rh-rad-20" },
+        { label: "Omega", slug: "omega-rh-om-80" },
+        { label: "Maximus", slug: "maximus-rh-max-120" },
+      ],
+    },
   ],
   [
-    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
-    { heading: "Table Fans", slug: "table-fans", items: ["Classic", "Magnus", "Rider", "AP Fan"] },
+    {
+      heading: "Madhani",
+      slug: "madhani",
+      items: [
+        { label: "Mini", slug: "mini-ma-al-06" },
+        { label: "Mini DLX", slug: "mini-dlx-ma-co-06" },
+        { label: "Virat", slug: "virat-ma-al-01" },
+        { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
+      ],
+    },
+    {
+      heading: "Table Fans",
+      slug: "table-fans",
+      items: [
+        { label: "Classic", slug: "classic-tf-cl" },
+        { label: "Magnus", slug: "magnus-tf-ma" },
+        { label: "Rider", slug: "rider-tf-ri" },
+        { label: "AP Fan", slug: "ap-fan-tf-ap" },
+      ],
+    },
   ],
 ];
+
 
 export function Header() {
   const navigate = useNavigate();
