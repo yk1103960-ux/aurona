@@ -765,7 +765,7 @@ function MegaPanel({
   onLeave,
 }: {
   open: boolean;
-  columns: { heading: string; slug: string; items: string[] }[][];
+  columns: MegaGroup[][];
   gridCols?: 5 | 6;
   onEnter: () => void;
   onLeave: () => void;
