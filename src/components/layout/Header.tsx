@@ -984,15 +984,15 @@ function BrowsePanel({
             <>
               <div className="flex items-center justify-between border-b border-border bg-surface/60 px-5 py-2">
                 <Link
-                  to="/products"
-                  search={{ cat: activeCat.slug } as never}
+                  to="/category/$slug"
+                  params={{ slug: activeCat.slug }}
                   className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
                 >
                   {activeCat.name}
                 </Link>
                 <Link
-                  to="/products"
-                  search={{ cat: activeCat.slug } as never}
+                  to="/category/$slug"
+                  params={{ slug: activeCat.slug }}
                   className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
                 >
                   View all results →
@@ -1082,8 +1082,8 @@ function BrowsePanel({
                 </Link>
                 {activeCat && (
                   <Link
-                    to="/products"
-                    search={{ cat: activeCat.slug } as never}
+                    to="/category/$slug"
+                    params={{ slug: activeCat.slug }}
                     className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
                   >
                     View all {activeCat.name} →

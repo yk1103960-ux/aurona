@@ -41,7 +41,7 @@ const COL_3: [string, string][] = [
   ["Ceiling Fans", "ceiling-fans"],
   ["Pedestal Fans", "pedestal-fans"],
   ["Table Fans", "table-fans"],
-  ["Room Heaters", "heaters"],
+  ["Room Heaters", "room-heaters"],
   ["Water Geysers", "water-geysers"],
   ["Exhaust Fans", "exhaust-fans"],
 ];
