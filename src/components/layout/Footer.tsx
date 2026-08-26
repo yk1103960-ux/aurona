@@ -1,5 +1,6 @@
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { useState } from "react";
+import { validateEmail } from "@/lib/email-validation";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -51,6 +52,7 @@ export function Footer() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [invalid, setInvalid] = useState<string | null>(null);
 
 
   // Only official, configured profiles render — a "#" placeholder is never shown.
@@ -126,6 +128,9 @@ export function Footer() {
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!email.trim() || busy) return;
+                const check = validateEmail(email.trim());
+                if (!check.ok) { setInvalid(check.reason ?? "Enter a valid email address."); return; }
+                setInvalid(null);
                 setBusy(true);
                 try {
                   await subscribe({ data: { email: email.trim(), source: "footer" } });
@@ -146,7 +151,7 @@ export function Footer() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setSubscribed(false); }}
+                  onChange={(e) => { setEmail(e.target.value); setSubscribed(false); setInvalid(null); }}
                   placeholder="Your email address"
                   className="h-11 min-w-0 flex-1 rounded-full border border-primary/15 bg-white px-4 text-[13px] text-foreground outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-primary/20"
                 />
@@ -158,6 +163,7 @@ export function Footer() {
                   {subscribed ? <Check className="h-4 w-4" /> : <>Subscribe <ArrowRight className="h-3.5 w-3.5" /></>}
                 </button>
               </div>
+              {invalid && <p className="mt-2 text-[12px] text-destructive">{invalid}</p>}
               {subscribed && <p className="mt-2 text-[12px] text-emerald-600">Thanks — you’re on the list.</p>}
             </form>
 

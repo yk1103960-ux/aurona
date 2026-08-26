@@ -1,3 +1,4 @@
+import { isValidEmail } from "./email-validation";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -129,7 +130,7 @@ export const subscribeNewsletter = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
-        email: z.string().trim().email().max(255),
+        email: z.string().trim().max(255).refine((v) => isValidEmail(v), "Enter a valid email address"),
         source: z.string().trim().max(40).default("footer"),
       })
       .parse(input),

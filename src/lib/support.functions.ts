@@ -1,9 +1,10 @@
+import { isValidEmail } from "./email-validation";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const TicketInput = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z.string().trim().email().max(200),
+  email: z.string().trim().max(200).refine((v) => isValidEmail(v), "Enter a valid email address"),
   phone: z.string().trim().max(20).optional().nullable(),
   subject: z.string().trim().min(3).max(160),
   category: z.string().trim().max(60).optional().nullable(),

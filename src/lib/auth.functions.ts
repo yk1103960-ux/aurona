@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assessPassword, looksFakeEmail, normalisePhone, EMAIL_RE } from "./auth-security";
+import { assessPassword, normalisePhone, EMAIL_RE } from "./auth-security";
+import { validateEmail } from "./email-validation";
 import { roleEmail } from "./role-identity";
 
 const registrationInput = z.object({
@@ -86,13 +87,11 @@ export const validateRegistration = createServerFn({ method: "POST" })
     }
 
     const email = data.email;
-    if (!EMAIL_RE.test(email)) {
-      issues.push({ field: "email", message: "Enter a valid email address." });
+    const emailCheck = validateEmail(email);
+    if (!EMAIL_RE.test(email) || !emailCheck.ok) {
+      issues.push({ field: "email", message: emailCheck.reason ?? "Enter a valid email address." });
     } else {
-      const fake = looksFakeEmail(email);
-      if (fake.fake) {
-        issues.push({ field: "email", message: "Please use a valid personal/business email address." });
-      } else {
+      {
         const domain = email.split("@")[1]!;
         if (!(await hasMxRecord(domain))) {
           issues.push({ field: "email", message: `“${domain}” cannot receive email. Please use a valid personal/business email address.` });

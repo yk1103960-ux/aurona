@@ -1,3 +1,4 @@
+import { isValidEmail } from "./email-validation";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -12,7 +13,7 @@ const PartnerInput = z.object({
   business_name: z.string().trim().max(160).optional().nullable(),
   owner_name: z.string().trim().max(160).optional().nullable(),
   mobile: z.string().trim().regex(/^[+\d\s\-()]{7,20}$/,"Invalid mobile"),
-  email: z.string().trim().email().max(200),
+  email: z.string().trim().max(200).refine((v) => isValidEmail(v), "Enter a valid email address"),
   gstin: z.string().trim().max(20).optional().nullable(),
   pan: z.string().trim().max(20).optional().nullable(),
   cin: z.string().trim().max(30).optional().nullable(),

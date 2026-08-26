@@ -20,7 +20,9 @@ const BROWSE_ICONS: Record<string, LucideIcon> = {
   "ceiling-fans": Fan,
   "water-geysers": Bath,
   "exhaust-fans": Wind,
+  "room-heaters": Flame,
   heaters: Flame,
+  "decorative-lights": Sparkles,
   madhani: LampFloor,
   "table-fans": Fan,
 };
@@ -39,54 +41,213 @@ import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 
-// Mega menu — matches client reference (6 columns, family names under each heading)
-type MegaGroup = { heading: string; slug: string; items: string[] };
+// Mega menu — every item links to the real product family page (verified slugs).
+type MegaItem = { label: string; slug: string };
+type MegaGroup = { heading: string; slug: string; items: MegaItem[] };
 const LED_COLUMNS: MegaGroup[][] = [
   [
-    { heading: "LED Bulbs", slug: "led-bulbs", items: ["Power+ Night Bulb", "High Glow", "Hammer", "Inverter Bulbs"] },
+    {
+      heading: "LED Bulbs",
+      slug: "led-bulbs",
+      items: [
+        { label: "Night Bulbs", slug: "night-bulbs-b-nb" },
+        { label: "High Glow", slug: "high-glow-b-hg" },
+        { label: "Rechargeable Bulbs", slug: "inverter-bulbs-b-rb" },
+      ],
+    },
+    {
+      heading: "Tubelight",
+      slug: "tube-lights",
+      items: [{ label: "Batten", slug: "batten-tl-ba" }],
+    },
   ],
   [
-    { heading: "Street Lights", slug: "street-lights", items: ["Lens", "Glass", "Slim Lens"] },
-    { heading: "Panel Lights", slug: "panel-lights", items: ["Slim Panel", "Backlit Panel", "Adjustable Panel"] },
+    {
+      heading: "Street Lights",
+      slug: "street-lights",
+      items: [
+        { label: "Lens", slug: "lens-sl-le" },
+        { label: "Glass", slug: "glass-sl-gl" },
+        { label: "Slim Lens", slug: "slim-lens-sl-sl" },
+      ],
+    },
+    {
+      heading: "Panel Lights",
+      slug: "panel-lights",
+      items: [
+        { label: "Backlit Surface", slug: "backlit-surface-sp-bls" },
+        { label: "Moon Surface", slug: "moon-surface-sp-ms" },
+        { label: "Rimless Surface", slug: "rimless-surface-sp-rls" },
+      ],
+    },
   ],
   [
-    { heading: "Interior Lights", slug: "interior-lights", items: ["Delta COB", "Surface COB Cylinder", "Half Moon", "Mr. Four", "Mr. Four Small", "Mr. One", "Mr. Two", "Track Light"] },
+    {
+      heading: "Interior Lights",
+      slug: "interior-lights",
+      items: [
+        { label: "Delta COB", slug: "delta-cob-il-cob" },
+        { label: "Surface COB Cylinder", slug: "cylinder-il-cyl" },
+        { label: "Half Moon", slug: "half-moon-il-hm" },
+        { label: "Mr. Four", slug: "mr-four-il-mf" },
+        { label: "Mr. Four Small", slug: "mr-four-small-il-mfs" },
+        { label: "Mr. One", slug: "mr-one-il-mo" },
+        { label: "Mr. Two", slug: "mr-two-il-mt" },
+        { label: "Track Light: COB", slug: "track-light-cob-il-tra-cob" },
+        { label: "Track Light: Glass", slug: "track-light-glass-il-tra-gla" },
+        { label: "Track Light: Lens", slug: "track-light-lens-il-tra-len" },
+      ],
+    },
   ],
   [
-    { heading: "Deep Light", slug: "deep-lights", items: ["Mini Junction", "Royal", "Hexa"] },
-    { heading: "Flood Light", slug: "flood-lights", items: ["Nova", "AuraLUX"] },
+    {
+      heading: "Deep Light",
+      slug: "deep-lights",
+      items: [
+        { label: "Mini Junction", slug: "mini-junction-dl-mj" },
+        { label: "Royal", slug: "royal-dl-ro" },
+        { label: "Hexa", slug: "hexa-dl-he" },
+      ],
+    },
+    {
+      heading: "Flood Light",
+      slug: "flood-lights",
+      items: [
+        { label: "Nova", slug: "nova-fl-no" },
+        { label: "AuraLUX", slug: "auralux-fl-al" },
+      ],
+    },
+    {
+      heading: "Outdoor Light",
+      slug: "outdoor-lights",
+      items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
+    },
   ],
   [
-    { heading: "Decorative", slug: "decorative-lights", items: ["Rope Way", "Strips", "Bluetooth High Bass"] },
-    { heading: "Tubelight", slug: "tube-lights", items: ["Batten"] },
-    { heading: "Outdoor Light", slug: "outdoor-lights", items: ["Gorden", "Concealed", "Razer", "Zio", "Cob", "Joy", "Nexa", "Zelly", "Zade", "Happy", "Aura"] },
+    {
+      heading: "Concealed Lights",
+      slug: "concealed-lights",
+      items: [
+        { label: "Razer", slug: "razer-cl-ra" },
+        { label: "Zio", slug: "zio-cl-zi" },
+        { label: "COB", slug: "cob-cl-co" },
+        { label: "Joy", slug: "joy-cl-jo" },
+        { label: "Nexa", slug: "nexa-cl-ne" },
+        { label: "Zelly", slug: "zelly-cl-ze" },
+        { label: "Zade", slug: "zade-cl-za" },
+        { label: "Happy", slug: "happy-cl-ha" },
+        { label: "Aura", slug: "aura-cl-au" },
+      ],
+    },
   ],
   [
-    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
+    {
+      heading: "Madhani",
+      slug: "madhani",
+      items: [
+        { label: "Mini", slug: "mini-ma-al-06" },
+        { label: "Mini DLX", slug: "mini-dlx-ma-co-06" },
+        { label: "Virat", slug: "virat-ma-al-01" },
+        { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
+      ],
+    },
   ],
 ];
 
 // Home Appliances mega menu — matches client reference (image 2)
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
-    { heading: "Pedestal Fan", slug: "pedestal-fans", items: ["Breeze Master", "Ventura Spin", "Cool Crest", "Aero pulse", "Whirlflow", "Airglide"] },
-    { heading: "Immersion Water Heater", slug: "immersion-heaters", items: ["Ecotherm"] },
+    {
+      heading: "Pedestal Fan",
+      slug: "pedestal-fans",
+      items: [
+        { label: "Breeze Master", slug: "breeze-master-pf-bm" },
+        { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
+        { label: "Cool Crest", slug: "cool-crest-pf-cc" },
+        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
+        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
+        { label: "Air Glide", slug: "air-glide-pf-ag" },
+      ],
+    },
+    {
+      heading: "Immersion Water Heater",
+      slug: "immersion-heaters",
+      items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
+    },
   ],
   [
-    { heading: "Ceiling Fans", slug: "ceiling-fans", items: ["Optimus", "Optimus Deco", "Orion", "Primus", "Spinger", "Sonata", "Windsor"] },
+    {
+      heading: "Ceiling Fans",
+      slug: "ceiling-fans",
+      items: [
+        { label: "Optimus", slug: "optimus-cf-opt" },
+        { label: "Optimus Deco", slug: "optimus-deco-cf-optdec" },
+        { label: "Orion", slug: "orion-cf-ori" },
+        { label: "Primus", slug: "primus-cf-pri" },
+        { label: "Springer", slug: "springer-cf-spr" },
+        { label: "Sonata", slug: "sonata-cf-son" },
+        { label: "Windsor", slug: "windsor-cf-win" },
+      ],
+    },
   ],
   [
-    { heading: "Water Geysers", slug: "water-geysers", items: ["InstaHeat Plus", "Magma", "Heathub", "WarmNest", "ThermoFLEX"] },
-    { heading: "Exhaust Fans", slug: "exhaust-fans", items: ["Vento", "Vento Plus"] },
+    {
+      heading: "Water Geysers",
+      slug: "water-geysers",
+      items: [
+        { label: "InstaHeat Plus", slug: "instaheat-plus-wg-ihp" },
+        { label: "Magma", slug: "magma-wg-mag" },
+        { label: "Heathub", slug: "heathub-wg-hh" },
+        { label: "WarmNest", slug: "warmnest-wg-wn" },
+      ],
+    },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
   ],
   [
-    { heading: "Room Heater", slug: "heaters", items: ["Sun Heater", "Tower", "Warmwhiz", "Radio", "Omega", "Maximus"] },
+    {
+      heading: "Room Heater",
+      slug: "room-heaters",
+      items: [
+        { label: "Sun Heater", slug: "sun-heater-rh-sun" },
+        { label: "Tower", slug: "tower-rh-tow-20" },
+        { label: "Warmwhiz", slug: "warmwhiz-rh-war" },
+        { label: "Radio", slug: "radio-rh-rad-20" },
+        { label: "Omega", slug: "omega-rh-om-80" },
+        { label: "Maximus", slug: "maximus-rh-max-120" },
+      ],
+    },
   ],
   [
-    { heading: "Madhani", slug: "madhani", items: ["Mini", "Mini DLX", "Virat", "Virat DLX"] },
-    { heading: "Table Fans", slug: "table-fans", items: ["Classic", "Magnus", "Rider", "AP Fan"] },
+    {
+      heading: "Madhani",
+      slug: "madhani",
+      items: [
+        { label: "Mini", slug: "mini-ma-al-06" },
+        { label: "Mini DLX", slug: "mini-dlx-ma-co-06" },
+        { label: "Virat", slug: "virat-ma-al-01" },
+        { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
+      ],
+    },
+    {
+      heading: "Table Fans",
+      slug: "table-fans",
+      items: [
+        { label: "Classic", slug: "classic-tf-cl" },
+        { label: "Magnus", slug: "magnus-tf-ma" },
+        { label: "Rider", slug: "rider-tf-ri" },
+        { label: "AP Fan", slug: "ap-fan-tf-ap" },
+      ],
+    },
   ],
 ];
+
 
 export function Header() {
   const navigate = useNavigate();
@@ -389,6 +550,8 @@ function CareerMenu() {
   const [open, setOpen] = useState(false);
   const { data: jobs = [] } = useQuery(careersQuery);
   const openings = jobs.filter((j) => j.kind === "job");
+  const referrals = jobs.filter((j) => j.kind !== "job");
+
 
   return (
     <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
@@ -406,53 +569,83 @@ function CareerMenu() {
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} strokeWidth={2.5} />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 w-72 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-lift">
+        <div className="absolute left-0 top-full z-50 w-80 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-lift">
+          <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            Open positions
+          </div>
           {openings.length === 0 ? (
-            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-surface">
-              View careers & referral programs
+            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-surface">
+              No openings right now — view programs
             </Link>
           ) : (
+            openings.map((j) => (
+              <Link
+                key={j.id}
+                to="/careers"
+                hash={jobAnchor(j.id)}
+                onClick={() => setOpen(false)}
+                className="block rounded-lg px-3 py-2 hover:bg-surface"
+              >
+                <span className="block text-sm font-semibold text-foreground">{j.title}</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  {[j.department, j.location, j.employment_type].filter(Boolean).join(" · ")}
+                </span>
+              </Link>
+            ))
+          )}
+
+          {referrals.length > 0 && (
             <>
-              {openings.map((j) => (
+              <div className="mt-1 border-t border-border px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                Referral programs
+              </div>
+              {referrals.map((r) => (
                 <Link
-                  key={j.id}
+                  key={r.id}
                   to="/careers"
-                  hash={jobAnchor(j.id)}
+                  hash={jobAnchor(r.id)}
                   onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2 hover:bg-surface"
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold text-foreground hover:bg-surface"
                 >
-                  <span className="block text-sm font-semibold text-foreground">{j.title}</span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    {[j.department, j.location, j.employment_type].filter(Boolean).join(" · ")}
-                  </span>
+                  {r.title}
                 </Link>
               ))}
-              <Link
-                to="/careers"
-                onClick={() => setOpen(false)}
-                className="mt-1 block border-t border-border px-3 py-2 text-[12px] font-semibold text-primary"
-              >
-                View all openings & referral programs
-              </Link>
             </>
           )}
+
+          <div className="mt-1 border-t border-border">
+            <Link
+              to="/careers"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-[12px] font-semibold text-primary hover:bg-surface"
+            >
+              All careers & referral programs
+            </Link>
+            <Link
+              to="/partner/$type"
+              params={{ type: "career" }}
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-[12px] font-semibold text-primary hover:bg-surface"
+            >
+              Apply / submit your profile
+            </Link>
+          </div>
         </div>
       )}
+
     </div>
   );
 }
 
 function MobileCareers({ onClose }: { onClose: () => void }) {
   const { data: jobs = [] } = useQuery(careersQuery);
-  const openings = jobs.filter((j) => j.kind === "job");
-  if (openings.length === 0) return <MobileLink to="/careers" onClose={onClose}>Career With Us</MobileLink>;
   return (
     <details className="border-t border-border">
       <summary className="flex cursor-pointer items-center justify-between px-3 py-3 text-sm font-semibold">
         Career With Us <ChevronDown className="h-4 w-4" />
       </summary>
       <div className="pb-2">
-        {openings.map((j) => (
+        {jobs.map((j) => (
           <Link
             key={j.id}
             to="/careers"
@@ -464,11 +657,20 @@ function MobileCareers({ onClose }: { onClose: () => void }) {
           </Link>
         ))}
         <Link to="/careers" onClick={onClose} className="block px-6 py-2 text-sm font-semibold text-primary">
-          All openings
+          All careers &amp; referral programs
+        </Link>
+        <Link
+          to="/partner/$type"
+          params={{ type: "career" }}
+          onClick={onClose}
+          className="block px-6 py-2 text-sm font-semibold text-primary"
+        >
+          Apply / submit your profile
         </Link>
       </div>
     </details>
   );
+
 }
 
 function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
@@ -606,7 +808,7 @@ function MegaPanel({
   onLeave,
 }: {
   open: boolean;
-  columns: { heading: string; slug: string; items: string[] }[][];
+  columns: MegaGroup[][];
   gridCols?: 5 | 6;
   onEnter: () => void;
   onLeave: () => void;
@@ -636,17 +838,18 @@ function MegaPanel({
                   </Link>
                   <ul className="mt-3 space-y-2">
                     {group.items.map((item) => (
-                      <li key={item}>
+                      <li key={item.slug}>
                         <Link
-                          to="/products"
-                          search={{ q: item, cat: group.slug } as never}
+                          to="/products/$slug"
+                          params={{ slug: item.slug }}
                           className="group/mi block text-[13.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item}</span>
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
+
                 </div>
               );
             })}
