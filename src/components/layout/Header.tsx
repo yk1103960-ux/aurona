@@ -20,7 +20,9 @@ const BROWSE_ICONS: Record<string, LucideIcon> = {
   "ceiling-fans": Fan,
   "water-geysers": Bath,
   "exhaust-fans": Wind,
+  "room-heaters": Flame,
   heaters: Flame,
+  "decorative-lights": Sparkles,
   madhani: LampFloor,
   "table-fans": Fan,
 };
