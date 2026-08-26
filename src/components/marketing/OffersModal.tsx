@@ -103,10 +103,10 @@ export function OffersModal() {
         className="offer-backdrop-enter absolute inset-0 h-full w-full cursor-default bg-[oklch(0.24_0.05_245/60%)] backdrop-blur-md"
       />
       <div
-        className="offer-enter relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-border-strong bg-card shadow-sky"
+        className="offer-enter relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-border-strong bg-card shadow-sky"
       >
         {/* Sky gradient header band */}
-        <div className="relative product-gradient-hero px-8 pt-10 pb-8 text-center">
+        <div className="relative product-gradient-hero px-6 pt-9 pb-7 sm:px-8 text-center">
           <div className="pointer-events-none absolute inset-0 light-halo opacity-80" />
           <button
             onClick={close}
@@ -136,7 +136,7 @@ export function OffersModal() {
         </div>
 
         {/* Code + CTA */}
-        <div className="space-y-5 px-8 pt-6 pb-8">
+        <div className="space-y-5 px-6 pt-6 pb-7 sm:px-8">
           <button
             onClick={copyCode}
             className="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-dashed border-primary/50 bg-surface px-5 py-4 text-left transition hover:border-primary hover:bg-white"
