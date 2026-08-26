@@ -639,15 +639,13 @@ function CareerMenu() {
 
 function MobileCareers({ onClose }: { onClose: () => void }) {
   const { data: jobs = [] } = useQuery(careersQuery);
-  const openings = jobs.filter((j) => j.kind === "job");
-  if (openings.length === 0) return <MobileLink to="/careers" onClose={onClose}>Career With Us</MobileLink>;
   return (
     <details className="border-t border-border">
       <summary className="flex cursor-pointer items-center justify-between px-3 py-3 text-sm font-semibold">
         Career With Us <ChevronDown className="h-4 w-4" />
       </summary>
       <div className="pb-2">
-        {openings.map((j) => (
+        {jobs.map((j) => (
           <Link
             key={j.id}
             to="/careers"
@@ -659,11 +657,20 @@ function MobileCareers({ onClose }: { onClose: () => void }) {
           </Link>
         ))}
         <Link to="/careers" onClick={onClose} className="block px-6 py-2 text-sm font-semibold text-primary">
-          All openings
+          All careers &amp; referral programs
+        </Link>
+        <Link
+          to="/partner/$type"
+          params={{ type: "career" }}
+          onClick={onClose}
+          className="block px-6 py-2 text-sm font-semibold text-primary"
+        >
+          Apply / submit your profile
         </Link>
       </div>
     </details>
   );
+
 }
 
 function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
