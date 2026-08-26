@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { validateEmail } from "@/lib/email-validation";
 import { useAuth } from "@/hooks/useAuth";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -171,6 +172,11 @@ function ApplyForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const emailCheck = validateEmail(f.email);
+    if (!emailCheck.ok) {
+      toast.error(emailCheck.reason ?? "Enter a valid email address.");
+      return;
+    }
     setBusy(true);
     try {
       const res = await applyFn({ data: { ...f, payout_method: method } });
