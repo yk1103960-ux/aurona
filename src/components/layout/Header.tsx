@@ -567,38 +567,70 @@ function CareerMenu() {
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} strokeWidth={2.5} />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 w-72 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-lift">
+        <div className="absolute left-0 top-full z-50 w-80 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-lift">
+          <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            Open positions
+          </div>
           {openings.length === 0 ? (
-            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-surface">
-              View careers & referral programs
+            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-surface">
+              No openings right now — view programs
             </Link>
           ) : (
+            openings.map((j) => (
+              <Link
+                key={j.id}
+                to="/careers"
+                hash={jobAnchor(j.id)}
+                onClick={() => setOpen(false)}
+                className="block rounded-lg px-3 py-2 hover:bg-surface"
+              >
+                <span className="block text-sm font-semibold text-foreground">{j.title}</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  {[j.department, j.location, j.employment_type].filter(Boolean).join(" · ")}
+                </span>
+              </Link>
+            ))
+          )}
+
+          {referrals.length > 0 && (
             <>
-              {openings.map((j) => (
+              <div className="mt-1 border-t border-border px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                Referral programs
+              </div>
+              {referrals.map((r) => (
                 <Link
-                  key={j.id}
+                  key={r.id}
                   to="/careers"
-                  hash={jobAnchor(j.id)}
+                  hash={jobAnchor(r.id)}
                   onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2 hover:bg-surface"
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold text-foreground hover:bg-surface"
                 >
-                  <span className="block text-sm font-semibold text-foreground">{j.title}</span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    {[j.department, j.location, j.employment_type].filter(Boolean).join(" · ")}
-                  </span>
+                  {r.title}
                 </Link>
               ))}
-              <Link
-                to="/careers"
-                onClick={() => setOpen(false)}
-                className="mt-1 block border-t border-border px-3 py-2 text-[12px] font-semibold text-primary"
-              >
-                View all openings & referral programs
-              </Link>
             </>
           )}
+
+          <div className="mt-1 border-t border-border">
+            <Link
+              to="/careers"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-[12px] font-semibold text-primary hover:bg-surface"
+            >
+              All careers & referral programs
+            </Link>
+            <Link
+              to="/partner/$type"
+              params={{ type: "career" }}
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-[12px] font-semibold text-primary hover:bg-surface"
+            >
+              Apply / submit your profile
+            </Link>
+          </div>
         </div>
       )}
+
     </div>
   );
 }
