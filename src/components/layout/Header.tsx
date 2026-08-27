@@ -150,7 +150,7 @@ const LED_COLUMNS: MegaGroup[][] = [
 
 ];
 
-// Home Appliances mega menu — matches client reference (image 2)
+// Home Appliances mega menu — all fan families are grouped in adjacent columns.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
     {
@@ -164,11 +164,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
         { label: "Air Glide", slug: "air-glide-pf-ag" },
       ],
-    },
-    {
-      heading: "Immersion Water Heater",
-      slug: "immersion-heaters",
-      items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
     },
   ],
   [
@@ -188,6 +183,26 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
   ],
   [
     {
+      heading: "Table Fans",
+      slug: "table-fans",
+      items: [
+        { label: "Classic", slug: "classic-tf-cl" },
+        { label: "Magnus", slug: "magnus-tf-ma" },
+        { label: "Rider", slug: "rider-tf-ri" },
+        { label: "AP Fan", slug: "ap-fan-tf-ap" },
+      ],
+    },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
+  ],
+  [
+    {
       heading: "Water Geysers",
       slug: "water-geysers",
       items: [
@@ -198,12 +213,9 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
       ],
     },
     {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
-        { label: "Vento", slug: "vento-ef-v" },
-        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
-      ],
+      heading: "Immersion Water Heater",
+      slug: "immersion-heaters",
+      items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
     },
   ],
   [
@@ -219,8 +231,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Maximus", slug: "maximus-rh-max-120" },
       ],
     },
-  ],
-  [
     {
       heading: "Madhani",
       slug: "madhani",
@@ -231,18 +241,9 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
       ],
     },
-    {
-      heading: "Table Fans",
-      slug: "table-fans",
-      items: [
-        { label: "Classic", slug: "classic-tf-cl" },
-        { label: "Magnus", slug: "magnus-tf-ma" },
-        { label: "Rider", slug: "rider-tf-ri" },
-        { label: "AP Fan", slug: "ap-fan-tf-ap" },
-      ],
-    },
   ],
 ];
+
 
 
 export function Header() {
