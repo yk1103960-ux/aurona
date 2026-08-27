@@ -43,7 +43,7 @@ import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 
 // Mega menu — every item links to the real product family page (verified slugs).
 type MegaItem = { label: string; slug: string };
-type MegaGroup = { heading: string; slug: string; items: MegaItem[] };
+type MegaGroup = { heading: string; slug: string; items: MegaItem[]; note?: string };
 const LED_COLUMNS: MegaGroup[][] = [
   [
     {
