@@ -93,9 +93,8 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Mr. Four Small", slug: "mr-four-small-il-mfs" },
         { label: "Mr. One", slug: "mr-one-il-mo" },
         { label: "Mr. Two", slug: "mr-two-il-mt" },
-        { label: "Track Light: COB", slug: "track-light-cob-il-tra-cob" },
-        { label: "Track Light: Glass", slug: "track-light-glass-il-tra-gla" },
-        { label: "Track Light: Lens", slug: "track-light-lens-il-tra-len" },
+        { label: "Track Light", slug: "track-light-cob-il-tra-cob" },
+
       ],
     },
   ],
@@ -142,19 +141,16 @@ const LED_COLUMNS: MegaGroup[][] = [
   ],
   [
     {
-      heading: "Madhani",
-      slug: "madhani",
-      items: [
-        { label: "Mini", slug: "mini-ma-al-06" },
-        { label: "Mini DLX", slug: "mini-dlx-ma-co-06" },
-        { label: "Virat", slug: "virat-ma-al-01" },
-        { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
-      ],
+      // Madhani belongs to Home Appliances only — Decorative Lights takes this slot.
+      heading: "Decorative Lights",
+      slug: "decorative-lights",
+      items: [],
     },
   ],
+
 ];
 
-// Home Appliances mega menu — matches client reference (image 2)
+// Home Appliances mega menu — all fan families are grouped in adjacent columns.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
     {
@@ -168,11 +164,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
         { label: "Air Glide", slug: "air-glide-pf-ag" },
       ],
-    },
-    {
-      heading: "Immersion Water Heater",
-      slug: "immersion-heaters",
-      items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
     },
   ],
   [
@@ -192,6 +183,26 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
   ],
   [
     {
+      heading: "Table Fans",
+      slug: "table-fans",
+      items: [
+        { label: "Classic", slug: "classic-tf-cl" },
+        { label: "Magnus", slug: "magnus-tf-ma" },
+        { label: "Rider", slug: "rider-tf-ri" },
+        { label: "AP Fan", slug: "ap-fan-tf-ap" },
+      ],
+    },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
+  ],
+  [
+    {
       heading: "Water Geysers",
       slug: "water-geysers",
       items: [
@@ -202,12 +213,9 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
       ],
     },
     {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
-        { label: "Vento", slug: "vento-ef-v" },
-        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
-      ],
+      heading: "Immersion Water Heater",
+      slug: "immersion-heaters",
+      items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
     },
   ],
   [
@@ -223,8 +231,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Maximus", slug: "maximus-rh-max-120" },
       ],
     },
-  ],
-  [
     {
       heading: "Madhani",
       slug: "madhani",
@@ -235,18 +241,9 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
       ],
     },
-    {
-      heading: "Table Fans",
-      slug: "table-fans",
-      items: [
-        { label: "Classic", slug: "classic-tf-cl" },
-        { label: "Magnus", slug: "magnus-tf-ma" },
-        { label: "Rider", slug: "rider-tf-ri" },
-        { label: "AP Fan", slug: "ap-fan-tf-ap" },
-      ],
-    },
   ],
 ];
+
 
 
 export function Header() {

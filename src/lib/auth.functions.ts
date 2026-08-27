@@ -36,29 +36,6 @@ async function hasMxRecord(domain: string): Promise<boolean> {
   }
 }
 
-async function isLeakedPassword(password: string): Promise<boolean> {
-  try {
-    const bytes = new TextEncoder().encode(password);
-    const digest = await crypto.subtle.digest("SHA-1", bytes);
-    const hash = Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
-    const res = await fetch(`https://api.pwnedpasswords.com/range/${hash.slice(0, 5)}`, {
-      headers: { "Add-Padding": "true" },
-    });
-    if (!res.ok) return false;
-    const body = await res.text();
-    const suffix = hash.slice(5);
-    return body.split("\n").some((line) => {
-      const [suf, count] = line.trim().split(":");
-      return suf === suffix && Number(count) > 0;
-    });
-  } catch {
-    return false;
-  }
-}
-
 async function emailExists(email: string): Promise<boolean> {
   try {
     const url = process.env["SUPABASE_URL"];
@@ -127,10 +104,10 @@ export const validateRegistration = createServerFn({ method: "POST" })
       name: data.fullName,
       phone: data.phone,
     });
+    // Only the basic safety rules apply. The breach-database check was removed —
+    // it blocked perfectly usable passwords during account creation.
     if (!verdict.ok) {
       issues.push({ field: "password", message: verdict.problems[0] ?? "Choose a stronger password." });
-    } else if (await isLeakedPassword(data.password)) {
-      issues.push({ field: "password", message: "This password appeared in a known data breach. Please choose another." });
     }
 
     return { ok: issues.length === 0, issues, phoneE164: phone.e164 ?? null };

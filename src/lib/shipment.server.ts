@@ -99,6 +99,20 @@ export async function createShipmentForOrder(orderId: string): Promise<ShipmentR
     };
   }
 
+  // Retailer / distributor orders never go to the courier network — they are
+  // supplied through local transport.
+  const { data: buyer } = await supabaseAdmin
+    .from("profiles")
+    .select("account_type")
+    .eq("id", (o as unknown as { user_id: string }).user_id)
+    .maybeSingle();
+  const buyerType = ((buyer as { account_type?: string } | null)?.account_type ?? "customer").toLowerCase();
+  if (buyerType === "retailer" || buyerType === "distributor") {
+    throw new Error(
+      "Courier shipping is available for retail customers only. Retailer and distributor orders are dispatched through local transport.",
+    );
+  }
+
   const cod = (o.payment_method ?? "").toLowerCase() === "cod";
   if (!cod && !["paid", "captured", "success"].includes((o.payment_status ?? "").toLowerCase())) {
     throw new Error("Prepaid order is not paid yet — payment must be confirmed before shipping.");

@@ -10,6 +10,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  Scale,
   Trash2,
   Truck,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useCompare } from "@/hooks/useCompare";
 import { useCheckoutSummary } from "@/hooks/useCheckoutSummary";
 import { ProductImage } from "@/components/product/ProductImage";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -50,6 +52,7 @@ function CartPage() {
   const { user, loading } = useAuth();
   const cart = useCart();
   const wl = useWishlist();
+  const compare = useCompare();
   const navigate = useNavigate();
   const s = useCheckoutSummary();
   const recommended = useQuery(productsQuery({ bestseller: true, limit: 6 }));
@@ -201,6 +204,16 @@ function CartPage() {
 
                         <div className="flex items-center gap-3 sm:gap-4">
                           <button
+                            onClick={() => compare.toggle(it.products.slug, it.products.name)}
+                            className={
+                              "flex items-center gap-1.5 text-xs font-bold transition-colors hover:text-primary " +
+                              (compare.has(it.products.slug) ? "text-primary" : "text-muted-foreground")
+                            }
+                          >
+                            <Scale className="h-4 w-4" /> <span className="hidden sm:inline">Compare</span>
+                          </button>
+
+                          <button
                             onClick={() => {
                               wl.toggle.mutate({ productId: it.product_id, sku: it.products.sku });
                               cart.remove.mutate(it.id);
@@ -264,7 +277,7 @@ function CartPage() {
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {(recommended.data ?? []).slice(0, 4).map((p) => (
-                  <ProductCard key={p.id} product={p} compact />
+                  <ProductCard key={p.id} product={p} compact nameOnly />
                 ))}
               </div>
             </section>

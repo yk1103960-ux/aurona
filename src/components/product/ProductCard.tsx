@@ -22,14 +22,22 @@ type Row = Product & {
 
 
 
+/** Family name only — strips variant suffixes like " - 3 W, RGB, Pack of 6". */
+function baseName(name: string): string {
+  return name.split(/\s+[-—–]\s+/)[0].trim() || name;
+}
+
 export function ProductCard({
   product,
   categoryIcon,
   compact,
+  nameOnly,
 }: {
   product: Row;
   categoryIcon?: string | null;
   compact?: boolean;
+  /** Show only the family name (used in recommendation rails). */
+  nameOnly?: boolean;
 }) {
   const cart = useCart();
   const wl = useWishlist();
@@ -131,7 +139,7 @@ export function ProductCard({
           search={detailSearch}
           className="line-clamp-2 min-h-[2.6em] text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-primary"
         >
-          {product.name}
+          {nameOnly ? baseName(product.name) : product.name}
         </Link>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/8 px-2 py-0.5 text-primary">
