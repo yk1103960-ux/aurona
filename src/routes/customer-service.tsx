@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { siteSettingsQuery } from "@/lib/settings";
 import { submitSupportTicket } from "@/lib/support.functions";
 import { validateEmail } from "@/lib/email-validation";
-import { AURONA_FAQS as FAQS } from "@/components/marketing/FaqSection";
+import { FaqDirectory } from "@/components/marketing/FaqSection";
 
 export const Route = createFileRoute("/customer-service")({
   loader: ({ context }) => context.queryClient.ensureQueryData(siteSettingsQuery),
