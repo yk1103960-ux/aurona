@@ -86,11 +86,12 @@ function looksLikeGibberish(local: string): boolean {
 
   // Soft signals: require two to fire so real names stay valid.
   const signals = [
-    score < 0.5,
-    rare >= 3 || rareRatio > 0.28,
-    vowelRatio < 0.3,
-    longestConsonantRun >= 4,
+    Boolean(score < 0.5),
+    Boolean(rare >= 3 || rareRatio > 0.28),
+    Boolean(vowelRatio < 0.3),
+    Boolean(longestConsonantRun >= 4),
   ].filter(Boolean).length;
+
 
   return signals >= 2;
 }
