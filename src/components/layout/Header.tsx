@@ -52,6 +52,7 @@ const LED_COLUMNS: MegaGroup[][] = [
       items: [
         { label: "Night Bulbs", slug: "night-bulbs-b-nb" },
         { label: "High Glow", slug: "high-glow-b-hg" },
+        { label: "Hammer", slug: "hammer-b-ha" },
         { label: "Rechargeable Bulbs", slug: "inverter-bulbs-b-rb" },
       ],
     },
