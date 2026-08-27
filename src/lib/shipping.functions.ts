@@ -40,6 +40,19 @@ export const quoteShipping = createServerFn({ method: "POST" })
       return { serviceable: false, message: "Your cart is empty.", rates: [] };
     }
 
+    // Courier delivery (Shiprocket) is for retail customers only. Retailer and
+    // distributor orders are dispatched through our local transport partners.
+    const { data: pricingRole } = await supabase.rpc("current_pricing_role");
+    const role = typeof pricingRole === "string" ? pricingRole : "customer";
+    if (role === "retailer" || role === "distributor") {
+      return {
+        serviceable: true,
+        message:
+          "Your order will be dispatched through our local transport network — our team will confirm the freight details with you.",
+        rates: [{ id: "local-transport", label: "Local transport (arranged by Aurona)", eta: "Confirmed by our team", price: 0 }],
+      };
+    }
+
     // Role-adjusted subtotal for free-shipping thresholds / declared value.
     const skus = lines.map((l) => l.sku).filter(Boolean) as string[];
     const priceMap = new Map<string, number>();
