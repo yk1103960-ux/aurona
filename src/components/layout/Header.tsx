@@ -455,7 +455,7 @@ export function Header() {
             onToggle={() => setOpenMenu((v) => (v === "browse" ? null : "browse"))}
           />
           <span className="mx-3 h-5 w-px shrink-0 bg-primary/15" aria-hidden />
-          <div className="flex min-w-0 flex-1 items-center justify-start gap-0.5 overflow-hidden">
+          <div className="flex min-w-0 flex-1 items-center justify-start gap-0.5">
             <NavItem to="/">Home</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/products">All Products</NavItem>
