@@ -138,17 +138,16 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Aura", slug: "aura-cl-au" },
       ],
     },
-  ],
-  [
     {
       // Madhani belongs to Home Appliances only — Decorative Lights takes this slot.
       heading: "Decorative Lights",
       slug: "decorative-lights",
       items: [],
+      note: "Explore the collection",
     },
   ],
-
 ];
+
 
 // Home Appliances mega menu — all fan families are grouped in adjacent columns.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
