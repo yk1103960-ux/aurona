@@ -149,25 +149,11 @@ const LED_COLUMNS: MegaGroup[][] = [
 ];
 
 
-// Home Appliances mega menu — all fan families are grouped in adjacent columns.
+// Home Appliances mega menu — every fan family lives under a single "Fans" heading.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
     {
-      heading: "Pedestal Fan",
-      slug: "pedestal-fans",
-      items: [
-        { label: "Breeze Master", slug: "breeze-master-pf-bm" },
-        { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
-        { label: "Cool Crest", slug: "cool-crest-pf-cc" },
-        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
-        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
-        { label: "Air Glide", slug: "air-glide-pf-ag" },
-      ],
-    },
-  ],
-  [
-    {
-      heading: "Ceiling Fans",
+      heading: "Fans",
       slug: "ceiling-fans",
       items: [
         { label: "Optimus", slug: "optimus-cf-opt" },
@@ -177,29 +163,30 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Springer", slug: "springer-cf-spr" },
         { label: "Sonata", slug: "sonata-cf-son" },
         { label: "Windsor", slug: "windsor-cf-win" },
+        { label: "Breeze Master", slug: "breeze-master-pf-bm" },
+        { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
+        { label: "Cool Crest", slug: "cool-crest-pf-cc" },
       ],
     },
   ],
   [
     {
-      heading: "Table Fans",
-      slug: "table-fans",
+      heading: "",
+      slug: "ceiling-fans",
       items: [
+        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
+        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
+        { label: "Air Glide", slug: "air-glide-pf-ag" },
         { label: "Classic", slug: "classic-tf-cl" },
         { label: "Magnus", slug: "magnus-tf-ma" },
         { label: "Rider", slug: "rider-tf-ri" },
         { label: "AP Fan", slug: "ap-fan-tf-ap" },
-      ],
-    },
-    {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
         { label: "Vento", slug: "vento-ef-v" },
         { label: "Vento Plus", slug: "vento-plus-ef-vp" },
       ],
     },
   ],
+
   [
     {
       heading: "Water Geysers",
