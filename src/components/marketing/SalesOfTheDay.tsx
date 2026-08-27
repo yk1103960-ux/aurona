@@ -27,7 +27,7 @@ function useSaleCountdown(onReset: () => void) {
   return label;
 }
 
-export function SalesOfTheDay({ count = 6 }: { count?: number }) {
+export function SalesOfTheDay({ count = 8 }: { count?: number }) {
   const reduce = useReducedMotion();
   const qc = useQueryClient();
   const { data: products = [] } = useQuery(saleOfTheDayQuery(count));
@@ -39,7 +39,7 @@ export function SalesOfTheDay({ count = 6 }: { count?: number }) {
   if (products.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-background via-surface to-background py-14 lg:py-20">
+    <section className="relative overflow-hidden bg-gradient-to-b from-background via-surface to-background py-10 lg:py-14">
       <div className="pointer-events-none absolute -left-32 top-10 h-[380px] w-[380px] rounded-full bg-primary/10 blur-3xl" aria-hidden />
       <div className="pointer-events-none absolute -right-32 bottom-0 h-[380px] w-[380px] rounded-full bg-gold/10 blur-3xl" aria-hidden />
       <div className="container-x relative">
@@ -62,7 +62,7 @@ export function SalesOfTheDay({ count = 6 }: { count?: number }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {products.map((p, i) => (
             <motion.div
               key={p.id}
@@ -71,7 +71,7 @@ export function SalesOfTheDay({ count = 6 }: { count?: number }) {
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: Math.min(i * 0.05, 0.25), ease: [0.22, 1, 0.36, 1] }}
             >
-              <ProductCard product={p} categoryIcon={p.categories?.icon ?? null} />
+              <ProductCard product={p} categoryIcon={p.categories?.icon ?? null} compact nameOnly />
             </motion.div>
           ))}
         </div>
