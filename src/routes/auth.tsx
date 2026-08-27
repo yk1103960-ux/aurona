@@ -12,6 +12,7 @@ import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loade
 import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
 import { roleEmail } from "@/lib/role-identity";
+import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
   validateRegistration,
@@ -163,6 +164,8 @@ function AuthPage() {
     e.preventDefault();
     setErrors({});
     const local: Record<string, string> = {};
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.ok) local.email = emailCheck.reason ?? "Enter a valid email address.";
     if (phone.replace(/\D/g, "").length !== 10) local.phone = "Enter a valid 10-digit Indian mobile number.";
     if (!confirm) local.confirm = "Please re-enter your password.";
     else if (password !== confirm) local.confirm = "Passwords do not match.";
@@ -439,7 +442,20 @@ function AuthPage() {
               {!otpSent ? (
                 <form onSubmit={register} className="space-y-3">
                   <Field label="Full name" value={name} onChange={setName} error={errors.fullName} />
-                  <Field label="Email address" value={email} onChange={setEmail} type="email" error={errors.email} />
+                  <Field
+                    label="Email address"
+                    value={email}
+                    onChange={(value) => {
+                      setEmail(value);
+                      if (errors.email) setErrors((current) => ({ ...current, email: "" }));
+                    }}
+                    onBlur={() => {
+                      const check = validateEmail(email);
+                      setErrors((current) => ({ ...current, email: check.ok ? "" : check.reason ?? "Enter a valid email address." }));
+                    }}
+                    type="email"
+                    error={errors.email}
+                  />
                   <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
                   {role !== "customer" && (
                     <Field
@@ -582,15 +598,15 @@ function OtpPanel(props: {
   );
 }
 
-function Field({ label, value, onChange, type = "text", error, trailing }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; error?: string; trailing?: React.ReactNode;
+function Field({ label, value, onChange, onBlur, type = "text", error, trailing }: {
+  label: string; value: string; onChange: (v: string) => void; onBlur?: () => void; type?: string; error?: string; trailing?: React.ReactNode;
 }) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
       <div className="relative">
         <Input
-          value={value} onChange={(e) => onChange(e.target.value)} type={type} required
+          value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} type={type} required
           className={cn("mt-1 h-11", trailing && "pr-10", error && "border-destructive")}
         />
         {trailing && <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span>}
