@@ -809,16 +809,20 @@ function MegaPanel({
       <div className={cn("container-x grid gap-x-8 gap-y-6 py-10", colsClass)}>
         {columns.map((col, ci) => (
           <div key={ci} className="min-w-0 space-y-6">
-            {col.map((group) => {
+            {col.map((group, gi) => {
               return (
-                <div key={group.heading}>
-                  <Link
-                    to="/category/$slug"
-                    params={{ slug: group.slug }}
-                    className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
-                  >
-                    {group.heading}
-                  </Link>
+                <div key={`${group.heading}-${gi}`}>
+                  {group.heading ? (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: group.slug }}
+                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                    >
+                      {group.heading}
+                    </Link>
+                  ) : (
+                    <span className="block h-[13px]" aria-hidden />
+                  )}
                   <ul className="mt-3 space-y-2">
                     {group.items.map((item) => (
                       <li key={item.slug}>
@@ -832,10 +836,19 @@ function MegaPanel({
                       </li>
                     ))}
                   </ul>
-
+                  {group.note && group.items.length === 0 && (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: group.slug }}
+                      className="mt-3 inline-block text-[13.5px] leading-snug text-foreground/70 transition-colors hover:text-primary"
+                    >
+                      {group.note}
+                    </Link>
+                  )}
                 </div>
               );
             })}
+
           </div>
         ))}
       </div>
