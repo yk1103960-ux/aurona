@@ -151,11 +151,11 @@ const LED_COLUMNS: MegaGroup[][] = [
 ];
 
 
-// Home Appliances mega menu — every fan family lives under a single "Fans" heading.
+// Home Appliances mega menu — fan sub-categories stay grouped together.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
     {
-      heading: "Fans",
+      heading: "Ceiling Fans",
       slug: "ceiling-fans",
       items: [
         { label: "Optimus", slug: "optimus-cf-opt" },
@@ -165,29 +165,42 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Springer", slug: "springer-cf-spr" },
         { label: "Sonata", slug: "sonata-cf-son" },
         { label: "Windsor", slug: "windsor-cf-win" },
+      ],
+    },
+    {
+      heading: "Pedestal Fans",
+      slug: "pedestal-fans",
+      items: [
         { label: "Breeze Master", slug: "breeze-master-pf-bm" },
         { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
         { label: "Cool Crest", slug: "cool-crest-pf-cc" },
+        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
+        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
+        { label: "Air Glide", slug: "air-glide-pf-ag" },
       ],
     },
   ],
   [
     {
-      heading: "",
-      slug: "ceiling-fans",
+      heading: "Table Fans",
+      slug: "table-fans",
       items: [
-        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
-        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
-        { label: "Air Glide", slug: "air-glide-pf-ag" },
         { label: "Classic", slug: "classic-tf-cl" },
         { label: "Magnus", slug: "magnus-tf-ma" },
         { label: "Rider", slug: "rider-tf-ri" },
         { label: "AP Fan", slug: "ap-fan-tf-ap" },
+      ],
+    },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
         { label: "Vento", slug: "vento-ef-v" },
         { label: "Vento Plus", slug: "vento-plus-ef-vp" },
       ],
     },
   ],
+
 
   [
     {
