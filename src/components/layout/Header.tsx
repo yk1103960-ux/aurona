@@ -93,9 +93,8 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Mr. Four Small", slug: "mr-four-small-il-mfs" },
         { label: "Mr. One", slug: "mr-one-il-mo" },
         { label: "Mr. Two", slug: "mr-two-il-mt" },
-        { label: "Track Light: COB", slug: "track-light-cob-il-tra-cob" },
-        { label: "Track Light: Glass", slug: "track-light-glass-il-tra-gla" },
-        { label: "Track Light: Lens", slug: "track-light-lens-il-tra-len" },
+        { label: "Track Light", slug: "track-light-cob-il-tra-cob" },
+
       ],
     },
   ],
