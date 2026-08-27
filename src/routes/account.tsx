@@ -485,7 +485,15 @@ function AccountPage() {
             </Panel>
           )}
 
-          {section === "profile" && <ProfilePanel userId={user.id} email={user.email ?? ""} data={profile.data} />}
+          {section === "profile" && (
+            <ProfilePanel
+              userId={user.id}
+              email={user.email ?? ""}
+              emailVerified={Boolean(user.email_confirmed_at)}
+              phoneVerified={Boolean(user.phone_confirmed_at)}
+              data={profile.data}
+            />
+          )}
 
           {section === "security" && <SecurityPanel onSignOut={signOut} />}
         </div>
@@ -608,7 +616,19 @@ function HeaderAvatar({ path, initials }: { path?: string | null; initials: stri
   );
 }
 
-function ProfilePanel({ userId, email, data }: { userId: string; email: string; data: any }) {
+function ProfilePanel({
+  userId,
+  email,
+  emailVerified,
+  phoneVerified,
+  data,
+}: {
+  userId: string;
+  email: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  data: any;
+}) {
   const qc = useQueryClient();
 
   const [full, setFull] = useState<string>(data?.full_name ?? "");
@@ -670,10 +690,23 @@ function ProfilePanel({ userId, email, data }: { userId: string; email: string; 
         <Row label="Business name (optional)" v={business} set={setBusiness} />
         <Row label="GSTIN (optional)" v={gstin} set={setGstin} />
         <div className="sm:col-span-2">
-          <Label className="text-xs">Email</Label>
+          <div className="flex items-center justify-between gap-3">
+            <Label className="text-xs">Email</Label>
+            <VerifiedBadge verified={Boolean(emailVerified)} />
+          </div>
           <Input value={email} disabled className="mt-1 h-11" />
-          <p className="mt-1 text-[11px] text-muted-foreground">Contact support to change the email on your account.</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {emailVerified
+              ? "Contact support to change the email on your account."
+              : "Your email is not verified yet — check your inbox for the verification link."}
+          </p>
         </div>
+        {phone.trim() && (
+          <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface/50 px-4 py-3">
+            <span className="text-xs font-medium text-muted-foreground">Mobile number</span>
+            <VerifiedBadge verified={Boolean(phoneVerified)} />
+          </div>
+        )}
         <div className="sm:col-span-2">
           <Button type="submit" disabled={save.isPending} className="h-11 rounded-full px-8">
             {save.isPending ? "Saving…" : "Save changes"}
@@ -681,6 +714,20 @@ function ProfilePanel({ userId, email, data }: { userId: string; email: string; 
         </div>
       </form>
     </Panel>
+  );
+}
+
+function VerifiedBadge({ verified }: { verified: boolean }) {
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] " +
+        (verified ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")
+      }
+    >
+      <span className={"h-1.5 w-1.5 rounded-full " + (verified ? "bg-success" : "bg-destructive")} />
+      {verified ? "Verified" : "Not verified"}
+    </span>
   );
 }
 
