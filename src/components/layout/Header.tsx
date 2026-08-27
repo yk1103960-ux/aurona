@@ -141,16 +141,13 @@ const LED_COLUMNS: MegaGroup[][] = [
   ],
   [
     {
-      heading: "Madhani",
-      slug: "madhani",
-      items: [
-        { label: "Mini", slug: "mini-ma-al-06" },
-        { label: "Mini DLX", slug: "mini-dlx-ma-co-06" },
-        { label: "Virat", slug: "virat-ma-al-01" },
-        { label: "Virat DLX", slug: "virat-dlx-ma-co-01" },
-      ],
+      // Madhani belongs to Home Appliances only — Decorative Lights takes this slot.
+      heading: "Decorative Lights",
+      slug: "decorative-lights",
+      items: [],
     },
   ],
+
 ];
 
 // Home Appliances mega menu — matches client reference (image 2)
