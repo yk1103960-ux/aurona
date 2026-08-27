@@ -466,6 +466,7 @@ export function Header() {
       <MegaPanel
         open={openMenu === "led"}
         columns={LED_COLUMNS}
+        gridCols={5}
         onEnter={() => setOpenMenu("led")}
         onLeave={() => setOpenMenu(null)}
       />
