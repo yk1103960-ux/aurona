@@ -42,7 +42,7 @@ export function ProductGallery({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       <div
-        className="group relative aspect-square w-full overflow-hidden rounded-lg border border-border bg-white"
+        className="group relative mx-auto aspect-square w-[85%] max-w-[340px] overflow-hidden rounded-lg border border-border bg-white sm:w-full sm:max-w-none"
         onMouseEnter={() => setZoom(true)}
         onMouseLeave={() => setZoom(false)}
         onMouseMove={onMove}
