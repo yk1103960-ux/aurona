@@ -35,15 +35,39 @@ const CONSUMER_DOMAINS = new Set([
 
 const VOWELS = /[aeiouy]/g;
 
+/** Letters that are rare in real names/handles — clusters of them signal mashing. */
+const RARE_LETTERS = /[jqxzkvwf]/g;
+
+/** Frequent English/Indian-name letter pairs used to score plausibility. */
+const COMMON_BIGRAMS = new Set(
+  ("th he in er an re nd on en at ou ed ha to or it is hi es ng ar te se me sa ra ri ro ru na ne ni no nu " +
+    "ma mi mo mu la le li lo lu ta ti tu ka ki ku ba be bi bo bu da de di do du ga ge gi go gu pa pe pi po pu " +
+    "sh ch ph ck st sp sc sm sn sl tr br cr dr fr gr pr pl bl cl fl gl kr sk sw tw qu " +
+    "ai au ea ee ei eu ia ie io oo ua ui ay ey oy ee " +
+    "ya ye yo an am al ar as ash sha shi ve va vi ee ll ss tt nn mm rr " +
+    "ee ia an ra ja ji ju ka ke sh dh bh gh kh ph th ch nk nt mp ld lt rt rs rn rm rk rd ns ct pt " +
+    "ee oo el em en es et il im in is it ol om on os ot ul um un us ut ab ac ad ag ak ap as at av aw ax ay")
+    .split(/\s+/)
+    .filter(Boolean),
+);
+
+function bigramScore(s: string): number {
+  if (s.length < 3) return 1;
+  let hits = 0;
+  const total = s.length - 1;
+  for (let i = 0; i < total; i++) if (COMMON_BIGRAMS.has(s.slice(i, i + 2))) hits++;
+  return hits / total;
+}
+
 /**
  * Heuristic gibberish detector for consumer-provider local parts.
- * Deliberately conservative: only flags long, letter-only strings that have
- * almost no vowels or an implausibly long consonant run.
+ * Fires on keyboard-mash strings such as "jjcijctikgftui" while accepting real
+ * names and handles ("priyasharma", "rk9821", "amit.kumar93").
  */
 function looksLikeGibberish(local: string): boolean {
   const letters = local.replace(/[^a-z]/g, "");
-  // Short handles, or anything with digits / separators, is left alone.
-  if (letters.length < 9 || letters.length !== local.length) return false;
+  // Anything with digits / separators mixed in is left alone.
+  if (letters.length < 7 || letters.length !== local.length) return false;
 
   const vowels = letters.match(VOWELS)?.length ?? 0;
   const vowelRatio = vowels / letters.length;
@@ -51,13 +75,26 @@ function looksLikeGibberish(local: string): boolean {
     0,
     ...(letters.match(/[^aeiouy]+/g) ?? []).map((s) => s.length),
   );
+  const rare = (letters.match(RARE_LETTERS) ?? []).length;
+  const rareRatio = rare / letters.length;
+  const score = bigramScore(letters);
 
+  // Hard signals — clearly not pronounceable.
   if (vowelRatio < 0.2) return true;
   if (longestConsonantRun >= 5) return true;
-  // Very low vowel density combined with no repeated real-word structure.
-  if (vowelRatio < 0.28 && longestConsonantRun >= 4) return true;
-  return false;
+  if (vowelRatio > 0.72) return true;
+
+  // Soft signals: require two to fire so real names stay valid.
+  const signals = [
+    score < 0.5,
+    rare >= 3 || rareRatio > 0.28,
+    vowelRatio < 0.3,
+    longestConsonantRun >= 4,
+  ].filter(Boolean).length;
+
+  return signals >= 2;
 }
+
 
 export type EmailCheck = { ok: boolean; reason?: string; suggestion?: string };
 
