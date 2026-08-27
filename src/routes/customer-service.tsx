@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { siteSettingsQuery } from "@/lib/settings";
 import { submitSupportTicket } from "@/lib/support.functions";
 import { validateEmail } from "@/lib/email-validation";
-import { AURONA_FAQS as FAQS } from "@/components/marketing/FaqSection";
+import { FaqDirectory } from "@/components/marketing/FaqSection";
 
 export const Route = createFileRoute("/customer-service")({
   loader: ({ context }) => context.queryClient.ensureQueryData(siteSettingsQuery),
@@ -134,18 +134,6 @@ function CustomerService() {
 
         <div className="space-y-8">
           <div>
-            <div className="text-eyebrow">FAQs</div>
-            <div className="mt-4 space-y-4">
-              {FAQS.map((f) => (
-                <details key={f.q} className="group rounded-lg border border-border p-4 open:bg-surface">
-                  <summary className="cursor-pointer list-none text-sm font-semibold">{f.q}</summary>
-                  <p className="mt-2 text-sm text-muted-foreground">{f.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <div className="text-eyebrow">Policies</div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {POLICIES.map((p) => (
@@ -179,6 +167,8 @@ function CustomerService() {
           </div>
         </div>
       </div>
+
+      <FaqDirectory />
     </div>
   );
 }
