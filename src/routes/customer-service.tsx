@@ -167,6 +167,8 @@ function CustomerService() {
           </div>
         </div>
       </div>
+
+      <FaqDirectory />
     </div>
   );
 }
