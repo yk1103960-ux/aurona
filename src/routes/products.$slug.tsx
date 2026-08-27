@@ -364,7 +364,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {featured.slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
+            <ProductCard key={p.id} product={p} nameOnly categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
           ))}
         </div>
       </div>
@@ -441,7 +441,7 @@ function LegacyPDP({ slug }: { slug: string }) {
         <h2 className="text-display text-3xl">You may also like</h2>
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           {featured.filter((p) => p.id !== product.id).slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
+            <ProductCard key={p.id} product={p} nameOnly categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
           ))}
         </div>
       </div>
