@@ -134,18 +134,6 @@ function CustomerService() {
 
         <div className="space-y-8">
           <div>
-            <div className="text-eyebrow">FAQs</div>
-            <div className="mt-4 space-y-4">
-              {FAQS.map((f) => (
-                <details key={f.q} className="group rounded-lg border border-border p-4 open:bg-surface">
-                  <summary className="cursor-pointer list-none text-sm font-semibold">{f.q}</summary>
-                  <p className="mt-2 text-sm text-muted-foreground">{f.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <div className="text-eyebrow">Policies</div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {POLICIES.map((p) => (
