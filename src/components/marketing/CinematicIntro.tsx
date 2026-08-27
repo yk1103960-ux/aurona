@@ -45,7 +45,7 @@ export function CinematicIntro() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: true })!;
 
-    let W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 3);
     const resize = () => {
       W = window.innerWidth;
       H = window.innerHeight;
@@ -361,8 +361,11 @@ export function CinematicIntro() {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          maxWidth: "min(55vw, 640px)",
-          maxHeight: "40vh",
+          width: "min(62vw, 720px)",
+          maxHeight: "42vh",
+          objectFit: "contain",
+          imageRendering: "auto",
+          backfaceVisibility: "hidden",
           opacity: 0,
           filter: "drop-shadow(0 0 30px rgba(120,190,255,0.8)) drop-shadow(0 0 60px rgba(60,140,255,0.5))",
           animation: "aurona-logo-reveal 7s cubic-bezier(0.16,1,0.3,1) forwards",
@@ -407,11 +410,10 @@ export function CinematicIntro() {
       </button>
       <style>{`
         @keyframes aurona-logo-reveal {
-          0%, 55% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); filter: drop-shadow(0 0 0px rgba(120,190,255,0)) blur(20px); }
-          72% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 40px rgba(120,190,255,0.9)) blur(0px); }
-          85% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
-          95% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); filter: drop-shadow(0 0 80px rgba(180,220,255,1)) blur(2px); }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); filter: blur(12px); }
+          0%, 55% { opacity: 0; transform: translate(-50%, -50%) scale(0.94); filter: drop-shadow(0 0 0px rgba(120,190,255,0)); }
+          70% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 34px rgba(120,190,255,0.85)); }
+          90% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 44px rgba(180,220,255,0.95)); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); filter: drop-shadow(0 0 20px rgba(180,220,255,0.4)); }
         }
       `}</style>
     </div>
