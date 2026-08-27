@@ -43,7 +43,7 @@ import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
 
 // Mega menu — every item links to the real product family page (verified slugs).
 type MegaItem = { label: string; slug: string };
-type MegaGroup = { heading: string; slug: string; items: MegaItem[] };
+type MegaGroup = { heading: string; slug: string; items: MegaItem[]; note?: string };
 const LED_COLUMNS: MegaGroup[][] = [
   [
     {
@@ -138,37 +138,22 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Aura", slug: "aura-cl-au" },
       ],
     },
-  ],
-  [
     {
       // Madhani belongs to Home Appliances only — Decorative Lights takes this slot.
       heading: "Decorative Lights",
       slug: "decorative-lights",
       items: [],
+      note: "Explore the collection",
     },
   ],
-
 ];
 
-// Home Appliances mega menu — all fan families are grouped in adjacent columns.
+
+// Home Appliances mega menu — every fan family lives under a single "Fans" heading.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
   [
     {
-      heading: "Pedestal Fan",
-      slug: "pedestal-fans",
-      items: [
-        { label: "Breeze Master", slug: "breeze-master-pf-bm" },
-        { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
-        { label: "Cool Crest", slug: "cool-crest-pf-cc" },
-        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
-        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
-        { label: "Air Glide", slug: "air-glide-pf-ag" },
-      ],
-    },
-  ],
-  [
-    {
-      heading: "Ceiling Fans",
+      heading: "Fans",
       slug: "ceiling-fans",
       items: [
         { label: "Optimus", slug: "optimus-cf-opt" },
@@ -178,29 +163,30 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Springer", slug: "springer-cf-spr" },
         { label: "Sonata", slug: "sonata-cf-son" },
         { label: "Windsor", slug: "windsor-cf-win" },
+        { label: "Breeze Master", slug: "breeze-master-pf-bm" },
+        { label: "Ventura Spin", slug: "ventura-spin-pf-vs" },
+        { label: "Cool Crest", slug: "cool-crest-pf-cc" },
       ],
     },
   ],
   [
     {
-      heading: "Table Fans",
-      slug: "table-fans",
+      heading: "",
+      slug: "ceiling-fans",
       items: [
+        { label: "Aero Pulse", slug: "aero-pulse-pf-ap" },
+        { label: "Whirl Flow", slug: "whirl-flow-pf-wf" },
+        { label: "Air Glide", slug: "air-glide-pf-ag" },
         { label: "Classic", slug: "classic-tf-cl" },
         { label: "Magnus", slug: "magnus-tf-ma" },
         { label: "Rider", slug: "rider-tf-ri" },
         { label: "AP Fan", slug: "ap-fan-tf-ap" },
-      ],
-    },
-    {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
         { label: "Vento", slug: "vento-ef-v" },
         { label: "Vento Plus", slug: "vento-plus-ef-vp" },
       ],
     },
   ],
+
   [
     {
       heading: "Water Geysers",
@@ -480,6 +466,7 @@ export function Header() {
       <MegaPanel
         open={openMenu === "led"}
         columns={LED_COLUMNS}
+        gridCols={5}
         onEnter={() => setOpenMenu("led")}
         onLeave={() => setOpenMenu(null)}
       />
@@ -823,16 +810,20 @@ function MegaPanel({
       <div className={cn("container-x grid gap-x-8 gap-y-6 py-10", colsClass)}>
         {columns.map((col, ci) => (
           <div key={ci} className="min-w-0 space-y-6">
-            {col.map((group) => {
+            {col.map((group, gi) => {
               return (
-                <div key={group.heading}>
-                  <Link
-                    to="/category/$slug"
-                    params={{ slug: group.slug }}
-                    className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
-                  >
-                    {group.heading}
-                  </Link>
+                <div key={`${group.heading}-${gi}`}>
+                  {group.heading ? (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: group.slug }}
+                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                    >
+                      {group.heading}
+                    </Link>
+                  ) : (
+                    <span className="block h-[13px]" aria-hidden />
+                  )}
                   <ul className="mt-3 space-y-2">
                     {group.items.map((item) => (
                       <li key={item.slug}>
@@ -846,10 +837,19 @@ function MegaPanel({
                       </li>
                     ))}
                   </ul>
-
+                  {group.note && group.items.length === 0 && (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: group.slug }}
+                      className="mt-3 inline-block text-[13.5px] leading-snug text-foreground/70 transition-colors hover:text-primary"
+                    >
+                      {group.note}
+                    </Link>
+                  )}
                 </div>
               );
             })}
+
           </div>
         ))}
       </div>
