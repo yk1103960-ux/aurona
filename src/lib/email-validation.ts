@@ -79,6 +79,11 @@ function looksLikeGibberish(local: string): boolean {
   const rareRatio = rare / letters.length;
   const score = bigramScore(letters);
 
+  // Long letter-only handles with very little recognizable language structure
+  // are overwhelmingly generated/keyboard-mash addresses. This catches strings
+  // such as "jsjskhwvsjsjwbsv" even when one isolated common pair is present.
+  if (letters.length >= 12 && score < 0.3) return true;
+
   // Hard signals — clearly not pronounceable.
   if (vowelRatio < 0.2) return true;
   if (longestConsonantRun >= 5) return true;
@@ -86,7 +91,7 @@ function looksLikeGibberish(local: string): boolean {
 
   // Soft signals: require two to fire so real names stay valid.
   const signals = [
-    Boolean(score < 0.5),
+    Boolean(score < 0.42),
     Boolean(rare >= 3 || rareRatio > 0.28),
     Boolean(vowelRatio < 0.3),
     Boolean(longestConsonantRun >= 4),
