@@ -139,11 +139,12 @@ const LED_COLUMNS: MegaGroup[][] = [
       ],
     },
     {
-      // Madhani belongs to Home Appliances only — Decorative Lights takes this slot.
       heading: "Decorative Lights",
       slug: "decorative-lights",
-      items: [],
-      note: "Explore the collection",
+      items: [
+        { label: "Cylinder", slug: "cylinder-il-cyl-07-cw-b-mb" },
+        { label: "Half Moon", slug: "half-moon-il-hm-04-p4" },
+      ],
     },
   ],
 ];
