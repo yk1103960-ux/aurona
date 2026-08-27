@@ -199,24 +199,27 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-white/10 bg-nav">
-          <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-nav-foreground/70 sm:flex-row">
-            <div>Copyright © {new Date().getFullYear()}. All Rights Reserved | Aurona</div>
-            <div className="flex gap-5">
-              <Link to="/policies/$slug" params={{ slug: "privacy" }} className="transition-colors hover:text-nav-foreground">Privacy Policy</Link>
-              <Link to="/policies/$slug" params={{ slug: "terms" }} className="transition-colors hover:text-nav-foreground">Terms &amp; Conditions</Link>
-              <Link to="/policies/$slug" params={{ slug: "return" }} className="transition-colors hover:text-nav-foreground">Return Policy</Link>
-            </div>
-          </div>
-        </div>
-        <div className="container-x mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/5 py-6 text-[10px] font-bold uppercase tracking-widest text-nav-foreground/40 lg:justify-start">
+        {/* Shop shortcuts */}
+        <div className="container-x flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/5 py-5 text-[10px] font-bold uppercase tracking-widest text-nav-foreground/40 lg:justify-start">
           <Link to="/" className="hover:text-gold transition-colors">Home</Link>
           <Link to="/products" className="hover:text-gold transition-colors">Shop</Link>
           <Link to="/cart" className="hover:text-gold transition-colors">Cart</Link>
           <Link to="/wishlist" className="hover:text-gold transition-colors">Wishlist</Link>
           <Link to="/account" className="hover:text-gold transition-colors">Account</Link>
         </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-white/10 bg-nav">
+          <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-nav-foreground/70 sm:flex-row">
+            <div>Copyright © {new Date().getFullYear()}. All Rights Reserved | Aurona</div>
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-1">
+              <Link to="/policies/$slug" params={{ slug: "privacy" }} className="transition-colors hover:text-nav-foreground">Privacy Policy</Link>
+              <Link to="/policies/$slug" params={{ slug: "terms" }} className="transition-colors hover:text-nav-foreground">Terms &amp; Conditions</Link>
+              <Link to="/policies/$slug" params={{ slug: "return" }} className="transition-colors hover:text-nav-foreground">Return Policy</Link>
+            </div>
+          </div>
+        </div>
+
       </div>
       <div className="h-16 lg:hidden" />
     </footer>
