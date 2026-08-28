@@ -245,7 +245,13 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
   ],
 ];
 
-
+// Category slug -> product family links, shared by the desktop mega menu and the mobile drawer.
+const FAMILIES_BY_CATEGORY: Record<string, MegaItem[]> = Object.fromEntries(
+  [...LED_COLUMNS, ...APPLIANCE_COLUMNS]
+    .flat(2)
+    .filter((g) => g.items.length > 0)
+    .map((g) => [g.slug, g.items]),
+);
 
 export function Header() {
   const navigate = useNavigate();
@@ -488,7 +494,7 @@ export function Header() {
       <MegaPanel
         open={openMenu === "appliance"}
         columns={APPLIANCE_COLUMNS}
-        gridCols={5}
+        gridCols={4}
         onEnter={() => setOpenMenu("appliance")}
         onLeave={() => setOpenMenu(null)}
       />
@@ -739,15 +745,31 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
             </summary>
             <div className="pb-2">
               {cats.filter((c) => c.parent_group === g).map((c) => (
-                <Link
-                  key={c.id}
-                  to="/category/$slug"
-                  params={{ slug: c.slug }}
-                  onClick={onClose}
-                  className="block px-6 py-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  {c.name}
-                </Link>
+                <div key={c.id} className="px-3 py-1.5">
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: c.slug }}
+                    onClick={onClose}
+                    className="block py-1 text-[13px] font-semibold text-foreground"
+                  >
+                    {c.name}
+                  </Link>
+                  {(FAMILIES_BY_CATEGORY[c.slug] ?? []).length > 0 && (
+                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 border-l border-border pl-3">
+                      {FAMILIES_BY_CATEGORY[c.slug]!.map((it) => (
+                        <Link
+                          key={it.slug}
+                          to="/products/$slug"
+                          params={{ slug: it.slug }}
+                          onClick={onClose}
+                          className="text-[12.5px] text-muted-foreground hover:text-primary"
+                        >
+                          {it.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </details>
@@ -808,21 +830,21 @@ function MegaPanel({
 }: {
   open: boolean;
   columns: MegaGroup[][];
-  gridCols?: 5 | 6;
+  gridCols?: 4 | 5 | 6;
   onEnter: () => void;
   onLeave: () => void;
 }) {
-  const colsClass = gridCols === 5 ? "grid-cols-5" : "grid-cols-6";
+  const colsClass = gridCols === 4 ? "grid-cols-4" : gridCols === 5 ? "grid-cols-5" : "grid-cols-6";
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-background shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 lg:block",
         open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
       )}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className={cn("container-x grid gap-x-8 gap-y-6 py-10", colsClass)}>
+      <div className={cn("container-x grid items-start gap-x-10 gap-y-7 py-8", colsClass)}>
         {columns.map((col, ci) => (
           <div key={ci} className="min-w-0 space-y-6">
             {col.map((group, gi) => {

@@ -60,7 +60,7 @@ const AGGREGATE = { rating: 4.8, count: 1247 };
 
 export function GoogleReviews() {
   return (
-    <section className="container-x py-16 lg:py-24">
+    <section className="container-x py-10 lg:py-14">
       <div className="mx-auto max-w-3xl text-center">
         <div className="text-eyebrow text-primary">06 · What customers say</div>
         <h2 className="text-display mt-3 text-4xl leading-tight sm:text-5xl">
@@ -85,7 +85,7 @@ export function GoogleReviews() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {REVIEWS.map((r, idx) => (
           <motion.article
             key={r.author}
@@ -126,7 +126,7 @@ export function GoogleReviews() {
         ))}
       </div>
 
-      <div className="mt-10 text-center">
+      <div className="mt-8 text-center">
         <a
           href="https://www.google.com/search?q=Aurona+Lighting+Industries+reviews"
           target="_blank"

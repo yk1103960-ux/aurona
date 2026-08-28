@@ -8,7 +8,6 @@ import { CategoryCircles } from "@/components/collections/CategoryCircles";
 import { HeroSlider } from "@/components/marketing/HeroSlider";
 import { GoogleReviews } from "@/components/marketing/GoogleReviews";
 import { SalesOfTheDay } from "@/components/marketing/SalesOfTheDay";
-import { FaqSection } from "@/components/marketing/FaqSection";
 import { ProductRail } from "@/components/product/ProductRail";
 
 
@@ -99,7 +98,7 @@ function Home() {
 
 
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
-      <section className="relative overflow-hidden bg-surface py-12 lg:py-16">
+      <section className="relative overflow-hidden bg-surface py-10 lg:py-14">
         <div className="pointer-events-none absolute inset-0 editorial-grid opacity-30" aria-hidden />
         <div className="pointer-events-none absolute -left-40 top-1/4 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_16%,transparent),transparent_70%)] blur-3xl" aria-hidden />
         <div className="container-x relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
@@ -148,7 +147,7 @@ function Home() {
       </section>
 
       {/* ============ FAN EDITORIAL SPLIT ============ */}
-      <section className="container-x py-12 lg:py-16">
+      <section className="container-x py-10 lg:py-14">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-center lg:gap-16">
           <div className="order-2 lg:order-1">
             <div className="text-eyebrow text-gold">03 · Air, refined</div>
@@ -184,7 +183,7 @@ function Home() {
       <GoogleReviews />
 
       {/* ============ CTA — partner ============ */}
-      <section className="container-x py-12 lg:py-16">
+      <section className="container-x py-10 lg:py-14">
 
         <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground sm:p-14 lg:p-20">
           <div className="orb-float absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/25 blur-3xl" aria-hidden />
@@ -214,9 +213,6 @@ function Home() {
           </div>
         </div>
       </section>
-
-      {/* ============ FAQs ============ */}
-      <FaqSection />
 
     </div>
   );
