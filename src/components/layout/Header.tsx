@@ -846,30 +846,34 @@ function MegaPanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className={cn("container-x grid items-start gap-x-5 gap-y-3 py-4 max-h-[55vh] overflow-y-auto", colsClass)}>
+      <div className={cn("container-x grid items-start gap-x-4 gap-y-3 py-3.5 max-h-[55vh] overflow-y-auto", colsClass)}>
         {columns.map((col, ci) => (
-          <div key={ci} className="min-w-0 space-y-3.5">
+          <div key={ci} className="min-w-0 space-y-3">
             {col.map((group, gi) => {
+              const useCols = group.items.length > 6;
               return (
                 <div key={`${group.heading}-${gi}`}>
                   {group.heading ? (
                     <Link
                       to="/category/$slug"
                       params={{ slug: group.slug }}
-                      className="block text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:text-gold"
+                      className="block text-[11px] font-bold uppercase tracking-[0.18em] text-primary transition-colors hover:text-gold"
                     >
                       {group.heading}
                     </Link>
                   ) : (
                     <span className="block h-[13px]" aria-hidden />
                   )}
-                  <ul className="mt-1.5 space-y-1">
+                  <ul className={cn("mt-1 gap-x-3", useCols ? "grid grid-cols-2 gap-y-1" : "space-y-1")}>
                     {group.items.map((item) => (
                       <li key={item.slug}>
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className="group/mi block text-[12px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className={cn(
+                            "group/mi block text-[12px] leading-snug text-foreground/70 transition-all hover:text-primary",
+                            !useCols && "hover:translate-x-0.5",
+                          )}
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
@@ -880,7 +884,7 @@ function MegaPanel({
                     <Link
                       to="/category/$slug"
                       params={{ slug: group.slug }}
-                      className="mt-1.5 inline-block text-[12px] leading-snug text-foreground/70 transition-colors hover:text-primary"
+                      className="mt-1 inline-block text-[12px] leading-snug text-foreground/70 transition-colors hover:text-primary"
                     >
                       {group.note}
                     </Link>
