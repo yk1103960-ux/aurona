@@ -466,29 +466,49 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
     const rows = affiliates.data ?? [];
     const comms = commissions.data ?? [];
     const refs = referrals.data ?? [];
+    const paysOut = withdrawals.data ?? [];
     const stats = rows.map((a) => {
       const mine = comms.filter((c) => c.affiliate_id === a.id);
       const sum = (s: string) =>
         Math.round(mine.filter((c) => c.status === s).reduce((t, c) => t + Number(c.amount), 0) * 100) / 100;
+      const withdrawnPending =
+        Math.round(
+          paysOut
+            .filter(
+              (w) =>
+                w.affiliate_id === a.id &&
+                ["requested", "approved", "processing"].includes(w.status as string),
+            )
+            .reduce((t, w) => t + Number(w.amount), 0) * 100,
+        ) / 100;
+      const approved = sum("approved");
       return {
         affiliate_id: a.id,
         referrals: refs.filter((r) => r.affiliate_id === a.id).length,
         orders: mine.length,
         pending: sum("pending"),
-        approved: sum("approved"),
+        approved,
         paid: sum("paid"),
         reversed: sum("reversed"),
+        withdrawnPending,
+        available: Math.round(Math.max(0, approved - withdrawnPending) * 100) / 100,
+        payout: payoutComplete(a),
       };
     });
 
     // Product-level performance: clicks on product links vs commission earned.
     const [clickRows, itemRows] = await Promise.all([
-      supabaseAdmin.from("affiliate_product_clicks").select("product_id").limit(5000),
+      supabaseAdmin
+        .from("affiliate_product_clicks")
+        .select("product_id, affiliate_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5000),
       supabaseAdmin
         .from("affiliate_commission_items")
         .select("product_id, product_name, quantity, amount")
         .limit(5000),
     ]);
+
     const byProduct = new Map<
       string,
       { product_id: string; product_name: string; clicks: number; units: number; commission: number }
