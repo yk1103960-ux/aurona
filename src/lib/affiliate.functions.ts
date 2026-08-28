@@ -257,18 +257,121 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
         full_name: aff.full_name,
         email: aff.email,
         mobile: aff.mobile,
+        company: aff.company,
+        address: aff.address,
+        city: aff.city,
+        state: aff.state,
+        pincode: aff.pincode,
+        pan: aff.pan,
+        gstin: aff.gstin,
         payout_method: aff.payout_method,
         payout_upi: aff.payout_upi,
+        payout_account_name: aff.payout_account_name,
+        payout_account_number: aff.payout_account_number,
+        payout_ifsc: aff.payout_ifsc,
+        payout_bank: aff.payout_bank,
         commission_kind: aff.commission_kind ?? settings.default_commission_kind,
         commission_value: Number(aff.commission_value ?? settings.default_commission_value),
         created_at: aff.created_at,
       },
+      payoutReady: payoutComplete(aff),
       balance,
       commissions: commissions.data ?? [],
       referrals: referrals.data ?? [],
       withdrawals: withdrawals.data ?? [],
     };
   });
+
+/** Payment details must be complete before a payout can be requested. */
+function payoutComplete(aff: {
+  payout_method: string;
+  payout_upi?: string | null;
+  payout_account_name?: string | null;
+  payout_account_number?: string | null;
+  payout_ifsc?: string | null;
+  full_name?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+}) {
+  const missing: string[] = [];
+  if (!aff.full_name?.trim()) missing.push("Full name");
+  if (!aff.email?.trim()) missing.push("Email");
+  if (!aff.mobile?.trim()) missing.push("Mobile number");
+  if (aff.payout_method === "upi") {
+    if (!aff.payout_upi?.trim()) missing.push("UPI ID");
+  } else {
+    if (!aff.payout_account_name?.trim()) missing.push("Account holder name");
+    if (!aff.payout_account_number?.trim()) missing.push("Account number");
+    if (!aff.payout_ifsc?.trim()) missing.push("IFSC code");
+  }
+  return { ok: missing.length === 0, missing };
+}
+
+/** Affiliate updates their own KYC / payment details used for payouts. */
+export const updateMyPayoutDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        full_name: z.string().trim().min(2).max(120),
+        mobile: z.string().trim().min(8).max(20),
+        company: z.string().trim().max(160).optional().or(z.literal("")),
+        address: z.string().trim().max(400).optional().or(z.literal("")),
+        city: z.string().trim().max(120).optional().or(z.literal("")),
+        state: z.string().trim().max(120).optional().or(z.literal("")),
+        pincode: z.string().trim().max(12).optional().or(z.literal("")),
+        pan: z.string().trim().max(20).optional().or(z.literal("")),
+        gstin: z.string().trim().max(20).optional().or(z.literal("")),
+        payout_method: z.enum(["upi", "bank"]),
+        payout_upi: z.string().trim().max(120).optional().or(z.literal("")),
+        payout_account_name: z.string().trim().max(160).optional().or(z.literal("")),
+        payout_account_number: z.string().trim().max(40).optional().or(z.literal("")),
+        payout_ifsc: z.string().trim().max(20).optional().or(z.literal("")),
+        payout_bank: z.string().trim().max(160).optional().or(z.literal("")),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const check = payoutComplete({ ...data, email: "ok" });
+    if (!check.ok) throw new Error(`Please complete: ${check.missing.join(", ")}`);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { logAffiliate } = await import("./affiliate.server");
+    const { data: aff } = await supabaseAdmin
+      .from("affiliates")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!aff) throw new Error("You are not an affiliate.");
+    const nullable = (v?: string) => (v && v.trim() ? v.trim() : null);
+    const { error } = await supabaseAdmin
+      .from("affiliates")
+      .update({
+        full_name: data.full_name,
+        mobile: data.mobile,
+        company: nullable(data.company),
+        address: nullable(data.address),
+        city: nullable(data.city),
+        state: nullable(data.state),
+        pincode: nullable(data.pincode),
+        pan: nullable(data.pan)?.toUpperCase() ?? null,
+        gstin: nullable(data.gstin)?.toUpperCase() ?? null,
+        payout_method: data.payout_method,
+        payout_upi: nullable(data.payout_upi),
+        payout_account_name: nullable(data.payout_account_name),
+        payout_account_number: nullable(data.payout_account_number),
+        payout_ifsc: nullable(data.payout_ifsc)?.toUpperCase() ?? null,
+        payout_bank: nullable(data.payout_bank),
+      })
+      .eq("id", aff.id);
+    if (error) throw new Error("Could not save your payment details.");
+    await logAffiliate({
+      affiliateId: aff.id,
+      actorUserId: context.userId,
+      action: "affiliate.payout_details_updated",
+    });
+    return { ok: true as const };
+  });
+
 
 export const requestWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
