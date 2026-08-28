@@ -141,13 +141,17 @@ export const productsQuery = (filter?: {
         const like = `%${filter.search.trim().replace(/[%,()]/g, " ")}%`;
         q = q.or(`name.ilike.${like},sku.ilike.${like}`);
       }
-      if (filter?.limit) q = q.limit(filter.limit);
+      // Rails show one card per product family (e.g. a single "HEXA" card that
+      // opens its wattage/colour variants) — over-fetch so de-duping by family
+      // still fills the requested count.
+      if (filter?.limit) q = q.limit(Math.max(filter.limit * 12, 48));
       const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data ?? []) as unknown as (Product & { categories: { slug: string; name: string; icon: string | null } | null })[];
       const imgs = await primaryImages("product_id", rows.map((r) => r.id));
       const skus = [...new Set(rows.map((row) => row.sku).filter(Boolean))];
-      if (skus.length === 0) return rows.map((row) => ({ ...row, image_url: imgs[row.id] ?? null }));
+      const cut = (list: typeof rows) => (filter?.limit ? list.slice(0, filter.limit) : list);
+      if (skus.length === 0) return cut(rows).map((row) => ({ ...row, image_url: imgs[row.id] ?? null }));
 
       const { data: links } = await supabase
         .from("product_variants")
@@ -160,14 +164,49 @@ export const productsQuery = (filter?: {
         if (link.family_id) familyIdBySku.set(link.sku, link.family_id);
       }
 
+      const famIds = [...new Set([...familyIdBySku.values()])];
       // Photos are attached to the product family, so fall back to the
       // family's primary image when a single product row has none.
-      const famImgs = await primaryImages("family_id", [...familyIdBySku.values()]);
+      const famImgs = await primaryImages("family_id", famIds);
 
-      return rows.map((row) => {
+      type FamMeta = {
+        id: string; slug: string; name: string; main_sku: string;
+        min_price: number | null; max_price: number | null; min_mrp: number | null; max_mrp: number | null;
+        total_stock: number | null;
+      };
+      const famMeta = new Map<string, FamMeta>();
+      if (famIds.length > 0) {
+        const { data: fams } = await supabase
+          .from("product_families")
+          .select("id, slug, name, main_sku, min_price, max_price, min_mrp, max_mrp, total_stock")
+          .in("id", famIds);
+        for (const f of (fams ?? []) as unknown as FamMeta[]) famMeta.set(f.id, f);
+      }
+
+      const seenFamilies = new Set<string>();
+      const deduped: typeof rows = [];
+      for (const row of rows) {
         const famId = familyIdBySku.get(row.sku);
+        if (famId) {
+          if (seenFamilies.has(famId)) continue;
+          seenFamilies.add(famId);
+        }
+        deduped.push(row);
+      }
+
+      return cut(deduped).map((row) => {
+        const famId = familyIdBySku.get(row.sku);
+        const meta = famId ? famMeta.get(famId) : undefined;
+        const min = meta?.min_price ?? null;
+        const max = meta?.max_price ?? null;
         return {
           ...row,
+          name: meta?.name ?? row.name,
+          sku: meta?.main_sku ?? row.sku,
+          price: min && min > 0 ? Number(min) : row.price,
+          mrp: meta?.min_mrp && Number(meta.min_mrp) > 0 ? Number(meta.min_mrp) : row.mrp,
+          stock: meta?.total_stock ?? row.stock,
+          price_from: !!(min && max && Number(min) !== Number(max)),
           image_url: imgs[row.id] ?? (famId ? famImgs[famId] ?? null : null),
           family_slug: familyBySku.get(row.sku) ?? null,
         };
@@ -175,6 +214,7 @@ export const productsQuery = (filter?: {
 
     },
   });
+
 
 export type ProductRow = Product & { categories: { slug: string; name: string; icon: string | null } | null };
 export type ProductsPage = { rows: ProductRow[]; total: number };
