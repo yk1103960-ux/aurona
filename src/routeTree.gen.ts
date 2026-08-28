@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
+import { Route as RetailerRouteImport } from './routes/retailer'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PaymentStatusRouteImport } from './routes/payment-status'
 import { Route as PaymentRouteImport } from './routes/payment'
@@ -74,6 +75,11 @@ import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
   path: '/wishlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RetailerRoute = RetailerRouteImport.update({
+  id: '/retailer',
+  path: '/retailer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRoute = ProductsRouteImport.update({
@@ -427,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
+  '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
@@ -487,6 +494,7 @@ export interface FileRoutesByTo {
   '/order-success': typeof OrderSuccessRoute
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
+  '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
@@ -551,6 +559,7 @@ export interface FileRoutesById {
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
+  '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
@@ -616,6 +625,7 @@ export interface FileRouteTypes {
     | '/payment'
     | '/payment-status'
     | '/products'
+    | '/retailer'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
@@ -676,6 +686,7 @@ export interface FileRouteTypes {
     | '/order-success'
     | '/payment'
     | '/payment-status'
+    | '/retailer'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/payment'
     | '/payment-status'
     | '/products'
+    | '/retailer'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
@@ -803,6 +815,7 @@ export interface RootRouteChildren {
   PaymentRoute: typeof PaymentRoute
   PaymentStatusRoute: typeof PaymentStatusRoute
   ProductsRoute: typeof ProductsRouteWithChildren
+  RetailerRoute: typeof RetailerRoute
   WishlistRoute: typeof WishlistRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -823,6 +836,13 @@ declare module '@tanstack/react-router' {
       path: '/wishlist'
       fullPath: '/wishlist'
       preLoaderRoute: typeof WishlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/retailer': {
+      id: '/retailer'
+      path: '/retailer'
+      fullPath: '/retailer'
+      preLoaderRoute: typeof RetailerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -1377,6 +1397,7 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentRoute: PaymentRoute,
   PaymentStatusRoute: PaymentStatusRoute,
   ProductsRoute: ProductsRouteWithChildren,
+  RetailerRoute: RetailerRoute,
   WishlistRoute: WishlistRoute,
   BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
