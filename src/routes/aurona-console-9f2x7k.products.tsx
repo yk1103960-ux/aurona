@@ -32,7 +32,29 @@ function ProductsAdmin() {
       if (search) query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
       const { data, error, count } = await query;
       if (error) throw error;
-      return { rows: data ?? [], count: count ?? 0 };
+      const rows = data ?? [];
+
+      // Variant-based products keep their prices on product_variants, so the
+      // products row can be 0. Resolve a display range for those.
+      const zeroSkus = rows.filter((r) => !Number(r.price)).map((r) => r.sku);
+      const ranges: Record<string, { min: number; max: number }> = {};
+      if (zeroSkus.length) {
+        const { data: fams } = await supabase
+          .from("product_families")
+          .select("main_sku, min_price, max_price, id")
+          .in("main_sku", zeroSkus);
+        for (const fam of fams ?? []) {
+          const { data: vs } = await supabase
+            .from("product_variants")
+            .select("price")
+            .eq("family_id", fam.id);
+          const prices = (vs ?? []).map((v) => Number(v.price)).filter((n) => n > 0);
+          const min = prices.length ? Math.min(...prices) : Number(fam.min_price ?? 0);
+          const max = prices.length ? Math.max(...prices) : Number(fam.max_price ?? 0);
+          if (min > 0) ranges[fam.main_sku] = { min, max };
+        }
+      }
+      return { rows, count: count ?? 0, ranges };
     },
   });
   useRealtime(["products"], () => q.refetch());
@@ -149,8 +171,20 @@ function ProductsAdmin() {
                 </td>
                 <td className="p-3 text-xs font-mono text-slate-600">{p.sku}</td>
                 <td className="p-3 text-right">
-                  <div className="font-semibold">{inr(Number(p.price))}</div>
-                  {p.mrp && Number(p.mrp) > Number(p.price) && <div className="text-xs line-through text-slate-400">{inr(Number(p.mrp))}</div>}
+                  {Number(p.price) > 0 ? (
+                    <>
+                      <div className="font-semibold">{inr(Number(p.price))}</div>
+                      {p.mrp && Number(p.mrp) > Number(p.price) && <div className="text-xs line-through text-slate-400">{inr(Number(p.mrp))}</div>}
+                    </>
+                  ) : q.data?.ranges?.[p.sku] ? (
+                    <div className="font-semibold">
+                      {inr(q.data.ranges[p.sku].min)}
+                      {q.data.ranges[p.sku].max > q.data.ranges[p.sku].min && ` – ${inr(q.data.ranges[p.sku].max)}`}
+                      <div className="text-xs font-normal text-slate-400">from variants</div>
+                    </div>
+                  ) : (
+                    <Link to="/aurona-console-9f2x7k/products/$id" params={{ id: p.id }} className="text-xs font-medium text-amber-600 hover:underline">Set price</Link>
+                  )}
                 </td>
                 <td className={`p-3 text-right font-semibold ${p.stock < 10 ? "text-rose-600" : ""}`}>{p.stock}</td>
                 <td className="p-3 text-center">
