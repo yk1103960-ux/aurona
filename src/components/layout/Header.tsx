@@ -465,9 +465,9 @@ export function Header() {
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/products">All Products</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
+            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} onAnchor={setApplianceAnchor} />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
+            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} onAnchor={setLedAnchor} />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/affiliate">Affiliate With Us</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
@@ -488,14 +488,14 @@ export function Header() {
       <MegaPanel
         open={openMenu === "led"}
         columns={LED_COLUMNS}
-        gridCols={5}
+        anchorLeft={ledAnchor}
         onEnter={() => setOpenMenu("led")}
         onLeave={() => setOpenMenu(null)}
       />
       <MegaPanel
         open={openMenu === "appliance"}
         columns={APPLIANCE_COLUMNS}
-        gridCols={5}
+        anchorLeft={applianceAnchor}
         onEnter={() => setOpenMenu("appliance")}
         onLeave={() => setOpenMenu(null)}
       />
