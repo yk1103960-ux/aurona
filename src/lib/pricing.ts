@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type PricingRole = "guest" | "customer" | "retailer" | "distributor" | "admin";
