@@ -19,6 +19,7 @@ import { Route as OrderSuccessRouteImport } from './routes/order-success'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as LeadershipRouteImport } from './routes/leadership'
 import { Route as FeaturedRouteImport } from './routes/featured'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DistributorRouteImport } from './routes/distributor'
 import { Route as DealsRouteImport } from './routes/deals'
 import { Route as CustomerServiceRouteImport } from './routes/customer-service'
@@ -121,6 +122,11 @@ const LeadershipRoute = LeadershipRouteImport.update({
 const FeaturedRoute = FeaturedRouteImport.update({
   id: '/featured',
   path: '/featured',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DistributorRoute = DistributorRouteImport.update({
@@ -432,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
   '/distributor': typeof DistributorRoute
+  '/faq': typeof FaqRoute
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
@@ -496,6 +503,7 @@ export interface FileRoutesByTo {
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
   '/distributor': typeof DistributorRoute
+  '/faq': typeof FaqRoute
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
@@ -560,6 +568,7 @@ export interface FileRoutesById {
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
   '/distributor': typeof DistributorRoute
+  '/faq': typeof FaqRoute
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
@@ -627,6 +636,7 @@ export interface FileRouteTypes {
     | '/customer-service'
     | '/deals'
     | '/distributor'
+    | '/faq'
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
@@ -691,6 +701,7 @@ export interface FileRouteTypes {
     | '/customer-service'
     | '/deals'
     | '/distributor'
+    | '/faq'
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/customer-service'
     | '/deals'
     | '/distributor'
+    | '/faq'
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
@@ -820,6 +832,7 @@ export interface RootRouteChildren {
   CustomerServiceRoute: typeof CustomerServiceRoute
   DealsRoute: typeof DealsRoute
   DistributorRoute: typeof DistributorRoute
+  FaqRoute: typeof FaqRoute
   FeaturedRoute: typeof FeaturedRoute
   LeadershipRoute: typeof LeadershipRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
@@ -912,6 +925,13 @@ declare module '@tanstack/react-router' {
       path: '/featured'
       fullPath: '/featured'
       preLoaderRoute: typeof FeaturedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/distributor': {
@@ -1410,6 +1430,7 @@ const rootRouteChildren: RootRouteChildren = {
   CustomerServiceRoute: CustomerServiceRoute,
   DealsRoute: DealsRoute,
   DistributorRoute: DistributorRoute,
+  FaqRoute: FaqRoute,
   FeaturedRoute: FeaturedRoute,
   LeadershipRoute: LeadershipRoute,
   NewArrivalsRoute: NewArrivalsRoute,

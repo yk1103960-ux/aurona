@@ -103,7 +103,7 @@ export function Footer() {
             <Link to="/careers" className={cls}>Career With Us</Link>
             <Link to="/contact" className={cls}>Contact Us</Link>
             <Link to="/company-information" className={cls}>Sitemap</Link>
-            <Link to="/customer-service" className={cls}>FAQ</Link>
+            <Link to="/faq" className={cls}>FAQ</Link>
           </FooterCol>
 
           <div className="sm:col-span-2 lg:col-span-1">

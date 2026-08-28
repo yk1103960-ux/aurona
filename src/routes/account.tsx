@@ -447,7 +447,7 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
             <Panel title="Support, refunds & conversations" sub="Tickets you have raised with our team">
               <div className="mb-5 flex flex-wrap gap-3">
                 <Button asChild className="rounded-full">
-                  <Link to="/customer-service">Raise a ticket</Link>
+                  <Link to="/faq">Raise a ticket</Link>
                 </Button>
                 <Button variant="outline" className="gap-2 rounded-full" onClick={() => setSection("returns")}>
                   <RotateCcw className="h-4 w-4" /> Request a refund / return
@@ -456,7 +456,7 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
               {tickets.isLoading ? (
                 <Skeletons />
               ) : (tickets.data ?? []).length === 0 ? (
-                <Empty Icon={Headphones} title="No tickets yet" body="Raise a ticket and our team replies within one business day." cta="Contact support" to="/customer-service" />
+                <Empty Icon={Headphones} title="No tickets yet" body="Raise a ticket and our team replies within one business day." cta="Contact support" to="/faq" />
               ) : (
                 <div className="space-y-3">
                   {tickets.data!.map((t) => (
@@ -606,7 +606,7 @@ function OrdersPanel({ loading, rows }: { loading: boolean; rows: any[] }) {
                   )}
                 </div>
 
-                <Link to="/customer-service" className="text-[10px] font-medium text-muted-foreground hover:text-primary sm:ml-auto">
+                <Link to="/faq" className="text-[10px] font-medium text-muted-foreground hover:text-primary sm:ml-auto">
                   Need help?
                 </Link>
               </div>
