@@ -69,6 +69,34 @@ export const saleOfTheDayQuery = (count = 6) =>
         pool = [...pool, ...extra];
       }
 
+      // One entry per product family — a family's variants (e.g. HEXA 3 W /
+      // 5 W in six colours) must never appear as repeated cards.
+      const poolSkus = [...new Set(pool.map((p) => p.sku).filter(Boolean))];
+      const famIdBySku = new Map<string, string>();
+      const famSlugBySku = new Map<string, string>();
+      const famNameBySku = new Map<string, string>();
+      if (poolSkus.length > 0) {
+        const { data: links } = await supabase
+          .from("product_variants")
+          .select("sku, family_id, product_families(slug, name)")
+          .in("sku", poolSkus);
+        for (const l of (links ?? []) as unknown as {
+          sku: string; family_id: string | null; product_families?: { slug: string; name: string } | null;
+        }[]) {
+          if (l.family_id) famIdBySku.set(l.sku, l.family_id);
+          if (l.product_families?.slug) famSlugBySku.set(l.sku, l.product_families.slug);
+          if (l.product_families?.name) famNameBySku.set(l.sku, l.product_families.name);
+        }
+      }
+      const seen = new Set<string>();
+      pool = pool.filter((p) => {
+        const fam = famIdBySku.get(p.sku);
+        if (!fam) return true;
+        if (seen.has(fam)) return false;
+        seen.add(fam);
+        return true;
+      });
+
       const day = saleDayKey();
 
       // Optional admin override: site_settings key `sale_of_the_day_skus`
@@ -103,6 +131,14 @@ export const saleOfTheDayQuery = (count = 6) =>
       const ids = new Set(picked.map((p) => p.id));
       const enriched = (await (productsQuery().queryFn as () => Promise<SaleRow[]>)()).filter((p) => ids.has(p.id));
       const byId = new Map(enriched.map((p) => [p.id, p]));
-      return picked.map((p) => byId.get(p.id) ?? p);
+      return picked.map((p) => {
+        const base = byId.get(p.id) ?? p;
+        return {
+          ...base,
+          name: famNameBySku.get(p.sku) ?? base.name,
+          family_slug: famSlugBySku.get(p.sku) ?? base.family_slug ?? null,
+        };
+      });
     },
   });
+
