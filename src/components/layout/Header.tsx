@@ -324,7 +324,7 @@ export function Header() {
             </div>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
             <Link to="/contact" className="transition-opacity hover:opacity-80">Contact Us</Link>
-            <Link to="/customer-service" className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+            <Link to="/faq" className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
               <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} /> FAQs
             </Link>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />

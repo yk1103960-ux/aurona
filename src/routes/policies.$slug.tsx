@@ -136,7 +136,7 @@ export const Route = createFileRoute("/policies/$slug")({
   notFoundComponent: () => (
     <div className="container-x py-24 text-center">
       <h1 className="text-display text-3xl">Policy not found</h1>
-      <Button asChild className="mt-6"><Link to="/customer-service">Back to support</Link></Button>
+      <Button asChild className="mt-6"><Link to="/faq">Back to support</Link></Button>
     </div>
   ),
   component: PolicyPage,
@@ -149,7 +149,7 @@ function PolicyPage() {
     <div className="container-x py-12">
       <div className="mb-6 text-xs text-muted-foreground">
         <Link to="/" className="hover:text-foreground">Home</Link> /{" "}
-        <Link to="/customer-service" className="hover:text-foreground">Customer Service</Link> /{" "}
+        <Link to="/faq" className="hover:text-foreground">Customer Service</Link> /{" "}
         <span className="text-foreground">{policy.title}</span>
       </div>
       <div className="mx-auto max-w-3xl">
@@ -175,7 +175,7 @@ function PolicyPage() {
           ))}
         </div>
         <div className="mt-10 flex flex-wrap gap-3">
-          <Button asChild variant="outline"><Link to="/customer-service">Back to Customer Service</Link></Button>
+          <Button asChild variant="outline"><Link to="/faq">Back to Customer Service</Link></Button>
           <Button asChild><Link to="/contact">Contact Support</Link></Button>
         </div>
       </div>

@@ -309,7 +309,7 @@ function Dashboard({ data }: { data: MyAffiliate }) {
               : "Your affiliate application was not approved. You can contact support if you think this is a mistake."}
         </p>
         <Button asChild variant="outline" className="mt-6 rounded-full">
-          <Link to="/customer-service">Contact support</Link>
+          <Link to="/faq">Contact support</Link>
         </Button>
       </div>
     );
