@@ -62,6 +62,15 @@ const LED_COLUMNS: MegaGroup[][] = [
       slug: "tube-lights",
       items: [{ label: "Batten", slug: "batten-tl-ba" }],
     },
+    {
+      heading: "Deep Light",
+      slug: "deep-lights",
+      items: [
+        { label: "Mini Junction", slug: "mini-junction-dl-mj" },
+        { label: "Royal", slug: "royal-dl-ro" },
+        { label: "Hexa", slug: "hexa-dl-he" },
+      ],
+    },
   ],
   [
     {
@@ -80,6 +89,14 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Backlit Surface", slug: "backlit-surface-sp-bls" },
         { label: "Moon Surface", slug: "moon-surface-sp-ms" },
         { label: "Rimless Surface", slug: "rimless-surface-sp-rls" },
+      ],
+    },
+    {
+      heading: "Flood Light",
+      slug: "flood-lights",
+      items: [
+        { label: "Nova", slug: "nova-fl-no" },
+        { label: "AuraLUX", slug: "auralux-fl-al" },
       ],
     },
   ],
@@ -102,25 +119,6 @@ const LED_COLUMNS: MegaGroup[][] = [
       heading: "Outdoor Light",
       slug: "outdoor-lights",
       items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
-    },
-  ],
-  [
-    {
-      heading: "Deep Light",
-      slug: "deep-lights",
-      items: [
-        { label: "Mini Junction", slug: "mini-junction-dl-mj" },
-        { label: "Royal", slug: "royal-dl-ro" },
-        { label: "Hexa", slug: "hexa-dl-he" },
-      ],
-    },
-    {
-      heading: "Flood Light",
-      slug: "flood-lights",
-      items: [
-        { label: "Nova", slug: "nova-fl-no" },
-        { label: "AuraLUX", slug: "auralux-fl-al" },
-      ],
     },
   ],
   [
