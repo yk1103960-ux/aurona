@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AddressManager } from "@/components/account/AddressManager";
 import { AvatarUpload } from "@/components/account/AvatarUpload";
 import { useAvatarUrl } from "@/hooks/useAvatarUrl";
+import { useMyRole } from "@/lib/pricing";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
