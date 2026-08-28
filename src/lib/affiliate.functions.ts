@@ -543,17 +543,98 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
     }
     const productStats = [...byProduct.values()].sort((a, b) => b.commission - a.commission).slice(0, 50);
 
+    // 30-day daily trend (IST-agnostic ISO day buckets) for the analytics tab.
+    const DAYS = 30;
+    const dayKey = (d: string | Date) => new Date(d).toISOString().slice(0, 10);
+    const series: Array<{
+      day: string;
+      clicks: number;
+      visitors: number;
+      signups: number;
+      orders: number;
+      commission: number;
+    }> = [];
+    const index = new Map<string, number>();
+    for (let i = DAYS - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86_400_000);
+      const key = dayKey(d);
+      index.set(key, series.length);
+      series.push({ day: key, clicks: 0, visitors: 0, signups: 0, orders: 0, commission: 0 });
+    }
+    const bump = (key: string, fn: (row: (typeof series)[number]) => void) => {
+      const i = index.get(key);
+      if (i != null) fn(series[i]!);
+    };
+    for (const c of clickRows.data ?? []) bump(dayKey(c.created_at), (r) => void r.clicks++);
+    for (const r0 of refs) {
+      bump(dayKey(r0.first_seen_at), (r) => {
+        r.visitors++;
+        if (r0.user_id) r.signups++;
+      });
+    }
+    for (const c of comms) {
+      bump(dayKey(c.created_at), (r) => {
+        r.orders++;
+        r.commission = Math.round((r.commission + Number(c.amount)) * 100) / 100;
+      });
+    }
+
+    const totalClicks = (clickRows.data ?? []).length;
+    const analytics = {
+      series,
+      totals: {
+        clicks: totalClicks,
+        visitors: refs.length,
+        signups: refs.filter((r) => r.user_id).length,
+        conversions: refs.filter((r) => r.converted_at).length,
+        orders: comms.length,
+        commission:
+          Math.round(comms.reduce((t, c) => t + Number(c.amount), 0) * 100) / 100,
+        aov:
+          comms.length > 0
+            ? Math.round((comms.reduce((t, c) => t + Number(c.order_total), 0) / comms.length) * 100) / 100
+            : 0,
+        clickToOrder: totalClicks > 0 ? Math.round((comms.length / totalClicks) * 1000) / 10 : 0,
+        payableNow:
+          Math.round(stats.reduce((t, s) => t + s.available, 0) * 100) / 100,
+        awaitingPayout:
+          Math.round(
+            paysOut
+              .filter((w) => ["requested", "approved", "processing"].includes(w.status as string))
+              .reduce((t, w) => t + Number(w.amount), 0) * 100,
+          ) / 100,
+        incompleteDetails: stats.filter((s) => !s.payout.ok).length,
+      },
+      leaderboard: rows
+        .map((a) => {
+          const s = stats.find((x) => x.affiliate_id === a.id)!;
+          return {
+            id: a.id,
+            code: a.code,
+            name: a.full_name,
+            clicks: (clickRows.data ?? []).filter((c) => c.affiliate_id === a.id).length,
+            referrals: s.referrals,
+            orders: s.orders,
+            earned: Math.round((s.pending + s.approved + s.paid) * 100) / 100,
+            available: s.available,
+          };
+        })
+        .sort((a, b) => b.earned - a.earned)
+        .slice(0, 20),
+    };
+
     return {
       settings,
       affiliates: rows,
       stats,
       productStats,
+      analytics,
       commissions: comms,
-      withdrawals: withdrawals.data ?? [],
+      withdrawals: paysOut,
       referrals: refs,
       logs: logs.data ?? [],
-
     };
+
   });
 
 export const adminSaveAffiliateSettings = createServerFn({ method: "POST" })
