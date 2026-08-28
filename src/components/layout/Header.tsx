@@ -850,7 +850,7 @@ function MegaPanel({
         {columns.map((col, ci) => (
           <div key={ci} className="min-w-0 space-y-3">
             {col.map((group, gi) => {
-              const useCols = group.items.length > 6;
+              const useCols = group.items.length > 3;
               return (
                 <div key={`${group.heading}-${gi}`}>
                   {group.heading ? (
