@@ -383,11 +383,18 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
 
     const { data: aff } = await supabaseAdmin
       .from("affiliates")
-      .select("id, status, payout_method, payout_upi, payout_account_name, payout_account_number, payout_ifsc, payout_bank")
+      .select(
+        "id, status, full_name, email, mobile, payout_method, payout_upi, payout_account_name, payout_account_number, payout_ifsc, payout_bank",
+      )
       .eq("user_id", context.userId)
       .maybeSingle();
     if (!aff) throw new Error("You are not an affiliate.");
     if (aff.status !== "approved") throw new Error("Your affiliate account is not approved yet.");
+    const ready = payoutComplete(aff);
+    if (!ready.ok) {
+      throw new Error(`Complete your payment details first: ${ready.missing.join(", ")}`);
+    }
+
 
     const balance = await getBalance(aff.id);
     const amount = Math.round(data.amount * 100) / 100;
