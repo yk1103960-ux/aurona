@@ -852,6 +852,8 @@ function MegaTrigger({
   );
 }
 
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 function MegaPanel({
   open,
   columns,
@@ -868,7 +870,7 @@ function MegaPanel({
   const cardRef = useRef<HTMLDivElement>(null);
   const [left, setLeft] = useState(anchorLeft);
 
-  useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     if (!open) return;
     const place = () => {
       const w = cardRef.current?.offsetWidth ?? 0;
