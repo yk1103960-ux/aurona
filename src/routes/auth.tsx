@@ -585,7 +585,10 @@ function AuthPage() {
           <p className="mt-6 text-center text-xs text-muted-foreground">
             By continuing you agree to Aurona's <Link to="/policies/$slug" params={{ slug: "terms" }} className="underline">Terms</Link> and <Link to="/policies/$slug" params={{ slug: "privacy" }} className="underline">Privacy Policy</Link>.
           </p>
+          </>
+          )}
         </div>
+
       </div>
     </div>
   );
