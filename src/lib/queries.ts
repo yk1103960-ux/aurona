@@ -151,18 +151,28 @@ export const productsQuery = (filter?: {
 
       const { data: links } = await supabase
         .from("product_variants")
-        .select(sel("sku, product_families(slug)"))
+        .select(sel("sku, family_id, product_families(slug)"))
         .in("sku", skus);
       const familyBySku = new Map<string, string>();
-      for (const link of (links ?? []) as unknown as { sku: string; product_families?: { slug: string } | null }[]) {
+      const familyIdBySku = new Map<string, string>();
+      for (const link of (links ?? []) as unknown as { sku: string; family_id: string | null; product_families?: { slug: string } | null }[]) {
         if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
+        if (link.family_id) familyIdBySku.set(link.sku, link.family_id);
       }
 
-      return rows.map((row) => ({
-        ...row,
-        image_url: imgs[row.id] ?? null,
-        family_slug: familyBySku.get(row.sku) ?? null,
-      }));
+      // Photos are attached to the product family, so fall back to the
+      // family's primary image when a single product row has none.
+      const famImgs = await primaryImages("family_id", [...familyIdBySku.values()]);
+
+      return rows.map((row) => {
+        const famId = familyIdBySku.get(row.sku);
+        return {
+          ...row,
+          image_url: imgs[row.id] ?? (famId ? famImgs[famId] ?? null : null),
+          family_slug: familyBySku.get(row.sku) ?? null,
+        };
+      });
+
     },
   });
 
