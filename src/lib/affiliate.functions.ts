@@ -126,6 +126,23 @@ export const getProductAffiliateLink = createServerFn({ method: "POST" })
     };
   });
 
+/** Lightweight identity used by product cards to render affiliate links. */
+export const getMyApprovedAffiliateIdentity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { findAffiliateForUser, getSettings } = await import("./affiliate.server");
+    const settings = await getSettings();
+    if (!settings.enabled) return { affiliate: null as null };
+
+    const aff = await findAffiliateForUser(
+      context.userId,
+      context.claims.email as string | undefined,
+    );
+    if (!aff || aff.status !== "approved") return { affiliate: null as null };
+
+    return { affiliate: { code: aff.code } };
+  });
+
 
 /* ------------------------------------------------------- affiliate (owner) */
 

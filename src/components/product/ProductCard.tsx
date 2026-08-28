@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Minus, Plus, ShoppingCart, Star, Phone, Truck, Zap } from "lucide-react";
+import { Heart, Link2, Minus, Plus, ShoppingCart, Star, Phone, Truck, Zap } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { discountPct, inr } from "@/lib/format";
@@ -9,7 +11,9 @@ import type { Product } from "@/lib/queries";
 import { ProductImage } from "./ProductImage";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/hooks/useAuth";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 
 type Row = Product & { 
   categories: { slug: string; name: string; icon?: string | null } | null;
@@ -41,6 +45,14 @@ export function ProductCard({
 }) {
   const cart = useCart();
   const wl = useWishlist();
+  const { user } = useAuth();
+  const fetchAffiliate = useServerFn(getMyApprovedAffiliateIdentity);
+  const { data: affiliateData } = useQuery({
+    queryKey: ["approved-affiliate-identity", user?.id],
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+    queryFn: () => fetchAffiliate({}),
+  });
   const reduce = useReducedMotion();
   const role = useMyRole();
   const { data: priceMap } = useVisiblePrices(product.sku ? [product.sku] : []);
@@ -69,6 +81,18 @@ export function ProductCard({
 
   const handleWishlist = () => {
     wl.toggle.mutate({ productId: product.id, sku: product.sku });
+  };
+
+  const copyAffiliateLink = async () => {
+    const code = affiliateData?.affiliate?.code;
+    if (!code) return;
+    const url = `${window.location.origin}/products/${detailSlug}${product.family_slug ? `?v=${encodeURIComponent(product.sku)}&ref=${encodeURIComponent(code)}` : `?ref=${encodeURIComponent(code)}`}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Affiliate product link copied");
+    } catch {
+      toast.error("Couldn't copy the affiliate link.");
+    }
   };
 
 
@@ -175,6 +199,18 @@ export function ProductCard({
         ) : role.role === "distributor" ? (
           <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Distributor price</div>
         ) : null}
+
+        {affiliateData?.affiliate && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="mt-1 w-full gap-2 rounded-full border-primary/30 text-primary"
+            onClick={copyAffiliateLink}
+          >
+            <Link2 className="h-3.5 w-3.5" /> Copy affiliate link
+          </Button>
+        )}
 
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Truck className="h-3.5 w-3.5 text-success" />
