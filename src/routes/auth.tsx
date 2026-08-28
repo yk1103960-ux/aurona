@@ -419,6 +419,32 @@ function AuthPage() {
             <active.icon className="h-3.5 w-3.5" /> {active.title} account
           </div>
 
+          {roleConflict ? (
+            <div className="mt-5 space-y-4">
+              <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+                <div className="text-sm font-bold text-primary">
+                  You’re signed in as {roleLabel(activeSessionRole)}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {user?.email} — a {roleLabel(activeSessionRole).toLowerCase()} session can’t be used for your{" "}
+                  {active.title.toLowerCase()} account. Sign out to sign in or register as a {active.title.toLowerCase()}.
+                </div>
+              </div>
+              <Button onClick={switchAccount} disabled={busy} className="h-11 w-full rounded-full">
+                {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing out…</> : `Continue as ${active.title}`}
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 w-full rounded-full"
+                onClick={() => nav({ to: DASHBOARD_PATHS[activeSessionRole ?? "customer"] })}
+              >
+                Back to my {roleLabel(activeSessionRole).toLowerCase()} dashboard
+              </Button>
+            </div>
+          ) : (
+          <>
+
+
           <Button onClick={google} disabled={busy} variant="outline" className="mt-5 h-11 w-full gap-2 rounded-full">
             <GoogleIcon /> Continue with Google
           </Button>
