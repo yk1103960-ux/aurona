@@ -216,7 +216,7 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getBalance, getSettings } = await import("./affiliate.server");
+    const { getBalance, getSettings, payoutComplete } = await import("./affiliate.server");
     const settings = await getSettings();
 
     const { data: aff } = await supabaseAdmin
@@ -282,31 +282,6 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
     };
   });
 
-/** Payment details must be complete before a payout can be requested. */
-function payoutComplete(aff: {
-  payout_method: string;
-  payout_upi?: string | null;
-  payout_account_name?: string | null;
-  payout_account_number?: string | null;
-  payout_ifsc?: string | null;
-  full_name?: string | null;
-  mobile?: string | null;
-  email?: string | null;
-}) {
-  const missing: string[] = [];
-  if (!aff.full_name?.trim()) missing.push("Full name");
-  if (!aff.email?.trim()) missing.push("Email");
-  if (!aff.mobile?.trim()) missing.push("Mobile number");
-  if (aff.payout_method === "upi") {
-    if (!aff.payout_upi?.trim()) missing.push("UPI ID");
-  } else {
-    if (!aff.payout_account_name?.trim()) missing.push("Account holder name");
-    if (!aff.payout_account_number?.trim()) missing.push("Account number");
-    if (!aff.payout_ifsc?.trim()) missing.push("IFSC code");
-  }
-  return { ok: missing.length === 0, missing };
-}
-
 /** Affiliate updates their own KYC / payment details used for payouts. */
 export const updateMyPayoutDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -332,6 +307,7 @@ export const updateMyPayoutDetails = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const { payoutComplete } = await import("./affiliate.server");
     const check = payoutComplete({ ...data, email: "ok" });
     if (!check.ok) throw new Error(`Please complete: ${check.missing.join(", ")}`);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -378,7 +354,7 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ amount: z.number().positive().max(10_000_000) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getBalance, getSettings, logAffiliate } = await import("./affiliate.server");
+    const { getBalance, getSettings, logAffiliate, payoutComplete } = await import("./affiliate.server");
     const settings = await getSettings();
 
     const { data: aff } = await supabaseAdmin
@@ -436,7 +412,7 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdminCtx(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getSettings } = await import("./affiliate.server");
+    const { getSettings, payoutComplete } = await import("./affiliate.server");
 
     const [settings, affiliates, commissions, withdrawals, referrals, logs] = await Promise.all([
       getSettings(),
