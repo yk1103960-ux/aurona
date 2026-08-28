@@ -78,11 +78,8 @@ export const getProductAffiliateLink = createServerFn({ method: "POST" })
     const settings = await getSettings();
     if (!settings.enabled) return { affiliate: null as null };
 
-    const { data: aff } = await supabaseAdmin
-      .from("affiliates")
-      .select("id, code, status, commission_kind, commission_value")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const { findAffiliateForUser } = await import("./affiliate.server");
+    const aff = await findAffiliateForUser(context.userId, context.claims.email as string | undefined);
     if (!aff || aff.status !== "approved") return { affiliate: null as null };
 
     const { data: product } = await supabaseAdmin
@@ -174,11 +171,8 @@ export const applyAsAffiliate = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin
-      .from("affiliates")
-      .select("id")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const { findAffiliateForUser } = await import("./affiliate.server");
+    const existing = await findAffiliateForUser(context.userId, context.claims.email as string | undefined);
     if (existing) throw new Error("You have already applied to the affiliate program.");
 
     const code = await generateCode(data.full_name);
@@ -219,11 +213,8 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
     const { getBalance, getSettings, payoutComplete } = await import("./affiliate.server");
     const settings = await getSettings();
 
-    const { data: aff } = await supabaseAdmin
-      .from("affiliates")
-      .select("*")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const { findAffiliateForUser } = await import("./affiliate.server");
+    const aff = await findAffiliateForUser(context.userId, context.claims.email as string | undefined);
     if (!aff) return { affiliate: null, settings };
 
     const [balance, commissions, referrals, withdrawals] = await Promise.all([
@@ -312,11 +303,8 @@ export const updateMyPayoutDetails = createServerFn({ method: "POST" })
     if (!check.ok) throw new Error(`Please complete: ${check.missing.join(", ")}`);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { logAffiliate } = await import("./affiliate.server");
-    const { data: aff } = await supabaseAdmin
-      .from("affiliates")
-      .select("id")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const { findAffiliateForUser } = await import("./affiliate.server");
+    const aff = await findAffiliateForUser(context.userId, context.claims.email as string | undefined);
     if (!aff) throw new Error("You are not an affiliate.");
     const nullable = (v?: string) => (v && v.trim() ? v.trim() : null);
     const { error } = await supabaseAdmin
@@ -357,13 +345,8 @@ export const requestWithdrawal = createServerFn({ method: "POST" })
     const { getBalance, getSettings, logAffiliate, payoutComplete } = await import("./affiliate.server");
     const settings = await getSettings();
 
-    const { data: aff } = await supabaseAdmin
-      .from("affiliates")
-      .select(
-        "id, status, full_name, email, mobile, payout_method, payout_upi, payout_account_name, payout_account_number, payout_ifsc, payout_bank",
-      )
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const { findAffiliateForUser } = await import("./affiliate.server");
+    const aff = await findAffiliateForUser(context.userId, context.claims.email as string | undefined);
     if (!aff) throw new Error("You are not an affiliate.");
     if (aff.status !== "approved") throw new Error("Your affiliate account is not approved yet.");
     const ready = payoutComplete(aff);
