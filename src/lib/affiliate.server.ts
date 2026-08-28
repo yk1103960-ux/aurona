@@ -461,3 +461,46 @@ export function payoutComplete(aff: {
   }
   return { ok: missing.length === 0, missing };
 }
+
+/**
+ * Finds the affiliate account belonging to a signed-in user.
+ *
+ * Rows created before the account existed (or applications reviewed by an
+ * admin) can be missing `user_id`, which used to hide the affiliate panel even
+ * after approval. We therefore fall back to matching the account email —
+ * including role-scoped aliases such as `name+retailer@gmail.com` — and link
+ * the row back to the user so later lookups are direct.
+ */
+export async function findAffiliateForUser(userId: string, email?: string | null) {
+  const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+
+  const { data: byUser } = await db
+    .from("affiliates")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  const linked = byUser ?? [];
+  const preferLinked = linked.find((a) => a.status === "approved") ?? linked[0];
+  if (preferLinked) return preferLinked;
+
+  const raw = (email ?? "").trim().toLowerCase();
+  if (!raw) return null;
+  const candidates = new Set<string>([raw]);
+  const plus = raw.match(/^([^+@]+)\+[^@]*@(.+)$/);
+  if (plus) candidates.add(`${plus[1]}@${plus[2]}`);
+
+  const { data: byEmail } = await db
+    .from("affiliates")
+    .select("*")
+    .in("email", Array.from(candidates))
+    .order("created_at", { ascending: false });
+  const pool = (byEmail ?? []).filter((a) => !a.user_id || a.user_id === userId);
+  const match = pool.find((a) => a.status === "approved") ?? pool[0];
+  if (!match) return null;
+
+  if (!match.user_id) {
+    await db.from("affiliates").update({ user_id: userId } as never).eq("id", match.id);
+    return { ...match, user_id: userId };
+  }
+  return match;
+}
