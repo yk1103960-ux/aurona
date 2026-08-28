@@ -263,6 +263,8 @@ export function Header() {
   const [openSearch, setOpenSearch] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
   const [openMenu, setOpenMenu] = useState<null | "led" | "appliance" | "browse">(null);
+  const [ledAnchor, setLedAnchor] = useState(0);
+  const [applianceAnchor, setApplianceAnchor] = useState(0);
   const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
