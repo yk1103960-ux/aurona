@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
+import { Route as RetailerRouteImport } from './routes/retailer'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PaymentStatusRouteImport } from './routes/payment-status'
 import { Route as PaymentRouteImport } from './routes/payment'
@@ -18,6 +19,7 @@ import { Route as OrderSuccessRouteImport } from './routes/order-success'
 import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
 import { Route as LeadershipRouteImport } from './routes/leadership'
 import { Route as FeaturedRouteImport } from './routes/featured'
+import { Route as DistributorRouteImport } from './routes/distributor'
 import { Route as DealsRouteImport } from './routes/deals'
 import { Route as CustomerServiceRouteImport } from './routes/customer-service'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -76,6 +78,11 @@ const WishlistRoute = WishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RetailerRoute = RetailerRouteImport.update({
+  id: '/retailer',
+  path: '/retailer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -114,6 +121,11 @@ const LeadershipRoute = LeadershipRouteImport.update({
 const FeaturedRoute = FeaturedRouteImport.update({
   id: '/featured',
   path: '/featured',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorRoute = DistributorRouteImport.update({
+  id: '/distributor',
+  path: '/distributor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DealsRoute = DealsRouteImport.update({
@@ -419,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
+  '/distributor': typeof DistributorRoute
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
@@ -427,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
+  '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
@@ -481,12 +495,14 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
+  '/distributor': typeof DistributorRoute
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
   '/order-success': typeof OrderSuccessRoute
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
+  '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
@@ -543,6 +559,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/customer-service': typeof CustomerServiceRoute
   '/deals': typeof DealsRoute
+  '/distributor': typeof DistributorRoute
   '/featured': typeof FeaturedRoute
   '/leadership': typeof LeadershipRoute
   '/new-arrivals': typeof NewArrivalsRoute
@@ -551,6 +568,7 @@ export interface FileRoutesById {
   '/payment': typeof PaymentRoute
   '/payment-status': typeof PaymentStatusRoute
   '/products': typeof ProductsRouteWithChildren
+  '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
@@ -608,6 +626,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/customer-service'
     | '/deals'
+    | '/distributor'
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
@@ -616,6 +635,7 @@ export interface FileRouteTypes {
     | '/payment'
     | '/payment-status'
     | '/products'
+    | '/retailer'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
@@ -670,12 +690,14 @@ export interface FileRouteTypes {
     | '/contact'
     | '/customer-service'
     | '/deals'
+    | '/distributor'
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
     | '/order-success'
     | '/payment'
     | '/payment-status'
+    | '/retailer'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
@@ -731,6 +753,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/customer-service'
     | '/deals'
+    | '/distributor'
     | '/featured'
     | '/leadership'
     | '/new-arrivals'
@@ -739,6 +762,7 @@ export interface FileRouteTypes {
     | '/payment'
     | '/payment-status'
     | '/products'
+    | '/retailer'
     | '/wishlist'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
@@ -795,6 +819,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   CustomerServiceRoute: typeof CustomerServiceRoute
   DealsRoute: typeof DealsRoute
+  DistributorRoute: typeof DistributorRoute
   FeaturedRoute: typeof FeaturedRoute
   LeadershipRoute: typeof LeadershipRoute
   NewArrivalsRoute: typeof NewArrivalsRoute
@@ -803,6 +828,7 @@ export interface RootRouteChildren {
   PaymentRoute: typeof PaymentRoute
   PaymentStatusRoute: typeof PaymentStatusRoute
   ProductsRoute: typeof ProductsRouteWithChildren
+  RetailerRoute: typeof RetailerRoute
   WishlistRoute: typeof WishlistRoute
   BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -823,6 +849,13 @@ declare module '@tanstack/react-router' {
       path: '/wishlist'
       fullPath: '/wishlist'
       preLoaderRoute: typeof WishlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/retailer': {
+      id: '/retailer'
+      path: '/retailer'
+      fullPath: '/retailer'
+      preLoaderRoute: typeof RetailerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -879,6 +912,13 @@ declare module '@tanstack/react-router' {
       path: '/featured'
       fullPath: '/featured'
       preLoaderRoute: typeof FeaturedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor': {
+      id: '/distributor'
+      path: '/distributor'
+      fullPath: '/distributor'
+      preLoaderRoute: typeof DistributorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deals': {
@@ -1369,6 +1409,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   CustomerServiceRoute: CustomerServiceRoute,
   DealsRoute: DealsRoute,
+  DistributorRoute: DistributorRoute,
   FeaturedRoute: FeaturedRoute,
   LeadershipRoute: LeadershipRoute,
   NewArrivalsRoute: NewArrivalsRoute,
@@ -1377,6 +1418,7 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentRoute: PaymentRoute,
   PaymentStatusRoute: PaymentStatusRoute,
   ProductsRoute: ProductsRouteWithChildren,
+  RetailerRoute: RetailerRoute,
   WishlistRoute: WishlistRoute,
   BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,

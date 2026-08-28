@@ -17,6 +17,7 @@ import { AddressManager } from "@/components/account/AddressManager";
 import { AvatarUpload } from "@/components/account/AvatarUpload";
 import { useAvatarUrl } from "@/hooks/useAvatarUrl";
 import { useMyRole } from "@/lib/pricing";
+import { useRoleDashboardGuard, roleLabel, type DashboardRole } from "@/lib/role-routing";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
@@ -68,17 +69,25 @@ const NAV: { id: Section; label: string; Icon: any }[] = [
 ];
 
 function AccountPage() {
+  return <AccountDashboard expectedRole="customer" />;
+}
+
+/**
+ * The shared dashboard shell. `expectedRole` locks it to one account type:
+ * a session belonging to another type is redirected to its own dashboard.
+ */
+export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole }) {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const cart = useCart();
   const wl = useWishlist();
   const qc = useQueryClient();
+  const myRole = useMyRole();
   const [dark, setDark] = useState(false);
   const [section, setSection] = useState<Section>("overview");
 
-  useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth" });
-  }, [user, loading, nav]);
+  useRoleDashboardGuard(expectedRole);
+
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -201,7 +210,12 @@ function AccountPage() {
               </div>
 
               <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-[0.24em] opacity-70">My Dashboard</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.24em] opacity-70">My Dashboard</div>
+                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em]">
+                    {roleLabel(myRole.role)} account
+                  </span>
+                </div>
                 <div className="mt-1 truncate text-display text-xl leading-none sm:text-3xl">{name}</div>
                 <div className="mt-1 truncate text-xs opacity-75">{user.email}</div>
               </div>
