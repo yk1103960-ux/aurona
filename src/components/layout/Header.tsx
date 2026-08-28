@@ -838,7 +838,7 @@ function MegaPanel({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-white/98 shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-300 lg:block",
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-background shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 lg:block",
         open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
       )}
       onMouseEnter={onEnter}
