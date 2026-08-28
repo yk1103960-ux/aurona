@@ -898,7 +898,7 @@ function MegaPanel({
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid max-h-[70vh] auto-cols-[minmax(138px,172px)] grid-flow-col items-start gap-x-6 gap-y-5 overflow-y-auto px-6 py-5">
+        <div className="grid max-h-[70vh] auto-cols-[minmax(130px,160px)] grid-flow-col items-start gap-x-6 gap-y-5 overflow-y-auto px-6 py-5">
           {columns.map((col, ci) => (
             <div key={ci} className="min-w-0 space-y-5">
               {col.map((group, gi) => (
