@@ -67,10 +67,10 @@ export function Footer() {
       Boolean(x[0]) && x[0] !== "#");
 
   return (
-    <footer className="relative mt-24">
+    <footer className="relative mt-14">
       {/* Top feature strip */}
       <div className="bg-gradient-to-r from-primary via-[oklch(0.52_0.13_248)] to-primary text-primary-foreground">
-        <div className="container-x grid grid-cols-2 gap-6 py-8 lg:grid-cols-4 lg:gap-8 lg:py-10">
+        <div className="container-x grid grid-cols-2 gap-6 py-6 lg:grid-cols-4 lg:gap-8 lg:py-7">
           {FEATURES.map((f) => (
             <div key={f.title} className="group flex items-center gap-3.5 lg:justify-center">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-foreground/12 ring-1 ring-primary-foreground/20 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:bg-primary-foreground/20">
@@ -87,7 +87,7 @@ export function Footer() {
 
       {/* Main footer */}
       <div className="border-t border-primary/10 bg-gradient-to-b from-white via-surface/60 to-surface">
-        <div className="container-x grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
+        <div className="container-x grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
           <FooterCol title="Lighting">
             {COL_1.map(([label, slug]) => <CatLink key={label} label={label} slug={slug} />)}
           </FooterCol>
@@ -108,7 +108,7 @@ export function Footer() {
 
           <div className="sm:col-span-2 lg:col-span-1">
             <FooterHeading>Contact Us</FooterHeading>
-            <div className="mt-4 space-y-3 text-[13px] text-muted-foreground">
+            <div className="mt-3.5 space-y-2.5 text-[13px] text-muted-foreground">
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/8 text-primary"><MapPin className="h-3.5 w-3.5" /></span>
                 <span className="pt-1">{s?.address_line ?? "Aurona Lighting Industries, Jaipur, Rajasthan, India"}</span>
@@ -124,7 +124,7 @@ export function Footer() {
             </div>
 
             <form
-              className="mt-6"
+              className="mt-5"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!email.trim() || busy) return;
@@ -172,8 +172,8 @@ export function Footer() {
 
         {/* Brand + payments + socials */}
         <div className="bg-nav text-nav-foreground">
-          <div className="container-x flex flex-col items-center justify-between gap-6 py-7 lg:flex-row">
-            <img src={auronaLogoWhite.url} alt="Aurona — Go Fearless in the Dark" className="h-12 w-auto object-contain" />
+          <div className="container-x flex flex-col items-center justify-between gap-5 py-5 lg:flex-row">
+            <img src={auronaLogoWhite.url} alt="Aurona — Go Fearless in the Dark" className="h-10 w-auto object-contain" />
 
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
               <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-nav-foreground/70">We Accept</span>
@@ -199,18 +199,9 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Shop shortcuts */}
-        <div className="container-x flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/5 py-5 text-[10px] font-bold uppercase tracking-widest text-nav-foreground/40 lg:justify-start">
-          <Link to="/" className="hover:text-gold transition-colors">Home</Link>
-          <Link to="/products" className="hover:text-gold transition-colors">Shop</Link>
-          <Link to="/cart" className="hover:text-gold transition-colors">Cart</Link>
-          <Link to="/wishlist" className="hover:text-gold transition-colors">Wishlist</Link>
-          <Link to="/account" className="hover:text-gold transition-colors">Account</Link>
-        </div>
-
         {/* Bottom bar */}
         <div className="border-t border-white/10 bg-nav">
-          <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-nav-foreground/70 sm:flex-row">
+          <div className="container-x flex flex-col items-center justify-between gap-2 py-4 text-xs text-nav-foreground/70 sm:flex-row">
             <div>Copyright © {new Date().getFullYear()}. All Rights Reserved | Aurona</div>
             <div className="flex flex-wrap justify-center gap-x-5 gap-y-1">
               <Link to="/policies/$slug" params={{ slug: "privacy" }} className="transition-colors hover:text-nav-foreground">Privacy Policy</Link>
@@ -241,7 +232,7 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
   return (
     <div>
       <FooterHeading>{title}</FooterHeading>
-      <div className="mt-4 flex flex-col gap-2.5 text-[13px]">{children}</div>
+      <div className="mt-3.5 flex flex-col gap-2 text-[13px]">{children}</div>
     </div>
   );
 }
