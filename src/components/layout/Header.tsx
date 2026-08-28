@@ -181,6 +181,14 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Air Glide", slug: "air-glide-pf-ag" },
       ],
     },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
   ],
   [
     {
@@ -193,16 +201,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "AP Fan", slug: "ap-fan-tf-ap" },
       ],
     },
-    {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
-        { label: "Vento", slug: "vento-ef-v" },
-        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
-      ],
-    },
-  ],
-  [
     {
       heading: "Water Geysers",
       slug: "water-geysers",
