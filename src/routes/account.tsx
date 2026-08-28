@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AddressManager } from "@/components/account/AddressManager";
 import { AvatarUpload } from "@/components/account/AvatarUpload";
 import { useAvatarUrl } from "@/hooks/useAvatarUrl";
+import { useMyRole } from "@/lib/pricing";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
@@ -680,6 +681,7 @@ function ProfilePanel({
       <div className="mb-4">
         <AvatarUpload userId={userId} avatarPath={data?.avatar_url ?? null} initials={initials} />
       </div>
+      <PartnerStatusCard />
       <form
 
         onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
@@ -714,6 +716,42 @@ function ProfilePanel({
         </div>
       </form>
     </Panel>
+  );
+}
+
+/** Retailer / distributor approval state, live-synced with the admin panel. */
+function PartnerStatusCard() {
+  const role = useMyRole();
+  if (!role.isPartner) return null;
+  const label = role.role === "distributor" ? "Distributor" : "Retailer";
+  if (role.isApproved) {
+    return (
+      <div className="mb-4 flex items-start gap-3 rounded-2xl border border-success/30 bg-success/5 p-4">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+        <div>
+          <div className="text-sm font-bold text-success">Verified by Aurona</div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            Your {label.toLowerCase()} account is approved — {label.toLowerCase()} pricing is active across the catalogue.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const rejected = role.status === "rejected";
+  return (
+    <div className={"mb-4 flex items-start gap-3 rounded-2xl border p-4 " + (rejected ? "border-destructive/30 bg-destructive/5" : "border-primary/25 bg-primary/5")}>
+      <Clock className={"mt-0.5 h-5 w-5 shrink-0 " + (rejected ? "text-destructive" : "text-primary")} />
+      <div>
+        <div className={"text-sm font-bold " + (rejected ? "text-destructive" : "text-primary")}>
+          {rejected ? `${label} application declined` : `${label} verification pending`}
+        </div>
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          {rejected
+            ? "Please contact the Aurona sales desk for a review of your application."
+            : `Aurona is reviewing your ${label.toLowerCase()} application. ${label} pricing and ordering unlock right after approval.`}
+        </div>
+      </div>
+    </div>
   );
 }
 

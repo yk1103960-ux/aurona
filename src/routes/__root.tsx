@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
+import { useRolePricingRealtime } from "@/lib/pricing";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -141,6 +142,7 @@ function RootComponent() {
 }
 
 function AuthListener() {
+  useRolePricingRealtime();
   const router = useRouter();
   const qc = useQueryClient();
   useReferralCapture();

@@ -52,7 +52,6 @@ export function ProductCard({
   const inWishlist = wl.has(product.id, product.sku);
   const detailSlug = product.family_slug ?? product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
-  const isDistributor = role.role === "distributor";
 
   const line = cart.lineFor(product.id, product.sku);
   const qty = line?.quantity ?? 0;
@@ -149,7 +148,9 @@ export function ProductCard({
           <span>· {product.review_count} reviews</span>
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          {shownPrice > 0 ? (
+          {role.isPartnerPending ? (
+            <span className="text-sm font-semibold uppercase tracking-wider text-primary">Price hidden</span>
+          ) : shownPrice > 0 ? (
             <>
               {product.price_from && (
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">From</span>
@@ -165,9 +166,15 @@ export function ProductCard({
           )}
         </div>
 
-        {role.role === "retailer" && (
+        {role.isPartnerPending ? (
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Price visible after Aurona approval
+          </div>
+        ) : role.role === "retailer" ? (
           <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Retailer price</div>
-        )}
+        ) : role.role === "distributor" ? (
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Distributor price</div>
+        ) : null}
 
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Truck className="h-3.5 w-3.5 text-success" />
@@ -184,10 +191,14 @@ export function ProductCard({
           <div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>
         )}
 
-        {isDistributor || shownPrice <= 0 ? (
+        {role.isPartnerPending ? (
+          <div className="mt-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-2 text-center text-[11px] font-semibold text-primary">
+            Verification pending
+          </div>
+        ) : shownPrice <= 0 ? (
           <Button asChild size="sm" className="mt-2 w-full gap-2 rounded-full">
-            <a href="tel:+919602570026">
-              <Phone className="h-4 w-4" /> {shownPrice <= 0 ? "Product enquiry" : "Contact Sales"}
+            <a href="tel:+919602570026" aria-label="Contact Aurona">
+              <Phone className="h-4 w-4" /> Product enquiry
             </a>
           </Button>
         ) : qty > 0 ? (

@@ -148,7 +148,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 <div className="text-[11px] opacity-80">
                   {role.isPartnerPending ? "Your account is under verification"
                     : role.role === "retailer" ? "Trade wholesale rate"
-                    : role.role === "distributor" ? "Enterprise channel — contact sales to order"
+                    : role.role === "distributor" ? "Your approved distributor rate"
                     : "Base price for this selected product model"}
                 </div>
               </div>
@@ -258,8 +258,13 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <Spec label="Country of origin" value="India" />
           </div>
 
-          {role.role === "distributor" ? (
-            <ContactSalesCard className="mt-4" productName={family.name} sku={variant.sku} />
+          {role.isPartnerPending ? (
+            <div className="mt-4 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+              <div className="font-semibold text-primary">Verification pending</div>
+              <div className="mt-0.5 text-muted-foreground">
+                Ordering unlocks as soon as Aurona approves your {role.role} account.
+              </div>
+            </div>
           ) : (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Button
@@ -275,6 +280,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 Buy now
               </Button>
             </div>
+          )}
+
+          {role.role === "distributor" && !role.isPartnerPending && (
+            <ContactSalesCard className="mt-4" productName={family.name} sku={variant.sku} />
           )}
 
           <div className="mt-4">
