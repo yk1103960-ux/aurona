@@ -8,6 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -26,11 +38,12 @@ export const Route = createFileRoute("/aurona-console-9f2x7k/affiliates")({
 
 const TABS = [
   "Overview",
+  "Analytics",
   "Affiliates",
   "Referrals",
   "Products",
   "Commissions",
-
+  "Payout details",
   "Withdrawals",
   "Configuration",
   "Logs",
@@ -81,11 +94,13 @@ function AffiliatesAdmin() {
       </div>
 
       {tab === "Overview" && <Overview data={data} />}
+      {tab === "Analytics" && <AnalyticsTab data={data} />}
       {tab === "Affiliates" && <AffiliatesTab data={data} refresh={refresh} />}
       {tab === "Referrals" && <ReferralsTab data={data} />}
       {tab === "Products" && <ProductsTab data={data} />}
 
       {tab === "Commissions" && <CommissionsTab data={data} refresh={refresh} />}
+      {tab === "Payout details" && <PayoutDetailsTab data={data} />}
       {tab === "Withdrawals" && <WithdrawalsTab data={data} refresh={refresh} />}
       {tab === "Configuration" && <ConfigTab data={data} refresh={refresh} />}
       {tab === "Logs" && <LogsTab data={data} />}
@@ -752,6 +767,226 @@ function Row({
     <div>
       <Label className="text-xs">{l}</Label>
       <Input value={v} onChange={(e) => on(e.target.value)} type={type} required={required} className="mt-1 h-10" />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- analytics */
+
+function KPI({ l, v, sub }: { l: string; v: string; sub?: string }) {
+  return (
+    <Card>
+      <div className="text-xs text-muted-foreground">{l}</div>
+      <div className="mt-2 text-2xl font-semibold">{v}</div>
+      {sub && <div className="mt-1 text-[11px] text-muted-foreground">{sub}</div>}
+    </Card>
+  );
+}
+
+/** Affiliate marketing analytics: traffic, conversion and commission trend. */
+function AnalyticsTab({ data }: { data: Data }) {
+  const a = data.analytics;
+  const series = (a?.series ?? []).map((r) => ({
+    ...r,
+    label: new Date(r.day).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+  }));
+  const t = a?.totals;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KPI l="Affiliate link clicks" v={String(t?.clicks ?? 0)} sub="Product + referral links" />
+        <KPI l="Tracked visitors" v={String(t?.visitors ?? 0)} sub={`${t?.signups ?? 0} signed up`} />
+        <KPI l="Referred orders" v={String(t?.orders ?? 0)} sub={`Click → order ${t?.clickToOrder ?? 0}%`} />
+        <KPI l="Average order value" v={inr(t?.aov ?? 0)} />
+        <KPI l="Commission generated" v={inr(t?.commission ?? 0)} />
+        <KPI l="Payable now" v={inr(t?.payableNow ?? 0)} sub="Approved, not yet withdrawn" />
+        <KPI l="Awaiting payout" v={inr(t?.awaitingPayout ?? 0)} sub="Requested / processing" />
+        <KPI
+          l="Incomplete payment details"
+          v={String(t?.incompleteDetails ?? 0)}
+          sub="Affiliates you cannot pay yet"
+        />
+      </div>
+
+      <Card>
+        <div className="mb-3 text-sm font-semibold">Clicks, visitors & referred orders (30 days)</div>
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+              <ChartTooltip />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Area type="monotone" dataKey="clicks" name="Clicks" stroke="#2563eb" fill="#2563eb33" />
+              <Area type="monotone" dataKey="visitors" name="Visitors" stroke="#0ea5e9" fill="#0ea5e933" />
+              <Area type="monotone" dataKey="orders" name="Orders" stroke="#16a34a" fill="#16a34a33" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="mb-3 text-sm font-semibold">Commission generated per day</div>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 11 }} />
+              <ChartTooltip formatter={(v: number) => inr(Number(v))} />
+              <Bar dataKey="commission" name="Commission" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      <div>
+        <div className="mb-2 text-sm font-semibold">Top affiliates</div>
+        <Table head={["Affiliate", "Code", "Clicks", "Referrals", "Orders", "Earned", "Payable now"]}>
+          {(a?.leaderboard ?? []).map((r) => (
+            <tr key={r.id}>
+              <td className="px-3 py-2 font-medium">{r.name}</td>
+              <td className="px-3 py-2 font-mono text-xs">{r.code}</td>
+              <td className="px-3 py-2">{r.clicks}</td>
+              <td className="px-3 py-2">{r.referrals}</td>
+              <td className="px-3 py-2">{r.orders}</td>
+              <td className="px-3 py-2 font-semibold">{inr(r.earned)}</td>
+              <td className="px-3 py-2">{inr(r.available)}</td>
+            </tr>
+          ))}
+          {(a?.leaderboard ?? []).length === 0 && (
+            <tr>
+              <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                No affiliate activity yet.
+              </td>
+            </tr>
+          )}
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------- payout details */
+
+/** Everything Aurona needs to actually transfer commission to an affiliate. */
+function PayoutDetailsTab({ data }: { data: Data }) {
+  const [q, setQ] = useState("");
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return data.affiliates.filter(
+      (a) =>
+        !needle ||
+        [a.full_name, a.email, a.mobile, a.code, a.pan, a.payout_upi, a.payout_account_number].some((v) =>
+          (v ?? "").toLowerCase().includes(needle),
+        ),
+    );
+  }, [data.affiliates, q]);
+
+  const copy = async (v: string) => {
+    await navigator.clipboard.writeText(v);
+    toast.success("Copied");
+  };
+
+  return (
+    <div className="space-y-4">
+      <Input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search name, UPI, account, PAN…"
+        className="h-10 max-w-xs"
+      />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {rows.map((a) => {
+          const s = data.stats.find((x) => x.affiliate_id === a.id);
+          const ready = s?.payout?.ok ?? false;
+          const bank = a.payout_method === "bank";
+          const payLine = bank
+            ? `${a.payout_account_name ?? a.full_name} · ${a.payout_account_number ?? "—"} · ${a.payout_ifsc ?? "—"}`
+            : (a.payout_upi ?? "—");
+          return (
+            <Card key={a.id} className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{a.full_name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-mono">{a.code}</span> · {a.status}
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    ready ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600",
+                  )}
+                >
+                  {ready ? "Payable" : "Details incomplete"}
+                </span>
+              </div>
+
+              <dl className="grid gap-1.5 text-sm sm:grid-cols-2">
+                <D l="Email" v={a.email} />
+                <D l="Mobile" v={a.mobile} />
+                <D l="Company" v={a.company} />
+                <D l="PAN" v={a.pan} />
+                <D l="GSTIN" v={a.gstin} />
+                <D l="Method" v={bank ? "Bank transfer" : "UPI"} />
+                {bank ? (
+                  <>
+                    <D l="Account name" v={a.payout_account_name} />
+                    <D l="Account number" v={a.payout_account_number} />
+                    <D l="IFSC" v={a.payout_ifsc} />
+                    <D l="Bank" v={a.payout_bank} />
+                  </>
+                ) : (
+                  <D l="UPI ID" v={a.payout_upi} />
+                )}
+                <D
+                  l="Address"
+                  v={[a.address, a.city, a.state, a.pincode].filter(Boolean).join(", ") || null}
+                />
+              </dl>
+
+              <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-xs">
+                <span className="text-muted-foreground">
+                  Pending <b className="text-foreground">{inr(s?.pending ?? 0)}</b>
+                </span>
+                <span className="text-muted-foreground">
+                  Payable now <b className="text-foreground">{inr(s?.available ?? 0)}</b>
+                </span>
+                <span className="text-muted-foreground">
+                  Paid <b className="text-foreground">{inr(s?.paid ?? 0)}</b>
+                </span>
+                <Button size="sm" variant="outline" className="ml-auto" onClick={() => copy(payLine)}>
+                  Copy payment info
+                </Button>
+              </div>
+
+              {!ready && s?.payout?.missing?.length ? (
+                <div className="rounded-lg bg-amber-500/10 p-2 text-[11px] text-amber-600">
+                  Missing: {s.payout.missing.join(", ")}
+                </div>
+              ) : null}
+            </Card>
+          );
+        })}
+        {rows.length === 0 && (
+          <Card>
+            <div className="text-sm text-muted-foreground">No affiliates match that search.</div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function D({ l, v }: { l: string; v?: string | null }) {
+  return (
+    <div>
+      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{l}</dt>
+      <dd className="truncate">{v || "—"}</dd>
     </div>
   );
 }

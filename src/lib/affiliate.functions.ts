@@ -216,7 +216,7 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getBalance, getSettings } = await import("./affiliate.server");
+    const { getBalance, getSettings, payoutComplete } = await import("./affiliate.server");
     const settings = await getSettings();
 
     const { data: aff } = await supabaseAdmin
@@ -257,12 +257,24 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
         full_name: aff.full_name,
         email: aff.email,
         mobile: aff.mobile,
+        company: aff.company,
+        address: aff.address,
+        city: aff.city,
+        state: aff.state,
+        pincode: aff.pincode,
+        pan: aff.pan,
+        gstin: aff.gstin,
         payout_method: aff.payout_method,
         payout_upi: aff.payout_upi,
+        payout_account_name: aff.payout_account_name,
+        payout_account_number: aff.payout_account_number,
+        payout_ifsc: aff.payout_ifsc,
+        payout_bank: aff.payout_bank,
         commission_kind: aff.commission_kind ?? settings.default_commission_kind,
         commission_value: Number(aff.commission_value ?? settings.default_commission_value),
         created_at: aff.created_at,
       },
+      payoutReady: payoutComplete(aff),
       balance,
       commissions: commissions.data ?? [],
       referrals: referrals.data ?? [],
@@ -270,21 +282,95 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
     };
   });
 
+/** Affiliate updates their own KYC / payment details used for payouts. */
+export const updateMyPayoutDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        full_name: z.string().trim().min(2).max(120),
+        mobile: z.string().trim().min(8).max(20),
+        company: z.string().trim().max(160).optional().or(z.literal("")),
+        address: z.string().trim().max(400).optional().or(z.literal("")),
+        city: z.string().trim().max(120).optional().or(z.literal("")),
+        state: z.string().trim().max(120).optional().or(z.literal("")),
+        pincode: z.string().trim().max(12).optional().or(z.literal("")),
+        pan: z.string().trim().max(20).optional().or(z.literal("")),
+        gstin: z.string().trim().max(20).optional().or(z.literal("")),
+        payout_method: z.enum(["upi", "bank"]),
+        payout_upi: z.string().trim().max(120).optional().or(z.literal("")),
+        payout_account_name: z.string().trim().max(160).optional().or(z.literal("")),
+        payout_account_number: z.string().trim().max(40).optional().or(z.literal("")),
+        payout_ifsc: z.string().trim().max(20).optional().or(z.literal("")),
+        payout_bank: z.string().trim().max(160).optional().or(z.literal("")),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { payoutComplete } = await import("./affiliate.server");
+    const check = payoutComplete({ ...data, email: "ok" });
+    if (!check.ok) throw new Error(`Please complete: ${check.missing.join(", ")}`);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { logAffiliate } = await import("./affiliate.server");
+    const { data: aff } = await supabaseAdmin
+      .from("affiliates")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!aff) throw new Error("You are not an affiliate.");
+    const nullable = (v?: string) => (v && v.trim() ? v.trim() : null);
+    const { error } = await supabaseAdmin
+      .from("affiliates")
+      .update({
+        full_name: data.full_name,
+        mobile: data.mobile,
+        company: nullable(data.company),
+        address: nullable(data.address),
+        city: nullable(data.city),
+        state: nullable(data.state),
+        pincode: nullable(data.pincode),
+        pan: nullable(data.pan)?.toUpperCase() ?? null,
+        gstin: nullable(data.gstin)?.toUpperCase() ?? null,
+        payout_method: data.payout_method,
+        payout_upi: nullable(data.payout_upi),
+        payout_account_name: nullable(data.payout_account_name),
+        payout_account_number: nullable(data.payout_account_number),
+        payout_ifsc: nullable(data.payout_ifsc)?.toUpperCase() ?? null,
+        payout_bank: nullable(data.payout_bank),
+      })
+      .eq("id", aff.id);
+    if (error) throw new Error("Could not save your payment details.");
+    await logAffiliate({
+      affiliateId: aff.id,
+      actorUserId: context.userId,
+      action: "affiliate.payout_details_updated",
+    });
+    return { ok: true as const };
+  });
+
+
 export const requestWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ amount: z.number().positive().max(10_000_000) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getBalance, getSettings, logAffiliate } = await import("./affiliate.server");
+    const { getBalance, getSettings, logAffiliate, payoutComplete } = await import("./affiliate.server");
     const settings = await getSettings();
 
     const { data: aff } = await supabaseAdmin
       .from("affiliates")
-      .select("id, status, payout_method, payout_upi, payout_account_name, payout_account_number, payout_ifsc, payout_bank")
+      .select(
+        "id, status, full_name, email, mobile, payout_method, payout_upi, payout_account_name, payout_account_number, payout_ifsc, payout_bank",
+      )
       .eq("user_id", context.userId)
       .maybeSingle();
     if (!aff) throw new Error("You are not an affiliate.");
     if (aff.status !== "approved") throw new Error("Your affiliate account is not approved yet.");
+    const ready = payoutComplete(aff);
+    if (!ready.ok) {
+      throw new Error(`Complete your payment details first: ${ready.missing.join(", ")}`);
+    }
+
 
     const balance = await getBalance(aff.id);
     const amount = Math.round(data.amount * 100) / 100;
@@ -326,7 +412,7 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdminCtx(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getSettings } = await import("./affiliate.server");
+    const { getSettings, payoutComplete } = await import("./affiliate.server");
 
     const [settings, affiliates, commissions, withdrawals, referrals, logs] = await Promise.all([
       getSettings(),
@@ -356,29 +442,49 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
     const rows = affiliates.data ?? [];
     const comms = commissions.data ?? [];
     const refs = referrals.data ?? [];
+    const paysOut = withdrawals.data ?? [];
     const stats = rows.map((a) => {
       const mine = comms.filter((c) => c.affiliate_id === a.id);
       const sum = (s: string) =>
         Math.round(mine.filter((c) => c.status === s).reduce((t, c) => t + Number(c.amount), 0) * 100) / 100;
+      const withdrawnPending =
+        Math.round(
+          paysOut
+            .filter(
+              (w) =>
+                w.affiliate_id === a.id &&
+                ["requested", "approved", "processing"].includes(w.status as string),
+            )
+            .reduce((t, w) => t + Number(w.amount), 0) * 100,
+        ) / 100;
+      const approved = sum("approved");
       return {
         affiliate_id: a.id,
         referrals: refs.filter((r) => r.affiliate_id === a.id).length,
         orders: mine.length,
         pending: sum("pending"),
-        approved: sum("approved"),
+        approved,
         paid: sum("paid"),
         reversed: sum("reversed"),
+        withdrawnPending,
+        available: Math.round(Math.max(0, approved - withdrawnPending) * 100) / 100,
+        payout: payoutComplete(a),
       };
     });
 
     // Product-level performance: clicks on product links vs commission earned.
     const [clickRows, itemRows] = await Promise.all([
-      supabaseAdmin.from("affiliate_product_clicks").select("product_id").limit(5000),
+      supabaseAdmin
+        .from("affiliate_product_clicks")
+        .select("product_id, affiliate_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5000),
       supabaseAdmin
         .from("affiliate_commission_items")
         .select("product_id, product_name, quantity, amount")
         .limit(5000),
     ]);
+
     const byProduct = new Map<
       string,
       { product_id: string; product_name: string; clicks: number; units: number; commission: number }
@@ -413,17 +519,98 @@ export const adminAffiliateOverview = createServerFn({ method: "POST" })
     }
     const productStats = [...byProduct.values()].sort((a, b) => b.commission - a.commission).slice(0, 50);
 
+    // 30-day daily trend (IST-agnostic ISO day buckets) for the analytics tab.
+    const DAYS = 30;
+    const dayKey = (d: string | Date) => new Date(d).toISOString().slice(0, 10);
+    const series: Array<{
+      day: string;
+      clicks: number;
+      visitors: number;
+      signups: number;
+      orders: number;
+      commission: number;
+    }> = [];
+    const index = new Map<string, number>();
+    for (let i = DAYS - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86_400_000);
+      const key = dayKey(d);
+      index.set(key, series.length);
+      series.push({ day: key, clicks: 0, visitors: 0, signups: 0, orders: 0, commission: 0 });
+    }
+    const bump = (key: string, fn: (row: (typeof series)[number]) => void) => {
+      const i = index.get(key);
+      if (i != null) fn(series[i]!);
+    };
+    for (const c of clickRows.data ?? []) bump(dayKey(c.created_at), (r) => void r.clicks++);
+    for (const r0 of refs) {
+      bump(dayKey(r0.first_seen_at), (r) => {
+        r.visitors++;
+        if (r0.user_id) r.signups++;
+      });
+    }
+    for (const c of comms) {
+      bump(dayKey(c.created_at), (r) => {
+        r.orders++;
+        r.commission = Math.round((r.commission + Number(c.amount)) * 100) / 100;
+      });
+    }
+
+    const totalClicks = (clickRows.data ?? []).length;
+    const analytics = {
+      series,
+      totals: {
+        clicks: totalClicks,
+        visitors: refs.length,
+        signups: refs.filter((r) => r.user_id).length,
+        conversions: refs.filter((r) => r.converted_at).length,
+        orders: comms.length,
+        commission:
+          Math.round(comms.reduce((t, c) => t + Number(c.amount), 0) * 100) / 100,
+        aov:
+          comms.length > 0
+            ? Math.round((comms.reduce((t, c) => t + Number(c.order_total), 0) / comms.length) * 100) / 100
+            : 0,
+        clickToOrder: totalClicks > 0 ? Math.round((comms.length / totalClicks) * 1000) / 10 : 0,
+        payableNow:
+          Math.round(stats.reduce((t, s) => t + s.available, 0) * 100) / 100,
+        awaitingPayout:
+          Math.round(
+            paysOut
+              .filter((w) => ["requested", "approved", "processing"].includes(w.status as string))
+              .reduce((t, w) => t + Number(w.amount), 0) * 100,
+          ) / 100,
+        incompleteDetails: stats.filter((s) => !s.payout.ok).length,
+      },
+      leaderboard: rows
+        .map((a) => {
+          const s = stats.find((x) => x.affiliate_id === a.id)!;
+          return {
+            id: a.id,
+            code: a.code,
+            name: a.full_name,
+            clicks: (clickRows.data ?? []).filter((c) => c.affiliate_id === a.id).length,
+            referrals: s.referrals,
+            orders: s.orders,
+            earned: Math.round((s.pending + s.approved + s.paid) * 100) / 100,
+            available: s.available,
+          };
+        })
+        .sort((a, b) => b.earned - a.earned)
+        .slice(0, 20),
+    };
+
     return {
       settings,
       affiliates: rows,
       stats,
       productStats,
+      analytics,
       commissions: comms,
-      withdrawals: withdrawals.data ?? [],
+      withdrawals: paysOut,
       referrals: refs,
       logs: logs.data ?? [],
-
     };
+
   });
 
 export const adminSaveAffiliateSettings = createServerFn({ method: "POST" })

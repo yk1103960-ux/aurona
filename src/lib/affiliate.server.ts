@@ -436,3 +436,28 @@ export async function getBalance(affiliateId: string) {
     available: Number(row?.available ?? 0),
   };
 }
+
+/** Payment details required before an affiliate payout can be requested/paid. */
+export function payoutComplete(aff: {
+  payout_method?: string | null;
+  payout_upi?: string | null;
+  payout_account_name?: string | null;
+  payout_account_number?: string | null;
+  payout_ifsc?: string | null;
+  full_name?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+}) {
+  const missing: string[] = [];
+  if (!aff.full_name?.trim()) missing.push("Full name");
+  if (!aff.email?.trim()) missing.push("Email");
+  if (!aff.mobile?.trim()) missing.push("Mobile number");
+  if (aff.payout_method === "upi") {
+    if (!aff.payout_upi?.trim()) missing.push("UPI ID");
+  } else {
+    if (!aff.payout_account_name?.trim()) missing.push("Account holder name");
+    if (!aff.payout_account_number?.trim()) missing.push("Account number");
+    if (!aff.payout_ifsc?.trim()) missing.push("IFSC code");
+  }
+  return { ok: missing.length === 0, missing };
+}
