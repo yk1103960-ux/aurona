@@ -398,16 +398,16 @@ export function Header() {
         {/* Right: actions */}
         <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
           <Link
-            to={user ? "/account" : "/auth"}
+            to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"}
             className="group hidden items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 transition-all hover:border-white/45 hover:bg-white/15 lg:inline-flex"
           >
             <User className="h-[18px] w-[18px]" strokeWidth={1.9} />
             <span className="flex flex-col leading-none">
               <span className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-70">
-                {user ? "Welcome" : "Account"}
+                {sessionRole.signedIn ? sessionRole.label : "Account"}
               </span>
               <span className="mt-0.5 text-[12.5px] font-bold">
-                {user ? "My Account" : "Login / Register"}
+                {sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Login / Register"}
               </span>
             </span>
           </Link>
@@ -420,7 +420,7 @@ export function Header() {
             <Search className="h-4 w-4" strokeWidth={2.5} />
           </button>
           <Link
-            to={user ? "/account" : "/auth"}
+            to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"}
             className="hidden h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
             aria-label="Account"
           >
@@ -780,7 +780,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
           <MobileLink to="/blogs" onClose={onClose}>Blogs</MobileLink>
           <MobileLink to="/about" onClose={onClose}>About Us</MobileLink>
           <MobileLink to="/contact" onClose={onClose}>Contact Us</MobileLink>
-          <MobileLink to={user ? "/account" : "/auth"} onClose={onClose}>{user ? "My Account" : "Sign In / Register"}</MobileLink>
+          <MobileLink to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"} onClose={onClose}>{sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Sign In / Register"}</MobileLink>
         </div>
       </div>
     </div>
