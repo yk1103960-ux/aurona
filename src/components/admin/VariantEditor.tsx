@@ -53,7 +53,8 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     if (q.data) setRows(q.data.variants);
   }, [q.data]);
 
-  if (!q.data?.family || rows.length === 0) return null;
+  const family = q.data?.family;
+  if (!family || rows.length === 0) return null;
 
   const upd = (id: string, patch: Partial<Variant>) =>
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -91,7 +92,7 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
         max_mrp: mrps.length ? Math.max(...mrps) : null,
         total_stock: stock,
       })
-      .eq("id", q.data.family.id);
+      .eq("id", family.id);
     if (prices.length) {
       await supabase
         .from("products")
