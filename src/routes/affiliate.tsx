@@ -18,6 +18,7 @@ import {
   applyAsAffiliate,
   getMyAffiliate,
   requestWithdrawal,
+  updateMyPayoutDetails,
 } from "@/lib/affiliate.functions";
 
 export const Route = createFileRoute("/affiliate")({
@@ -372,8 +373,16 @@ function Dashboard({ data }: { data: MyAffiliate }) {
         </div>
 
         <div className="space-y-6">
+          <PayoutDetailsCard data={data} />
+
           <div className="rounded-2xl border border-border bg-card p-6">
             <div className="text-eyebrow mb-3">Request a payout</div>
+            {!data.payoutReady?.ok && (
+              <p className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600">
+                Add your payment details before requesting a payout — missing:{" "}
+                {data.payoutReady?.missing.join(", ")}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               Available {inr(balance.available)} · minimum payout {inr(data.settings.min_payout)}
             </p>
@@ -385,7 +394,11 @@ function Dashboard({ data }: { data: MyAffiliate }) {
                 placeholder="Amount"
                 className="h-11"
               />
-              <Button onClick={withdraw} disabled={busy} className="h-11 rounded-full">
+              <Button
+                onClick={withdraw}
+                disabled={busy || !data.payoutReady?.ok}
+                className="h-11 rounded-full"
+              >
                 {busy ? "…" : "Request"}
               </Button>
             </div>
