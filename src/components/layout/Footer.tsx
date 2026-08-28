@@ -170,19 +170,18 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Brand + payments + socials */}
-        <div className="bg-nav text-nav-foreground">
-          <div className="container-x flex flex-col items-center justify-between gap-5 py-5 lg:flex-row">
-            <img src={auronaLogoWhite.url} alt="Aurona — Go Fearless in the Dark" className="h-10 w-auto object-contain" />
+        {/* Premium payment strip */}
+        <div className="relative border-t border-white/10 bg-nav text-nav-foreground">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nav-foreground/15 to-transparent" aria-hidden />
+          <div className="container-x relative z-10 grid grid-cols-1 items-center gap-4 py-3.5 sm:grid-cols-[auto_1fr_auto]">
+            <img src={auronaLogoWhite.url} alt="Aurona — Go Fearless in the Dark" className="h-8 w-auto object-contain opacity-95" />
 
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
-              <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-nav-foreground/70">We Accept</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-self-center">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-nav-foreground/60">We Accept</span>
               <PaymentLogos />
             </div>
 
-
-
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2 sm:justify-self-end">
               {socials.map(([href, Icn, label]) => (
                 <a
                   key={label}
@@ -190,9 +189,9 @@ export function Footer() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={label}
-                  className="group grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 text-nav-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/20"
+                  className="group grid h-8 w-8 place-items-center rounded-full border border-white/15 bg-white/5 text-nav-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-white/35 hover:bg-white/10"
                 >
-                  <Icn className="h-4 w-4 transition-transform group-hover:scale-110" />
+                  <Icn className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
                 </a>
               ))}
             </div>
