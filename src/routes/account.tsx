@@ -68,17 +68,25 @@ const NAV: { id: Section; label: string; Icon: any }[] = [
 ];
 
 function AccountPage() {
+  return <AccountDashboard expectedRole="customer" />;
+}
+
+/**
+ * The shared dashboard shell. `expectedRole` locks it to one account type:
+ * a session belonging to another type is redirected to its own dashboard.
+ */
+export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole }) {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const cart = useCart();
   const wl = useWishlist();
   const qc = useQueryClient();
+  const myRole = useMyRole();
   const [dark, setDark] = useState(false);
   const [section, setSection] = useState<Section>("overview");
 
-  useEffect(() => {
-    if (!loading && !user) nav({ to: "/auth" });
-  }, [user, loading, nav]);
+  useRoleDashboardGuard(expectedRole);
+
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
