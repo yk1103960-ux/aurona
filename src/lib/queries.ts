@@ -304,7 +304,21 @@ export const productQuery = (slug: string) =>
       if (!data) return null;
       const row = data as unknown as Product & { categories: { slug: string; name: string; icon: string | null } | null };
       const imgs = await primaryImages("product_id", [row.id]);
-      return { ...row, image_url: imgs[row.id] ?? null };
+      let url = imgs[row.id] ?? null;
+      if (!url && row.sku) {
+        const { data: link } = await supabase
+          .from("product_variants")
+          .select("family_id")
+          .eq("sku", row.sku)
+          .maybeSingle();
+        const famId = (link as { family_id: string | null } | null)?.family_id ?? null;
+        if (famId) {
+          const famImgs = await primaryImages("family_id", [famId]);
+          url = famImgs[famId] ?? null;
+        }
+      }
+      return { ...row, image_url: url };
+
     },
   });
 
