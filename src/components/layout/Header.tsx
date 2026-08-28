@@ -896,9 +896,9 @@ function MegaPanel({
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid max-h-[70vh] auto-cols-[minmax(130px,160px)] grid-flow-col items-start gap-x-6 gap-y-5 overflow-y-auto px-6 py-5">
+        <div className="grid max-h-[70vh] auto-cols-[minmax(120px,150px)] grid-flow-col items-start gap-x-4 gap-y-4 overflow-y-auto px-5 py-4">
           {columns.map((col, ci) => (
-            <div key={ci} className="min-w-0 space-y-5">
+            <div key={ci} className="min-w-0 space-y-3">
               {col.map((group, gi) => (
                 <div key={`${group.heading}-${gi}`}>
                   <Link
@@ -908,13 +908,13 @@ function MegaPanel({
                   >
                     {group.heading}
                   </Link>
-                  <ul className="mt-2.5 space-y-1.5">
+                  <ul className="mt-1.5 space-y-1">
                     {group.items.map((item) => (
                       <li key={item.slug}>
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className="group/mi block text-[12.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className="group/mi block text-[12px] leading-tight text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
@@ -925,7 +925,7 @@ function MegaPanel({
                     <Link
                       to="/category/$slug"
                       params={{ slug: group.slug }}
-                      className="mt-2 inline-block text-[12.5px] leading-snug text-foreground/70 transition-colors hover:text-primary"
+                      className="mt-1.5 inline-block text-[12px] leading-tight text-foreground/70 transition-colors hover:text-primary"
                     >
                       {group.note}
                     </Link>
