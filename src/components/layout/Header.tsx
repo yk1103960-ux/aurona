@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useSessionRole } from "@/lib/role-routing";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery, browseProductsByCategoryQuery, searchSuggestQuery, type Category, type BrowseProduct, type SearchSuggestion } from "@/lib/queries";
@@ -258,6 +259,7 @@ export function Header() {
   const cart = useCart();
   const wl = useWishlist();
   const { user } = useAuth();
+  const sessionRole = useSessionRole();
   const [q, setQ] = useState("");
   const [openSearch, setOpenSearch] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
@@ -728,6 +730,7 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
     "home-appliances": "Home Appliances",
   };
   const { user } = useAuth();
+  const sessionRole = useSessionRole();
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border bg-nav p-4">
