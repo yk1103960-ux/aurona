@@ -18,7 +18,7 @@ export type ShippingQuote = {
   rates: ShippingRate[];
 };
 
-const DEFAULT_WEIGHT_G = 500;
+const DEFAULT_WEIGHT_G = 300;
 const FALLBACK_FREE_ABOVE = 999;
 const FALLBACK_FLAT = 79;
 
@@ -66,6 +66,11 @@ async function readSettings(): Promise<Settings> {
  * Real package weight/dimensions from the database only — never from the
  * browser. Resolution order per line: variant row → parent product row →
  * admin-configured default weight.
+ *
+ * Multi-item carts are modelled as one carton: the footprint is the largest
+ * item footprint and the items stack in height (volume-preserving), so the
+ * volumetric weight the courier bills stays close to reality instead of being
+ * inflated by an arbitrary box.
  */
 export async function computePackage(lines: CartLine[], defaultWeightG: number) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -88,20 +93,44 @@ export async function computePackage(lines: CartLine[], defaultWeightG: number) 
       });
     }
   }
+
+  // Small honest default box (cm) when a product has no dimensions stored.
+  const DEF_L = 20, DEF_W = 15, DEF_H = 10;
   let grams = 0;
-  let maxL = 10, maxW = 10, maxH = 5;
+  let volumeCm3 = 0;
+  let footL = 0;
+  let footW = 0;
+  let tallest = 0;
+
   for (const line of lines) {
+    const qty = Math.max(1, Number(line.quantity) || 1);
     const v = line.sku ? byKey.get(line.sku) : undefined;
-    const unit = v?.weight_g && Number(v.weight_g) > 0 ? Number(v.weight_g) : defaultWeightG;
-    grams += unit * line.quantity;
-    if (v?.dim_l) maxL = Math.max(maxL, Number(v.dim_l));
-    if (v?.dim_w) maxW = Math.max(maxW, Number(v.dim_w));
-    if (v?.dim_h) maxH = Math.max(maxH, Number(v.dim_h));
+    const unitG = v?.weight_g && Number(v.weight_g) > 0 ? Number(v.weight_g) : defaultWeightG;
+    grams += unitG * qty;
+
+    const l = v?.dim_l && Number(v.dim_l) > 0 ? Number(v.dim_l) : DEF_L;
+    const w = v?.dim_w && Number(v.dim_w) > 0 ? Number(v.dim_w) : DEF_W;
+    const h = v?.dim_h && Number(v.dim_h) > 0 ? Number(v.dim_h) : DEF_H;
+    volumeCm3 += l * w * h * qty;
+    footL = Math.max(footL, l);
+    footW = Math.max(footW, w);
+    tallest = Math.max(tallest, h);
   }
-  // Never send a zero-weight shipment to the courier API.
+
+  // Derive the carton height from the total volume over the largest footprint,
+  // never smaller than the tallest single item.
+  const length = Math.max(1, Math.round(footL || DEF_L));
+  const breadth = Math.max(1, Math.round(footW || DEF_W));
+  const height = Math.max(1, Math.round(Math.max(tallest, volumeCm3 / (length * breadth))));
+
+  // Weight is in kilograms — the unit Shiprocket expects.
   const weightKg = Math.max(0.05, Math.round((grams / 1000) * 100) / 100);
-  return { weightKg, dims: { length: maxL, breadth: maxW, height: maxH } };
+  // Volumetric (courier divisor 5000) is informational: the courier applies
+  // whichever is higher from the length/breadth/height we send.
+  const volumetricKg = Math.round(((length * breadth * height) / 5000) * 100) / 100;
+  return { weightKg, volumetricKg, dims: { length, breadth, height } };
 }
+
 
 
 /** Pickup pincode for the configured pickup location (cached briefly). */

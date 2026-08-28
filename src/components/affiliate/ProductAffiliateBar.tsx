@@ -59,19 +59,26 @@ export function ProductAffiliateBar({ productId, slug }: { productId: string | n
     <div className="rounded-2xl border border-primary/25 bg-primary/[0.04] p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-eyebrow text-primary">Earn with this product</div>
-          <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-foreground">
-            <IndianRupee className="h-3.5 w-3.5" />
-            {inr(aff.perUnitEarning).replace("₹", "")} per unit sold
-            <span className="ml-1 text-xs font-normal text-muted-foreground">
-              (
-              {aff.commissionKind === "percentage"
-                ? `${aff.commissionValue}% commission`
-                : `${inr(aff.commissionValue)} flat`}
-              )
-            </span>
-          </div>
+          <div className="text-eyebrow text-primary">Your affiliate link</div>
+          {aff.commissionEnabled ? (
+            <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-foreground">
+              <IndianRupee className="h-3.5 w-3.5" />
+              {inr(aff.perUnitEarning).replace("₹", "")} per unit sold
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                (
+                {aff.commissionKind === "percentage"
+                  ? `${aff.commissionValue}% commission`
+                  : `${inr(aff.commissionValue)} flat`}
+                )
+              </span>
+            </div>
+          ) : (
+            <div className="mt-1 text-sm text-muted-foreground">
+              Share this product — commission on it is set by Aurona.
+            </div>
+          )}
         </div>
+
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={copy}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

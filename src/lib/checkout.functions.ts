@@ -97,25 +97,36 @@ export const placeOrder = createServerFn({ method: "POST" })
     });
     subtotal = Math.round(subtotal * 100) / 100;
 
-    // 6) Recompute shipping server-side from the live courier quote.
-    const { quoteShippingForCart } = await import("./shipping.server");
-    const quote = await quoteShippingForCart({
-      lines: items.map((it) => ({
-        sku: it.products!.sku,
-        name: it.products!.name,
-        price: Number(it.products!.price),
-        quantity: it.quantity,
-      })),
-      pincode: data.address.pincode,
-      cod: data.payment_method === "cod",
-      subtotal,
-    });
-    if (!quote.serviceable) {
-      throw new Error(quote.message ?? "Delivery is unavailable for this pincode.");
+    // 6) Shipping. Courier (Shiprocket) charges apply to retail customers only:
+    // retailer and distributor orders ship through our local transport network
+    // and are never charged a customer courier rate. Enforced here on the
+    // server so the browser cannot influence it.
+    const wholesale = role === "retailer" || role === "distributor";
+    let shipping = 0;
+
+    if (wholesale) {
+      shipping = 0;
+    } else {
+      const { quoteShippingForCart } = await import("./shipping.server");
+      const quote = await quoteShippingForCart({
+        lines: items.map((it) => ({
+          sku: it.products!.sku,
+          name: it.products!.name,
+          price: Number(it.products!.price),
+          quantity: it.quantity,
+        })),
+        pincode: data.address.pincode,
+        cod: data.payment_method === "cod",
+        subtotal,
+      });
+      if (!quote.serviceable) {
+        throw new Error(quote.message ?? "Delivery is unavailable for this pincode.");
+      }
+      const rate = quote.rates.find((r) => r.id === data.shipping_rate_id) ?? quote.rates[0];
+      if (!rate) throw new Error("Selected shipping option is no longer available.");
+      shipping = Math.round(Number(rate.price) * 100) / 100;
     }
-    const rate = quote.rates.find((r) => r.id === data.shipping_rate_id) ?? quote.rates[0];
-    if (!rate) throw new Error("Selected shipping option is no longer available.");
-    const shipping = Math.round(Number(rate.price) * 100) / 100;
+
 
     // 6b) Coupon — validated server-side; the browser never supplies a discount.
     let couponId: string | null = null;

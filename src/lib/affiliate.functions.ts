@@ -113,7 +113,10 @@ export const getProductAffiliateLink = createServerFn({ method: "POST" })
       affiliate: {
         code: aff.code,
         slug: data.slug,
-        enabled: rule.enabled && amount > 0,
+        // Approved affiliates always get their shareable link; commission
+        // details only show when this product actually earns.
+        enabled: true,
+        commissionEnabled: rule.enabled && amount > 0,
         commissionKind: rule.kind,
         commissionValue: rule.value,
         perUnitEarning: amount,
