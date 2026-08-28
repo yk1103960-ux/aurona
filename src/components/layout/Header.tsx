@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { careersQuery, jobAnchor } from "@/lib/careers";
 
 
@@ -181,6 +181,14 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Air Glide", slug: "air-glide-pf-ag" },
       ],
     },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
   ],
   [
     {
@@ -194,16 +202,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
       ],
     },
     {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
-        { label: "Vento", slug: "vento-ef-v" },
-        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
-      ],
-    },
-  ],
-  [
-    {
       heading: "Water Geysers",
       slug: "water-geysers",
       items: [
@@ -214,7 +212,7 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
       ],
     },
     {
-      heading: "Immersion Water Heater",
+      heading: "Immersion Heaters",
       slug: "immersion-heaters",
       items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
     },
@@ -263,6 +261,8 @@ export function Header() {
   const [openSearch, setOpenSearch] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
   const [openMenu, setOpenMenu] = useState<null | "led" | "appliance" | "browse">(null);
+  const [ledAnchor, setLedAnchor] = useState(0);
+  const [applianceAnchor, setApplianceAnchor] = useState(0);
   const megaOpen = openMenu !== null;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const scrolled = useScrolled(12);
@@ -465,9 +465,9 @@ export function Header() {
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/products">All Products</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} />
+            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} onAnchor={setApplianceAnchor} />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} />
+            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} onAnchor={setLedAnchor} />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/affiliate">Affiliate With Us</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
@@ -488,14 +488,14 @@ export function Header() {
       <MegaPanel
         open={openMenu === "led"}
         columns={LED_COLUMNS}
-        gridCols={5}
+        anchorLeft={ledAnchor}
         onEnter={() => setOpenMenu("led")}
         onLeave={() => setOpenMenu(null)}
       />
       <MegaPanel
         open={openMenu === "appliance"}
         columns={APPLIANCE_COLUMNS}
-        gridCols={5}
+        anchorLeft={applianceAnchor}
         onEnter={() => setOpenMenu("appliance")}
         onLeave={() => setOpenMenu(null)}
       />
@@ -797,12 +797,39 @@ function MobileLink({ to, children, onClose }: { to: string; children: React.Rea
   );
 }
 
-function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpen: boolean; onOpen: () => void; onToggle: () => void }) {
+function MegaTrigger({
+  label,
+  isOpen,
+  onOpen,
+  onToggle,
+  onAnchor,
+}: {
+  label: string;
+  isOpen: boolean;
+  onOpen: () => void;
+  onToggle: () => void;
+  onAnchor?: (left: number) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const anchor = () => {
+    const el = ref.current;
+    if (el && onAnchor) onAnchor(el.getBoundingClientRect().left);
+  };
   return (
-    <div className="relative" onMouseEnter={onOpen}>
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => {
+        anchor();
+        onOpen();
+      }}
+    >
       <button
         type="button"
-        onClick={onToggle}
+        onClick={() => {
+          anchor();
+          onToggle();
+        }}
         className={cn(
           "group relative inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[14px] font-bold tracking-[0.01em] transition-colors",
           isOpen ? "text-primary" : "text-foreground/72 hover:text-primary",
@@ -823,57 +850,73 @@ function MegaTrigger({ label, isOpen, onOpen, onToggle }: { label: string; isOpe
   );
 }
 
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 function MegaPanel({
   open,
   columns,
-  gridCols = 6,
+  anchorLeft = 0,
   onEnter,
   onLeave,
 }: {
   open: boolean;
   columns: MegaGroup[][];
-  gridCols?: 4 | 5 | 6;
+  anchorLeft?: number;
   onEnter: () => void;
   onLeave: () => void;
 }) {
-  const colsClass = gridCols === 4 ? "grid-cols-4" : gridCols === 5 ? "grid-cols-5" : "grid-cols-6";
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [left, setLeft] = useState(anchorLeft);
+
+  useIsoLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const w = cardRef.current?.offsetWidth ?? 0;
+      const max = Math.max(16, window.innerWidth - w - 24);
+      setLeft(Math.min(Math.max(anchorLeft - 16, 16), max));
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, anchorLeft, columns]);
+
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-full hidden origin-top overflow-hidden border-b border-primary/10 bg-background shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 lg:block",
-        open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top pt-1 transition-all duration-300 lg:block",
+        open ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2",
       )}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
+      aria-hidden={!open}
     >
-      <div className={cn("container-x grid items-start gap-x-4 gap-y-3 py-3.5 max-h-[55vh] overflow-y-auto", colsClass)}>
-        {columns.map((col, ci) => (
-          <div key={ci} className="min-w-0 space-y-3">
-            {col.map((group, gi) => {
-              const useCols = group.items.length > 3;
-              return (
+      <div
+        ref={cardRef}
+        style={{ left }}
+        className={cn(
+          "absolute top-1 w-max max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
+          open ? "pointer-events-auto" : "pointer-events-none",
+        )}
+      >
+        <div className="grid max-h-[70vh] auto-cols-[minmax(130px,160px)] grid-flow-col items-start gap-x-6 gap-y-5 overflow-y-auto px-6 py-5">
+          {columns.map((col, ci) => (
+            <div key={ci} className="min-w-0 space-y-5">
+              {col.map((group, gi) => (
                 <div key={`${group.heading}-${gi}`}>
-                  {group.heading ? (
-                    <Link
-                      to="/category/$slug"
-                      params={{ slug: group.slug }}
-                      className="block text-[11px] font-bold uppercase tracking-[0.18em] text-primary transition-colors hover:text-gold"
-                    >
-                      {group.heading}
-                    </Link>
-                  ) : (
-                    <span className="block h-[13px]" aria-hidden />
-                  )}
-                  <ul className={cn("mt-1 gap-x-3", useCols ? "grid grid-cols-2 gap-y-1" : "space-y-1")}>
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: group.slug }}
+                    className="block text-[11px] font-bold uppercase tracking-[0.16em] text-primary transition-colors hover:text-foreground"
+                  >
+                    {group.heading}
+                  </Link>
+                  <ul className="mt-2.5 space-y-1.5">
                     {group.items.map((item) => (
                       <li key={item.slug}>
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className={cn(
-                            "group/mi block text-[12px] leading-snug text-foreground/70 transition-all hover:text-primary",
-                            !useCols && "hover:translate-x-0.5",
-                          )}
+                          className="group/mi block text-[12.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
@@ -884,16 +927,16 @@ function MegaPanel({
                     <Link
                       to="/category/$slug"
                       params={{ slug: group.slug }}
-                      className="mt-1 inline-block text-[12px] leading-snug text-foreground/70 transition-colors hover:text-primary"
+                      className="mt-2 inline-block text-[12.5px] leading-snug text-foreground/70 transition-colors hover:text-primary"
                     >
                       {group.note}
                     </Link>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
