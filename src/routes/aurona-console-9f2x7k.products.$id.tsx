@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { VariantEditor } from "@/components/admin/VariantEditor";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ProductEditor,
@@ -231,6 +232,8 @@ function ProductEditor() {
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.is_sale} onChange={(e) => upd("is_sale", e.target.checked)} /> On sale</label>
           <Field label="Image seed (slug)"><Input value={f.image_seed} onChange={(e) => upd("image_seed", e.target.value)} placeholder="e.g. led-bulb" /></Field>
         </Section>
+
+        {!isNew && f.sku && <VariantEditor productSku={f.sku} productId={id} />}
       </div>
 
       <div className="flex justify-end">
