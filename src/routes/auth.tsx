@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,8 @@ import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loade
 import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
 import { roleEmail } from "@/lib/role-identity";
+import { useMyRole } from "@/lib/pricing";
+import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel } from "@/lib/role-routing";
 import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
@@ -30,6 +33,11 @@ import {
 
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const r = search['role'];
+    const role = r === "retailer" || r === "distributor" || r === "customer" ? r : undefined;
+    return role ? { role } : {};
+  },
   head: () => ({
     meta: [
       { title: "Sign in or create your Aurona account" },
@@ -62,7 +70,28 @@ function deviceLabel() {
 function AuthPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  // Hard gate: an unverified session can never reach the site.
+  const search = Route.useSearch() as { role?: Role };
+  const sessionRole = useMyRole();
+  const qc = useQueryClient();
+  const [role, setRoleState] = useState<Role>(search.role ?? "customer");
+
+  const setRole = (next: Role) => {
+    setRoleState(next);
+    setErrors({});
+    nav({ to: "/auth", search: { role: next }, replace: true });
+  };
+
+  useEffect(() => {
+    if (search.role && search.role !== role) setRoleState(search.role);
+  }, [search.role]);
+
+  // The account type the current session actually belongs to.
+  const activeSessionRole = user ? dashboardRoleOf(sessionRole.role) : null;
+  // A customer session must never be reused to open a retailer/distributor area.
+  const roleConflict = Boolean(activeSessionRole && activeSessionRole !== role);
+
+  // Hard gate: an unverified session can never reach the site. A verified one
+  // is sent to the dashboard for ITS role — never to another role's dashboard.
   useEffect(() => {
     if (loading || !user) return;
     const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
@@ -71,10 +100,23 @@ function AuthPage() {
       toast.error("Please verify the OTP sent to you before accessing your account.");
       return;
     }
-    nav({ to: "/account" });
-  }, [user, loading, nav]);
+    if (sessionRole.loading) return;
+    if (activeSessionRole && activeSessionRole !== role) return; // show the switch-account panel instead
+    nav({ to: DASHBOARD_PATHS[activeSessionRole ?? "customer"], replace: true });
+  }, [user, loading, nav, sessionRole.loading, activeSessionRole, role]);
 
-  const [role, setRole] = useState<Role>("customer");
+  const switchAccount = async () => {
+    setBusy(true);
+    try {
+      await qc.cancelQueries();
+      qc.clear();
+      await supabase.auth.signOut();
+      toast.success(`Signed out — sign in to your ${roleLabel(role)} account.`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const [mode, setMode] = useState<"in" | "up">("in");
   // "password" = email + password, "otp" = mobile number + SMS OTP
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
@@ -131,7 +173,13 @@ function AuthPage() {
       toast.error(res.reason || "Your account has been suspended.");
       return;
     }
-    nav({ to: "/account" });
+    qc.invalidateQueries({ queryKey: ["my-role-status"] });
+    let landed: string = DASHBOARD_PATHS.customer;
+    try {
+      const { data } = await supabase.rpc("my_role_status");
+      landed = dashboardPathFor((data as any[] | null)?.[0]?.role);
+    } catch { /* fall back to the customer dashboard */ }
+    nav({ to: landed, replace: true });
   };
 
   const google = async () => {
