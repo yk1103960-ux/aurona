@@ -89,8 +89,6 @@ const LED_COLUMNS: MegaGroup[][] = [
       slug: "interior-lights",
       items: [
         { label: "Delta COB", slug: "delta-cob-il-cob" },
-        { label: "Surface COB Cylinder", slug: "cylinder-il-cyl" },
-        { label: "Half Moon", slug: "half-moon-il-hm" },
         { label: "Mr. Four", slug: "mr-four-il-mf" },
         { label: "Mr. Four Small", slug: "mr-four-small-il-mfs" },
         { label: "Mr. One", slug: "mr-one-il-mo" },
@@ -143,8 +141,8 @@ const LED_COLUMNS: MegaGroup[][] = [
       heading: "Decorative Lights",
       slug: "decorative-lights",
       items: [
-        { label: "Cylinder", slug: "cylinder-il-cyl-07-cw-b-mb" },
-        { label: "Half Moon", slug: "half-moon-il-hm-04-p4" },
+        { label: "Cylinder", slug: "cylinder-il-cyl" },
+        { label: "Half Moon", slug: "half-moon-il-hm" },
       ],
     },
   ],
