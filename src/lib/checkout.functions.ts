@@ -125,9 +125,8 @@ export const placeOrder = createServerFn({ method: "POST" })
       const rate = quote.rates.find((r) => r.id === data.shipping_rate_id) ?? quote.rates[0];
       if (!rate) throw new Error("Selected shipping option is no longer available.");
       shipping = Math.round(Number(rate.price) * 100) / 100;
-      shippingRateId = rate.id;
     }
-    void shippingRateId;
+
 
     // 6b) Coupon — validated server-side; the browser never supplies a discount.
     let couponId: string | null = null;
