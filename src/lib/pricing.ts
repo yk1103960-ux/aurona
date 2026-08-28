@@ -22,9 +22,43 @@ export function useMyRole() {
   const isApproved = r.status === "approved";
   const isPartner = r.role === "retailer" || r.role === "distributor";
   const isPartnerPending = isPartner && !isApproved;
-  const canPurchase = r.role !== "distributor";
-  const showPrices = !(isPartnerPending);
-  return { ...r, isApproved, isPartner, isPartnerPending, canPurchase, showPrices, loading: q.isLoading };
+  // Approved partners (retailer AND distributor) can buy at their own price.
+  // Only unapproved partner accounts are blocked from purchasing.
+  const canPurchase = !isPartnerPending;
+  const showPrices = !isPartnerPending;
+  const isVerifiedPartner = isPartner && isApproved;
+  return { ...r, isApproved, isPartner, isPartnerPending, isVerifiedPartner, canPurchase, showPrices, loading: q.isLoading };
+}
+
+/**
+ * Keeps role/pricing state in sync in real time: when an admin approves a
+ * partner application or grants a role, the visible prices refresh instantly
+ * without a page reload.
+ */
+export function useRolePricingRealtime() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    const refresh = () => {
+      qc.invalidateQueries({ queryKey: ["my-role-status"] });
+      qc.invalidateQueries({ queryKey: ["visible-prices"] });
+    };
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id;
+      if (!uid || cancelled) return;
+      channel = supabase
+        .channel(`role-sync-${uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "partner_applications", filter: `user_id=eq.${uid}` }, refresh)
+        .on("postgres_changes", { event: "*", schema: "public", table: "user_roles", filter: `user_id=eq.${uid}` }, refresh)
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [qc]);
 }
 
 export type VisiblePrice = { sku: string; mrp: number | null; price: number | null; role: PricingRole };
