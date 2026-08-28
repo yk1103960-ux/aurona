@@ -18,7 +18,7 @@ export type ShippingQuote = {
   rates: ShippingRate[];
 };
 
-const DEFAULT_WEIGHT_G = 500;
+const DEFAULT_WEIGHT_G = 300;
 const FALLBACK_FREE_ABOVE = 999;
 const FALLBACK_FLAT = 79;
 
