@@ -41,11 +41,14 @@ export function PartnerVerificationBanner() {
   );
 }
 
-/** Card shown to distributors instead of add-to-cart / buy-now */
+/**
+ * Distributor contact card. The company number is never displayed — tapping
+ * "Contact Aurona" places the call directly.
+ */
 export function ContactSalesCard({ productName, sku, className }: { productName?: string; sku?: string; className?: string }) {
   const { data: s } = useContactSettings();
   const phone = s?.support_phone ?? "+91 96025 70026";
-  const email = s?.support_email ?? "support@auronalighting.com";
+  const email = s?.support_email ?? "auronalighting@gmail.com";
   const wa = s?.social_whatsapp ?? "https://wa.me/919602570026";
   const subject = encodeURIComponent(`Distributor enquiry: ${productName ?? sku ?? "Aurona product"}`);
   const body = encodeURIComponent(`Hello Aurona Sales,\n\nI would like a distributor quote for:\nProduct: ${productName ?? ""}\nSKU: ${sku ?? ""}\n\nQuantity:\nRegion:\nCompany:\n\nRegards,`);
@@ -54,15 +57,16 @@ export function ContactSalesCard({ productName, sku, className }: { productName?
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
         <ShieldCheck className="h-4 w-4" /> Distributor Channel
       </div>
-      <h3 className="mt-2 text-display text-2xl">Contact Sales for Distributor Pricing</h3>
+      <h3 className="mt-2 text-display text-2xl">Need bulk or project pricing?</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Distributor orders are handled directly by our sales team — no online checkout.
+        Your distributor rate is already applied above. For large volumes, project quotes
+        or custom terms, talk to the Aurona sales desk.
       </p>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <Button asChild size="lg" className="h-12 gap-2 rounded-full">
-          <a href={`tel:${phone.replace(/\s+/g, "")}`}>
-            <Phone className="h-4 w-4" /> Call {phone}
+          <a href={`tel:${phone.replace(/[^+\d]/g, "")}`} aria-label="Call Aurona sales">
+            <Phone className="h-4 w-4" /> Contact Aurona
           </a>
         </Button>
         <Button asChild size="lg" variant="outline" className="h-12 gap-2 rounded-full">
@@ -72,21 +76,12 @@ export function ContactSalesCard({ productName, sku, className }: { productName?
         </Button>
       </div>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <Button asChild variant="ghost" className="h-11 justify-start gap-2 rounded-lg text-xs">
+      <div className="mt-3">
+        <Button asChild variant="ghost" className="h-11 w-full justify-start gap-2 rounded-lg text-xs">
           <a href={`mailto:${email}?subject=${subject}&body=${body}`}>
-            📧 Request Quote via Email
+            📧 Request a written quote
           </a>
         </Button>
-        <Button asChild variant="ghost" className="h-11 justify-start gap-2 rounded-lg text-xs">
-          <a href={`mailto:${email}?subject=${encodeURIComponent("Schedule a business call")}`}>
-            📅 Schedule Business Call
-          </a>
-        </Button>
-      </div>
-
-      <div className="mt-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
-        Sales: <span className="font-semibold text-foreground">{phone}</span> · {email}
       </div>
     </div>
   );
