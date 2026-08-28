@@ -214,7 +214,7 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
       ],
     },
     {
-      heading: "Immersion Water Heater",
+      heading: "Immersion Heaters",
       slug: "immersion-heaters",
       items: [{ label: "Ecotherm", slug: "ecotherm-iwh-eco" }],
     },
@@ -900,7 +900,7 @@ function MegaPanel({
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid max-h-[70vh] auto-cols-[minmax(150px,max-content)] grid-flow-col items-start gap-x-7 gap-y-5 overflow-y-auto px-7 py-6">
+        <div className="grid max-h-[70vh] auto-cols-[minmax(138px,172px)] grid-flow-col items-start gap-x-6 gap-y-5 overflow-y-auto px-6 py-5">
           {columns.map((col, ci) => (
             <div key={ci} className="min-w-0 space-y-5">
               {col.map((group, gi) => (
@@ -918,7 +918,7 @@ function MegaPanel({
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className="group/mi block whitespace-nowrap text-[12.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className="group/mi block text-[12.5px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
