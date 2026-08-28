@@ -62,6 +62,8 @@ const LED_COLUMNS: MegaGroup[][] = [
       slug: "tube-lights",
       items: [{ label: "Batten", slug: "batten-tl-ba" }],
     },
+  ],
+  [
     {
       heading: "Deep Light",
       slug: "deep-lights",
@@ -71,17 +73,6 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Hexa", slug: "hexa-dl-he" },
       ],
     },
-  ],
-  [
-    {
-      heading: "Street Lights",
-      slug: "street-lights",
-      items: [
-        { label: "Lens", slug: "lens-sl-le" },
-        { label: "Glass", slug: "glass-sl-gl" },
-        { label: "Slim Lens", slug: "slim-lens-sl-sl" },
-      ],
-    },
     {
       heading: "Panel Lights",
       slug: "panel-lights",
@@ -89,14 +80,6 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Backlit Surface", slug: "backlit-surface-sp-bls" },
         { label: "Moon Surface", slug: "moon-surface-sp-ms" },
         { label: "Rimless Surface", slug: "rimless-surface-sp-rls" },
-      ],
-    },
-    {
-      heading: "Flood Light",
-      slug: "flood-lights",
-      items: [
-        { label: "Nova", slug: "nova-fl-no" },
-        { label: "AuraLUX", slug: "auralux-fl-al" },
       ],
     },
   ],
@@ -115,11 +98,6 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Track Light", slug: "track-light-cob-il-tra-cob" },
       ],
     },
-    {
-      heading: "Outdoor Light",
-      slug: "outdoor-lights",
-      items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
-    },
   ],
   [
     {
@@ -136,6 +114,30 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Happy", slug: "happy-cl-ha" },
         { label: "Aura", slug: "aura-cl-au" },
       ],
+    },
+  ],
+  [
+    {
+      heading: "Street Lights",
+      slug: "street-lights",
+      items: [
+        { label: "Lens", slug: "lens-sl-le" },
+        { label: "Glass", slug: "glass-sl-gl" },
+        { label: "Slim Lens", slug: "slim-lens-sl-sl" },
+      ],
+    },
+    {
+      heading: "Flood Light",
+      slug: "flood-lights",
+      items: [
+        { label: "Nova", slug: "nova-fl-no" },
+        { label: "AuraLUX", slug: "auralux-fl-al" },
+      ],
+    },
+    {
+      heading: "Outdoor Light",
+      slug: "outdoor-lights",
+      items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
     },
     {
       heading: "Decorative Lights",
@@ -179,14 +181,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "Air Glide", slug: "air-glide-pf-ag" },
       ],
     },
-    {
-      heading: "Exhaust Fans",
-      slug: "exhaust-fans",
-      items: [
-        { label: "Vento", slug: "vento-ef-v" },
-        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
-      ],
-    },
   ],
   [
     {
@@ -199,6 +193,16 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
         { label: "AP Fan", slug: "ap-fan-tf-ap" },
       ],
     },
+    {
+      heading: "Exhaust Fans",
+      slug: "exhaust-fans",
+      items: [
+        { label: "Vento", slug: "vento-ef-v" },
+        { label: "Vento Plus", slug: "vento-plus-ef-vp" },
+      ],
+    },
+  ],
+  [
     {
       heading: "Water Geysers",
       slug: "water-geysers",
@@ -240,6 +244,7 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
     },
   ],
 ];
+
 
 // Category slug -> product family links, shared by the desktop mega menu and the mobile drawer.
 const FAMILIES_BY_CATEGORY: Record<string, MegaItem[]> = Object.fromEntries(
@@ -892,11 +897,12 @@ function MegaPanel({
         ref={cardRef}
         style={{ left }}
         className={cn(
-          "absolute top-1 w-max max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
+          "absolute top-1 w-[900px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid max-h-[70vh] auto-cols-[minmax(120px,150px)] grid-flow-col items-start gap-x-4 gap-y-4 overflow-y-auto px-5 py-4">
+        <div className="grid min-h-[268px] max-h-[70vh] grid-cols-5 items-start gap-x-5 gap-y-4 overflow-y-auto px-6 py-5">
+
           {columns.map((col, ci) => (
             <div key={ci} className="min-w-0 space-y-3">
               {col.map((group, gi) => (
