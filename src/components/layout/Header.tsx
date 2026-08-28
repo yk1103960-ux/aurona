@@ -846,9 +846,9 @@ function MegaPanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className={cn("container-x grid items-start gap-x-6 gap-y-4 py-5 max-h-[70vh] overflow-y-auto", colsClass)}>
+      <div className={cn("container-x grid items-start gap-x-5 gap-y-3 py-4 max-h-[55vh] overflow-y-auto", colsClass)}>
         {columns.map((col, ci) => (
-          <div key={ci} className="min-w-0 space-y-5">
+          <div key={ci} className="min-w-0 space-y-3.5">
             {col.map((group, gi) => {
               return (
                 <div key={`${group.heading}-${gi}`}>
@@ -856,20 +856,20 @@ function MegaPanel({
                     <Link
                       to="/category/$slug"
                       params={{ slug: group.slug }}
-                      className="block text-[11px] font-bold uppercase tracking-[0.22em] text-primary transition-colors hover:text-gold"
+                      className="block text-[11px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:text-gold"
                     >
                       {group.heading}
                     </Link>
                   ) : (
                     <span className="block h-[13px]" aria-hidden />
                   )}
-                  <ul className="mt-2 space-y-1.5">
+                  <ul className="mt-1.5 space-y-1">
                     {group.items.map((item) => (
                       <li key={item.slug}>
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className="group/mi block text-[13px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className="group/mi block text-[12px] leading-snug text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
                         </Link>
@@ -880,7 +880,7 @@ function MegaPanel({
                     <Link
                       to="/category/$slug"
                       params={{ slug: group.slug }}
-                      className="mt-2 inline-block text-[13px] leading-snug text-foreground/70 transition-colors hover:text-primary"
+                      className="mt-1.5 inline-block text-[12px] leading-snug text-foreground/70 transition-colors hover:text-primary"
                     >
                       {group.note}
                     </Link>
@@ -888,7 +888,6 @@ function MegaPanel({
                 </div>
               );
             })}
-
           </div>
         ))}
       </div>
