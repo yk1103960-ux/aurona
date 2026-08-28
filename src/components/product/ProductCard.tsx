@@ -52,7 +52,6 @@ export function ProductCard({
   const inWishlist = wl.has(product.id, product.sku);
   const detailSlug = product.family_slug ?? product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
-  const isDistributor = role.role === "distributor";
 
   const line = cart.lineFor(product.id, product.sku);
   const qty = line?.quantity ?? 0;
@@ -149,7 +148,9 @@ export function ProductCard({
           <span>· {product.review_count} reviews</span>
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          {shownPrice > 0 ? (
+          {role.isPartnerPending ? (
+            <span className="text-sm font-semibold uppercase tracking-wider text-primary">Price hidden</span>
+          ) : shownPrice > 0 ? (
             <>
               {product.price_from && (
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">From</span>
