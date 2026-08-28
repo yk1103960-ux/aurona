@@ -8,6 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -26,11 +38,12 @@ export const Route = createFileRoute("/aurona-console-9f2x7k/affiliates")({
 
 const TABS = [
   "Overview",
+  "Analytics",
   "Affiliates",
   "Referrals",
   "Products",
   "Commissions",
-
+  "Payout details",
   "Withdrawals",
   "Configuration",
   "Logs",
@@ -81,11 +94,13 @@ function AffiliatesAdmin() {
       </div>
 
       {tab === "Overview" && <Overview data={data} />}
+      {tab === "Analytics" && <AnalyticsTab data={data} />}
       {tab === "Affiliates" && <AffiliatesTab data={data} refresh={refresh} />}
       {tab === "Referrals" && <ReferralsTab data={data} />}
       {tab === "Products" && <ProductsTab data={data} />}
 
       {tab === "Commissions" && <CommissionsTab data={data} refresh={refresh} />}
+      {tab === "Payout details" && <PayoutDetailsTab data={data} />}
       {tab === "Withdrawals" && <WithdrawalsTab data={data} refresh={refresh} />}
       {tab === "Configuration" && <ConfigTab data={data} refresh={refresh} />}
       {tab === "Logs" && <LogsTab data={data} />}
