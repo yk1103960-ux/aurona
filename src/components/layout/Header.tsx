@@ -96,7 +96,6 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Mr. One", slug: "mr-one-il-mo" },
         { label: "Mr. Two", slug: "mr-two-il-mt" },
         { label: "Track Light", slug: "track-light-cob-il-tra-cob" },
-
       ],
     },
   ],
@@ -123,6 +122,14 @@ const LED_COLUMNS: MegaGroup[][] = [
       slug: "outdoor-lights",
       items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
     },
+    {
+      heading: "Decorative Lights",
+      slug: "decorative-lights",
+      items: [
+        { label: "Cylinder", slug: "cylinder-il-cyl-07-cw-b-mb" },
+        { label: "Half Moon", slug: "half-moon-il-hm-04-p4" },
+      ],
+    },
   ],
   [
     {
@@ -138,14 +145,6 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Zade", slug: "zade-cl-za" },
         { label: "Happy", slug: "happy-cl-ha" },
         { label: "Aura", slug: "aura-cl-au" },
-      ],
-    },
-    {
-      heading: "Decorative Lights",
-      slug: "decorative-lights",
-      items: [
-        { label: "Cylinder", slug: "cylinder-il-cyl-07-cw-b-mb" },
-        { label: "Half Moon", slug: "half-moon-il-hm-04-p4" },
       ],
     },
   ],
