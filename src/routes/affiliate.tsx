@@ -318,6 +318,10 @@ function Dashboard({ data }: { data: MyAffiliate }) {
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-primary">
+          <BadgeCheck className="h-5 w-5" />
+          Affiliate approved ✓
+        </div>
         <div className="text-eyebrow">Your referral link</div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
           <code className="flex-1 truncate rounded-xl bg-surface px-4 py-3 text-sm">{link}</code>

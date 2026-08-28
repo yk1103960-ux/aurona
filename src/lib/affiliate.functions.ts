@@ -704,6 +704,25 @@ export const adminUpdateAffiliate = createServerFn({ method: "POST" })
     if (patch.status === "approved") {
       update["approved_at"] = new Date().toISOString();
       update["approved_by"] = actor.userId;
+
+      // Applications submitted before account linking was enforced can have
+      // no user_id. Attach the approved row to the matching login so it
+      // appears immediately in that user's Affiliate With Us dashboard.
+      const { data: affiliate } = await supabaseAdmin
+        .from("affiliates")
+        .select("user_id, email")
+        .eq("id", id)
+        .maybeSingle();
+      if (affiliate && !affiliate.user_id && affiliate.email) {
+        const normalize = (value: string) =>
+          value.trim().toLowerCase().replace(/\+(retailer|distributor)(?=@)/, "");
+        const targetEmail = normalize(affiliate.email);
+        const { data: users } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const matchingUser = users.users.find(
+          (user) => user.email && normalize(user.email) === targetEmail,
+        );
+        if (matchingUser) update["user_id"] = matchingUser.id;
+      }
     }
     const { error } = await supabaseAdmin.from("affiliates").update(update as never).eq("id", id);
     if (error) throw new Error("Could not update the affiliate.");
