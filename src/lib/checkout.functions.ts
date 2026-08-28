@@ -103,7 +103,6 @@ export const placeOrder = createServerFn({ method: "POST" })
     // server so the browser cannot influence it.
     const wholesale = role === "retailer" || role === "distributor";
     let shipping = 0;
-    let shippingRateId = "local-transport";
 
     if (wholesale) {
       shipping = 0;
