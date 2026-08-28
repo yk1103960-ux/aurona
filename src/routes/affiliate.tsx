@@ -471,3 +471,146 @@ function Field({
     </div>
   );
 }
+
+/** Affiliate-managed KYC + payment details used by Aurona to pay commissions. */
+function PayoutDetailsCard({ data }: { data: MyAffiliate }) {
+  const aff = data.affiliate!;
+  const qc = useQueryClient();
+  const saveFn = useServerFn(updateMyPayoutDetails);
+  const [open, setOpen] = useState(!data.payoutReady?.ok);
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({
+    full_name: aff.full_name ?? "",
+    mobile: aff.mobile ?? "",
+    company: aff.company ?? "",
+    address: aff.address ?? "",
+    city: aff.city ?? "",
+    state: aff.state ?? "",
+    pincode: aff.pincode ?? "",
+    pan: aff.pan ?? "",
+    gstin: aff.gstin ?? "",
+    payout_method: (aff.payout_method === "bank" ? "bank" : "upi") as "upi" | "bank",
+    payout_upi: aff.payout_upi ?? "",
+    payout_account_name: aff.payout_account_name ?? "",
+    payout_account_number: aff.payout_account_number ?? "",
+    payout_ifsc: aff.payout_ifsc ?? "",
+    payout_bank: aff.payout_bank ?? "",
+  });
+  const set = (k: keyof typeof f) => (v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await saveFn({ data: f });
+      toast.success("Payment details saved");
+      setOpen(false);
+      await qc.invalidateQueries({ queryKey: ["my-affiliate"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save your details.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="text-eyebrow">Payment details</div>
+        <Button size="sm" variant="outline" className="rounded-full" onClick={() => setOpen((v) => !v)}>
+          {open ? "Close" : "Edit"}
+        </Button>
+      </div>
+
+      {data.payoutReady?.ok ? (
+        <div className="flex items-center gap-2 text-xs text-emerald-600">
+          <BadgeCheck className="h-4 w-4" /> Ready for payouts
+        </div>
+      ) : (
+        <div className="text-xs text-amber-600">Missing: {data.payoutReady?.missing.join(", ")}</div>
+      )}
+
+      {!open && (
+        <dl className="mt-4 space-y-1.5 text-sm">
+          <Detail l="Beneficiary" v={aff.full_name} />
+          <Detail l="Mobile" v={aff.mobile} />
+          <Detail l="Email" v={aff.email} />
+          {f.payout_method === "upi" ? (
+            <Detail l="UPI ID" v={aff.payout_upi} />
+          ) : (
+            <>
+              <Detail l="Account name" v={aff.payout_account_name} />
+              <Detail
+                l="Account no."
+                v={aff.payout_account_number ? `••••${aff.payout_account_number.slice(-4)}` : null}
+              />
+              <Detail l="IFSC" v={aff.payout_ifsc} />
+              <Detail l="Bank" v={aff.payout_bank} />
+            </>
+          )}
+          <Detail l="PAN" v={aff.pan} />
+          <Detail l="GSTIN" v={aff.gstin} />
+        </dl>
+      )}
+
+      {open && (
+        <div className="mt-4 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field l="Full name (as per bank)" v={f.full_name} on={set("full_name")} required />
+            <Field l="Mobile" v={f.mobile} on={set("mobile")} required />
+            <Field l="Company (optional)" v={f.company} on={set("company")} />
+            <Field l="PAN" v={f.pan} on={set("pan")} />
+            <Field l="GSTIN (optional)" v={f.gstin} on={set("gstin")} />
+            <Field l="Address" v={f.address} on={set("address")} full />
+            <Field l="City" v={f.city} on={set("city")} />
+            <Field l="State" v={f.state} on={set("state")} />
+            <Field l="Pincode" v={f.pincode} on={set("pincode")} />
+          </div>
+
+          <div className="flex gap-2">
+            {(["upi", "bank"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setF((p) => ({ ...p, payout_method: m }))}
+                className={cn(
+                  "rounded-full border px-4 py-1.5 text-xs font-semibold transition",
+                  f.payout_method === m
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                {m === "upi" ? "UPI payout" : "Bank transfer"}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {f.payout_method === "upi" ? (
+              <Field l="UPI ID" v={f.payout_upi} on={set("payout_upi")} full required />
+            ) : (
+              <>
+                <Field l="Account holder name" v={f.payout_account_name} on={set("payout_account_name")} required />
+                <Field l="Bank name" v={f.payout_bank} on={set("payout_bank")} />
+                <Field l="Account number" v={f.payout_account_number} on={set("payout_account_number")} required />
+                <Field l="IFSC" v={f.payout_ifsc} on={set("payout_ifsc")} required />
+              </>
+            )}
+          </div>
+
+          <Button onClick={save} disabled={busy} className="h-11 w-full rounded-full">
+            {busy ? "Saving…" : "Save payment details"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Detail({ l, v }: { l: string; v?: string | null }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <dt className="text-xs text-muted-foreground">{l}</dt>
+      <dd className="truncate text-right text-sm">{v || "—"}</dd>
+    </div>
+  );
+}
