@@ -13,7 +13,9 @@ export type NotifyKind =
   | "partner_application_received"
   | "partner_application_under_review"
   | "partner_application_approved"
-  | "partner_application_rejected";
+  | "partner_application_rejected"
+  | "cart_abandoned"
+  | "cart_abandoned_coupon";
 
 const FROM = "Aurona <onboarding@resend.dev>";
 

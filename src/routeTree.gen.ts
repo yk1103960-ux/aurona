@@ -73,6 +73,7 @@ import { Route as ApiPublicShiprocketWebhookRouteImport } from './routes/api/pub
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
 import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public/delivery-status'
+import { Route as ApiPublicCartRemindersRouteImport } from './routes/api/public/cart-reminders'
 import { Route as ApiPublicProductImageSplatRouteImport } from './routes/api/public/product-image.$'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -419,6 +420,11 @@ const ApiPublicDeliveryStatusRoute = ApiPublicDeliveryStatusRouteImport.update({
   path: '/api/public/delivery-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCartRemindersRoute = ApiPublicCartRemindersRouteImport.update({
+  id: '/api/public/cart-reminders',
+  path: '/api/public/cart-reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicProductImageSplatRoute =
   ApiPublicProductImageSplatRouteImport.update({
     id: '/api/public/product-image/$',
@@ -482,6 +488,7 @@ export interface FileRoutesByFullPath {
   '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/api/public/cart-reminders': typeof ApiPublicCartRemindersRoute
   '/api/public/delivery-status': typeof ApiPublicDeliveryStatusRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -546,6 +553,7 @@ export interface FileRoutesByTo {
   '/blogs': typeof BlogsIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/api/public/cart-reminders': typeof ApiPublicCartRemindersRoute
   '/api/public/delivery-status': typeof ApiPublicDeliveryStatusRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -614,6 +622,7 @@ export interface FileRoutesById {
   '/blogs/': typeof BlogsIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/api/public/cart-reminders': typeof ApiPublicCartRemindersRoute
   '/api/public/delivery-status': typeof ApiPublicDeliveryStatusRoute
   '/api/public/phonepe-callback': typeof ApiPublicPhonepeCallbackRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -683,6 +692,7 @@ export interface FileRouteTypes {
     | '/blogs/'
     | '/partner/'
     | '/products/'
+    | '/api/public/cart-reminders'
     | '/api/public/delivery-status'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
@@ -747,6 +757,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/partner'
     | '/products'
+    | '/api/public/cart-reminders'
     | '/api/public/delivery-status'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
@@ -814,6 +825,7 @@ export interface FileRouteTypes {
     | '/blogs/'
     | '/partner/'
     | '/products/'
+    | '/api/public/cart-reminders'
     | '/api/public/delivery-status'
     | '/api/public/phonepe-callback'
     | '/api/public/razorpay-webhook'
@@ -861,6 +873,7 @@ export interface RootRouteChildren {
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
+  ApiPublicCartRemindersRoute: typeof ApiPublicCartRemindersRoute
   ApiPublicDeliveryStatusRoute: typeof ApiPublicDeliveryStatusRoute
   ApiPublicPhonepeCallbackRoute: typeof ApiPublicPhonepeCallbackRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
@@ -1319,6 +1332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDeliveryStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cart-reminders': {
+      id: '/api/public/cart-reminders'
+      path: '/api/public/cart-reminders'
+      fullPath: '/api/public/cart-reminders'
+      preLoaderRoute: typeof ApiPublicCartRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/product-image/$': {
       id: '/api/public/product-image/$'
       path: '/api/public/product-image/$'
@@ -1467,6 +1487,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersOrderIdRoute: OrdersOrderIdRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,
+  ApiPublicCartRemindersRoute: ApiPublicCartRemindersRoute,
   ApiPublicDeliveryStatusRoute: ApiPublicDeliveryStatusRoute,
   ApiPublicPhonepeCallbackRoute: ApiPublicPhonepeCallbackRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
