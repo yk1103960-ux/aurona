@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
+import { ProductImageManager } from "@/components/admin/ProductImageManager";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ProductEditor,
@@ -233,6 +234,7 @@ function ProductEditor() {
           <Field label="Image seed (slug)"><Input value={f.image_seed} onChange={(e) => upd("image_seed", e.target.value)} placeholder="e.g. led-bulb" /></Field>
         </Section>
 
+        {!isNew && f.sku && <ProductImageManager productSku={f.sku} productId={id} />}
         {!isNew && f.sku && <VariantEditor productSku={f.sku} productId={id} />}
       </div>
 
