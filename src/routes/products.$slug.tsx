@@ -81,8 +81,12 @@ function PDPRoute() {
 
 function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?: string }) {
   const cats = useSuspenseQuery(categoriesQuery).data;
-  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === family.category_id);
+  const { data: sameCategory = [] } = useQuery(
+    productsQuery({ categorySlug: cat?.slug ?? "", limit: 10 }),
+  );
+  const related = sameCategory.filter((p) => p.category_id === family.category_id && p.family_slug !== family.slug).slice(0, 10);
+
   const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
   const [qty, setQty] = useState(1);
   const cart = useCart();
