@@ -866,21 +866,6 @@ function MegaPanel({
   onEnter: () => void;
   onLeave: () => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [left, setLeft] = useState(anchorLeft);
-
-  useIsoLayoutEffect(() => {
-    if (!open) return;
-    const place = () => {
-      const w = cardRef.current?.offsetWidth ?? 0;
-      const max = Math.max(16, window.innerWidth - w - 24);
-      setLeft(Math.min(Math.max(anchorLeft - 16, 16), max));
-    };
-    place();
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [open, anchorLeft, columns]);
-
   return (
     <div
       className={cn(
@@ -892,13 +877,12 @@ function MegaPanel({
       aria-hidden={!open}
     >
       <div
-        ref={cardRef}
-        style={{ left }}
         className={cn(
-          "absolute top-1 w-[900px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
+          "absolute left-1/2 top-1 w-[900px] max-w-[calc(100vw-3rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
+
         <div className="grid min-h-[268px] max-h-[70vh] grid-cols-5 items-start gap-x-5 gap-y-4 overflow-y-auto px-6 py-5">
 
           {columns.map((col, ci) => (
