@@ -1135,7 +1135,7 @@ function BrowsePanel({
                     </span>
                   )}
                   <ProductImage
-                    product={{ slug: hoverProduct.slug, name: hoverProduct.name, image_seed: hoverProduct.image_seed }}
+                    product={{ slug: hoverProduct.slug, name: hoverProduct.name, image_seed: hoverProduct.image_seed, image_url: hoverProduct.image_url }}
                     className="h-full w-full"
                     categoryIcon={activeCat?.icon ?? null}
                     eager
