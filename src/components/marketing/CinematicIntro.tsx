@@ -361,16 +361,16 @@ export function CinematicIntro() {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "min(62vw, 720px)",
-          maxHeight: "42vh",
+          width: "min(58vw, 640px)",
+          maxHeight: "38vh",
           objectFit: "contain",
           imageRendering: "auto",
           backfaceVisibility: "hidden",
           opacity: 0,
-          filter: "drop-shadow(0 0 30px rgba(120,190,255,0.8)) drop-shadow(0 0 60px rgba(60,140,255,0.5))",
+          filter: "drop-shadow(0 0 18px rgba(120,190,255,0.45))",
           animation: "aurona-logo-reveal 7s cubic-bezier(0.16,1,0.3,1) forwards",
-          mixBlendMode: "screen",
         }}
+
       />
       {/* Small skip intro button */}
       <button
