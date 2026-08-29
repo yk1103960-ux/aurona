@@ -96,7 +96,16 @@ const LED_COLUMNS: MegaGroup[][] = [
         { label: "Track Light", slug: "track-light-cob-il-tra-cob" },
       ],
     },
+    {
+      heading: "Decorative Lights",
+      slug: "decorative-lights",
+      items: [
+        { label: "Cylinder", slug: "cylinder-il-cyl" },
+        { label: "Half Moon", slug: "half-moon-il-hm" },
+      ],
+    },
   ],
+
   [
     {
       heading: "Concealed Lights",
