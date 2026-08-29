@@ -840,6 +840,33 @@ export type Database = {
           },
         ]
       }
+      cart_reminders: {
+        Row: {
+          cart_signature: string
+          coupon_code: string | null
+          id: string
+          sent_at: string
+          stage: string
+          user_id: string
+        }
+        Insert: {
+          cart_signature: string
+          coupon_code?: string | null
+          id?: string
+          sent_at?: string
+          stage: string
+          user_id: string
+        }
+        Update: {
+          cart_signature?: string
+          coupon_code?: string | null
+          id?: string
+          sent_at?: string
+          stage?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
