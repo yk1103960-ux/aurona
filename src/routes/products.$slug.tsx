@@ -12,6 +12,8 @@ import { ProductImage } from "@/components/product/ProductImage";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { PDPSkeleton } from "@/components/product/PDPSkeleton";
 import { ProductCard } from "@/components/product/ProductCard";
+import { RelatedRail } from "@/components/product/RelatedRail";
+
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
