@@ -467,12 +467,14 @@ export type BrowseProduct = {
   name: string;
   sku: string;
   image_seed: string | null;
+  image_url: string | null;
   family_slug: string | null;
   price: number | null;
   mrp: number | null;
   wattage: string | null;
   stock: number | null;
 };
+
 
 export const browseProductsByCategoryQuery = (categorySlug: string) =>
   queryOptions({
