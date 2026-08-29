@@ -73,6 +73,7 @@ import { Route as ApiPublicShiprocketWebhookRouteImport } from './routes/api/pub
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
 import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public/delivery-status'
+import { Route as ApiPublicProductImageSplatRouteImport } from './routes/api/public/product-image.$'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -418,6 +419,12 @@ const ApiPublicDeliveryStatusRoute = ApiPublicDeliveryStatusRouteImport.update({
   path: '/api/public/delivery-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicProductImageSplatRoute =
+  ApiPublicProductImageSplatRouteImport.update({
+    id: '/api/public/product-image/$',
+    path: '/api/public/product-image/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -484,6 +491,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
+  '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -547,6 +555,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
+  '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -614,6 +623,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
+  '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -682,6 +692,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
     | '/aurona-console-9f2x7k/products/new'
+    | '/api/public/product-image/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -745,6 +756,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
     | '/aurona-console-9f2x7k/products/new'
+    | '/api/public/product-image/$'
   id:
     | '__root__'
     | '/'
@@ -811,6 +823,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
     | '/aurona-console-9f2x7k/products/new'
+    | '/api/public/product-image/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -853,6 +866,7 @@ export interface RootRouteChildren {
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicShiprocketWebhookRoute: typeof ApiPublicShiprocketWebhookRoute
   ApiPublicSyncShipmentsRoute: typeof ApiPublicSyncShipmentsRoute
+  ApiPublicProductImageSplatRoute: typeof ApiPublicProductImageSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1305,6 +1319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDeliveryStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/product-image/$': {
+      id: '/api/public/product-image/$'
+      path: '/api/public/product-image/$'
+      fullPath: '/api/public/product-image/$'
+      preLoaderRoute: typeof ApiPublicProductImageSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1451,6 +1472,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicShiprocketWebhookRoute: ApiPublicShiprocketWebhookRoute,
   ApiPublicSyncShipmentsRoute: ApiPublicSyncShipmentsRoute,
+  ApiPublicProductImageSplatRoute: ApiPublicProductImageSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
