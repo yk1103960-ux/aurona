@@ -18,7 +18,17 @@ export function ProductGallery({
   categoryIcon?: string | null;
   className?: string;
 }) {
-  const slides = useMemo(() => images.filter((i) => !!i.image_url), [images]);
+  const slides = useMemo(() => {
+    const real = images.filter((i) => !!i.image_url);
+    if (real.length > 0 && real.length < 5) {
+      // Pad to 5 boxes by cycling existing photos so the thumbnail
+      // strip always renders the full 5-tile layout.
+      const padded = [...real];
+      while (padded.length < 5) padded.push(real[padded.length % real.length]);
+      return padded;
+    }
+    return real;
+  }, [images]);
   const hasReal = slides.length > 0;
   const count = hasReal ? slides.length : 5; // 5 fallback thumbs from generated tile
   const [idx, setIdx] = useState(0);
