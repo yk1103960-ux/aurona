@@ -467,12 +467,14 @@ export type BrowseProduct = {
   name: string;
   sku: string;
   image_seed: string | null;
+  image_url: string | null;
   family_slug: string | null;
   price: number | null;
   mrp: number | null;
   wattage: string | null;
   stock: number | null;
 };
+
 
 export const browseProductsByCategoryQuery = (categorySlug: string) =>
   queryOptions({
@@ -492,20 +494,22 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
       // Prefer model families (JOY, RAZER, ZELLY, ZIO ...) — model name only, no variant text
       const { data: fams } = await supabase
         .from("product_families")
-        .select("slug, main_sku, name, image_seed, min_price, min_mrp")
+        .select("id, slug, main_sku, name, image_seed, min_price, min_mrp")
         .eq("category_id", cat.id)
         .order("name")
         .limit(24);
       const famRows = (fams ?? []) as {
-        slug: string; main_sku: string; name: string; image_seed: string | null;
+        id: string; slug: string; main_sku: string; name: string; image_seed: string | null;
         min_price: number | null; min_mrp: number | null;
       }[];
       if (famRows.length > 0) {
+        const famImgs = await primaryImages("family_id", famRows.map((f) => f.id));
         return famRows.map((f) => ({
           slug: f.slug,
           name: f.name,
           sku: f.main_sku,
           image_seed: f.image_seed,
+          image_url: famImgs[f.id] ?? null,
           family_slug: f.slug,
           price: f.min_price ?? null,
           mrp: f.min_mrp ?? null,
@@ -517,27 +521,31 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
       const { data } = await supabase
 
         .from("products")
-        .select("slug, sku, name, image_seed, price, mrp, wattage, stock")
+        .select("id, slug, sku, name, image_seed, price, mrp, wattage, stock")
         .eq("category_id", cat.id)
         .order("is_bestseller", { ascending: false })
         .order("name")
         .limit(24);
       const rows = (data ?? []) as {
-        slug: string; sku: string; name: string; image_seed: string | null;
+        id: string; slug: string; sku: string; name: string; image_seed: string | null;
         price: number | null; mrp: number | null; wattage: string | null; stock: number | null;
       }[];
 
       const skus = rows.map((r) => r.sku).filter(Boolean);
       const familyBySku = new Map<string, string>();
+      const familyIdBySku = new Map<string, string>();
       if (skus.length) {
         const { data: links } = await supabase
           .from("product_variants")
-          .select("sku, product_families(slug)")
+          .select("sku, family_id, product_families(slug)")
           .in("sku", skus);
-        for (const link of (links ?? []) as unknown as { sku: string; product_families?: { slug: string } | null }[]) {
+        for (const link of (links ?? []) as unknown as { sku: string; family_id: string | null; product_families?: { slug: string } | null }[]) {
           if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);
+          if (link.family_id) familyIdBySku.set(link.sku, link.family_id);
         }
       }
+      const prodImgs = await primaryImages("product_id", rows.map((r) => r.id));
+      const famFallback = await primaryImages("family_id", [...new Set(familyIdBySku.values())]);
       // De-dup by family (one entry per family), keep singles as-is
       const seen = new Set<string>();
       const out: BrowseProduct[] = [];
@@ -546,11 +554,15 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         const key = fam ?? r.slug;
         if (seen.has(key)) continue;
         seen.add(key);
+        const famId = familyIdBySku.get(r.sku);
         out.push({
-          slug: r.slug, name: r.name, sku: r.sku, image_seed: r.image_seed, family_slug: fam,
+          slug: r.slug, name: r.name, sku: r.sku, image_seed: r.image_seed,
+          image_url: prodImgs[r.id] ?? (famId ? famFallback[famId] ?? null : null),
+          family_slug: fam,
           price: r.price ?? null, mrp: r.mrp ?? null, wattage: r.wattage ?? null, stock: r.stock ?? null,
         });
       }
+
       return out.slice(0, 18);
     },
   });

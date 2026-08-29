@@ -12,6 +12,8 @@ import { ProductImage } from "@/components/product/ProductImage";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { PDPSkeleton } from "@/components/product/PDPSkeleton";
 import { ProductCard } from "@/components/product/ProductCard";
+import { RelatedRail } from "@/components/product/RelatedRail";
+
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
@@ -81,8 +83,12 @@ function PDPRoute() {
 
 function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?: string }) {
   const cats = useSuspenseQuery(categoriesQuery).data;
-  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === family.category_id);
+  const { data: sameCategory = [] } = useQuery(
+    productsQuery({ categorySlug: cat?.slug ?? "", limit: 10 }),
+  );
+  const related = sameCategory.filter((p) => p.category_id === family.category_id && p.family_slug !== family.slug).slice(0, 10);
+
   const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
   const [qty, setQty] = useState(1);
   const cart = useCart();
@@ -367,15 +373,17 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <div className="text-eyebrow">Also popular</div>
             <h2 className="text-display mt-2 text-3xl">You may also like</h2>
           </div>
-          <Link to="/products" className="hidden items-center gap-1 text-sm font-medium hover:text-gold sm:inline-flex">
+          <Link
+            to="/category/$slug"
+            params={{ slug: cat?.slug ?? "" }}
+            disabled={!cat}
+            className="hidden items-center gap-1 text-sm font-medium hover:text-gold sm:inline-flex"
+          >
             View all <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {featured.slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} nameOnly categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
-          ))}
-        </div>
+        <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
+
       </div>
     </div>
   );

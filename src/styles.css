@@ -219,6 +219,13 @@
 @utility product-gradient-sky   { background: var(--grad-sky); }
 @utility product-gradient-cloud { background: var(--grad-cloud); }
 @utility product-gradient-hero  { background: var(--grad-hero); }
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
 @utility product-gradient-charcoal { background: var(--grad-charcoal); }
 
 @utility marquee {
