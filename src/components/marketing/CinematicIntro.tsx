@@ -410,11 +410,12 @@ export function CinematicIntro() {
       </button>
       <style>{`
         @keyframes aurona-logo-reveal {
-          0%, 55% { opacity: 0; transform: translate(-50%, -50%) scale(0.94); filter: drop-shadow(0 0 0px rgba(120,190,255,0)); }
-          70% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 34px rgba(120,190,255,0.85)); }
-          90% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 44px rgba(180,220,255,0.95)); }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); filter: drop-shadow(0 0 20px rgba(180,220,255,0.4)); }
+          0%, 55% { opacity: 0; transform: translate(-50%, -50%) scale(0.985); filter: drop-shadow(0 0 0px rgba(120,190,255,0)); }
+          70% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 18px rgba(120,190,255,0.5)); }
+          90% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 24px rgba(180,220,255,0.55)); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.01); filter: drop-shadow(0 0 14px rgba(180,220,255,0.3)); }
         }
+
       `}</style>
     </div>
   );
