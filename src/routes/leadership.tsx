@@ -75,7 +75,10 @@ export const Route = createFileRoute("/leadership")({
 });
 
 function LeadershipPage() {
+  const { data: settings } = useQuery(siteSettingsQuery);
+  const linkedin = settings?.social_linkedin || null;
   return (
+
     <div className="container-x py-14">
       <div className="mb-6 text-xs text-muted-foreground">
         <Link to="/" className="hover:text-foreground">Home</Link> /{" "}
