@@ -118,7 +118,7 @@ export function ProductGallery({
         {(hasReal ? slides : Array.from({ length: 5 })).map((s, i) => (
 
           <button
-            key={hasReal ? (s as ProductImageRow).id : i}
+            key={hasReal ? `${(s as ProductImageRow).id}-${i}` : i}
             type="button"
             onClick={() => setIdx(i)}
             className={cn(
