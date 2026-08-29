@@ -12,7 +12,7 @@ const categoryImages = import.meta.glob<{ default: string }>(
 
 const BLURB: Record<string, string> = {
   "interior-lights": "Sculpted pendants, chandeliers and mood pieces that anchor a room.",
-  "mirror-lights": "Editorial vanity light — soft, shadow-free, cinema-grade CRI.",
+  "decorative-lights": "Sculptural cylinder and half-moon wall lights for feature walls.",
   "concealed-lights": "Recessed downlights engineered for glare-free architecture.",
   "panel-lights": "Ultra-slim ceiling panels with copper drivers and 5-yr warranty.",
   "led-bulbs": "The everyday workhorse — 90+ CRI, 25,000-hour life.",
@@ -22,7 +22,7 @@ const BLURB: Record<string, string> = {
   "ceiling-fans": "BLDC-driven ceiling fans — whisper-quiet, 60% less energy.",
   "exhaust-fans": "Kitchen and bath exhaust with anti-rust powder-coat frames.",
   "table-fans": "Precision-balanced desk fans with silent hush motors.",
-  "heaters": "Insta-heat room warmers with tip-over safety and dust filters.",
+  "room-heaters": "Insta-heat room warmers with tip-over safety and dust filters.",
 };
 
 // Uniform 4-column grid — every tile is the same size for a clean, symmetric layout.
@@ -42,8 +42,8 @@ const LAYOUT: Array<{
   { slug: "ceiling-fans",     span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "dark"  },
   { slug: "table-fans",       span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "light" },
   { slug: "exhaust-fans",     span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "light" },
-  { slug: "heaters",          span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "light" },
-  { slug: "mirror-lights",    span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "dark"  },
+  { slug: "room-heaters",          span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "light" },
+  { slug: "decorative-lights",span: "lg:col-span-3 lg:row-span-2", size: "md", tone: "dark"  },
 ];
 
 export function CollectionsGrid({ categories }: { categories: Category[] }) {
@@ -56,7 +56,9 @@ export function CollectionsGrid({ categories }: { categories: Category[] }) {
     return {
       ...L,
       cat,
-      image: categoryImages[`../../assets/categories/${cat.slug}.jpg`]?.default,
+      image:
+        categoryImages[`../../assets/categories/${cat.slug}.jpg`]?.default ??
+        categoryImages[`../../assets/categories/heaters.jpg`]?.default,
       count: counts[cat.id] ?? 0,
       blurb: BLURB[cat.slug] ?? cat.name,
     };

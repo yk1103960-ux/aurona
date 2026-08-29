@@ -26,9 +26,12 @@ const CURATED = [
   "led-bulbs", "panel-lights", "concealed-lights", "interior-lights",
   "tube-lights", "deep-lights", "street-lights", "flood-lights",
   "outdoor-lights", "ceiling-fans", "table-fans", "pedestal-fans",
-  "exhaust-fans", "heaters", "water-geysers", "immersion-heaters",
-  "madhani",
+  "exhaust-fans", "room-heaters", "water-geysers", "immersion-heaters",
+  "madhani", "decorative-lights",
 ];
+
+// Some categories reuse an existing artwork file under a different slug.
+const IMAGE_ALIAS: Record<string, string> = { "room-heaters": "heaters" };
 
 type Tile = { slug: string; name: string; image: string; isIcon: boolean };
 
@@ -37,14 +40,14 @@ export function CategoryCircles({ categories }: { categories: Category[] }) {
   const bySlug = new Map(categories.map((c) => [c.slug, c] as const));
   const tiles: Tile[] = CURATED
     .map((slug) => {
-      const icon = categoryIcons[slug];
-      const image = icon ?? categoryImages[`../../assets/categories/${slug}.jpg`]?.default;
-      if (!image) return null;
       const cat = bySlug.get(slug);
-      const name =
-        cat?.name ??
-        slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-      return { slug, name, image, isIcon: !!icon };
+      // Never link to a category that does not exist — that renders a 404.
+      if (!cat) return null;
+      const assetSlug = IMAGE_ALIAS[slug] ?? slug;
+      const icon = categoryIcons[assetSlug];
+      const image = icon ?? categoryImages[`../../assets/categories/${assetSlug}.jpg`]?.default;
+      if (!image) return null;
+      return { slug, name: cat.name, image, isIcon: !!icon };
     })
     .filter(Boolean) as Tile[];
 
