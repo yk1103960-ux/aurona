@@ -130,7 +130,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-        <FamilyGallery family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} variantImageUrl={variant.image_url} categoryIcon={cat?.icon} />
+        <FamilyGallery key={variant.sku} family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} variantImageUrl={variant.image_url} categoryIcon={cat?.icon} />
 
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
@@ -509,8 +509,11 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
   family: ProductFamily; variantSku: string; variantImageSeed: string | null; variantImageUrl: string | null; categoryIcon?: string | null;
 }) {
   const { data: all = [] } = useQuery(productImagesQuery({ familyId: family.id }));
-  const filtered = all.filter((i) => !i.variant_sku || i.variant_sku === variantSku);
-  const images = filtered.length ? filtered : all;
+  // Variation-wise photos: when this variant has its own photos, show only
+  // those; otherwise fall back to the untagged family photos.
+  const forVariant = all.filter((i) => i.variant_sku === variantSku);
+  const generic = all.filter((i) => !i.variant_sku);
+  const images = forVariant.length ? forVariant : generic.length ? generic : all;
   return (
     <ProductGallery
       images={images}
