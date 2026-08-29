@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { siteSettingsQuery } from "@/lib/settings";
 import { Linkedin, Mail, Sparkles, Target, HeartHandshake, ShieldCheck, Leaf, Users } from "lucide-react";
 
 type Leader = {
@@ -112,9 +114,17 @@ function LeadershipPage() {
               ))}
             </ul>
             <div className="mt-5 flex gap-2 text-muted-foreground">
-              <a href="#" aria-label="LinkedIn" className="grid h-9 w-9 place-items-center rounded-lg border border-border transition hover:border-primary/40 hover:text-primary">
-                <Linkedin className="h-4 w-4" />
-              </a>
+              {linkedin && (
+                <a
+                  href={linkedin}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="LinkedIn"
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-border transition hover:border-primary/40 hover:text-primary"
+                >
+                  <Linkedin className="h-4 w-4" />
+                </a>
+              )}
               <a
                 href={`mailto:${l.email ?? "hr@auronalighting.com"}`}
                 aria-label="Email"
