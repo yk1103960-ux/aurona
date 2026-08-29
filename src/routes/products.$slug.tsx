@@ -371,15 +371,17 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <div className="text-eyebrow">Also popular</div>
             <h2 className="text-display mt-2 text-3xl">You may also like</h2>
           </div>
-          <Link to="/products" className="hidden items-center gap-1 text-sm font-medium hover:text-gold sm:inline-flex">
+          <Link
+            to="/category/$slug"
+            params={{ slug: cat?.slug ?? "" }}
+            disabled={!cat}
+            className="hidden items-center gap-1 text-sm font-medium hover:text-gold sm:inline-flex"
+          >
             View all <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {featured.slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} nameOnly categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
-          ))}
-        </div>
+        <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
+
       </div>
     </div>
   );
