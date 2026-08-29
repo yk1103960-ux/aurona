@@ -477,8 +477,8 @@ export function Header() {
             <NavItem to="/blogs">Blogs</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/about">About Us</NavItem>
-            <span className="mx-1.5 hidden h-4 w-px shrink-0 bg-primary/15 xl:block" aria-hidden />
-            <NavItem to="/contact" className="hidden xl:inline-block">Contact Us</NavItem>
+            <span className="mx-1.5 hidden h-4 w-px shrink-0 bg-primary/15 2xl:block" aria-hidden />
+            <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
           </div>
         </div>
       </nav>

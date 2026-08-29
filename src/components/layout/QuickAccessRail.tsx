@@ -11,7 +11,7 @@ export function QuickAccessRail() {
   if (pathname.startsWith("/aurona-console")) return null;
 
   return (
-    <div className="pointer-events-none fixed left-0 top-1/2 z-30 hidden -translate-y-1/2 xl:block">
+    <div className="pointer-events-none fixed left-0 top-1/2 z-30 hidden -translate-y-1/2 2xl:block">
       <div className="pointer-events-auto flex flex-col gap-2 rounded-r-3xl border border-l-0 border-primary/12 bg-white/80 p-2 shadow-[0_18px_50px_-30px_oklch(0.58_0.16_240/0.55)] backdrop-blur-xl">
         <RailLink to="/categories" icon={LayoutGrid} label="All Categories" />
         <RailLink to="/deals" icon={Zap} label="Flash Sale" />
