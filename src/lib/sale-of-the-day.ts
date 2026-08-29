@@ -128,15 +128,27 @@ export const saleOfTheDayQuery = (count = 6) =>
       if (picked.length === 0) return [] as SaleRow[];
 
       // Resolve real uploaded images + variant links through the shared query.
+      // The shared query returns one representative row per family, so a
+      // daily-picked variant may not have the same product id. Match by family
+      // slug as well as id or those cards lose the family's uploaded photo.
       const ids = new Set(picked.map((p) => p.id));
-      const enriched = (await (productsQuery().queryFn as () => Promise<SaleRow[]>)()).filter((p) => ids.has(p.id));
+      const familySlugs = new Set(
+        picked.map((p) => famSlugBySku.get(p.sku)).filter((slug): slug is string => Boolean(slug)),
+      );
+      const enriched = (await (productsQuery().queryFn as () => Promise<SaleRow[]>)()).filter(
+        (p) => ids.has(p.id) || Boolean(p.family_slug && familySlugs.has(p.family_slug)),
+      );
       const byId = new Map(enriched.map((p) => [p.id, p]));
+      const byFamily = new Map(
+        enriched.filter((p) => p.family_slug).map((p) => [p.family_slug as string, p]),
+      );
       return picked.map((p) => {
-        const base = byId.get(p.id) ?? p;
+        const familySlug = famSlugBySku.get(p.sku);
+        const base = byId.get(p.id) ?? (familySlug ? byFamily.get(familySlug) : undefined) ?? p;
         return {
           ...base,
           name: famNameBySku.get(p.sku) ?? base.name,
-          family_slug: famSlugBySku.get(p.sku) ?? base.family_slug ?? null,
+          family_slug: familySlug ?? base.family_slug ?? null,
         };
       });
     },
