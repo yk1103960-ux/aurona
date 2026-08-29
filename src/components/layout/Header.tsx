@@ -146,14 +146,6 @@ const LED_COLUMNS: MegaGroup[][] = [
       slug: "outdoor-lights",
       items: [{ label: "Gorden", slug: "gorden-ol-gor" }],
     },
-    {
-      heading: "Decorative Lights",
-      slug: "decorative-lights",
-      items: [
-        { label: "Cylinder", slug: "cylinder-il-cyl" },
-        { label: "Half Moon", slug: "half-moon-il-hm" },
-      ],
-    },
   ],
 ];
 
