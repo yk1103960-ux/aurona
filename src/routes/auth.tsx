@@ -173,12 +173,17 @@ function AuthPage() {
       toast.error(res.reason || "Your account has been suspended.");
       return;
     }
-    qc.invalidateQueries({ queryKey: ["my-role-status"] });
-    let landed: string = DASHBOARD_PATHS.customer;
+    await qc.invalidateQueries({ queryKey: ["my-role-status"] });
+    let landed: string = DASHBOARD_PATHS[role];
     try {
-      const { data } = await supabase.rpc("my_role_status");
-      landed = dashboardPathFor((data as any[] | null)?.[0]?.role);
-    } catch { /* fall back to the customer dashboard */ }
+      const { data, error } = await supabase.rpc("my_role_status");
+      if (error) throw error;
+      const resolvedRole = (data as { role?: string }[] | null)?.[0]?.role;
+      if (resolvedRole) landed = dashboardPathFor(resolvedRole);
+    } catch {
+      // The selected account type is the safe fallback because each role signs
+      // in through its own role-scoped identity.
+    }
     nav({ to: landed, replace: true });
   };
 
