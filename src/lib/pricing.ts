@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export type PricingRole = "guest" | "customer" | "retailer" | "distributor" | "admin";
 export type RoleStatus = { role: PricingRole; status: "anon" | "pending" | "under_review" | "approved" | "rejected"; intended_role: string };
 
-export const myRoleStatusQuery = queryOptions({
-  queryKey: ["my-role-status"],
+export const myRoleStatusQuery = (userId?: string) => queryOptions({
+  queryKey: ["my-role-status", userId ?? "signed-out"],
+  enabled: Boolean(userId),
   staleTime: 60 * 1000,
   queryFn: async (): Promise<RoleStatus> => {
     const { data, error } = await supabase.rpc("my_role_status");
@@ -17,7 +19,8 @@ export const myRoleStatusQuery = queryOptions({
 });
 
 export function useMyRole() {
-  const q = useQuery(myRoleStatusQuery);
+  const { user, loading: authLoading } = useAuth();
+  const q = useQuery(myRoleStatusQuery(user?.id));
   const r = q.data ?? { role: "guest" as PricingRole, status: "anon" as const, intended_role: "guest" };
   const isApproved = r.status === "approved";
   const isPartner = r.role === "retailer" || r.role === "distributor";
@@ -27,7 +30,7 @@ export function useMyRole() {
   const canPurchase = !isPartnerPending;
   const showPrices = !isPartnerPending;
   const isVerifiedPartner = isPartner && isApproved;
-  return { ...r, isApproved, isPartner, isPartnerPending, isVerifiedPartner, canPurchase, showPrices, loading: q.isLoading };
+  return { ...r, isApproved, isPartner, isPartnerPending, isVerifiedPartner, canPurchase, showPrices, loading: authLoading || (!!user && q.isLoading) };
 }
 
 /**

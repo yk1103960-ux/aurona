@@ -3,18 +3,27 @@ import { Home, Search, Heart, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouterState } from "@tanstack/react-router";
 import { useCart } from "@/hooks/useCart";
+import { useSessionRole } from "@/lib/role-routing";
 
-const items = [
+const staticItems = [
   { to: "/", label: "Home", Icon: Home },
   { to: "/products", label: "Shop", Icon: Search },
   { to: "/cart", label: "Cart", Icon: ShoppingBag },
   { to: "/wishlist", label: "Wishlist", Icon: Heart },
-  { to: "/account", label: "Account", Icon: User },
 ] as const;
 
 export function MobileBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const cart = useCart();
+  const sessionRole = useSessionRole();
+  const items = [
+    ...staticItems,
+    {
+      to: sessionRole.signedIn ? sessionRole.dashboardPath : "/auth",
+      label: sessionRole.signedIn ? sessionRole.label ?? "Account" : "Account",
+      Icon: User,
+    },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 z-50 w-full border-t border-border bg-background/80 pb-safe backdrop-blur-xl lg:hidden">

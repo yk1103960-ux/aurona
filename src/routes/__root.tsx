@@ -149,6 +149,7 @@ function AuthListener() {
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      if (event === "SIGNED_OUT") qc.removeQueries({ queryKey: ["my-role-status"] });
       router.invalidate();
       if (event !== "SIGNED_OUT") qc.invalidateQueries();
     });
