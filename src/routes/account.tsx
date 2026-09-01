@@ -89,6 +89,29 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
 
   useRoleDashboardGuard(expectedRole);
 
+  // Affiliate tools are surfaced only after an admin approves the application.
+  const affiliateIdentity = useServerFn(getMyApprovedAffiliateIdentity);
+  const affiliateStatus = useQuery({
+    queryKey: ["affiliate-identity", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: () => affiliateIdentity({ data: {} as never }),
+  });
+  const isApprovedAffiliate = Boolean(affiliateStatus.data?.affiliate);
+  const navItems = useMemo(
+    () =>
+      isApprovedAffiliate
+        ? [
+            ...NAV.slice(0, 8),
+            { id: "affiliate" as Section, label: "Affiliate & Earnings", Icon: Activity },
+            ...NAV.slice(8),
+          ]
+        : NAV,
+    [isApprovedAffiliate],
+  );
+
+
+
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
