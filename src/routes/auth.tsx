@@ -621,7 +621,14 @@ function AuthPage() {
                   </button>
                 ))}
               </div>
-              {loginMode === "otp" ? (
+              {twoFa ? (
+                <OtpPanel
+                  {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown }}
+                  target={twoFa.masked}
+                  masked
+                  onBack={cancelTwoFa}
+                />
+              ) : loginMode === "otp" ? (
                 otpSent ? (
                   <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
                 ) : (
@@ -636,6 +643,7 @@ function AuthPage() {
                   </form>
                 )
               ) : (
+
               <form onSubmit={signIn} className="space-y-3">
                 <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
                 <Field
