@@ -4,6 +4,7 @@ import coverLayered from "@/assets/blog/layered-lighting.jpg.asset.json";
 import coverMakeInIndia from "@/assets/blog/make-in-india-lighting.jpg.asset.json";
 import coverFan from "@/assets/blog/ceiling-fan-bee-rating.jpg.asset.json";
 import coverGeyser from "@/assets/blog/geyser-buying-guide.jpg.asset.json";
+import coverTshirts from "@/assets/blog/tshirts-wardrobe.jpg";
 
 export type BlogPost = {
   slug: string;
