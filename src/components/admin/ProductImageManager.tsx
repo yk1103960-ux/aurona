@@ -70,8 +70,14 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-product-images"] });
-    qc.invalidateQueries({ queryKey: ["product-images"] });
+    // Storefront views that render product photos.
+    for (const key of ["product-images", "product", "family", "family-products", "products", "families-page", "browse-products"]) {
+      qc.invalidateQueries({ queryKey: [key] });
+    }
   };
+
+  // Live sync across admin tabs and after uploads from anywhere.
+  useRealtime(["product_images"], () => q.refetch());
 
   const onUpload = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -80,6 +86,8 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
       const base = q.data?.images.length ?? 0;
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        if (!file.type.startsWith("image/")) throw new Error(`${file.name} is not an image`);
+        if (file.size > 8 * 1024 * 1024) throw new Error(`${file.name} is larger than 8 MB`);
         const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const path = `products/${productSku.toLowerCase().replace(/[^a-z0-9]+/g, "-")}/${Date.now()}-${i}.${ext}`;
         const up = await supabase.storage.from("media").upload(path, file, {
@@ -121,12 +129,25 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
     await patch(row.id, { is_primary: true });
   };
 
-  const remove = async (id: string) => {
-    const { error } = await supabase.from("product_images").delete().eq("id", id);
+  const remove = async (row: Row) => {
+    const { error } = await supabase.from("product_images").delete().eq("id", row.id);
     if (error) return toast.error(error.message);
+
+    // Drop the underlying file too so the bucket does not fill with orphans.
+    const storagePath = row.image_url.startsWith("/api/public/product-image/")
+      ? row.image_url.replace("/api/public/product-image/", "")
+      : null;
+    if (storagePath) await supabase.storage.from("media").remove([storagePath]);
+
+    // Never leave the gallery without a primary photo.
+    const rest = (q.data?.images ?? []).filter((r) => r.id !== row.id);
+    if (row.is_primary && rest.length) {
+      await supabase.from("product_images").update({ is_primary: true }).eq("id", rest[0].id);
+    }
     toast.success("Photo removed");
     refresh();
   };
+
 
   const skus = q.data?.skus ?? [];
   const images = q.data?.images ?? [];
