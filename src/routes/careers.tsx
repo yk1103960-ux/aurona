@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase, Handshake, Store, Crown, Globe, Megaphone, Package } from "lucide-react";
-import { careersQuery, jobAnchor, applyHref } from "@/lib/careers";
+import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase, Handshake, Store, Crown, Globe, Megaphone, Package, CalendarClock } from "lucide-react";
+import { careersQuery, jobAnchor, applyHref, isClosed, formatCloseDate } from "@/lib/careers";
+import { referralProgramsQuery, commissionLabel } from "@/lib/referral-programs";
 
 const PROGRAM_ICONS = [Handshake, Store, Share2, Crown, Globe, Megaphone, Package];
 
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/careers")({
 
 function CareersPage() {
   const { data: jobs = [], isLoading } = useQuery(careersQuery);
+  const { data: referrals = [] } = useQuery(referralProgramsQuery);
   const openings = jobs.filter((j) => j.kind === "job");
   const programs = jobs.filter((j) => j.kind !== "job");
   return (
@@ -54,11 +56,13 @@ function CareersPage() {
         )}
         {openings.map((j) => {
           const href = applyHref(j);
+          const closed = isClosed(j);
+          const closeDate = formatCloseDate(j.closes_at);
           return (
             <div
               key={j.id}
               id={jobAnchor(j.id)}
-              className="scroll-mt-28 rounded-xl border border-border p-5 transition hover:shadow-lift"
+              className={"scroll-mt-28 rounded-xl border border-border p-5 transition hover:shadow-lift" + (closed ? " opacity-60" : "")}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -69,9 +73,18 @@ function CareersPage() {
                     {j.department && <span>{j.department}</span>}
                     {j.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
                     {j.employment_type && <span>{j.employment_type}</span>}
+                    {closeDate && (
+                      <span className="flex items-center gap-1">
+                        <CalendarClock className="h-3 w-3" /> {closed ? `Closed on ${closeDate}` : `Apply by ${closeDate}`}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {href ? (
+                {closed ? (
+                  <span className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                    Applications closed
+                  </span>
+                ) : href ? (
                   <Button asChild size="sm" className="rounded-full">
                     <a href={href} target={j.apply_url ? "_blank" : undefined} rel="noopener noreferrer">Apply</a>
                   </Button>
@@ -119,6 +132,47 @@ function CareersPage() {
             );
           })}
         </div>
+
+        {referrals.length > 0 && (
+          <div className="mt-12">
+            <div className="text-eyebrow">Referral rewards</div>
+            <h3 className="text-display mt-2 text-3xl">Current referral programs</h3>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {referrals.map((p) => (
+                <div key={p.id} className="rounded-2xl border border-border bg-card p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-gold/10 text-gold">
+                      <Gift className="h-4 w-4" strokeWidth={1.8} />
+                    </span>
+                    <span className="rounded-full bg-primary/8 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+                      {commissionLabel(p)}
+                    </span>
+                  </div>
+                  <h4 className="mt-4 text-lg font-semibold">{p.name}</h4>
+                  {p.description && <p className="mt-1.5 text-sm text-muted-foreground">{p.description}</p>}
+                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {Number(p.min_order_value) > 0 && (
+                      <li className="flex items-center gap-1.5">
+                        <IndianRupee className="h-3 w-3" /> Minimum order ₹{Number(p.min_order_value)}
+                      </li>
+                    )}
+                    {p.eligibility && (
+                      <li className="flex items-start gap-1.5">
+                        <Users className="mt-0.5 h-3 w-3 shrink-0" /> {p.eligibility}
+                      </li>
+                    )}
+                    {p.closes_at && (
+                      <li className="flex items-center gap-1.5">
+                        <CalendarClock className="h-3 w-3" /> Open till {formatCloseDate(p.closes_at)}
+                      </li>
+                    )}
+                  </ul>
+                  {p.terms && <p className="mt-3 text-[11px] text-muted-foreground">{p.terms}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-10 grid gap-6 rounded-2xl border border-primary/15 bg-primary/5 p-7 lg:grid-cols-[1.2fr_auto] lg:items-center">
           <div>
