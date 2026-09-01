@@ -19,6 +19,8 @@ import { useAvatarUrl } from "@/hooks/useAvatarUrl";
 import { useMyRole } from "@/lib/pricing";
 import { useRoleDashboardGuard, roleLabel, type DashboardRole } from "@/lib/role-routing";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
+import { AffiliatePanel } from "@/components/account/AffiliatePanel";
+import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
 import { EmptyState } from "@/components/empty/EmptyState";
@@ -52,7 +54,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 type Section =
   | "overview" | "orders" | "wishlist" | "cart" | "addresses"
-  | "payments" | "returns" | "support" | "profile" | "security" | "notifications";
+  | "payments" | "returns" | "support" | "profile" | "security" | "notifications" | "affiliate";
 
 const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "overview", label: "Overview", Icon: LayoutDashboard },
@@ -67,6 +69,7 @@ const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "profile", label: "Profile", Icon: UserCog },
   { id: "security", label: "Security", Icon: ShieldCheck },
 ];
+
 
 function AccountPage() {
   return <AccountDashboard expectedRole="customer" />;
@@ -87,6 +90,29 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
   const [section, setSection] = useState<Section>("overview");
 
   useRoleDashboardGuard(expectedRole);
+
+  // Affiliate tools are surfaced only after an admin approves the application.
+  const affiliateIdentity = useServerFn(getMyApprovedAffiliateIdentity);
+  const affiliateStatus = useQuery({
+    queryKey: ["affiliate-identity", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: () => affiliateIdentity({ data: {} as never }),
+  });
+  const isApprovedAffiliate = Boolean(affiliateStatus.data?.affiliate);
+  const navItems = useMemo(
+    () =>
+      isApprovedAffiliate
+        ? [
+            ...NAV.slice(0, 8),
+            { id: "affiliate" as Section, label: "Affiliate & Earnings", Icon: Activity },
+            ...NAV.slice(8),
+          ]
+        : NAV,
+    [isApprovedAffiliate],
+  );
+
+
 
 
   useEffect(() => {
@@ -257,7 +283,7 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-[200px] lg:self-start">
           <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-border bg-card p-2 lg:flex-col lg:overflow-visible">
-            {NAV.map(({ id, label, Icon }) => (
+            {navItems.map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setSection(id)}
@@ -275,6 +301,8 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
 
         {/* Content */}
         <div>
+          {section === "affiliate" && isApprovedAffiliate && <AffiliatePanel />}
+
           {section === "overview" && (
             <div className="space-y-8">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
