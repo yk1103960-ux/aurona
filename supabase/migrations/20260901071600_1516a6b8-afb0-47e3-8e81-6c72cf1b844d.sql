@@ -1,0 +1,1 @@
+ALTER VIEW public.public_product_variants SET (security_invoker = on);
