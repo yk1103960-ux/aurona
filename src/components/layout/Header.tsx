@@ -101,7 +101,10 @@ const LED_COLUMNS: MegaGroup[][] = [
     {
       heading: "Decorative Lights",
       slug: "decorative-lights",
-      items: [],
+      items: [
+        { label: "Rope way", slug: "rope-way-dl-rw" },
+        { label: "Diwali Decoratives", slug: "diwali-decoratives-dl-dd" },
+      ],
     },
   ],
 
