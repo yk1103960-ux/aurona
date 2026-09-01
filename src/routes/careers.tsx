@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase, Handshake, Store, Crown, Globe, Megaphone, Package, CalendarClock } from "lucide-react";
-import { careersQuery, jobAnchor, applyHref, isClosed, formatCloseDate } from "@/lib/careers";
+import { careersQuery, jobAnchor, isClosed, formatCloseDate } from "@/lib/careers";
 import { referralProgramsQuery, commissionLabel } from "@/lib/referral-programs";
+import { ApplyDialog, type ApplyTarget } from "@/components/careers/ApplyDialog";
 
 const PROGRAM_ICONS = [Handshake, Store, Share2, Crown, Globe, Megaphone, Package];
+
 
 const STEPS = [
   "Pick a program and submit your application or profile",
@@ -37,6 +40,7 @@ export const Route = createFileRoute("/careers")({
 function CareersPage() {
   const { data: jobs = [], isLoading } = useQuery(careersQuery);
   const { data: referrals = [] } = useQuery(referralProgramsQuery);
+  const [applyTarget, setApplyTarget] = useState<ApplyTarget>(null);
   const openings = jobs.filter((j) => j.kind === "job");
   const programs = jobs.filter((j) => j.kind !== "job");
   return (
@@ -47,7 +51,7 @@ function CareersPage() {
         We're always looking for engineers, designers, and operators who want to build serious products for modern India.
       </p>
 
-      <div className="mt-12 space-y-3">
+      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading && <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">Loading open roles…</div>}
         {!isLoading && openings.length === 0 && (
           <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
@@ -55,47 +59,47 @@ function CareersPage() {
           </div>
         )}
         {openings.map((j) => {
-          const href = applyHref(j);
           const closed = isClosed(j);
           const closeDate = formatCloseDate(j.closes_at);
           return (
             <div
               key={j.id}
               id={jobAnchor(j.id)}
-              className={"scroll-mt-28 rounded-xl border border-border p-5 transition hover:shadow-lift" + (closed ? " opacity-60" : "")}
+              className={
+                "flex scroll-mt-28 flex-col rounded-2xl border border-border bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-lift" +
+                (closed ? " opacity-60" : "")
+              }
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Briefcase className="h-4 w-4 shrink-0 text-primary" /> {j.title}
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    {j.department && <span>{j.department}</span>}
-                    {j.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
-                    {j.employment_type && <span>{j.employment_type}</span>}
-                    {closeDate && (
-                      <span className="flex items-center gap-1">
-                        <CalendarClock className="h-3 w-3" /> {closed ? `Closed on ${closeDate}` : `Apply by ${closeDate}`}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {closed ? (
-                  <span className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-                    Applications closed
+              <div className="flex items-center gap-2 font-semibold">
+                <Briefcase className="h-4 w-4 shrink-0 text-primary" /> {j.title}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {j.department && <span>{j.department}</span>}
+                {j.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
+                {j.employment_type && <span>{j.employment_type}</span>}
+                {closeDate && (
+                  <span className="flex items-center gap-1">
+                    <CalendarClock className="h-3 w-3" /> {closed ? `Closed on ${closeDate}` : `Apply by ${closeDate}`}
                   </span>
-                ) : href ? (
-                  <Button asChild size="sm" className="rounded-full">
-                    <a href={href} target={j.apply_url ? "_blank" : undefined} rel="noopener noreferrer">Apply</a>
-                  </Button>
-                ) : (
-                  <Button asChild size="sm" className="rounded-full">
-                    <a href="/contact">Apply</a>
-                  </Button>
                 )}
               </div>
               <p className="mt-3 text-sm text-muted-foreground">{j.description}</p>
               {j.eligibility && <p className="mt-2 text-xs text-muted-foreground"><b>Eligibility:</b> {j.eligibility}</p>}
+              <div className="mt-5 pt-1">
+                {closed ? (
+                  <span className="inline-block rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                    Applications closed
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="w-full rounded-full"
+                    onClick={() => setApplyTarget({ id: j.id, title: j.title })}
+                  >
+                    Apply now
+                  </Button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -110,11 +114,12 @@ function CareersPage() {
           program that fits you and start earning with Aurona.
         </p>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {programs.map((r, i) => {
             const Icon = PROGRAM_ICONS[i % PROGRAM_ICONS.length];
+            const closed = isClosed(r);
             return (
-              <div key={r.id} id={jobAnchor(r.id)} className="scroll-mt-28 rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
+              <div key={r.id} id={jobAnchor(r.id)} className="flex scroll-mt-28 flex-col rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
                 <div className="flex items-start justify-between gap-4">
                   <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" strokeWidth={1.8} />
@@ -128,10 +133,27 @@ function CareersPage() {
                 <h3 className="text-display mt-5 text-2xl">{r.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{r.description}</p>
                 {r.eligibility && <p className="mt-2 text-xs text-muted-foreground"><b>Who can join:</b> {r.eligibility}</p>}
+                <div className="mt-auto pt-5">
+                  {closed ? (
+                    <span className="inline-block rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                      Applications closed
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full rounded-full"
+                      onClick={() => setApplyTarget({ id: r.id, title: r.title })}
+                    >
+                      Apply for this program
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
+
 
         {referrals.length > 0 && (
           <div className="mt-12">
@@ -191,9 +213,20 @@ function CareersPage() {
               <BadgeCheck className="h-4 w-4 text-primary" /> Rewards are paid after verification. Terms apply.
             </p>
           </div>
-          <Button size="lg" className="rounded-full">Submit a referral</Button>
+          <Button
+            size="lg"
+            className="rounded-full"
+            onClick={() =>
+              setApplyTarget({ id: programs[0]?.id ?? openings[0]?.id ?? "", title: "General application" })
+            }
+          >
+            Apply / submit a referral
+          </Button>
         </div>
       </section>
+
+      <ApplyDialog target={applyTarget} onOpenChange={(open) => !open && setApplyTarget(null)} />
+
     </div>
   );
 }
