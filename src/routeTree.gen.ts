@@ -57,6 +57,7 @@ import { Route as AuronaConsole9f2x7kPaymentsRouteImport } from './routes/aurona
 import { Route as AuronaConsole9f2x7kOrdersRouteImport } from './routes/aurona-console-9f2x7k.orders'
 import { Route as AuronaConsole9f2x7kMediaRouteImport } from './routes/aurona-console-9f2x7k.media'
 import { Route as AuronaConsole9f2x7kIntegrationsRouteImport } from './routes/aurona-console-9f2x7k.integrations'
+import { Route as AuronaConsole9f2x7kEditorialRouteImport } from './routes/aurona-console-9f2x7k.editorial'
 import { Route as AuronaConsole9f2x7kCustomersRouteImport } from './routes/aurona-console-9f2x7k.customers'
 import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-console-9f2x7k.coupons'
 import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
@@ -326,6 +327,12 @@ const AuronaConsole9f2x7kIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kEditorialRoute =
+  AuronaConsole9f2x7kEditorialRouteImport.update({
+    id: '/editorial',
+    path: '/editorial',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kCustomersRoute =
   AuronaConsole9f2x7kCustomersRouteImport.update({
     id: '/customers',
@@ -469,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/editorial': typeof AuronaConsole9f2x7kEditorialRoute
   '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
@@ -534,6 +542,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/editorial': typeof AuronaConsole9f2x7kEditorialRoute
   '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
@@ -603,6 +612,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/editorial': typeof AuronaConsole9f2x7kEditorialRoute
   '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
@@ -673,6 +683,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/editorial'
     | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/media'
     | '/aurona-console-9f2x7k/orders'
@@ -738,6 +749,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/editorial'
     | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/media'
     | '/aurona-console-9f2x7k/orders'
@@ -806,6 +818,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/editorial'
     | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/media'
     | '/aurona-console-9f2x7k/orders'
@@ -1220,6 +1233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kIntegrationsRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/editorial': {
+      id: '/aurona-console-9f2x7k/editorial'
+      path: '/editorial'
+      fullPath: '/aurona-console-9f2x7k/editorial'
+      preLoaderRoute: typeof AuronaConsole9f2x7kEditorialRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/customers': {
       id: '/aurona-console-9f2x7k/customers'
       path: '/customers'
@@ -1389,6 +1409,7 @@ interface AuronaConsole9f2x7kRouteChildren {
   AuronaConsole9f2x7kContentRoute: typeof AuronaConsole9f2x7kContentRoute
   AuronaConsole9f2x7kCouponsRoute: typeof AuronaConsole9f2x7kCouponsRoute
   AuronaConsole9f2x7kCustomersRoute: typeof AuronaConsole9f2x7kCustomersRoute
+  AuronaConsole9f2x7kEditorialRoute: typeof AuronaConsole9f2x7kEditorialRoute
   AuronaConsole9f2x7kIntegrationsRoute: typeof AuronaConsole9f2x7kIntegrationsRoute
   AuronaConsole9f2x7kMediaRoute: typeof AuronaConsole9f2x7kMediaRoute
   AuronaConsole9f2x7kOrdersRoute: typeof AuronaConsole9f2x7kOrdersRouteWithChildren
@@ -1409,6 +1430,7 @@ const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
   AuronaConsole9f2x7kContentRoute: AuronaConsole9f2x7kContentRoute,
   AuronaConsole9f2x7kCouponsRoute: AuronaConsole9f2x7kCouponsRoute,
   AuronaConsole9f2x7kCustomersRoute: AuronaConsole9f2x7kCustomersRoute,
+  AuronaConsole9f2x7kEditorialRoute: AuronaConsole9f2x7kEditorialRoute,
   AuronaConsole9f2x7kIntegrationsRoute: AuronaConsole9f2x7kIntegrationsRoute,
   AuronaConsole9f2x7kMediaRoute: AuronaConsole9f2x7kMediaRoute,
   AuronaConsole9f2x7kOrdersRoute: AuronaConsole9f2x7kOrdersRouteWithChildren,
