@@ -2632,6 +2632,86 @@ export type Database = {
         }
         Relationships: []
       }
+      public_product_variants: {
+        Row: {
+          attributes: Json | null
+          created_at: string | null
+          dim_h: number | null
+          dim_l: number | null
+          dim_w: number | null
+          discount_pct: number | null
+          family_id: string | null
+          id: string | null
+          image_seed: string | null
+          moq: number | null
+          mrp: number | null
+          pack_h: number | null
+          pack_l: number | null
+          pack_size: number | null
+          pack_w: number | null
+          pack_weight_g: number | null
+          price: number | null
+          sku: string | null
+          sort_order: number | null
+          stock: number | null
+          weight_g: number | null
+        }
+        Insert: {
+          attributes?: Json | null
+          created_at?: string | null
+          dim_h?: number | null
+          dim_l?: number | null
+          dim_w?: number | null
+          discount_pct?: number | null
+          family_id?: string | null
+          id?: string | null
+          image_seed?: string | null
+          moq?: number | null
+          mrp?: number | null
+          pack_h?: number | null
+          pack_l?: number | null
+          pack_size?: number | null
+          pack_w?: number | null
+          pack_weight_g?: number | null
+          price?: number | null
+          sku?: string | null
+          sort_order?: number | null
+          stock?: number | null
+          weight_g?: number | null
+        }
+        Update: {
+          attributes?: Json | null
+          created_at?: string | null
+          dim_h?: number | null
+          dim_l?: number | null
+          dim_w?: number | null
+          discount_pct?: number | null
+          family_id?: string | null
+          id?: string | null
+          image_seed?: string | null
+          moq?: number | null
+          mrp?: number | null
+          pack_h?: number | null
+          pack_l?: number | null
+          pack_size?: number | null
+          pack_w?: number | null
+          pack_weight_g?: number | null
+          price?: number | null
+          sku?: string | null
+          sort_order?: number | null
+          stock?: number | null
+          weight_g?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       affiliate_balance: {

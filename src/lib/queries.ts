@@ -154,7 +154,7 @@ export const productsQuery = (filter?: {
       if (skus.length === 0) return cut(rows).map((row) => ({ ...row, image_url: imgs[row.id] ?? null }));
 
       const { data: links } = await supabase
-        .from("product_variants")
+        .from("public_product_variants")
         .select(sel("sku, family_id, product_families(slug)"))
         .in("sku", skus);
       const familyBySku = new Map<string, string>();
@@ -347,7 +347,7 @@ export const productQuery = (slug: string) =>
       let url = imgs[row.id] ?? null;
       if (!url && row.sku) {
         const { data: link } = await supabase
-          .from("product_variants")
+          .from("public_product_variants")
           .select("family_id")
           .eq("sku", row.sku)
           .maybeSingle();
@@ -425,7 +425,7 @@ export const familyQuery = (slug: string) =>
       const { data, error } = await supabase
         .from("product_families")
         .select(
-          `*, categories(slug, name, icon), variants:product_variants(${VARIANT_COLS}), axes:product_variant_axes(axis_key, label, values, sort_order)`,
+          `*, categories(slug, name, icon), variants:public_product_variants(${VARIANT_COLS}), axes:product_variant_axes(axis_key, label, values, sort_order)`,
         )
         .eq("slug", slug)
         .maybeSingle();
@@ -536,8 +536,8 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
       const familyIdBySku = new Map<string, string>();
       if (skus.length) {
         const { data: links } = await supabase
-          .from("product_variants")
-          .select("sku, family_id, product_families(slug)")
+          .from("public_product_variants")
+          .select("sku, family_id, product_families(slug, name)")
           .in("sku", skus);
         for (const link of (links ?? []) as unknown as { sku: string; family_id: string | null; product_families?: { slug: string } | null }[]) {
           if (link.product_families?.slug) familyBySku.set(link.sku, link.product_families.slug);

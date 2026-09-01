@@ -42,7 +42,7 @@ export const Route = createFileRoute("/products/$slug")({
     const p = await context.queryClient.ensureQueryData(productQuery(params.slug));
     if (!p) throw notFound();
     const { data: v } = await supabase
-      .from("product_variants")
+      .from("public_product_variants")
       .select("family_id, product_families!inner(slug)")
       .eq("sku", p.sku)
       .maybeSingle();
