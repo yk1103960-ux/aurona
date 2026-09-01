@@ -789,21 +789,26 @@ function StrengthMeter({ verdict }: { verdict: ReturnType<typeof assessPassword>
 function OtpPanel(props: {
   otp: string; setOtp: (v: string) => void; verifyOtp: (e: React.FormEvent) => void;
   busy: boolean; expired: boolean; locked: boolean; mmss: string; attempts: number; maxAttempts: number;
-  resend: () => void; cooldown: number; target: string;
+  resend: () => void; cooldown: number; target: string; masked?: boolean; onBack?: () => void;
 }) {
-  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target } = props;
+  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target, masked, onBack } = props;
   return (
     <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Verify your account</div>
+        <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+          {masked ? "Two-step verification" : "Verify your account"}
+        </div>
         <div className={cn("text-[11px] font-semibold", expired ? "text-destructive" : "text-muted-foreground")}>
           {expired ? "Code expired" : `Expires in ${mmss}`}
         </div>
       </div>
 
       <p className="text-[11px] text-muted-foreground">
-        Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.
+        {masked
+          ? <>We sent a verification code to <b>{target}</b>. Enter it below to finish signing in.</>
+          : <>Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.</>}
       </p>
+
 
       <Input
         value={otp}
