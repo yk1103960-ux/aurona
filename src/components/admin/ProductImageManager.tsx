@@ -208,6 +208,16 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
                   </option>
                 ))}
               </select>
+              <Input
+                key={`${row.id}-alt`}
+                className="h-9 text-xs"
+                placeholder="Image name / alt text"
+                defaultValue={row.alt_text ?? ""}
+                onBlur={(e) => {
+                  const next = e.target.value.trim() || null;
+                  if (next !== (row.alt_text ?? null)) patch(row.id, { alt_text: next });
+                }}
+              />
               <div className="flex items-center gap-2">
                 <Input
                   className="h-9 w-16 text-xs"
@@ -223,10 +233,11 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
                 >
                   <Star className="mr-1 h-3.5 w-3.5" /> {row.is_primary ? "Primary" : "Set primary"}
                 </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => remove(row.id)}>
+                <Button type="button" size="sm" variant="outline" onClick={() => remove(row)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
+
             </div>
           ))}
         </div>
