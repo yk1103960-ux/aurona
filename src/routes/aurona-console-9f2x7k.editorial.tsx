@@ -15,11 +15,12 @@ export const Route = createFileRoute("/aurona-console-9f2x7k/editorial")({
   component: EditorialAdmin,
 });
 
-type Tab = "blogs" | "careers" | "faqs";
+type Tab = "blogs" | "careers" | "referrals" | "faqs";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "blogs", label: "Blogs" },
   { key: "careers", label: "Careers" },
+  { key: "referrals", label: "Referral programs" },
   { key: "faqs", label: "FAQs" },
 ];
 
@@ -55,6 +56,7 @@ function EditorialAdmin() {
       </div>
       {tab === "blogs" && <BlogsPanel />}
       {tab === "careers" && <CareersPanel />}
+      {tab === "referrals" && <ReferralProgramsPanel />}
       {tab === "faqs" && <FaqsPanel />}
     </div>
   );
@@ -250,6 +252,7 @@ type Career = {
   reward: string | null;
   apply_url: string | null;
   apply_email: string | null;
+  closes_at: string | null;
   sort_order: number;
   is_published: boolean;
 };
@@ -280,6 +283,7 @@ function CareersPanel() {
       reward: row.reward || null,
       apply_url: row.apply_url || null,
       apply_email: row.apply_email || null,
+      closes_at: row.closes_at ? new Date(row.closes_at).toISOString() : null,
       sort_order: Number(row.sort_order ?? (data?.length ?? 0) + 1),
       is_published: row.is_published ?? true,
     };
@@ -348,6 +352,13 @@ function CareersPanel() {
                 onChange={(e) => setDraft({ ...draft, apply_email: e.target.value })}
               />
             </Field>
+            <Field label="Last date to apply (auto-closes after this date)">
+              <Input
+                type="date"
+                value={draft.closes_at ? String(draft.closes_at).slice(0, 10) : ""}
+                onChange={(e) => setDraft({ ...draft, closes_at: e.target.value || null })}
+              />
+            </Field>
             <Field label="Sort order">
               <Input
                 type="number"
@@ -398,6 +409,9 @@ function CareersPanel() {
                 <div className="truncate text-sm font-semibold">{c.title}</div>
                 <div className="truncate text-xs text-slate-500">
                   #{c.sort_order} · {c.kind} · {c.is_published ? "Published" : "Hidden"}
+                  {c.closes_at
+                    ? ` · ${new Date(c.closes_at).getTime() < Date.now() ? "Closed" : "Closes"} ${new Date(c.closes_at).toLocaleDateString("en-IN")}`
+                    : ""}
                 </div>
               </div>
               <Button size="sm" variant="outline" onClick={() => move(c, -1)}>
@@ -410,6 +424,184 @@ function CareersPanel() {
                 Edit
               </Button>
               <Button size="sm" variant="outline" onClick={() => remove(c.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Referral programs ---------------- */
+
+type ReferralProgram = {
+  id: string;
+  name: string;
+  audience: string;
+  commission_kind: string;
+  commission_value: number;
+  max_commission: number | null;
+  min_order_value: number;
+  payout_note: string | null;
+  terms: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+function ReferralProgramsPanel() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-referral-programs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("referral_programs").select("*").order("sort_order");
+      if (error) throw error;
+      return data as ReferralProgram[];
+    },
+  });
+  useRealtime(["referral_programs"], () => qc.invalidateQueries({ queryKey: ["admin-referral-programs"] }));
+  const [draft, setDraft] = useState<Partial<ReferralProgram> | null>(null);
+
+  const save = async (row: Partial<ReferralProgram>) => {
+    if (!row.name?.trim()) return toast.error("Name is required");
+    const payload = {
+      name: row.name.trim(),
+      audience: row.audience || "customer",
+      commission_kind: row.commission_kind || "percentage",
+      commission_value: Number(row.commission_value ?? 0),
+      max_commission: row.max_commission === null || row.max_commission === undefined || String(row.max_commission) === "" ? null : Number(row.max_commission),
+      min_order_value: Number(row.min_order_value ?? 0),
+      payout_note: row.payout_note || null,
+      terms: row.terms || null,
+      starts_at: row.starts_at ? new Date(row.starts_at).toISOString() : null,
+      ends_at: row.ends_at ? new Date(row.ends_at).toISOString() : null,
+      sort_order: Number(row.sort_order ?? (data?.length ?? 0) + 1),
+      is_active: row.is_active ?? true,
+    };
+    const { error } = row.id
+      ? await supabase.from("referral_programs").update(payload).eq("id", row.id)
+      : await supabase.from("referral_programs").insert(payload);
+    if (error) return toast.error(error.message);
+    toast.success("Referral program saved");
+    setDraft(null);
+    qc.invalidateQueries({ queryKey: ["admin-referral-programs"] });
+    qc.invalidateQueries({ queryKey: ["referral-programs"] });
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this referral program?")) return;
+    const { error } = await supabase.from("referral_programs").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["admin-referral-programs"] });
+  };
+
+  return (
+    <div className="space-y-4">
+      <Button onClick={() => setDraft({ is_active: true, commission_kind: "percentage", audience: "customer" })}>
+        <Plus className="mr-1 h-4 w-4" /> New referral program
+      </Button>
+
+      {draft && (
+        <Card>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label="Name">
+              <Input value={draft.name ?? ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            </Field>
+            <Field label="Audience (customer / retailer / distributor / affiliate)">
+              <Input value={draft.audience ?? ""} onChange={(e) => setDraft({ ...draft, audience: e.target.value })} />
+            </Field>
+            <Field label="Commission type (percentage / fixed)">
+              <Input
+                value={draft.commission_kind ?? ""}
+                onChange={(e) => setDraft({ ...draft, commission_kind: e.target.value })}
+              />
+            </Field>
+            <Field label={draft.commission_kind === "fixed" ? "Commission amount (₹)" : "Commission percent (%)"}>
+              <Input
+                type="number"
+                value={String(draft.commission_value ?? 0)}
+                onChange={(e) => setDraft({ ...draft, commission_value: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Maximum commission per order (₹, blank = no cap)">
+              <Input
+                type="number"
+                value={draft.max_commission === null || draft.max_commission === undefined ? "" : String(draft.max_commission)}
+                onChange={(e) => setDraft({ ...draft, max_commission: e.target.value === "" ? null : Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Minimum order value (₹)">
+              <Input
+                type="number"
+                value={String(draft.min_order_value ?? 0)}
+                onChange={(e) => setDraft({ ...draft, min_order_value: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Starts on">
+              <Input
+                type="date"
+                value={draft.starts_at ? String(draft.starts_at).slice(0, 10) : ""}
+                onChange={(e) => setDraft({ ...draft, starts_at: e.target.value || null })}
+              />
+            </Field>
+            <Field label="Ends on">
+              <Input
+                type="date"
+                value={draft.ends_at ? String(draft.ends_at).slice(0, 10) : ""}
+                onChange={(e) => setDraft({ ...draft, ends_at: e.target.value || null })}
+              />
+            </Field>
+            <Field label="Payout note">
+              <Input value={draft.payout_note ?? ""} onChange={(e) => setDraft({ ...draft, payout_note: e.target.value })} />
+            </Field>
+            <Field label="Sort order">
+              <Input
+                type="number"
+                value={String(draft.sort_order ?? 0)}
+                onChange={(e) => setDraft({ ...draft, sort_order: Number(e.target.value) })}
+              />
+            </Field>
+            <label className="flex items-center gap-2 pt-6 text-sm">
+              <Switch checked={draft.is_active ?? true} onCheckedChange={(v) => setDraft({ ...draft, is_active: v })} />
+              Active
+            </label>
+          </div>
+          <Field label="Terms">
+            <Textarea rows={3} value={draft.terms ?? ""} onChange={(e) => setDraft({ ...draft, terms: e.target.value })} />
+          </Field>
+          <div className="flex gap-2">
+            <Button onClick={() => save(draft)}>
+              <Save className="mr-1 h-4 w-4" /> Save
+            </Button>
+            <Button variant="outline" onClick={() => setDraft(null)}>
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <p className="text-sm text-slate-500">Loading…</p>
+      ) : (
+        <div className="divide-y rounded-xl border border-slate-200 bg-white">
+          {(data ?? []).length === 0 && <p className="p-3 text-sm text-slate-500">No referral programs yet.</p>}
+          {(data ?? []).map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center gap-3 p-3">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">{r.name}</div>
+                <div className="truncate text-xs text-slate-500">
+                  {r.audience} · {r.commission_kind === "fixed" ? `₹${r.commission_value}` : `${r.commission_value}%`}
+                  {r.max_commission ? ` (max ₹${r.max_commission})` : ""} · min ₹{r.min_order_value} ·{" "}
+                  {r.is_active ? "Active" : "Paused"}
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setDraft(r)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => remove(r.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
