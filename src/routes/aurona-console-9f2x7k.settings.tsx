@@ -30,7 +30,15 @@ const KEYS = [
   { key: "free_shipping_threshold", label: "Free Shipping Above (₹)", default: "999" },
   { key: "distributor_price_visible", label: "Show Distributor Prices ('true'/'false')", default: "true" },
   { key: "maintenance_mode", label: "Maintenance Mode ('true'/'false')", default: "false" },
+
+  // Mobile-OTP two-factor authentication (admin controlled — users cannot disable it)
+  { key: "twofa_sms_enabled", label: "Mobile OTP 2FA enabled ('true'/'false')", default: "true" },
+  { key: "twofa_required_roles", label: "2FA required for roles (comma separated, or 'all')", default: "all" },
+  { key: "otp_expiry_seconds", label: "OTP validity (seconds)", default: "300" },
+  { key: "otp_resend_cooldown", label: "OTP resend cooldown (seconds)", default: "45" },
+  { key: "otp_max_attempts", label: "Max OTP attempts per code", default: "5" },
 ];
+
 
 function SettingsAdmin() {
   const qc = useQueryClient();
