@@ -182,25 +182,36 @@ function AuthPage() {
       return;
     }
     await qc.invalidateQueries({ queryKey: ["my-role-status"] });
-    let landed: string = DASHBOARD_PATHS[role];
+    await qc.invalidateQueries({ queryKey: ["partner-access-state"] });
+    // Retailer/distributor always route through the application gate, which
+    // forwards to the dashboard only when the admin has approved the request.
+    if (role === "retailer" || role === "distributor") {
+      nav({ to: "/partner-access", search: { role }, replace: true });
+      return;
+    }
+    let landed: string = DASHBOARD_PATHS.customer;
     try {
       const { data, error } = await supabase.rpc("my_role_status");
       if (error) throw error;
       const resolvedRole = (data as { role?: string }[] | null)?.[0]?.role;
       if (resolvedRole) landed = dashboardPathFor(resolvedRole);
     } catch {
-      // The selected account type is the safe fallback because each role signs
-      // in through its own role-scoped identity.
+      /* customer dashboard is the safe fallback */
     }
     nav({ to: landed, replace: true });
   };
 
   const google = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    // Return to this public auth page with the requested role preserved; the
+    // effect above then forwards to the application gate or the dashboard.
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/auth?role=${role}`,
+    });
     setBusy(false);
     if (result.error) toast.error(result.error.message || "Google sign-in failed");
   };
+
 
   const startOtp = (expirySeconds = 600) => {
     setOtpSent(true);
