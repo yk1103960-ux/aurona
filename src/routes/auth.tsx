@@ -19,7 +19,6 @@ import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
   validateRegistration,
-  loginGuard,
   recordLoginAttempt,
   registerSession,
   getAuthPolicy,
