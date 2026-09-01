@@ -213,9 +213,20 @@ function CareersPage() {
               <BadgeCheck className="h-4 w-4 text-primary" /> Rewards are paid after verification. Terms apply.
             </p>
           </div>
-          <Button size="lg" className="rounded-full">Submit a referral</Button>
+          <Button
+            size="lg"
+            className="rounded-full"
+            onClick={() =>
+              setApplyTarget({ id: programs[0]?.id ?? openings[0]?.id ?? "", title: "General application" })
+            }
+          >
+            Apply / submit a referral
+          </Button>
         </div>
       </section>
+
+      <ApplyDialog target={applyTarget} onOpenChange={(open) => !open && setApplyTarget(null)} />
+
     </div>
   );
 }
