@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,6 @@ import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
   validateRegistration,
-  loginGuard,
   recordLoginAttempt,
   registerSession,
   getAuthPolicy,
@@ -30,6 +29,13 @@ import {
   sendLoginSmsOtp,
   verifyLoginSmsOtp,
 } from "@/lib/otp.functions";
+import {
+  beginPasswordLogin,
+  beginSessionTwoFactor,
+  resendTwoFactorOtp,
+  verifyTwoFactorOtp,
+} from "@/lib/twofactor.functions";
+
 
 
 export const Route = createFileRoute("/auth")({
@@ -61,6 +67,9 @@ const ROLES: { id: Role; title: string; icon: any; blurb: string; accent: string
 
 const REMEMBER_KEY = "aurona.remember";
 const SESSION_MARK = "aurona.session";
+/** Marks the user id that already cleared mobile-OTP 2FA in this browser tab. */
+const TWOFA_MARK = "aurona.2fa.verified";
+
 
 function deviceLabel() {
   if (typeof navigator === "undefined") return "Unknown device";
@@ -91,16 +100,40 @@ function AuthPage() {
   // Partner areas are never entered from a plain session — the application gate decides.
   const roleConflict = Boolean(role === "customer" && activeSessionRole && activeSessionRole !== "customer");
 
+  // ---- Mobile-OTP two-factor state -------------------------------------------------
+  // `twoFa` holds the live challenge (no session exists while it is set).
+  // `twoFaCleared` remembers which user id already satisfied 2FA in this tab.
+  const [twoFa, setTwoFa] = useState<{ challengeId: string; masked: string; source: "password" | "google" } | null>(null);
+  const [twoFaCleared, setTwoFaCleared] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : sessionStorage.getItem(TWOFA_MARK),
+  );
+  const twoFaBusy = useRef(false);
+
+  const markTwoFaCleared = (userId: string) => {
+    if (typeof window !== "undefined") sessionStorage.setItem(TWOFA_MARK, userId);
+    setTwoFaCleared(userId);
+  };
+
+
+
   // Hard gate: an unverified session can never reach the site. Retailer and
   // distributor selections always pass through the application/approval gate.
+  // A session created by Google/social sign-in is additionally held back until
+  // the mobile OTP challenge is verified (the session is dropped meanwhile).
   useEffect(() => {
     if (loading || !user) return;
+    if (twoFa) return; // an OTP challenge is in progress — never redirect
     const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
     if (!verified) {
       supabase.auth.signOut();
       toast.error("Please verify the OTP sent to you before accessing your account.");
       return;
     }
+    if (twoFaCleared !== user.id) {
+      void enforceSessionTwoFactor(user.id);
+      return;
+    }
+
     if (access.loading) return;
     if (role === "retailer" || role === "distributor") {
       const state = role === "retailer" ? access.retailer : access.distributor;
@@ -110,7 +143,8 @@ function AuthPage() {
     }
     if (activeSessionRole && activeSessionRole !== "customer") return; // show the switch-account panel
     nav({ to: DASHBOARD_PATHS.customer, replace: true });
-  }, [user, loading, nav, access.loading, access.retailer, access.distributor, activeSessionRole, role]);
+  }, [user, loading, nav, access.loading, access.retailer, access.distributor, activeSessionRole, role, twoFa, twoFaCleared]);
+
 
 
   const switchAccount = async () => {
@@ -212,6 +246,42 @@ function AuthPage() {
     if (result.error) toast.error(result.error.message || "Google sign-in failed");
   };
 
+  /**
+   * Social sign-in: the provider session is dropped again immediately when the
+   * account requires mobile OTP, so no authenticated session survives until the
+   * code is verified.
+   */
+  const enforceSessionTwoFactor = async (userId: string) => {
+    if (twoFaBusy.current) return;
+    twoFaBusy.current = true;
+    try {
+      const res = await beginSessionTwoFactor({ data: { device: deviceLabel() } });
+      if (res.ok && res.requires2fa) {
+        setMode("in");
+        setLoginMode("password");
+        setTwoFa({ challengeId: res.challengeId, masked: res.maskedPhone, source: "google" });
+        startOtp(res.expirySeconds);
+        await supabase.auth.signOut();
+        toast.success(res.message);
+        return;
+      }
+      if (!res.ok) {
+        await supabase.auth.signOut();
+        toast.error(res.message);
+        return;
+      }
+      if (res.message) toast.message(res.message);
+      markTwoFaCleared(userId);
+    } catch {
+      await supabase.auth.signOut();
+      toast.error("We could not complete the security check. Please sign in again.");
+    } finally {
+      twoFaBusy.current = false;
+    }
+  };
+
+
+
 
   const startOtp = (expirySeconds = 600) => {
     setOtpSent(true);
@@ -287,6 +357,17 @@ function AuthPage() {
     if (cooldown > 0) return toast.error(`Please wait ${cooldown}s before requesting another code.`);
     setBusy(true);
     try {
+      if (twoFa) {
+        const res = await resendTwoFactorOtp({ data: { challengeId: twoFa.challengeId } });
+        if (!res.ok || !res.requires2fa) {
+          toast.error(res.ok ? "Verification is no longer required. Please sign in again." : res.message);
+          return;
+        }
+        setTwoFa({ challengeId: res.challengeId, masked: res.maskedPhone, source: twoFa.source });
+        startOtp(res.expirySeconds);
+        toast.success(res.message);
+        return;
+      }
       if (mode === "up") await deliverSignupOtp();
       else await requestLoginOtp();
     } finally {
@@ -309,6 +390,15 @@ function AuthPage() {
     try { await requestLoginOtp(); } finally { setBusy(false); }
   };
 
+  /** Abandons an in-progress 2FA challenge and returns to the sign-in form. */
+  const cancelTwoFa = async () => {
+    setTwoFa(null);
+    setOtpSent(false);
+    setOtp("");
+    setSecondsLeft(0);
+    setAttempts(0);
+    await supabase.auth.signOut().catch(() => null);
+  };
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,6 +408,25 @@ function AuthPage() {
     const token = otp.trim();
 
     try {
+      // ---- Two-factor step of a password / social sign-in ----
+      if (twoFa) {
+        const res = await verifyTwoFactorOtp({ data: { challengeId: twoFa.challengeId, code: token, device: deviceLabel() } });
+        if (!res.ok || !("tokenHash" in res) || !res.tokenHash) {
+          setAttempts((a) => a + 1);
+          return toast.error(res.message);
+        }
+        const { error } = await supabase.auth.verifyOtp({ token_hash: res.tokenHash, type: "magiclink" });
+        if (error) return toast.error("Verified, but sign-in could not be completed. Please try again.");
+        const { data: signedIn } = await supabase.auth.getUser();
+        if (signedIn.user) markTwoFaCleared(signedIn.user.id);
+        setTwoFa(null);
+        setOtpSent(false);
+        setSecondsLeft(0);
+        toast.success("Verified — welcome back to Aurona!");
+        await finishLogin("otp");
+        return;
+      }
+
       if (mode === "up") {
         const res = await verifySignupSmsOtp({ data: { email: roleEmail(email, role), code: token } });
         if (!res.ok) {
@@ -336,7 +445,8 @@ function AuthPage() {
         if (error) return toast.error("Verified, but sign-in failed. Please use your password.");
       }
 
-
+      const { data: signedIn } = await supabase.auth.getUser();
+      if (signedIn.user) markTwoFaCleared(signedIn.user.id);
       setOtpSent(false);
       setSecondsLeft(0);
       if (mode === "up" && role !== "customer") {
@@ -351,30 +461,42 @@ function AuthPage() {
   };
 
   // ---------- Login ----------
+  /**
+   * Password sign-in. The password is checked on the SERVER (no session is created
+   * in the browser); when the account requires 2FA the flow continues on the OTP
+   * screen and the session only appears after the code is verified.
+   */
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setBusy(true);
     try {
       const authEmail = roleEmail(email, role);
-      const guard = await loginGuard({ data: { identifier: authEmail } }).catch(() => null);
-      if (guard?.locked) {
-        toast.error(`Too many failed attempts. Try again in ${guard.lockMinutes} minutes or reset your password.`);
+      const step = await beginPasswordLogin({ data: { email: authEmail, password, device: deviceLabel() } });
+      if (!step.ok) {
+        setErrors({ password: step.message });
+        toast.error(step.message);
         return;
       }
+      if (step.requires2fa) {
+        setTwoFa({ challengeId: step.challengeId, masked: step.maskedPhone, source: "password" });
+        startOtp(step.expirySeconds);
+        toast.success(step.message);
+        return;
+      }
+      // 2FA not required for this account/role — normal password session.
+      if (step.message) toast.message(step.message);
       const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
       if (error) {
-        await recordLoginAttempt({ data: { identifier: authEmail, method: "password", success: false, reason: error.message, device: deviceLabel() } }).catch(() => null);
-        const left = guard ? Math.max(0, guard.remaining - 1) : null;
         const msg = /email not confirmed/i.test(error.message)
-          ? "Please verify your email with the OTP we sent before signing in."
-          : /invalid login/i.test(error.message)
-            ? `Incorrect email or password${left !== null ? ` — ${left} attempt${left === 1 ? "" : "s"} left before a temporary lock` : ""} — check you picked the right account type.`
-            : error.message;
+          ? "Please verify your account with the OTP we sent before signing in."
+          : error.message;
         setErrors({ password: msg });
         toast.error(msg);
         return;
       }
+      const { data: signedIn } = await supabase.auth.getUser();
+      if (signedIn.user) markTwoFaCleared(signedIn.user.id);
       toast.success("Welcome back to Aurona");
       await finishLogin("password");
     } catch {
@@ -383,6 +505,7 @@ function AuthPage() {
       setBusy(false);
     }
   };
+
 
 
 
@@ -497,7 +620,14 @@ function AuthPage() {
                   </button>
                 ))}
               </div>
-              {loginMode === "otp" ? (
+              {twoFa ? (
+                <OtpPanel
+                  {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown }}
+                  target={twoFa.masked}
+                  masked
+                  onBack={cancelTwoFa}
+                />
+              ) : loginMode === "otp" ? (
                 otpSent ? (
                   <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
                 ) : (
@@ -512,6 +642,7 @@ function AuthPage() {
                   </form>
                 )
               ) : (
+
               <form onSubmit={signIn} className="space-y-3">
                 <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
                 <Field
@@ -657,21 +788,26 @@ function StrengthMeter({ verdict }: { verdict: ReturnType<typeof assessPassword>
 function OtpPanel(props: {
   otp: string; setOtp: (v: string) => void; verifyOtp: (e: React.FormEvent) => void;
   busy: boolean; expired: boolean; locked: boolean; mmss: string; attempts: number; maxAttempts: number;
-  resend: () => void; cooldown: number; target: string;
+  resend: () => void; cooldown: number; target: string; masked?: boolean; onBack?: () => void;
 }) {
-  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target } = props;
+  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target, masked, onBack } = props;
   return (
     <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
-        <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Verify your account</div>
+        <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+          {masked ? "Two-step verification" : "Verify your account"}
+        </div>
         <div className={cn("text-[11px] font-semibold", expired ? "text-destructive" : "text-muted-foreground")}>
           {expired ? "Code expired" : `Expires in ${mmss}`}
         </div>
       </div>
 
       <p className="text-[11px] text-muted-foreground">
-        Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.
+        {masked
+          ? <>We sent a verification code to <b>{target}</b>. Enter it below to finish signing in.</>
+          : <>Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.</>}
       </p>
+
 
       <Input
         value={otp}
@@ -694,6 +830,15 @@ function OtpPanel(props: {
       >
         {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
       </button>
+      {onBack && (
+        <button
+          type="button" onClick={onBack} disabled={busy}
+          className="w-full text-center text-[11px] font-medium text-muted-foreground underline disabled:opacity-50"
+        >
+          Back to sign in
+        </button>
+      )}
+
 
     </form>
   );

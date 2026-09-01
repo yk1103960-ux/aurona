@@ -23,7 +23,9 @@ export type PasswordVerdict = {
 };
 
 export function assessPassword(pw: string, opts: { email?: string; name?: string; phone?: string } = {}): PasswordVerdict {
+  void opts; // personal-data similarity is no longer a blocking rule
   const checks = {
+
     length: pw.length >= 8,
     upper: /[A-Z]/.test(pw),
     lower: /[a-z]/.test(pw),
@@ -31,24 +33,17 @@ export function assessPassword(pw: string, opts: { email?: string; name?: string
     special: /[^A-Za-z0-9]/.test(pw),
   };
 
-  // Only genuinely unsafe passwords are blocked. Uppercase / special characters
-  // are shown as strength hints, never as hard requirements — the previous rules
-  // rejected perfectly good passwords and blocked account creation.
+  // Only genuinely unsafe passwords are blocked: too short, or a well-known
+  // password. Everything else (uppercase, digits, special characters, whether the
+  // password resembles the name/email) is a strength HINT only — those rules used
+  // to block people from signing up and logging in smoothly.
   const problems: string[] = [];
   if (!checks.length) problems.push("Use at least 8 characters");
-  if (!/[A-Za-z]/.test(pw)) problems.push("Include at least one letter");
-  if (!checks.number) problems.push("Include at least one number");
 
   const lower = pw.toLowerCase();
   if (COMMON_PASSWORDS.has(lower)) problems.push("This password is too common");
   if (/^(.)\1+$/.test(pw)) problems.push("Avoid repeating a single character");
 
-  const localPart = (opts.email ?? "").split("@")[0]?.toLowerCase() ?? "";
-  const nameParts = (opts.name ?? "").toLowerCase().split(/\s+/).filter((p) => p.length >= 4);
-  const phoneTail = (opts.phone ?? "").replace(/\D/g, "").slice(-6);
-  if (localPart.length >= 4 && lower.includes(localPart)) problems.push("Password must not contain your email");
-  if (nameParts.some((p) => lower.includes(p))) problems.push("Password must not contain your name");
-  if (phoneTail.length >= 5 && pw.includes(phoneTail)) problems.push("Password must not contain your phone number");
 
   const passed = Object.values(checks).filter(Boolean).length;
   let score = 0;

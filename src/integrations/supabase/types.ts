@@ -677,6 +677,7 @@ export type Database = {
           phone: string | null
           purpose: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           attempts?: number
@@ -690,6 +691,7 @@ export type Database = {
           phone?: string | null
           purpose?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           attempts?: number
@@ -703,6 +705,7 @@ export type Database = {
           phone?: string | null
           purpose?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
