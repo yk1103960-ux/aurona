@@ -22,6 +22,10 @@ const KEYS = [
   { key: "social_instagram", label: "Instagram URL", default: "" },
   { key: "social_facebook", label: "Facebook URL", default: "" },
   { key: "social_youtube", label: "YouTube URL", default: "" },
+  { key: "social_whatsapp", label: "WhatsApp link (https://wa.me/91…)", default: "" },
+  { key: "social_linkedin", label: "LinkedIn URL", default: "" },
+  { key: "social_twitter", label: "X (Twitter) URL", default: "" },
+
   { key: "gst_percentage", label: "GST %", default: "18" },
   { key: "free_shipping_threshold", label: "Free Shipping Above (₹)", default: "999" },
   { key: "distributor_price_visible", label: "Show Distributor Prices ('true'/'false')", default: "true" },
