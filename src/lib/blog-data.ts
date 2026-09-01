@@ -170,7 +170,28 @@ export const POSTS: BlogPost[] = [
       { h: "Safety features that matter" },
       { p: "Look for a multi-function safety valve, thermal cut-out, glass-lined or SS304 inner tank, and high-density PUF insulation to keep standby heat loss low. In hard-water areas, a magnesium anode rod is not optional." },
     ],
-  },
+  },,
+  {
+    slug: "tshirts-every-man-needs",
+    cover: coverTshirts,
+    cat: "Lifestyle",
+    title: "T-Shirts Every Man Needs in His Wardrobe",
+    excerpt: "White is a colour that suits everyone — here's how to pick the right one and style it correctly.",
+    date: "18 Dec 2023",
+    read: "4 min read",
+    tone: "from-primary/20 via-sky/10 to-transparent",
+    author: "Aurona Team",
+    body: [
+      { p: "Let's start off with white — a colour that suits everyone, but it can be slightly tricky to pick the right one, and style it correctly too. If you think that plain white shirts aren't meant for you, then we suggest you go for patterned ones — perhaps stripes or checks. Then pair it with blue or black jeans and you're all set to rock your white polo shirt!" },
+      { p: "Speaking of coloured t-shirts, they are always a safe bet too. When in doubt, go for blue! That's our motto, simply because you can't go wrong with blue when it's men." },
+      { h: "Quick styling tips" },
+      { li: [
+        "Plain white not your thing? Choose stripes or checks instead.",
+        "Pair white polos with blue or black jeans for a fail-safe look.",
+        "When in doubt with colours, blue is always the safest pick.",
+      ] },
+    ],
+  }
 ];
 
 export const CATEGORIES = Array.from(new Set(POSTS.map((p) => p.cat)));
