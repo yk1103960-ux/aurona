@@ -1,0 +1,11 @@
+-- Replace legacy referral rows with the 7 partner programs
+update public.career_programs set is_published = false where kind = 'referral';
+
+insert into public.career_programs (title, kind, description, eligibility, reward, sort_order, is_published) values
+('Sales Partner Program', 'program', 'Earn by driving Aurona product sales in your territory with dedicated support and margins.', 'Sales professionals and agencies with an electricals / lighting network.', 'Attractive sales commissions and performance bonuses.', 10, true),
+('Reseller Partner Program', 'program', 'Stock and resell Aurona lighting and appliances with reseller pricing and marketing support.', 'Retail shops and resellers with GST registration.', 'Reseller margins, display support and priority dispatch.', 11, true),
+('Referral Program', 'program', 'Refer electricians, contractors and customers to Aurona and earn on every successful conversion.', 'Open to everyone — no registration fee.', 'Cash rewards and account credits per successful referral.', 12, true),
+('Loyalty Program for Partners', 'program', 'Earn points on every purchase and redeem them for rewards, gifts and exclusive partner benefits.', 'Registered retailers, distributors and sales partners.', 'Reward points, tier benefits and annual gifts.', 13, true),
+('Online Distributor Program', 'program', 'Become an authorised online distributor for Aurona products on marketplaces and your own store.', 'E-commerce sellers with GST and fulfillment capability.', 'Distributor pricing, listing support and lead sharing.', 14, true),
+('Affiliate Marketing Program', 'program', 'Share your unique Aurona referral links and earn commission on every order placed through them.', 'Content creators, influencers and website owners.', 'Commission on every attributed sale, paid monthly.', 15, true),
+('Custom Solutions Partnership Program', 'program', 'Partner with Aurona for bulk, OEM and custom lighting solutions for projects and enterprises.', 'Builders, architects, OEMs and enterprise buyers.', 'Project pricing, dedicated account manager and custom manufacturing.', 16, true);
