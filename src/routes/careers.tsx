@@ -36,6 +36,7 @@ export const Route = createFileRoute("/careers")({
 function CareersPage() {
   const { data: jobs = [], isLoading } = useQuery(careersQuery);
   const openings = jobs.filter((j) => j.kind === "job");
+  const programs = jobs.filter((j) => j.kind !== "job");
   return (
     <div className="container-x py-16">
       <div className="text-eyebrow">Careers</div>
