@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import logoAsset from "@/assets/aurona-logo-2026.png.asset.json";
+import logoAsset from "@/assets/aurona-logo-white-intro.png.asset.json";
 
 /**
  * Cinematic 5-phase intro. Plays once per session.
@@ -79,9 +79,8 @@ export function CinematicIntro() {
           const i = (y * off.width + x) * 4;
           const a = data[i + 3];
           const r = data[i], g = data[i + 1], b = data[i + 2];
-          // pick opaque, non-white pixels (logo strokes)
-          const lum = (r + g + b) / 3;
-          if (a > 140 && lum < 210) {
+          // pick opaque pixels (logo strokes) — the logo is light on transparent
+          if (a > 140) {
             pts.push({ x: cx + x, y: cy + y });
           }
         }
