@@ -170,10 +170,10 @@ export const POSTS: BlogPost[] = [
       { h: "Safety features that matter" },
       { p: "Look for a multi-function safety valve, thermal cut-out, glass-lined or SS304 inner tank, and high-density PUF insulation to keep standby heat loss low. In hard-water areas, a magnesium anode rod is not optional." },
     ],
-  },,
+  },
   {
     slug: "tshirts-every-man-needs",
-    cover: coverTshirts,
+    cover: coverTshirts as string,
     cat: "Lifestyle",
     title: "T-Shirts Every Man Needs in His Wardrobe",
     excerpt: "White is a colour that suits everyone — here's how to pick the right one and style it correctly.",
