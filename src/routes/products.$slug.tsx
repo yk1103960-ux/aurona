@@ -394,8 +394,10 @@ function LegacyPDP({ slug }: { slug: string }) {
   useProductReferralClick(product.id);
 
   const cats = useSuspenseQuery(categoriesQuery).data;
-  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === product.category_id);
+  // Recommendations stay inside the product's own category.
+  const { data: sameCategory = [] } = useQuery(productsQuery({ categorySlug: cat?.slug ?? "", limit: 12 }));
+  const related = sameCategory.filter((p) => p.category_id === product.category_id && p.id !== product.id).slice(0, 10);
   const [qty, setQty] = useState(1);
   const cart = useCart();
   const wl = useWishlist();
@@ -455,11 +457,10 @@ function LegacyPDP({ slug }: { slug: string }) {
       </div>
 
       <div className="mt-20">
-        <h2 className="text-display text-3xl">You may also like</h2>
-        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {featured.filter((p) => p.id !== product.id).slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} nameOnly categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
-          ))}
+        <div className="text-eyebrow">More from {cat?.name ?? "Aurona"}</div>
+        <h2 className="text-display mt-2 text-3xl">You may also like</h2>
+        <div className="mt-8">
+          <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
         </div>
       </div>
     </div>
