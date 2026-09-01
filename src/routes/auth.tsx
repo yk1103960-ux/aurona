@@ -85,13 +85,14 @@ function AuthPage() {
     if (search.role && search.role !== role) setRoleState(search.role);
   }, [search.role]);
 
-  // The account type the current session actually belongs to.
-  const activeSessionRole = user ? dashboardRoleOf(sessionRole.role) : null;
-  // A customer session must never be reused to open a retailer/distributor area.
-  const roleConflict = Boolean(activeSessionRole && activeSessionRole !== role);
+  // The account type the current session actually belongs to (server-verified).
+  const access = useAccessState();
+  const activeSessionRole = user ? access.activeRole : null;
+  // Partner areas are never entered from a plain session — the application gate decides.
+  const roleConflict = Boolean(role === "customer" && activeSessionRole && activeSessionRole !== "customer");
 
-  // Hard gate: an unverified session can never reach the site. A verified one
-  // is sent to the dashboard for ITS role — never to another role's dashboard.
+  // Hard gate: an unverified session can never reach the site. Retailer and
+  // distributor selections always pass through the application/approval gate.
   useEffect(() => {
     if (loading || !user) return;
     const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
@@ -100,10 +101,17 @@ function AuthPage() {
       toast.error("Please verify the OTP sent to you before accessing your account.");
       return;
     }
-    if (sessionRole.loading) return;
-    if (activeSessionRole && activeSessionRole !== role) return; // show the switch-account panel instead
-    nav({ to: DASHBOARD_PATHS[activeSessionRole ?? "customer"], replace: true });
-  }, [user, loading, nav, sessionRole.loading, activeSessionRole, role]);
+    if (access.loading) return;
+    if (role === "retailer" || role === "distributor") {
+      const state = role === "retailer" ? access.retailer : access.distributor;
+      if (state === "approved") nav({ to: DASHBOARD_PATHS[role], replace: true });
+      else nav({ to: "/partner-access", search: { role }, replace: true });
+      return;
+    }
+    if (activeSessionRole && activeSessionRole !== "customer") return; // show the switch-account panel
+    nav({ to: DASHBOARD_PATHS.customer, replace: true });
+  }, [user, loading, nav, access.loading, access.retailer, access.distributor, activeSessionRole, role]);
+
 
   const switchAccount = async () => {
     setBusy(true);
