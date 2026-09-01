@@ -758,6 +758,7 @@ export type Database = {
         Row: {
           apply_email: string | null
           apply_url: string | null
+          closes_at: string | null
           created_at: string
           department: string | null
           description: string
@@ -775,6 +776,7 @@ export type Database = {
         Insert: {
           apply_email?: string | null
           apply_url?: string | null
+          closes_at?: string | null
           created_at?: string
           department?: string | null
           description?: string
@@ -792,6 +794,7 @@ export type Database = {
         Update: {
           apply_email?: string | null
           apply_url?: string | null
+          closes_at?: string | null
           created_at?: string
           department?: string | null
           description?: string
@@ -1573,10 +1576,12 @@ export type Database = {
       }
       product_families: {
         Row: {
+          body_type: string | null
           brand: string
           category_id: string | null
           created_at: string
           description: string | null
+          features: Json
           id: string
           image_seed: string | null
           is_bestseller: boolean
@@ -1594,15 +1599,18 @@ export type Database = {
           review_count: number
           short_description: string | null
           slug: string
+          specifications: Json
           total_stock: number
           updated_at: string
           warranty: string | null
         }
         Insert: {
+          body_type?: string | null
           brand?: string
           category_id?: string | null
           created_at?: string
           description?: string | null
+          features?: Json
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -1620,15 +1628,18 @@ export type Database = {
           review_count?: number
           short_description?: string | null
           slug: string
+          specifications?: Json
           total_stock?: number
           updated_at?: string
           warranty?: string | null
         }
         Update: {
+          body_type?: string | null
           brand?: string
           category_id?: string | null
           created_at?: string
           description?: string | null
+          features?: Json
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -1646,6 +1657,7 @@ export type Database = {
           review_count?: number
           short_description?: string | null
           slug?: string
+          specifications?: Json
           total_stock?: number
           updated_at?: string
           warranty?: string | null
@@ -1759,6 +1771,7 @@ export type Database = {
           family_id: string
           id: string
           image_seed: string | null
+          is_active: boolean
           moq: number
           mrp: number
           pack_h: number | null
@@ -1786,6 +1799,7 @@ export type Database = {
           family_id: string
           id?: string
           image_seed?: string | null
+          is_active?: boolean
           moq?: number
           mrp: number
           pack_h?: number | null
@@ -1813,6 +1827,7 @@ export type Database = {
           family_id?: string
           id?: string
           image_seed?: string | null
+          is_active?: boolean
           moq?: number
           mrp?: number
           pack_h?: number | null
@@ -1846,6 +1861,7 @@ export type Database = {
           affiliate_ends_at: string | null
           affiliate_max_commission: number | null
           affiliate_starts_at: string | null
+          body_type: string | null
           brand: string
           category_id: string | null
           color_temp: string | null
@@ -1854,6 +1870,7 @@ export type Database = {
           dim_h: number | null
           dim_l: number | null
           dim_w: number | null
+          features: Json
           id: string
           image_seed: string | null
           is_bestseller: boolean
@@ -1862,8 +1879,10 @@ export type Database = {
           is_published: boolean
           is_sale: boolean
           material: string | null
+          model: string | null
           mrp: number
           name: string
+          pack_size: number | null
           price: number
           rating: number
           review_count: number
@@ -1871,6 +1890,7 @@ export type Database = {
           size: string | null
           sku: string
           slug: string
+          specifications: Json
           stock: number
           unit: string
           variations: Json | null
@@ -1885,6 +1905,7 @@ export type Database = {
           affiliate_ends_at?: string | null
           affiliate_max_commission?: number | null
           affiliate_starts_at?: string | null
+          body_type?: string | null
           brand?: string
           category_id?: string | null
           color_temp?: string | null
@@ -1893,6 +1914,7 @@ export type Database = {
           dim_h?: number | null
           dim_l?: number | null
           dim_w?: number | null
+          features?: Json
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -1901,8 +1923,10 @@ export type Database = {
           is_published?: boolean
           is_sale?: boolean
           material?: string | null
+          model?: string | null
           mrp: number
           name: string
+          pack_size?: number | null
           price: number
           rating?: number
           review_count?: number
@@ -1910,6 +1934,7 @@ export type Database = {
           size?: string | null
           sku: string
           slug: string
+          specifications?: Json
           stock?: number
           unit?: string
           variations?: Json | null
@@ -1924,6 +1949,7 @@ export type Database = {
           affiliate_ends_at?: string | null
           affiliate_max_commission?: number | null
           affiliate_starts_at?: string | null
+          body_type?: string | null
           brand?: string
           category_id?: string | null
           color_temp?: string | null
@@ -1932,6 +1958,7 @@ export type Database = {
           dim_h?: number | null
           dim_l?: number | null
           dim_w?: number | null
+          features?: Json
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -1940,8 +1967,10 @@ export type Database = {
           is_published?: boolean
           is_sale?: boolean
           material?: string | null
+          model?: string | null
           mrp?: number
           name?: string
+          pack_size?: number | null
           price?: number
           rating?: number
           review_count?: number
@@ -1949,6 +1978,7 @@ export type Database = {
           size?: string | null
           sku?: string
           slug?: string
+          specifications?: Json
           stock?: number
           unit?: string
           variations?: Json | null
@@ -2023,6 +2053,60 @@ export type Database = {
           product_slug?: string
           user_id?: string
           viewed_at?: string
+        }
+        Relationships: []
+      }
+      referral_programs: {
+        Row: {
+          closes_at: string | null
+          commission_kind: string
+          commission_value: number
+          created_at: string
+          description: string
+          eligibility: string | null
+          id: string
+          is_active: boolean
+          is_published: boolean
+          max_commission: number | null
+          min_order_value: number
+          name: string
+          sort_order: number
+          terms: string | null
+          updated_at: string
+        }
+        Insert: {
+          closes_at?: string | null
+          commission_kind?: string
+          commission_value?: number
+          created_at?: string
+          description?: string
+          eligibility?: string | null
+          id?: string
+          is_active?: boolean
+          is_published?: boolean
+          max_commission?: number | null
+          min_order_value?: number
+          name: string
+          sort_order?: number
+          terms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string | null
+          commission_kind?: string
+          commission_value?: number
+          created_at?: string
+          description?: string
+          eligibility?: string | null
+          id?: string
+          is_active?: boolean
+          is_published?: boolean
+          max_commission?: number | null
+          min_order_value?: number
+          name?: string
+          sort_order?: number
+          terms?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2643,6 +2727,7 @@ export type Database = {
           family_id: string | null
           id: string | null
           image_seed: string | null
+          is_active: boolean | null
           moq: number | null
           mrp: number | null
           pack_h: number | null
@@ -2666,6 +2751,7 @@ export type Database = {
           family_id?: string | null
           id?: string | null
           image_seed?: string | null
+          is_active?: boolean | null
           moq?: number | null
           mrp?: number | null
           pack_h?: number | null
@@ -2689,6 +2775,7 @@ export type Database = {
           family_id?: string | null
           id?: string | null
           image_seed?: string | null
+          is_active?: boolean | null
           moq?: number | null
           mrp?: number | null
           pack_h?: number | null
