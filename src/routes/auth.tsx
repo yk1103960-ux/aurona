@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
 import { roleEmail } from "@/lib/role-identity";
 import { useMyRole } from "@/lib/pricing";
-import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel } from "@/lib/role-routing";
+import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel, useAccessState } from "@/lib/role-routing";
 import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
@@ -85,13 +85,14 @@ function AuthPage() {
     if (search.role && search.role !== role) setRoleState(search.role);
   }, [search.role]);
 
-  // The account type the current session actually belongs to.
-  const activeSessionRole = user ? dashboardRoleOf(sessionRole.role) : null;
-  // A customer session must never be reused to open a retailer/distributor area.
-  const roleConflict = Boolean(activeSessionRole && activeSessionRole !== role);
+  // The account type the current session actually belongs to (server-verified).
+  const access = useAccessState();
+  const activeSessionRole = user ? access.activeRole : null;
+  // Partner areas are never entered from a plain session — the application gate decides.
+  const roleConflict = Boolean(role === "customer" && activeSessionRole && activeSessionRole !== "customer");
 
-  // Hard gate: an unverified session can never reach the site. A verified one
-  // is sent to the dashboard for ITS role — never to another role's dashboard.
+  // Hard gate: an unverified session can never reach the site. Retailer and
+  // distributor selections always pass through the application/approval gate.
   useEffect(() => {
     if (loading || !user) return;
     const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
@@ -100,10 +101,17 @@ function AuthPage() {
       toast.error("Please verify the OTP sent to you before accessing your account.");
       return;
     }
-    if (sessionRole.loading) return;
-    if (activeSessionRole && activeSessionRole !== role) return; // show the switch-account panel instead
-    nav({ to: DASHBOARD_PATHS[activeSessionRole ?? "customer"], replace: true });
-  }, [user, loading, nav, sessionRole.loading, activeSessionRole, role]);
+    if (access.loading) return;
+    if (role === "retailer" || role === "distributor") {
+      const state = role === "retailer" ? access.retailer : access.distributor;
+      if (state === "approved") nav({ to: DASHBOARD_PATHS[role], replace: true });
+      else nav({ to: "/partner-access", search: { role }, replace: true });
+      return;
+    }
+    if (activeSessionRole && activeSessionRole !== "customer") return; // show the switch-account panel
+    nav({ to: DASHBOARD_PATHS.customer, replace: true });
+  }, [user, loading, nav, access.loading, access.retailer, access.distributor, activeSessionRole, role]);
+
 
   const switchAccount = async () => {
     setBusy(true);
@@ -174,25 +182,36 @@ function AuthPage() {
       return;
     }
     await qc.invalidateQueries({ queryKey: ["my-role-status"] });
-    let landed: string = DASHBOARD_PATHS[role];
+    await qc.invalidateQueries({ queryKey: ["partner-access-state"] });
+    // Retailer/distributor always route through the application gate, which
+    // forwards to the dashboard only when the admin has approved the request.
+    if (role === "retailer" || role === "distributor") {
+      nav({ to: "/partner-access", search: { role }, replace: true });
+      return;
+    }
+    let landed: string = DASHBOARD_PATHS.customer;
     try {
       const { data, error } = await supabase.rpc("my_role_status");
       if (error) throw error;
       const resolvedRole = (data as { role?: string }[] | null)?.[0]?.role;
       if (resolvedRole) landed = dashboardPathFor(resolvedRole);
     } catch {
-      // The selected account type is the safe fallback because each role signs
-      // in through its own role-scoped identity.
+      /* customer dashboard is the safe fallback */
     }
     nav({ to: landed, replace: true });
   };
 
   const google = async () => {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    // Return to this public auth page with the requested role preserved; the
+    // effect above then forwards to the application gate or the dashboard.
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/auth?role=${role}`,
+    });
     setBusy(false);
     if (result.error) toast.error(result.error.message || "Google sign-in failed");
   };
+
 
   const startOtp = (expirySeconds = 600) => {
     setOtpSent(true);
