@@ -108,7 +108,7 @@ export function useRoleDashboardGuard(expected: DashboardRole) {
     if (expected === "retailer" || expected === "distributor") {
       const state = expected === "retailer" ? access.retailer : access.distributor;
       if (state !== "approved") {
-        nav({ to: "/partner-access", search: { role: expected }, replace: true });
+        nav({ to: "/partner-access", search: { role: expected } as never, replace: true });
       }
       return;
     }
