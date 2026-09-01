@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
 import { roleEmail } from "@/lib/role-identity";
 import { useMyRole } from "@/lib/pricing";
-import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel } from "@/lib/role-routing";
+import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel, useAccessState } from "@/lib/role-routing";
 import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
