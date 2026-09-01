@@ -757,6 +757,65 @@ export type Database = {
         }
         Relationships: []
       }
+      career_applications: {
+        Row: {
+          city: string | null
+          created_at: string
+          email: string
+          experience: string | null
+          full_name: string
+          id: string
+          message: string | null
+          phone: string
+          program_id: string | null
+          program_title: string
+          resume_url: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          email: string
+          experience?: string | null
+          full_name: string
+          id?: string
+          message?: string | null
+          phone: string
+          program_id?: string | null
+          program_title: string
+          resume_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          email?: string
+          experience?: string | null
+          full_name?: string
+          id?: string
+          message?: string | null
+          phone?: string
+          program_id?: string | null
+          program_title?: string
+          resume_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_applications_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "career_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       career_programs: {
         Row: {
           apply_email: string | null
