@@ -831,6 +831,15 @@ function OtpPanel(props: {
       >
         {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
       </button>
+      {onBack && (
+        <button
+          type="button" onClick={onBack} disabled={busy}
+          className="w-full text-center text-[11px] font-medium text-muted-foreground underline disabled:opacity-50"
+        >
+          Back to sign in
+        </button>
+      )}
+
 
     </form>
   );
