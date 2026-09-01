@@ -87,30 +87,33 @@ function CareersPage() {
         })}
       </div>
 
-      {/* Referral programs */}
+      {/* Partner programs */}
       <section className="mt-20">
-        <div className="text-eyebrow">Referral Programs</div>
-        <h2 className="text-display mt-3 max-w-3xl text-4xl">Earn with every introduction you make.</h2>
+        <div className="text-eyebrow">Partner Programs</div>
+        <h2 className="text-display mt-3 max-w-3xl text-4xl">Grow with Aurona — seven ways to partner.</h2>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Aurona grows through people who believe in the brand. Refer talent, retailers, customers or distributors — and get
-          rewarded when it works out.
+          Sales, reselling, referrals, loyalty, online distribution, affiliate marketing and custom solutions — pick the
+          program that fits you and start earning with Aurona.
         </p>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          {REFERRALS.map((r) => {
-            const Icon = r.icon;
+          {programs.map((r, i) => {
+            const Icon = PROGRAM_ICONS[i % PROGRAM_ICONS.length];
             return (
-              <div key={r.title} className="rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
+              <div key={r.id} id={jobAnchor(r.id)} className="scroll-mt-28 rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
                 <div className="flex items-start justify-between gap-4">
                   <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" strokeWidth={1.8} />
                   </span>
-                  <span className="rounded-full bg-primary/8 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-                    {r.reward}
-                  </span>
+                  {r.reward && (
+                    <span className="rounded-full bg-primary/8 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+                      {r.reward}
+                    </span>
+                  )}
                 </div>
                 <h3 className="text-display mt-5 text-2xl">{r.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{r.body}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{r.description}</p>
+                {r.eligibility && <p className="mt-2 text-xs text-muted-foreground"><b>Who can join:</b> {r.eligibility}</p>}
               </div>
             );
           })}
