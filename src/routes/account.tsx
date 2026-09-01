@@ -281,7 +281,7 @@ export function AccountDashboard({ expectedRole }: { expectedRole: DashboardRole
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-[200px] lg:self-start">
           <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-border bg-card p-2 lg:flex-col lg:overflow-visible">
-            {NAV.map(({ id, label, Icon }) => (
+            {navItems.map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setSection(id)}
