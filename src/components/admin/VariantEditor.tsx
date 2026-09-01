@@ -186,9 +186,14 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     }
 
     setSaving(false);
+    dirty.current = false;
     toast.success("Variants saved");
+    for (const key of ["products", "families-page", "product", "family", "family-products", "browse-products", "admin-products", "admin-product", "search-suggest"]) {
+      qc.invalidateQueries({ queryKey: [key] });
+    }
     q.refetch();
   };
+
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 md:col-span-2">
