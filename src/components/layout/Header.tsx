@@ -605,7 +605,7 @@ function CareerMenu() {
           {referrals.length > 0 && (
             <>
               <div className="mt-1 border-t border-border px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                Referral programs
+                Partner programs
               </div>
               {referrals.map((r) => (
                 <Link
