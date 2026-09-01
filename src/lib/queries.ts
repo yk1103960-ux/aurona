@@ -409,7 +409,11 @@ export type ProductFamily = {
   review_count: number;
   warranty: string | null;
   material: string | null;
+  body_type: string | null;
+  features: string[] | null;
+  specifications: Record<string, string> | null;
   categories: { slug: string; name: string; icon: string | null } | null;
+
   variants: ProductVariant[];
   axes: VariantAxis[];
 };

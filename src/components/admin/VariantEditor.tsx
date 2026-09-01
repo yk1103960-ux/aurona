@@ -3,27 +3,56 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, Plus, Trash2 } from "lucide-react";
 
 type Variant = {
   id: string;
   family_id: string;
   sku: string;
+  attributes: Record<string, string>;
   mrp: number | null;
   price: number | null;
   retailer_price: number | null;
   distributor_price: number | null;
   moq: number | null;
+  retailer_moq: number | null;
+  distributor_moq: number | null;
   stock: number | null;
+  pack_size: number | null;
+  weight_g: number | null;
+  dim_l: number | null;
+  dim_w: number | null;
+  dim_h: number | null;
+  is_active: boolean;
+  sort_order: number;
 };
+
+const COLS = "id, family_id, sku, attributes, mrp, price, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, is_active, sort_order";
+
+const NUM_FIELDS = [
+  ["mrp", "MRP"],
+  ["price", "Price"],
+  ["retailer_price", "Retailer"],
+  ["distributor_price", "Distributor"],
+  ["moq", "MOQ"],
+  ["retailer_moq", "Ret. MOQ"],
+  ["distributor_moq", "Dist. MOQ"],
+  ["stock", "Stock"],
+  ["pack_size", "Pack size"],
+  ["weight_g", "Weight (g)"],
+  ["dim_l", "L (cm)"],
+  ["dim_w", "W (cm)"],
+  ["dim_h", "H (cm)"],
+] as const;
 
 const num = (v: string) => (v === "" ? null : Number(v));
 
 /**
- * Editable grid of the variants belonging to the family that owns this product
- * SKU. Variant rows drive the prices shown on the storefront, so wholesale and
- * retail values must be editable here too.
+ * Full variant workbench for the family that owns this product SKU: item code,
+ * option values, every price tier, order quantities, stock, pack size, shipping
+ * dimensions and availability — plus adding and removing variants.
  */
 export function VariantEditor({ productSku, productId }: { productSku: string; productId: string }) {
   const [rows, setRows] = useState<Variant[]>([]);
@@ -38,14 +67,17 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
         .select("id, name")
         .eq("main_sku", productSku)
         .maybeSingle();
-      if (!fam) return { family: null, variants: [] as Variant[] };
-      const { data, error } = await supabase
-        .from("product_variants")
-        .select("id, family_id, sku, mrp, price, retailer_price, distributor_price, moq, stock")
-        .eq("family_id", fam.id)
-        .order("sort_order");
+      if (!fam) return { family: null, variants: [] as Variant[], axes: [] as { axis_key: string; label: string }[] };
+      const [{ data, error }, { data: axes }] = await Promise.all([
+        supabase.from("product_variants").select(COLS).eq("family_id", fam.id).order("sort_order"),
+        supabase.from("product_variant_axes").select("axis_key, label, sort_order").eq("family_id", fam.id).order("sort_order"),
+      ]);
       if (error) throw error;
-      return { family: fam, variants: (data ?? []) as Variant[] };
+      return {
+        family: fam,
+        variants: (data ?? []) as Variant[],
+        axes: (axes ?? []) as { axis_key: string; label: string }[],
+      };
     },
   });
 
@@ -54,10 +86,39 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
   }, [q.data]);
 
   const family = q.data?.family;
-  if (!family || rows.length === 0) return null;
+  const axes = q.data?.axes ?? [];
+  if (!family) return null;
 
   const upd = (id: string, patch: Partial<Variant>) =>
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
+  const addRow = async () => {
+    const { data, error } = await supabase
+      .from("product_variants")
+      .insert({
+        family_id: family.id,
+        sku: `${productSku}-NEW-${Date.now().toString().slice(-4)}`,
+        attributes: {},
+        mrp: 0,
+        price: 0,
+        moq: 1,
+        stock: 0,
+        sort_order: rows.length,
+      })
+      .select(COLS)
+      .maybeSingle();
+    if (error) return toast.error(error.message);
+    if (data) setRows((r) => [...r, data as Variant]);
+    toast.success("Variant added — set its item code and prices, then save");
+  };
+
+  const removeRow = async (r: Variant) => {
+    if (!confirm(`Delete variant ${r.sku}?`)) return;
+    const { error } = await supabase.from("product_variants").delete().eq("id", r.id);
+    if (error) return toast.error(error.message);
+    setRows((x) => x.filter((v) => v.id !== r.id));
+    toast.success("Variant deleted");
+  };
 
   const saveAll = async () => {
     setSaving(true);
@@ -65,12 +126,22 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
       const { error } = await supabase
         .from("product_variants")
         .update({
+          sku: r.sku.trim(),
+          attributes: r.attributes ?? {},
           mrp: r.mrp ?? 0,
           price: r.price ?? 0,
           retailer_price: r.retailer_price,
           distributor_price: r.distributor_price,
           moq: r.moq ?? 1,
+          retailer_moq: r.retailer_moq,
+          distributor_moq: r.distributor_moq,
           stock: r.stock ?? 0,
+          pack_size: r.pack_size,
+          weight_g: r.weight_g,
+          dim_l: r.dim_l,
+          dim_w: r.dim_w,
+          dim_h: r.dim_h,
+          is_active: r.is_active ?? true,
         })
         .eq("id", r.id);
       if (error) {
@@ -80,9 +151,10 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     }
 
     // Keep the family range and the storefront product row in sync.
-    const prices = rows.map((r) => Number(r.price ?? 0)).filter((n) => n > 0);
-    const mrps = rows.map((r) => Number(r.mrp ?? 0)).filter((n) => n > 0);
-    const stock = rows.reduce((s, r) => s + Number(r.stock ?? 0), 0);
+    const live = rows.filter((r) => r.is_active !== false);
+    const prices = live.map((r) => Number(r.price ?? 0)).filter((n) => n > 0);
+    const mrps = live.map((r) => Number(r.mrp ?? 0)).filter((n) => n > 0);
+    const stock = live.reduce((s, r) => s + Number(r.stock ?? 0), 0);
     await supabase
       .from("product_families")
       .update({
@@ -101,54 +173,91 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     }
 
     setSaving(false);
-    toast.success("Variant pricing saved");
+    toast.success("Variants saved");
     q.refetch();
   };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 md:col-span-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="font-semibold text-sm uppercase tracking-wider text-slate-500">
-          Variants &amp; Wholesale Pricing
+          Variants, pricing &amp; dimensions
         </div>
-        <Button size="sm" onClick={saveAll} disabled={saving}>
-          <Save className="w-4 h-4 mr-1" /> {saving ? "Saving…" : "Save variants"}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={addRow}>
+            <Plus className="w-4 h-4 mr-1" /> Add variant
+          </Button>
+          <Button size="sm" onClick={saveAll} disabled={saving || rows.length === 0}>
+            <Save className="w-4 h-4 mr-1" /> {saving ? "Saving…" : "Save variants"}
+          </Button>
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[760px]">
-          <thead className="text-xs uppercase tracking-wider text-slate-500">
-            <tr>
-              <th className="p-2 text-left">SKU</th>
-              <th className="p-2 text-right">MRP</th>
-              <th className="p-2 text-right">Price</th>
-              <th className="p-2 text-right">Retailer</th>
-              <th className="p-2 text-right">Distributor</th>
-              <th className="p-2 text-right">MOQ</th>
-              <th className="p-2 text-right">Stock</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td className="p-2 font-mono text-xs">{r.sku}</td>
-                {(["mrp", "price", "retailer_price", "distributor_price", "moq", "stock"] as const).map((k) => (
-                  <td key={k} className="p-2">
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-slate-500">No variants yet. Add one to start selling options for this product.</p>
+      ) : (
+        <div className="space-y-4">
+          {rows.map((r) => (
+            <div key={r.id} className="rounded-lg border border-slate-200 p-3 space-y-3">
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="min-w-[200px] flex-1 text-xs uppercase tracking-wider text-slate-500">
+                  Item code (SKU)
+                  <Input
+                    className="mt-1 h-9 font-mono"
+                    value={r.sku}
+                    onChange={(e) => upd(r.id, { sku: e.target.value })}
+                  />
+                </label>
+                <label className="flex items-center gap-2 pb-2 text-sm">
+                  <Switch
+                    checked={r.is_active !== false}
+                    onCheckedChange={(v) => upd(r.id, { is_active: v })}
+                  />
+                  Available
+                </label>
+                <Button size="sm" variant="outline" onClick={() => removeRow(r)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {axes.length > 0 && (
+                <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {axes.map((a) => (
+                    <label key={a.axis_key} className="text-xs uppercase tracking-wider text-slate-500">
+                      {a.label}
+                      <Input
+                        className="mt-1 h-9"
+                        value={(r.attributes ?? {})[a.axis_key] ?? ""}
+                        onChange={(e) =>
+                          upd(r.id, { attributes: { ...(r.attributes ?? {}), [a.axis_key]: e.target.value } })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                {NUM_FIELDS.map(([k, label]) => (
+                  <label key={k} className="text-xs uppercase tracking-wider text-slate-500">
+                    {label}
                     <Input
                       type="number"
-                      className="h-9 text-right"
+                      className="mt-1 h-9 text-right"
                       value={r[k] ?? ""}
                       onChange={(e) => upd(r.id, { [k]: num(e.target.value) } as Partial<Variant>)}
                     />
-                  </td>
+                  </label>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="text-xs text-slate-500">
-        Prices here drive the storefront. Leave retailer or distributor blank to fall back to the normal price.
+        Prices here drive the storefront. Leave retailer or distributor blank to fall back to the normal price. Weight and
+        dimensions are used for shipping charges.
       </div>
     </div>
   );

@@ -19,6 +19,8 @@ type ProductForm = {
   category_id: string | null; short_description: string; description: string;
   mrp: number; price: number; stock: number; unit: string;
   wattage: string; size: string; color_temp: string; material: string; warranty: string;
+  model: string; body_type: string; pack_size: number | null;
+  features: string; specifications: string;
   image_seed: string;
   is_published: boolean; is_featured: boolean; is_bestseller: boolean; is_new: boolean; is_sale: boolean;
   affiliate_enabled: boolean;
@@ -34,6 +36,8 @@ const EMPTY: ProductForm = {
   category_id: null, short_description: "", description: "",
   mrp: 0, price: 0, stock: 25, unit: "Pc",
   wattage: "", size: "", color_temp: "", material: "", warranty: "1 Year",
+  model: "", body_type: "", pack_size: null,
+  features: "", specifications: "",
   image_seed: "",
   is_published: true, is_featured: false, is_bestseller: false, is_new: false, is_sale: false,
   affiliate_enabled: true,
@@ -68,6 +72,11 @@ function ProductEditor() {
         category_id: data.category_id, short_description: data.short_description ?? "", description: data.description ?? "",
         mrp: Number(data.mrp ?? 0), price: Number(data.price ?? 0), stock: Number(data.stock ?? 0), unit: data.unit ?? "Pc",
         wattage: data.wattage ?? "", size: data.size ?? "", color_temp: data.color_temp ?? "", material: data.material ?? "", warranty: data.warranty ?? "",
+        model: (data as any).model ?? "",
+        body_type: (data as any).body_type ?? "",
+        pack_size: (data as any).pack_size != null ? Number((data as any).pack_size) : null,
+        features: featuresToText((data as any).features),
+        specifications: specsToText((data as any).specifications),
         image_seed: data.image_seed ?? "",
         is_published: data.is_published ?? true, is_featured: !!data.is_featured, is_bestseller: !!data.is_bestseller, is_new: !!data.is_new, is_sale: !!data.is_sale,
         affiliate_enabled: data.affiliate_enabled ?? true,
@@ -92,8 +101,13 @@ function ProductEditor() {
   const save = async () => {
     if (!f.name || !f.sku) return toast.error("Name and SKU are required");
     setSaving(true);
+    const features = textToFeatures(f.features);
+    const specifications = textToSpecs(f.specifications);
+    const { features: _f, specifications: _s, ...rest } = f;
     const payload = {
-      ...f,
+      ...rest,
+      features,
+      specifications,
       slug: f.slug || slugify(f.name),
       // Empty kind means "inherit the program/affiliate default".
       affiliate_commission_kind: f.affiliate_commission_kind || "inherit",
@@ -102,6 +116,15 @@ function ProductEditor() {
     const { data, error } = isNew
       ? await supabase.from("products").insert(payload).select("id").single()
       : await supabase.from("products").update(payload).eq("id", id).select("id").single();
+
+    // Mirror the shopper-facing spec content onto the product family so the
+    // variant page shows it too.
+    if (!error && f.sku) {
+      await supabase
+        .from("product_families")
+        .update({ features, specifications, body_type: f.body_type || null, material: f.material || null, warranty: f.warranty || null })
+        .eq("main_sku", f.sku);
+    }
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(isNew ? "Product created" : "Saved");
@@ -150,6 +173,25 @@ function ProductEditor() {
           <Field label="Color temperature"><Input value={f.color_temp} onChange={(e) => upd("color_temp", e.target.value)} /></Field>
           <Field label="Material"><Input value={f.material} onChange={(e) => upd("material", e.target.value)} /></Field>
           <Field label="Warranty"><Input value={f.warranty} onChange={(e) => upd("warranty", e.target.value)} /></Field>
+          <Field label="Model"><Input value={f.model} onChange={(e) => upd("model", e.target.value)} placeholder="e.g. Lens / Glass / COB" /></Field>
+          <Field label="Body type"><Input value={f.body_type} onChange={(e) => upd("body_type", e.target.value)} placeholder="e.g. Round surface" /></Field>
+          <Field label="Pack size (pieces per pack)">
+            <Input
+              type="number"
+              value={f.pack_size ?? ""}
+              onChange={(e) => upd("pack_size", e.target.value === "" ? null : Number(e.target.value))}
+            />
+          </Field>
+        </Section>
+
+        <Section title="Features & Spec Table">
+          <Field label="Key features (one per line)">
+            <Textarea rows={5} value={f.features} onChange={(e) => upd("features", e.target.value)} placeholder={"High lumen output\nFlicker free driver"} />
+          </Field>
+          <Field label="Specification table (one per line, Label: Value)">
+            <Textarea rows={6} value={f.specifications} onChange={(e) => upd("specifications", e.target.value)} placeholder={"Beam angle: 120°\nInput voltage: 100-265V AC"} />
+          </Field>
+          <div className="text-xs text-slate-500">These appear on the product page specification tab.</div>
         </Section>
 
         <Section title="Affiliate Commission">
@@ -263,4 +305,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function featuresToText(v: unknown): string {
+  if (Array.isArray(v)) return (v as string[]).join("\n");
+  return "";
+}
+function textToFeatures(text: string): string[] {
+  return text.split("\n").map((l) => l.trim()).filter(Boolean);
+}
+function specsToText(v: unknown): string {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return "";
+  return Object.entries(v as Record<string, string>)
+    .map(([k, val]) => `${k}: ${val}`)
+    .join("\n");
+}
+function textToSpecs(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const line of text.split("\n")) {
+    const i = line.indexOf(":");
+    if (i <= 0) continue;
+    const k = line.slice(0, i).trim();
+    const val = line.slice(i + 1).trim();
+    if (k && val) out[k] = val;
+  }
+  return out;
 }

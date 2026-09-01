@@ -13,6 +13,7 @@ export type CareerProgram = {
   reward: string | null;
   apply_url: string | null;
   apply_email: string | null;
+  closes_at: string | null;
   sort_order: number;
 };
 
@@ -23,7 +24,7 @@ export const careersQuery = queryOptions({
   queryFn: async (): Promise<CareerProgram[]> => {
     const { data, error } = await supabase
       .from("career_programs")
-      .select("id, title, department, location, employment_type, kind, description, eligibility, reward, apply_url, apply_email, sort_order")
+      .select("id, title, department, location, employment_type, kind, description, eligibility, reward, apply_url, apply_email, closes_at, sort_order")
       .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .order("title", { ascending: true });
@@ -36,7 +37,19 @@ export function jobAnchor(id: string) {
   return `job-${id}`;
 }
 
+/** A vacancy closes automatically once its last date to apply has passed. */
+export function isClosed(job: { closes_at: string | null }): boolean {
+  if (!job.closes_at) return false;
+  return new Date(job.closes_at).getTime() < Date.now();
+}
+
+export function formatCloseDate(value: string | null): string | null {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+}
+
 export function applyHref(job: CareerProgram): string | null {
+  if (isClosed(job)) return null;
   if (job.apply_url) return job.apply_url;
   if (job.apply_email) {
     return `mailto:${job.apply_email}?subject=${encodeURIComponent(`Application — ${job.title}`)}`;

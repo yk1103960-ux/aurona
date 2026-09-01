@@ -11,7 +11,6 @@ import { discountPct, inr } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { PDPSkeleton } from "@/components/product/PDPSkeleton";
-import { ProductCard } from "@/components/product/ProductCard";
 import { RelatedRail } from "@/components/product/RelatedRail";
 
 import { useCart } from "@/hooks/useCart";
@@ -326,6 +325,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 ["Main SKU", family.main_sku],
                 ["Selected SKU", variant.sku],
                 ...Object.entries(variant.attributes).map(([k, v]) => [k.replace(/_/g, " "), v] as const),
+                ...Object.entries((family.specifications ?? {}) as Record<string, string>).map(([k, v]) => [k, v] as const),
+                ["Body type", family.body_type],
                 ["Warranty", family.warranty],
                 ["Material", family.material],
                 ["Country of origin", "India"],
@@ -336,6 +337,19 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 </div>
               ))}
             </div>
+            {(family.features ?? []).length > 0 && (
+              <div className="mt-6 max-w-2xl">
+                <div className="text-eyebrow">Key features</div>
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  {(family.features ?? []).map((f) => (
+                    <li key={f} className="flex gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="variations" className="pt-6">
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -394,8 +408,10 @@ function LegacyPDP({ slug }: { slug: string }) {
   useProductReferralClick(product.id);
 
   const cats = useSuspenseQuery(categoriesQuery).data;
-  const featured = useSuspenseQuery(productsQuery({ featured: true, limit: 4 })).data;
   const cat = cats.find((c) => c.id === product.category_id);
+  // Recommendations stay inside the product's own category.
+  const { data: sameCategory = [] } = useQuery(productsQuery({ categorySlug: cat?.slug ?? "", limit: 12 }));
+  const related = sameCategory.filter((p) => p.category_id === product.category_id && p.id !== product.id).slice(0, 10);
   const [qty, setQty] = useState(1);
   const cart = useCart();
   const wl = useWishlist();
@@ -455,11 +471,10 @@ function LegacyPDP({ slug }: { slug: string }) {
       </div>
 
       <div className="mt-20">
-        <h2 className="text-display text-3xl">You may also like</h2>
-        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {featured.filter((p) => p.id !== product.id).slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} nameOnly categoryIcon={cats.find((c) => c.id === p.category_id)?.icon} />
-          ))}
+        <div className="text-eyebrow">More from {cat?.name ?? "Aurona"}</div>
+        <h2 className="text-display mt-2 text-3xl">You may also like</h2>
+        <div className="mt-8">
+          <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
         </div>
       </div>
     </div>
@@ -509,11 +524,16 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
   family: ProductFamily; variantSku: string; variantImageSeed: string | null; variantImageUrl: string | null; categoryIcon?: string | null;
 }) {
   const { data: all = [] } = useQuery(productImagesQuery({ familyId: family.id }));
-  // Variation-wise photos: when this variant has its own photos, show only
-  // those; otherwise fall back to the untagged family photos.
-  const forVariant = all.filter((i) => i.variant_sku === variantSku);
+  // Variation-wise photos, in order of specificity:
+  //   1. photos tagged with this exact variant SKU
+  //   2. photos tagged with an SKU prefix this variant starts with (model/watt group)
+  //   3. untagged family photos
+  const exact = all.filter((i) => i.variant_sku === variantSku);
+  const prefixed = all
+    .filter((i) => i.variant_sku && i.variant_sku !== variantSku && variantSku.startsWith(i.variant_sku))
+    .sort((a, b) => (b.variant_sku!.length - a.variant_sku!.length) || a.sort_order - b.sort_order);
   const generic = all.filter((i) => !i.variant_sku);
-  const images = forVariant.length ? forVariant : generic.length ? generic : all;
+  const images = exact.length ? exact : prefixed.length ? prefixed : generic.length ? generic : all;
   return (
     <ProductGallery
       images={images}
@@ -522,6 +542,7 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
     />
   );
 }
+
 
 function LegacyGallery({ product, categoryIcon }: {
   product: { id: string; name: string; slug: string; image_seed: string | null; image_url?: string | null };
