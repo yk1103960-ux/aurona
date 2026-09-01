@@ -649,29 +649,29 @@ function MobileCareers({ onClose }: { onClose: () => void }) {
   const { data: jobs = [] } = useQuery(careersQuery);
   return (
     <details className="border-t border-border">
-      <summary className="flex cursor-pointer items-center justify-between px-3 py-3 text-sm font-semibold">
+      <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-semibold">
         Career With Us <ChevronDown className="h-4 w-4" />
       </summary>
-      <div className="pb-2">
+      <div className="pb-1.5">
         {jobs.map((j) => (
           <Link
             key={j.id}
             to="/careers"
             hash={jobAnchor(j.id)}
             onClick={onClose}
-            className="block px-6 py-2 text-sm text-muted-foreground hover:text-foreground"
+            className="block px-5 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
             {j.title}
           </Link>
         ))}
-        <Link to="/careers" onClick={onClose} className="block px-6 py-2 text-sm font-semibold text-primary">
+        <Link to="/careers" onClick={onClose} className="block px-5 py-1 text-xs font-semibold text-primary">
           All careers &amp; referral programs
         </Link>
         <Link
           to="/partner/$type"
           params={{ type: "career" }}
           onClick={onClose}
-          className="block px-6 py-2 text-sm font-semibold text-primary"
+          className="block px-5 py-1 text-xs font-semibold text-primary"
         >
           Apply / submit your profile
         </Link>
