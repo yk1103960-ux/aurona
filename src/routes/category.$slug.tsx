@@ -106,9 +106,26 @@ function CategoryPage() {
 
 
       {total === 0 ? (
-        <div className="mt-12 rounded-xl border border-dashed border-border py-16 text-center text-muted-foreground">
-          No products in this category yet.
+        <div className="mt-12 rounded-3xl border border-dashed border-primary/25 bg-gradient-to-br from-white via-surface/50 to-surface px-6 py-16 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Coming soon</div>
+          <h2 className="text-display mt-3 text-2xl sm:text-3xl">
+            {cat.slug === "decorative-lights"
+              ? "Decorative lighting collection coming soon."
+              : `${cat.name} collection coming soon.`}
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+            {cat.slug === "decorative-lights"
+              ? "Our festive and Diwali decorative range is being finalised. Explore our interior and concealed lighting in the meantime."
+              : "This collection is being prepared. Browse our other categories in the meantime."}
+          </p>
+          <Link
+            to="/products"
+            className="mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            Browse all products
+          </Link>
         </div>
+
       ) : (
         <>
           <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
