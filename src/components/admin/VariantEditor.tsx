@@ -59,10 +59,14 @@ const num = (v: string) => (v === "" ? null : Number(v));
 export function VariantEditor({ productSku, productId }: { productSku: string; productId: string }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
+  // Unsaved edits win over any background refresh.
+  const dirty = useRef(false);
 
   const q = useQuery({
     queryKey: ["admin-product-variants", productSku],
     enabled: !!productSku,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data: fam } = await supabase
         .from("product_families")
@@ -83,16 +87,23 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     },
   });
 
+  useRealtime(["product_variants"], () => {
+    if (!dirty.current) q.refetch();
+  });
+
   useEffect(() => {
-    if (q.data) setRows(q.data.variants);
+    if (q.data && !dirty.current) setRows(q.data.variants);
   }, [q.data]);
 
   const family = q.data?.family;
   const axes = q.data?.axes ?? [];
   if (!family) return null;
 
-  const upd = (id: string, patch: Partial<Variant>) =>
+  const upd = (id: string, patch: Partial<Variant>) => {
+    dirty.current = true;
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  };
+
 
   const addRow = async () => {
     const { data, error } = await supabase
