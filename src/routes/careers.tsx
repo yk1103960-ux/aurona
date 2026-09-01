@@ -1,40 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase } from "lucide-react";
+import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase, Handshake, Store, Crown, Globe, Megaphone, Package } from "lucide-react";
 import { careersQuery, jobAnchor, applyHref } from "@/lib/careers";
 
-const REFERRALS = [
-  {
-    icon: Users,
-    title: "Refer a Candidate",
-    reward: "₹5,000 bonus",
-    body: "Know someone great? Refer them for any open role. You earn a bonus once they complete 90 days with Aurona.",
-  },
-  {
-    icon: Share2,
-    title: "Refer a Retailer",
-    reward: "2% of first order",
-    body: "Introduce a shop or electrical store to Aurona. Earn a commission on their first wholesale purchase.",
-  },
-  {
-    icon: IndianRupee,
-    title: "Customer Referral",
-    reward: "₹250 store credit",
-    body: "Share your personal referral code. Your friend gets a welcome discount, you get store credit on their first order.",
-  },
-  {
-    icon: Gift,
-    title: "Distributor Introduction",
-    reward: "Up to ₹25,000",
-    body: "Connect us with a distribution partner in an untapped territory and earn a one-time introduction reward.",
-  },
-];
+const PROGRAM_ICONS = [Handshake, Store, Share2, Crown, Globe, Megaphone, Package];
 
 const STEPS = [
-  "Share your referral code or submit the referral form",
-  "Our team verifies and contacts the referred candidate or partner",
-  "Reward is credited once the qualifying milestone is met",
+  "Pick a program and submit your application or profile",
+  "Our partnerships team verifies your details and gets in touch",
+  "Start earning through margins, commissions or rewards",
 ];
 
 export const Route = createFileRoute("/careers")({
