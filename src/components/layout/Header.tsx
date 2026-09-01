@@ -577,12 +577,12 @@ function CareerMenu() {
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} strokeWidth={2.5} />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 w-80 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-lift">
-          <div className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+        <div className="absolute left-0 top-full z-50 w-64 overflow-hidden rounded-lg border border-border bg-card p-1 shadow-lift">
+          <div className="px-2.5 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
             Open positions
           </div>
           {openings.length === 0 ? (
-            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-surface">
+            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-surface">
               No openings right now — view programs
             </Link>
           ) : (
@@ -592,10 +592,10 @@ function CareerMenu() {
                 to="/careers"
                 hash={jobAnchor(j.id)}
                 onClick={() => setOpen(false)}
-                className="block rounded-lg px-3 py-2 hover:bg-surface"
+                className="block rounded-md px-2.5 py-1 hover:bg-surface"
               >
-                <span className="block text-sm font-semibold text-foreground">{j.title}</span>
-                <span className="block text-[11px] text-muted-foreground">
+                <span className="block text-xs font-semibold text-foreground">{j.title}</span>
+                <span className="block text-[10px] text-muted-foreground leading-tight">
                   {[j.department, j.location, j.employment_type].filter(Boolean).join(" · ")}
                 </span>
               </Link>
@@ -604,7 +604,7 @@ function CareerMenu() {
 
           {referrals.length > 0 && (
             <>
-              <div className="mt-1 border-t border-border px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+              <div className="mt-0.5 border-t border-border px-2.5 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
                 Partner programs
               </div>
               {referrals.map((r) => (
@@ -613,7 +613,7 @@ function CareerMenu() {
                   to="/careers"
                   hash={jobAnchor(r.id)}
                   onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold text-foreground hover:bg-surface"
+                  className="block rounded-md px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-surface"
                 >
                   {r.title}
                 </Link>
@@ -621,11 +621,11 @@ function CareerMenu() {
             </>
           )}
 
-          <div className="mt-1 border-t border-border">
+          <div className="mt-0.5 border-t border-border">
             <Link
               to="/careers"
               onClick={() => setOpen(false)}
-              className="block px-3 py-2 text-[12px] font-semibold text-primary hover:bg-surface"
+              className="block px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-surface"
             >
               All careers & referral programs
             </Link>
@@ -633,7 +633,7 @@ function CareerMenu() {
               to="/partner/$type"
               params={{ type: "career" }}
               onClick={() => setOpen(false)}
-              className="block px-3 py-2 text-[12px] font-semibold text-primary hover:bg-surface"
+              className="block px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-surface"
             >
               Apply / submit your profile
             </Link>
