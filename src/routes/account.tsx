@@ -52,7 +52,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 type Section =
   | "overview" | "orders" | "wishlist" | "cart" | "addresses"
-  | "payments" | "returns" | "support" | "profile" | "security" | "notifications";
+  | "payments" | "returns" | "support" | "profile" | "security" | "notifications" | "affiliate";
 
 const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "overview", label: "Overview", Icon: LayoutDashboard },
@@ -67,6 +67,7 @@ const NAV: { id: Section; label: string; Icon: any }[] = [
   { id: "profile", label: "Profile", Icon: UserCog },
   { id: "security", label: "Security", Icon: ShieldCheck },
 ];
+
 
 function AccountPage() {
   return <AccountDashboard expectedRole="customer" />;
