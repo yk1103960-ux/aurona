@@ -29,6 +29,7 @@ export async function resolveProductId(idOrSku: string, sku?: string | null): Pr
       .order("sort_order", { ascending: true })
       .limit(20);
     for (const v of variants ?? []) {
+      if (!v.sku) continue;
       const { data } = await supabase.from("products").select("id").eq("sku", v.sku).maybeSingle();
       if (data?.id) return data.id;
     }
