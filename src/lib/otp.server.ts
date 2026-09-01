@@ -179,7 +179,7 @@ export async function sendSms(to: string, code: string): Promise<{ requestId: st
  */
 export async function invalidateOpenChallenges(
   supabaseAdmin: SupabaseClient,
-  where: { purpose: "signup" | "login"; email?: string; phone?: string },
+  where: { purpose: "signup" | "login" | "login2fa"; email?: string; phone?: string },
 ): Promise<void> {
   let q = supabaseAdmin
     .from("auth_otp_challenges")
