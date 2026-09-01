@@ -19,6 +19,8 @@ import { useAvatarUrl } from "@/hooks/useAvatarUrl";
 import { useMyRole } from "@/lib/pricing";
 import { useRoleDashboardGuard, roleLabel, type DashboardRole } from "@/lib/role-routing";
 import { ReturnsPanel } from "@/components/account/ReturnsPanel";
+import { AffiliatePanel } from "@/components/account/AffiliatePanel";
+import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 import { PaymentLogos } from "@/components/layout/PaymentLogos";
 import { PageLoading } from "@/components/layout/PageLoading";
 import { EmptyState } from "@/components/empty/EmptyState";
