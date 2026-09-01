@@ -53,50 +53,67 @@ function ProductEditor() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/products/$id" });
   const isNew = id === "new";
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [f, setF] = useState<ProductForm>(EMPTY);
   const [saving, setSaving] = useState(false);
+  // Unsaved admin edits must never be wiped by a background refetch.
+  const dirty = useRef(false);
 
   const cats = useQuery({
     queryKey: ["admin-categories-list"],
     queryFn: async () => (await supabase.from("categories").select("id, name").order("name")).data ?? [],
   });
 
-  useQuery({
+  const product = useQuery({
     queryKey: ["admin-product", id],
     enabled: !isNew,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
       if (error) throw error;
-      setF({
-        name: data.name ?? "", slug: data.slug ?? "", sku: data.sku ?? "", brand: data.brand ?? "Aurona",
-        category_id: data.category_id, short_description: data.short_description ?? "", description: data.description ?? "",
-        mrp: Number(data.mrp ?? 0), price: Number(data.price ?? 0), stock: Number(data.stock ?? 0), unit: data.unit ?? "Pc",
-        wattage: data.wattage ?? "", size: data.size ?? "", color_temp: data.color_temp ?? "", material: data.material ?? "", warranty: data.warranty ?? "",
-        model: (data as any).model ?? "",
-        body_type: (data as any).body_type ?? "",
-        pack_size: (data as any).pack_size != null ? Number((data as any).pack_size) : null,
-        features: featuresToText((data as any).features),
-        specifications: specsToText((data as any).specifications),
-        image_seed: data.image_seed ?? "",
-        is_published: data.is_published ?? true, is_featured: !!data.is_featured, is_bestseller: !!data.is_bestseller, is_new: !!data.is_new, is_sale: !!data.is_sale,
-        affiliate_enabled: data.affiliate_enabled ?? true,
-        affiliate_commission_kind:
-          (data.affiliate_commission_kind as ProductForm["affiliate_commission_kind"]) ?? "",
-        affiliate_commission_value:
-          data.affiliate_commission_value != null ? Number(data.affiliate_commission_value) : null,
-        affiliate_max_commission:
-          data.affiliate_max_commission != null ? Number(data.affiliate_max_commission) : null,
-        weight_g: data.weight_g != null ? Number(data.weight_g) : null,
-        dim_l: data.dim_l != null ? Number(data.dim_l) : null,
-        dim_w: data.dim_w != null ? Number(data.dim_w) : null,
-        dim_h: data.dim_h != null ? Number(data.dim_h) : null,
-      });
-
       return data;
     },
   });
 
-  const upd = <K extends keyof ProductForm>(k: K, v: ProductForm[K]) => setF((p) => ({ ...p, [k]: v }));
+  // Live sync: when the row changes elsewhere (another admin tab, variant save),
+  // pull it again — unless this editor has unsaved changes.
+  useRealtime(["products"], () => {
+    if (!dirty.current) product.refetch();
+  });
+
+  useEffect(() => {
+    const data = product.data;
+    if (!data || dirty.current) return;
+    setF({
+      name: data.name ?? "", slug: data.slug ?? "", sku: data.sku ?? "", brand: data.brand ?? "Aurona",
+      category_id: data.category_id, short_description: data.short_description ?? "", description: data.description ?? "",
+      mrp: Number(data.mrp ?? 0), price: Number(data.price ?? 0), stock: Number(data.stock ?? 0), unit: data.unit ?? "Pc",
+      wattage: data.wattage ?? "", size: data.size ?? "", color_temp: data.color_temp ?? "", material: data.material ?? "", warranty: data.warranty ?? "",
+      model: (data as any).model ?? "",
+      body_type: (data as any).body_type ?? "",
+      pack_size: (data as any).pack_size != null ? Number((data as any).pack_size) : null,
+      features: featuresToText((data as any).features),
+      specifications: specsToText((data as any).specifications),
+      image_seed: data.image_seed ?? "",
+      is_published: data.is_published ?? true, is_featured: !!data.is_featured, is_bestseller: !!data.is_bestseller, is_new: !!data.is_new, is_sale: !!data.is_sale,
+      affiliate_enabled: data.affiliate_enabled ?? true,
+      affiliate_commission_kind:
+        (data.affiliate_commission_kind as ProductForm["affiliate_commission_kind"]) ?? "",
+      affiliate_commission_value:
+        data.affiliate_commission_value != null ? Number(data.affiliate_commission_value) : null,
+      affiliate_max_commission:
+        data.affiliate_max_commission != null ? Number(data.affiliate_max_commission) : null,
+      weight_g: data.weight_g != null ? Number(data.weight_g) : null,
+      dim_l: data.dim_l != null ? Number(data.dim_l) : null,
+      dim_w: data.dim_w != null ? Number(data.dim_w) : null,
+      dim_h: data.dim_h != null ? Number(data.dim_h) : null,
+    });
+  }, [product.data]);
+
+  const upd = <K extends keyof ProductForm>(k: K, v: ProductForm[K]) => {
+    dirty.current = true;
+    setF((p) => ({ ...p, [k]: v }));
+  };
 
   const save = async () => {
     if (!f.name || !f.sku) return toast.error("Name and SKU are required");
@@ -122,14 +139,35 @@ function ProductEditor() {
     if (!error && f.sku) {
       await supabase
         .from("product_families")
-        .update({ features, specifications, body_type: f.body_type || null, material: f.material || null, warranty: f.warranty || null })
+        .update({
+          name: f.name,
+          category_id: f.category_id,
+          brand: f.brand,
+          short_description: f.short_description || null,
+          description: f.description || null,
+          features,
+          specifications,
+          body_type: f.body_type || null,
+          material: f.material || null,
+          warranty: f.warranty || null,
+          is_featured: f.is_featured,
+          is_bestseller: f.is_bestseller,
+          is_new: f.is_new,
+          is_sale: f.is_sale,
+        })
         .eq("main_sku", f.sku);
     }
     setSaving(false);
     if (error) return toast.error(error.message);
+    dirty.current = false;
+    // Push the change straight into every storefront + admin view.
+    for (const key of ["products", "families-page", "product", "family", "family-products", "browse-products", "admin-products", "admin-product", "category-counts", "search-suggest"]) {
+      qc.invalidateQueries({ queryKey: [key] });
+    }
     toast.success(isNew ? "Product created" : "Saved");
     if (isNew && data) nav({ to: "/aurona-console-9f2x7k/products/$id", params: { id: data.id } });
   };
+
 
   return (
     <div className="space-y-4 max-w-4xl">
