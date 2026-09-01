@@ -173,7 +173,7 @@ export const POSTS: BlogPost[] = [
   },,
   {
     slug: "tshirts-every-man-needs",
-    cover: coverTshirts,
+    cover: coverTshirts as string,
     cat: "Lifestyle",
     title: "T-Shirts Every Man Needs in His Wardrobe",
     excerpt: "White is a colour that suits everyone — here's how to pick the right one and style it correctly.",
