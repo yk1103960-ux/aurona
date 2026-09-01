@@ -439,17 +439,17 @@ function CareersPanel() {
 type ReferralProgram = {
   id: string;
   name: string;
-  audience: string;
+  description: string;
+  eligibility: string | null;
   commission_kind: string;
   commission_value: number;
   max_commission: number | null;
   min_order_value: number;
-  payout_note: string | null;
   terms: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
+  closes_at: string | null;
   sort_order: number;
   is_active: boolean;
+  is_published: boolean;
 };
 
 function ReferralProgramsPanel() {
@@ -469,17 +469,17 @@ function ReferralProgramsPanel() {
     if (!row.name?.trim()) return toast.error("Name is required");
     const payload = {
       name: row.name.trim(),
-      audience: row.audience || "customer",
+      description: row.description ?? "",
+      eligibility: row.eligibility || null,
       commission_kind: row.commission_kind || "percentage",
       commission_value: Number(row.commission_value ?? 0),
       max_commission: row.max_commission === null || row.max_commission === undefined || String(row.max_commission) === "" ? null : Number(row.max_commission),
       min_order_value: Number(row.min_order_value ?? 0),
-      payout_note: row.payout_note || null,
       terms: row.terms || null,
-      starts_at: row.starts_at ? new Date(row.starts_at).toISOString() : null,
-      ends_at: row.ends_at ? new Date(row.ends_at).toISOString() : null,
+      closes_at: row.closes_at ? new Date(row.closes_at).toISOString() : null,
       sort_order: Number(row.sort_order ?? (data?.length ?? 0) + 1),
       is_active: row.is_active ?? true,
+      is_published: row.is_published ?? true,
     };
     const { error } = row.id
       ? await supabase.from("referral_programs").update(payload).eq("id", row.id)
@@ -500,7 +500,7 @@ function ReferralProgramsPanel() {
 
   return (
     <div className="space-y-4">
-      <Button onClick={() => setDraft({ is_active: true, commission_kind: "percentage", audience: "customer" })}>
+      <Button onClick={() => setDraft({ is_active: true, is_published: true, commission_kind: "percentage" })}>
         <Plus className="mr-1 h-4 w-4" /> New referral program
       </Button>
 
@@ -509,9 +509,6 @@ function ReferralProgramsPanel() {
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Name">
               <Input value={draft.name ?? ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-            </Field>
-            <Field label="Audience (customer / retailer / distributor / affiliate)">
-              <Input value={draft.audience ?? ""} onChange={(e) => setDraft({ ...draft, audience: e.target.value })} />
             </Field>
             <Field label="Commission type (percentage / fixed)">
               <Input
@@ -540,22 +537,12 @@ function ReferralProgramsPanel() {
                 onChange={(e) => setDraft({ ...draft, min_order_value: Number(e.target.value) })}
               />
             </Field>
-            <Field label="Starts on">
+            <Field label="Closes on (blank = always open)">
               <Input
                 type="date"
-                value={draft.starts_at ? String(draft.starts_at).slice(0, 10) : ""}
-                onChange={(e) => setDraft({ ...draft, starts_at: e.target.value || null })}
+                value={draft.closes_at ? String(draft.closes_at).slice(0, 10) : ""}
+                onChange={(e) => setDraft({ ...draft, closes_at: e.target.value || null })}
               />
-            </Field>
-            <Field label="Ends on">
-              <Input
-                type="date"
-                value={draft.ends_at ? String(draft.ends_at).slice(0, 10) : ""}
-                onChange={(e) => setDraft({ ...draft, ends_at: e.target.value || null })}
-              />
-            </Field>
-            <Field label="Payout note">
-              <Input value={draft.payout_note ?? ""} onChange={(e) => setDraft({ ...draft, payout_note: e.target.value })} />
             </Field>
             <Field label="Sort order">
               <Input
@@ -568,7 +555,25 @@ function ReferralProgramsPanel() {
               <Switch checked={draft.is_active ?? true} onCheckedChange={(v) => setDraft({ ...draft, is_active: v })} />
               Active
             </label>
+            <label className="flex items-center gap-2 pt-6 text-sm">
+              <Switch checked={draft.is_published ?? true} onCheckedChange={(v) => setDraft({ ...draft, is_published: v })} />
+              Visible on website
+            </label>
           </div>
+          <Field label="Description">
+            <Textarea
+              rows={3}
+              value={draft.description ?? ""}
+              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            />
+          </Field>
+          <Field label="Who can join">
+            <Textarea
+              rows={2}
+              value={draft.eligibility ?? ""}
+              onChange={(e) => setDraft({ ...draft, eligibility: e.target.value })}
+            />
+          </Field>
           <Field label="Terms">
             <Textarea rows={3} value={draft.terms ?? ""} onChange={(e) => setDraft({ ...draft, terms: e.target.value })} />
           </Field>
@@ -593,7 +598,7 @@ function ReferralProgramsPanel() {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{r.name}</div>
                 <div className="truncate text-xs text-slate-500">
-                  {r.audience} · {r.commission_kind === "fixed" ? `₹${r.commission_value}` : `${r.commission_value}%`}
+                  {r.commission_kind === "fixed" ? `₹${r.commission_value}` : `${r.commission_value}%`}
                   {r.max_commission ? ` (max ₹${r.max_commission})` : ""} · min ₹{r.min_order_value} ·{" "}
                   {r.is_active ? "Active" : "Paused"}
                 </div>
