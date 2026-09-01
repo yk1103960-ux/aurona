@@ -11,7 +11,6 @@ import { discountPct, inr } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { PDPSkeleton } from "@/components/product/PDPSkeleton";
-import { ProductCard } from "@/components/product/ProductCard";
 import { RelatedRail } from "@/components/product/RelatedRail";
 
 import { useCart } from "@/hooks/useCart";
@@ -326,6 +325,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 ["Main SKU", family.main_sku],
                 ["Selected SKU", variant.sku],
                 ...Object.entries(variant.attributes).map(([k, v]) => [k.replace(/_/g, " "), v] as const),
+                ...Object.entries((family.specifications ?? {}) as Record<string, string>).map(([k, v]) => [k, v] as const),
+                ["Body type", family.body_type],
                 ["Warranty", family.warranty],
                 ["Material", family.material],
                 ["Country of origin", "India"],
@@ -336,6 +337,19 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 </div>
               ))}
             </div>
+            {(family.features ?? []).length > 0 && (
+              <div className="mt-6 max-w-2xl">
+                <div className="text-eyebrow">Key features</div>
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  {(family.features ?? []).map((f) => (
+                    <li key={f} className="flex gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="variations" className="pt-6">
             <div className="overflow-x-auto rounded-xl border border-border">
