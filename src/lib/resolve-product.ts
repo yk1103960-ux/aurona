@@ -23,7 +23,7 @@ export async function resolveProductId(idOrSku: string, sku?: string | null): Pr
   // Family id → resolve through its variants (main variant first).
   if (isUuid) {
     const { data: variants } = await supabase
-      .from("product_variants")
+      .from("public_product_variants")
       .select("sku")
       .eq("family_id", idOrSku)
       .order("sort_order", { ascending: true })

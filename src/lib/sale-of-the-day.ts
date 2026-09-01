@@ -77,7 +77,7 @@ export const saleOfTheDayQuery = (count = 6) =>
       const famNameBySku = new Map<string, string>();
       if (poolSkus.length > 0) {
         const { data: links } = await supabase
-          .from("product_variants")
+          .from("public_product_variants")
           .select("sku, family_id, product_families(slug, name)")
           .in("sku", poolSkus);
         for (const l of (links ?? []) as unknown as {
