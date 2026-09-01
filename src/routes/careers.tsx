@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase, Handshake, Store, Crown, Globe, Megaphone, Package, CalendarClock } from "lucide-react";
-import { careersQuery, jobAnchor, applyHref, isClosed, formatCloseDate } from "@/lib/careers";
+import { careersQuery, jobAnchor, isClosed, formatCloseDate } from "@/lib/careers";
 import { referralProgramsQuery, commissionLabel } from "@/lib/referral-programs";
+import { ApplyDialog, type ApplyTarget } from "@/components/careers/ApplyDialog";
 
 const PROGRAM_ICONS = [Handshake, Store, Share2, Crown, Globe, Megaphone, Package];
+
 
 const STEPS = [
   "Pick a program and submit your application or profile",
