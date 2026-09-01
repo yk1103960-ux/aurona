@@ -509,11 +509,16 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
   family: ProductFamily; variantSku: string; variantImageSeed: string | null; variantImageUrl: string | null; categoryIcon?: string | null;
 }) {
   const { data: all = [] } = useQuery(productImagesQuery({ familyId: family.id }));
-  // Variation-wise photos: when this variant has its own photos, show only
-  // those; otherwise fall back to the untagged family photos.
-  const forVariant = all.filter((i) => i.variant_sku === variantSku);
+  // Variation-wise photos, in order of specificity:
+  //   1. photos tagged with this exact variant SKU
+  //   2. photos tagged with an SKU prefix this variant starts with (model/watt group)
+  //   3. untagged family photos
+  const exact = all.filter((i) => i.variant_sku === variantSku);
+  const prefixed = all
+    .filter((i) => i.variant_sku && i.variant_sku !== variantSku && variantSku.startsWith(i.variant_sku))
+    .sort((a, b) => (b.variant_sku!.length - a.variant_sku!.length) || a.sort_order - b.sort_order);
   const generic = all.filter((i) => !i.variant_sku);
-  const images = forVariant.length ? forVariant : generic.length ? generic : all;
+  const images = exact.length ? exact : prefixed.length ? prefixed : generic.length ? generic : all;
   return (
     <ProductGallery
       images={images}
@@ -522,6 +527,7 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
     />
   );
 }
+
 
 function LegacyGallery({ product, categoryIcon }: {
   product: { id: string; name: string; slug: string; image_seed: string | null; image_url?: string | null };
