@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import logoAsset from "@/assets/aurona-logo-2026.png.asset.json";
+import logoAsset from "@/assets/aurona-logo-white-intro.png.asset.json";
 
 /**
  * Cinematic 5-phase intro. Plays once per session.
