@@ -197,3 +197,135 @@ export const adminSaveSecuritySettings = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/** Create a customer/partner account from the admin console. */
+export const adminCreateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        email: z.string().trim().email().max(255),
+        password: z.string().min(6).max(72),
+        fullName: z.string().trim().min(2).max(100),
+        phone: z.string().trim().regex(/^[6-9]\d{9}$/).optional().or(z.literal("")),
+        accountType: z.enum(["customer", "retailer", "distributor"]).default("customer"),
+        businessName: z.string().trim().max(160).optional().or(z.literal("")),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: data.fullName,
+        phone: data.phone ? `+91${data.phone}` : null,
+        intended_role: data.accountType,
+        business_name: data.businessName || null,
+      },
+    });
+    if (error || !created.user) throw new Error(error?.message ?? "Could not create this account");
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        full_name: data.fullName,
+        phone: data.phone ? `+91${data.phone}` : null,
+        business_name: data.businessName || null,
+        account_type: data.accountType,
+      } as never)
+      .eq("id", created.user.id);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_user_id: context.userId,
+      action: "user.create",
+      entity_type: "user",
+      entity_id: created.user.id,
+      after: { email: data.email, accountType: data.accountType } as any,
+    });
+    return { ok: true, id: created.user.id };
+  });
+
+/** Update an account's profile details, email, or password. */
+export const adminUpdateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        fullName: z.string().trim().max(100).optional(),
+        phone: z.string().trim().regex(/^[6-9]\d{9}$/).optional().or(z.literal("")),
+        businessName: z.string().trim().max(160).optional().or(z.literal("")),
+        accountType: z.enum(["customer", "retailer", "distributor"]).optional(),
+        email: z.string().trim().email().max(255).optional().or(z.literal("")),
+        password: z.string().min(6).max(72).optional().or(z.literal("")),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const authPatch: Record<string, unknown> = {};
+    if (data.email) authPatch["email"] = data.email;
+    if (data.password) authPatch["password"] = data.password;
+    if (Object.keys(authPatch).length) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, authPatch as never);
+      if (error) throw new Error(error.message);
+    }
+
+    const profilePatch: Record<string, unknown> = {};
+    if (data.fullName !== undefined) profilePatch["full_name"] = data.fullName;
+    if (data.phone !== undefined) profilePatch["phone"] = data.phone ? `+91${data.phone}` : null;
+    if (data.businessName !== undefined) profilePatch["business_name"] = data.businessName || null;
+    if (data.accountType) profilePatch["account_type"] = data.accountType;
+    if (Object.keys(profilePatch).length) {
+      const { error } = await supabaseAdmin.from("profiles").update(profilePatch as never).eq("id", data.userId);
+      if (error) throw new Error(error.message);
+    }
+
+    if (data.accountType) {
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: data.userId, role: data.accountType } as never, { onConflict: "user_id,role" });
+    }
+
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_user_id: context.userId,
+      action: "user.update",
+      entity_type: "user",
+      entity_id: data.userId,
+      after: { ...profilePatch, emailChanged: !!data.email, passwordChanged: !!data.password } as any,
+    });
+    return { ok: true };
+  });
+
+/** Permanently delete an account (admins cannot be deleted from here). */
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("You cannot delete your own admin account");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: isTargetAdmin } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", data.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (isTargetAdmin) throw new Error("Admin accounts cannot be deleted here");
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("audit_logs").insert({
+      actor_user_id: context.userId,
+      action: "user.delete",
+      entity_type: "user",
+      entity_id: data.userId,
+    });
+    return { ok: true };
+  });
