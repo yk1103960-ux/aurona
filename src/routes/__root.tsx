@@ -131,6 +131,7 @@ function RootComponent() {
         {!isAdminConsole && <Footer />}
         {!isAdminConsole && <QuickAccessRail />}
         {!isAdminConsole && <StickyCartBar />}
+        {!isAdminConsole && <ClientOnly fallback={null}><CompareTray /></ClientOnly>}
         {!isAdminConsole && <MobileBottomNav />}
 
       </div>
