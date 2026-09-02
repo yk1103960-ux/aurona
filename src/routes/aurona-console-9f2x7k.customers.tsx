@@ -4,7 +4,10 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Search, ShieldOff, ShieldCheck, RotateCcw, Save } from "lucide-react";
+import { Search, ShieldOff, ShieldCheck, RotateCcw, Save, Plus, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   adminListUsers,
   adminSetUserBlocked,
@@ -12,7 +15,29 @@ import {
   adminLoginActivity,
   adminGetSecuritySettings,
   adminSaveSecuritySettings,
+  adminCreateUser,
+  adminUpdateUser,
+  adminDeleteUser,
 } from "@/lib/user-admin.functions";
+
+type EditDraft = {
+  userId?: string;
+  email: string;
+  password: string;
+  fullName: string;
+  phone: string;
+  businessName: string;
+  accountType: "customer" | "retailer" | "distributor";
+};
+
+const EMPTY_DRAFT: EditDraft = {
+  email: "",
+  password: "",
+  fullName: "",
+  phone: "",
+  businessName: "",
+  accountType: "customer",
+};
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/customers")({
   component: UsersAdmin,
@@ -51,6 +76,57 @@ function UsersAdmin() {
     enabled: tab === "rules",
   });
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<EditDraft | null>(null);
+
+  const createUser = useMutation({
+    mutationFn: (v: EditDraft) =>
+      adminCreateUser({
+        data: {
+          email: v.email,
+          password: v.password,
+          fullName: v.fullName,
+          phone: v.phone,
+          businessName: v.businessName,
+          accountType: v.accountType,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Account created");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not create the account"),
+  });
+
+  const updateUser = useMutation({
+    mutationFn: (v: EditDraft) =>
+      adminUpdateUser({
+        data: {
+          userId: v.userId!,
+          email: v.email || "",
+          password: v.password || "",
+          fullName: v.fullName,
+          phone: v.phone,
+          businessName: v.businessName,
+          accountType: v.accountType,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Account updated");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not update the account"),
+  });
+
+  const removeUser = useMutation({
+    mutationFn: (userId: string) => adminDeleteUser({ data: { userId } }),
+    onSuccess: () => {
+      toast.success("Account deleted");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not delete the account"),
+  });
 
   const block = useMutation({
     mutationFn: (v: { userId: string; blocked: boolean; reason?: string }) => adminSetUserBlocked({ data: v }),
@@ -101,9 +177,14 @@ function UsersAdmin() {
 
       {tab === "users" && (
         <>
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input placeholder="Search name, email, phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input placeholder="Search name, email, phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <Button className="gap-2 rounded-full" onClick={() => setEditing({ ...EMPTY_DRAFT })}>
+              <Plus className="h-4 w-4" /> Add account
+            </Button>
           </div>
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full text-sm">
@@ -161,6 +242,33 @@ function UsersAdmin() {
                           onClick={() => block.mutate({ userId: u.id, blocked: !u.blocked, reason: "Suspended by admin" })}
                         >
                           {u.blocked ? <><ShieldCheck className="h-3 w-3" /> Unblock</> : <><ShieldOff className="h-3 w-3" /> Block</>}
+                        </Button>
+                        <Button
+                          size="sm" variant="outline" className="h-8 gap-1 text-xs"
+                          onClick={() =>
+                            setEditing({
+                              userId: u.id,
+                              email: u.email ?? "",
+                              password: "",
+                              fullName: u.fullName ?? "",
+                              phone: (u.phone ?? "").replace(/^\+?91/, ""),
+                              businessName: u.businessName ?? "",
+                              accountType: (["retailer", "distributor"].includes(u.accountType) ? u.accountType : "customer") as EditDraft["accountType"],
+                            })
+                          }
+                        >
+                          <Pencil className="h-3 w-3" /> Edit
+                        </Button>
+                        <Button
+                          size="sm" variant="destructive" className="h-8 gap-1 text-xs"
+                          disabled={u.roles.includes("admin")}
+                          onClick={() => {
+                            if (window.confirm(`Permanently delete ${u.email ?? u.fullName ?? "this account"}? This cannot be undone.`)) {
+                              removeUser.mutate(u.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" /> Delete
                         </Button>
                       </div>
                     </td>
