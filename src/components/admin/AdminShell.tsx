@@ -47,6 +47,7 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/content", label: "Content", icon: Megaphone },
   { to: "/aurona-console-9f2x7k/editorial", label: "Blogs, Careers & FAQs", icon: ScrollText },
   { to: "/aurona-console-9f2x7k/careers", label: "Career Applications", icon: Users },
+  { to: "/aurona-console-9f2x7k/carts", label: "Abandoned Carts", icon: ShoppingCart },
 
 
   { to: "/aurona-console-9f2x7k/payments", label: "Payments", icon: CreditCard },

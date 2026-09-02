@@ -63,6 +63,7 @@ import { Route as AuronaConsole9f2x7kCustomersRouteImport } from './routes/auron
 import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-console-9f2x7k.coupons'
 import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
 import { Route as AuronaConsole9f2x7kCategoriesRouteImport } from './routes/aurona-console-9f2x7k.categories'
+import { Route as AuronaConsole9f2x7kCartsRouteImport } from './routes/aurona-console-9f2x7k.carts'
 import { Route as AuronaConsole9f2x7kCareersRouteImport } from './routes/aurona-console-9f2x7k.careers'
 import { Route as AuronaConsole9f2x7kAuditRouteImport } from './routes/aurona-console-9f2x7k.audit'
 import { Route as AuronaConsole9f2x7kApplicationsRouteImport } from './routes/aurona-console-9f2x7k.applications'
@@ -364,6 +365,12 @@ const AuronaConsole9f2x7kCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kCartsRoute =
+  AuronaConsole9f2x7kCartsRouteImport.update({
+    id: '/carts',
+    path: '/carts',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kCareersRoute =
   AuronaConsole9f2x7kCareersRouteImport.update({
     id: '/careers',
@@ -487,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/careers': typeof AuronaConsole9f2x7kCareersRoute
+  '/aurona-console-9f2x7k/carts': typeof AuronaConsole9f2x7kCartsRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
@@ -555,6 +563,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/careers': typeof AuronaConsole9f2x7kCareersRoute
+  '/aurona-console-9f2x7k/carts': typeof AuronaConsole9f2x7kCartsRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
@@ -627,6 +636,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
   '/aurona-console-9f2x7k/careers': typeof AuronaConsole9f2x7kCareersRoute
+  '/aurona-console-9f2x7k/carts': typeof AuronaConsole9f2x7kCartsRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
@@ -700,6 +710,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/careers'
+    | '/aurona-console-9f2x7k/carts'
     | '/aurona-console-9f2x7k/categories'
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
@@ -768,6 +779,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/careers'
+    | '/aurona-console-9f2x7k/carts'
     | '/aurona-console-9f2x7k/categories'
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
@@ -839,6 +851,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
     | '/aurona-console-9f2x7k/careers'
+    | '/aurona-console-9f2x7k/carts'
     | '/aurona-console-9f2x7k/categories'
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
@@ -1301,6 +1314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kCategoriesRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/carts': {
+      id: '/aurona-console-9f2x7k/carts'
+      path: '/carts'
+      fullPath: '/aurona-console-9f2x7k/carts'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCartsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/careers': {
       id: '/aurona-console-9f2x7k/careers'
       path: '/careers'
@@ -1446,6 +1466,7 @@ interface AuronaConsole9f2x7kRouteChildren {
   AuronaConsole9f2x7kApplicationsRoute: typeof AuronaConsole9f2x7kApplicationsRoute
   AuronaConsole9f2x7kAuditRoute: typeof AuronaConsole9f2x7kAuditRoute
   AuronaConsole9f2x7kCareersRoute: typeof AuronaConsole9f2x7kCareersRoute
+  AuronaConsole9f2x7kCartsRoute: typeof AuronaConsole9f2x7kCartsRoute
   AuronaConsole9f2x7kCategoriesRoute: typeof AuronaConsole9f2x7kCategoriesRoute
   AuronaConsole9f2x7kContentRoute: typeof AuronaConsole9f2x7kContentRoute
   AuronaConsole9f2x7kCouponsRoute: typeof AuronaConsole9f2x7kCouponsRoute
@@ -1468,6 +1489,7 @@ const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
   AuronaConsole9f2x7kApplicationsRoute: AuronaConsole9f2x7kApplicationsRoute,
   AuronaConsole9f2x7kAuditRoute: AuronaConsole9f2x7kAuditRoute,
   AuronaConsole9f2x7kCareersRoute: AuronaConsole9f2x7kCareersRoute,
+  AuronaConsole9f2x7kCartsRoute: AuronaConsole9f2x7kCartsRoute,
   AuronaConsole9f2x7kCategoriesRoute: AuronaConsole9f2x7kCategoriesRoute,
   AuronaConsole9f2x7kContentRoute: AuronaConsole9f2x7kContentRoute,
   AuronaConsole9f2x7kCouponsRoute: AuronaConsole9f2x7kCouponsRoute,

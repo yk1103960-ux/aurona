@@ -24,7 +24,7 @@ export const Route = createFileRoute("/compare")({
   component: ComparePage,
 });
 
-const SPECS: { key: keyof Product; label: string }[] = [
+const SPECS: { key: string; label: string }[] = [
   { key: "brand", label: "Brand" },
   { key: "sku", label: "SKU" },
   { key: "model", label: "Model" },
@@ -140,7 +140,7 @@ function ComparePage() {
                 <tr key={String(s.key)} className="odd:bg-muted/30">
                   <td className="border-b border-border p-2 text-xs font-semibold text-muted-foreground">{s.label}</td>
                   {rows.map((p) => {
-                    const raw = p[s.key];
+                    const raw = (p as unknown as Record<string, unknown>)[s.key];
                     const text =
                       s.key === "stock"
                         ? Number(raw) > 0 ? "In stock" : "Out of stock"
