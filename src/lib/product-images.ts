@@ -12,10 +12,6 @@ export type ProductImageRow = {
   is_primary: boolean;
 };
 
-/**
- * Existing single-product / family image query.
- * Kept compatible with the rest of the website.
- */
 export const productImagesQuery = (opts: { familyId?: string | null; productId?: string | null }) =>
   queryOptions({
     queryKey: ["product-images", opts.familyId ?? null, opts.productId ?? null],
@@ -41,7 +37,7 @@ export const productImagesQuery = (opts: { familyId?: string | null; productId?:
       const { data, error } = await q;
 
       if (error) {
-        console.error("Failed to load product images:", error);
+        console.error(error);
         return [];
       }
 
@@ -49,49 +45,48 @@ export const productImagesQuery = (opts: { familyId?: string | null; productId?:
     },
   });
 
-/**
- * Used by the compare page.
- * Loads images for several products in one request.
- */
-export const compareProductImagesQuery = (productIds: string[]) =>
+export const compareProductImagesQuery = (productIds: string[], familyIds: string[]) =>
   queryOptions({
-    queryKey: ["compare-product-images", [...productIds].sort().join(",")],
+    queryKey: ["compare-product-images", [...productIds].sort().join(","), [...familyIds].sort().join(",")],
+
+    enabled: productIds.length > 0 || familyIds.length > 0,
 
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
 
-    enabled: productIds.length > 0,
-
     queryFn: async (): Promise<ProductImageRow[]> => {
-      if (!productIds.length) return [];
+      const results: ProductImageRow[] = [];
 
-      const { data, error } = await supabase
-        .from("product_images")
-        .select("*")
-        .in("product_id", productIds)
-        .order("is_primary", { ascending: false })
-        .order("sort_order", { ascending: true });
+      if (productIds.length > 0) {
+        const { data, error } = await supabase
+          .from("product_images")
+          .select("*")
+          .in("product_id", productIds)
+          .order("is_primary", { ascending: false })
+          .order("sort_order", { ascending: true });
 
-      if (error) {
-        console.error("Failed to load compare product images:", error);
-
-        return [];
+        if (!error && data) {
+          results.push(...(data as ProductImageRow[]));
+        }
       }
 
-      return (data ?? []) as ProductImageRow[];
+      if (familyIds.length > 0) {
+        const { data, error } = await supabase
+          .from("product_images")
+          .select("*")
+          .in("family_id", familyIds)
+          .order("is_primary", { ascending: false })
+          .order("sort_order", { ascending: true });
+
+        if (!error && data) {
+          results.push(...(data as ProductImageRow[]));
+        }
+      }
+
+      return results.filter((image, index, array) => array.findIndex((item) => item.id === image.id) === index);
     },
   });
 
-/**
- * Finds the best available image for a product.
- *
- * Priority:
- * 1. Exact variant SKU
- * 2. Primary product image
- * 3. Any product image
- * 4. Primary family image
- * 5. Any family image
- */
 export function resolveProductImage(
   images: ProductImageRow[],
   product: {
@@ -99,38 +94,32 @@ export function resolveProductImage(
     family_id?: string | null;
     sku?: string | null;
   },
-): string | null {
+) {
   const variantImage = images.find((image) => image.variant_sku && product.sku && image.variant_sku === product.sku);
 
-  if (variantImage?.image_url) {
-    return variantImage.image_url;
-  }
+  if (variantImage) return variantImage.image_url;
 
   const primaryProductImage = images.find((image) => image.product_id === product.id && image.is_primary);
 
-  if (primaryProductImage?.image_url) {
+  if (primaryProductImage) {
     return primaryProductImage.image_url;
   }
 
   const productImage = images.find((image) => image.product_id === product.id);
 
-  if (productImage?.image_url) {
+  if (productImage) {
     return productImage.image_url;
   }
 
-  if (product.family_id) {
-    const primaryFamilyImage = images.find((image) => image.family_id === product.family_id && image.is_primary);
+  const primaryFamilyImage = images.find(
+    (image) => product.family_id && image.family_id === product.family_id && image.is_primary,
+  );
 
-    if (primaryFamilyImage?.image_url) {
-      return primaryFamilyImage.image_url;
-    }
-
-    const familyImage = images.find((image) => image.family_id === product.family_id);
-
-    if (familyImage?.image_url) {
-      return familyImage.image_url;
-    }
+  if (primaryFamilyImage) {
+    return primaryFamilyImage.image_url;
   }
 
-  return null;
+  const familyImage = images.find((image) => product.family_id && image.family_id === product.family_id);
+
+  return familyImage?.image_url ?? null;
 }
