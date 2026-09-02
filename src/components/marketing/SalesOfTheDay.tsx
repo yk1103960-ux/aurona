@@ -39,9 +39,15 @@ export function SalesOfTheDay({ count = 10 }: { count?: number }) {
   if (products.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-background via-surface to-background py-10 lg:py-14">
-      <div className="pointer-events-none absolute -left-32 top-10 h-[380px] w-[380px] rounded-full bg-primary/10 blur-3xl" aria-hidden />
-      <div className="pointer-events-none absolute -right-32 bottom-0 h-[380px] w-[380px] rounded-full bg-gold/10 blur-3xl" aria-hidden />
+    <section className="relative overflow-hidden bg-gradient-to-b from-background via-surface to-background py-4 lg:py-6">
+      <div
+        className="pointer-events-none absolute -left-32 top-10 h-[380px] w-[380px] rounded-full bg-primary/10 blur-3xl"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -right-32 bottom-0 h-[380px] w-[380px] rounded-full bg-gold/10 blur-3xl"
+        aria-hidden
+      />
       <div className="container-x relative">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
