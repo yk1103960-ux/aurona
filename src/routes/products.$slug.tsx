@@ -93,6 +93,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const [qty, setQty] = useState(1);
   const cart = useCart();
   const wl = useWishlist();
+  const compare = useCompare();
   const nav = useNavigate();
   const skus = useMemo(() => family.variants.map((v) => v.sku).filter(Boolean), [family]);
   const { data: productMap } = useQuery(familyProductsQuery(skus));
