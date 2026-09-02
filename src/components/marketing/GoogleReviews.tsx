@@ -60,7 +60,7 @@ const AGGREGATE = { rating: 4.8, count: 1247 };
 
 export function GoogleReviews() {
   return (
-    <section className="container-x py-10 lg:py-14">
+    <section className="container-x py-4 lg:py-6">
       <div className="mx-auto max-w-3xl text-center">
         <div className="text-eyebrow text-primary">06 · What customers say</div>
         <h2 className="text-display mt-3 text-4xl leading-tight sm:text-5xl">
@@ -79,9 +79,7 @@ export function GoogleReviews() {
               />
             ))}
           </div>
-          <span>
-            {AGGREGATE.count.toLocaleString("en-IN")} verified reviews
-          </span>
+          <span>{AGGREGATE.count.toLocaleString("en-IN")} verified reviews</span>
         </div>
       </div>
 
@@ -110,9 +108,7 @@ export function GoogleReviews() {
                 <Star
                   key={i}
                   className={
-                    i < r.rating
-                      ? "h-3.5 w-3.5 fill-amber-400 text-amber-400"
-                      : "h-3.5 w-3.5 text-muted-foreground/30"
+                    i < r.rating ? "h-3.5 w-3.5 fill-amber-400 text-amber-400" : "h-3.5 w-3.5 text-muted-foreground/30"
                   }
                 />
               ))}
@@ -143,10 +139,22 @@ export function GoogleReviews() {
 function GoogleG({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.3h6.4c-.3 1.5-1.1 2.8-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.7z"/>
-      <path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3.1 0-5.7-2.1-6.6-4.9H1.4v3.1C3.4 21.3 7.4 24 12 24z"/>
-      <path fill="#FBBC05" d="M5.4 14.4c-.2-.7-.4-1.4-.4-2.4s.1-1.7.4-2.4V6.5H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.5l4-3.1z"/>
-      <path fill="#EA4335" d="M12 4.8c1.7 0 3.3.6 4.5 1.8L20 3.1C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.7 1.4 6.5l4 3.1C6.3 6.9 8.9 4.8 12 4.8z"/>
+      <path
+        fill="#4285F4"
+        d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.3h6.4c-.3 1.5-1.1 2.8-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.7z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3.1 0-5.7-2.1-6.6-4.9H1.4v3.1C3.4 21.3 7.4 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.4 14.4c-.2-.7-.4-1.4-.4-2.4s.1-1.7.4-2.4V6.5H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.5l4-3.1z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.8c1.7 0 3.3.6 4.5 1.8L20 3.1C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.7 1.4 6.5l4 3.1C6.3 6.9 8.9 4.8 12 4.8z"
+      />
     </svg>
   );
 }
