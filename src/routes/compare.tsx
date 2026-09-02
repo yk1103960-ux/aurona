@@ -10,22 +10,35 @@ import { inr } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import type { Product } from "@/lib/queries";
 
+import { compareProductImagesQuery, resolveProductImage } from "@/lib/product-images";
+
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
-      { title: "Compare Aurona lighting & appliances side by side" },
+      {
+        title: "Compare Aurona lighting & appliances side by side",
+      },
       {
         name: "description",
         content:
           "Compare up to three Aurona products on wattage, size, colour temperature, material, warranty and price before you buy.",
       },
-      { property: "og:title", content: "Compare Aurona products" },
+      {
+        property: "og:title",
+        content: "Compare Aurona products",
+      },
       {
         property: "og:description",
         content: "Side-by-side specification comparison of Aurona lights, fans and appliances.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      {
+        property: "og:type",
+        content: "website",
+      },
+      {
+        name: "twitter:card",
+        content: "summary_large_image",
+      },
     ],
   }),
   component: ComparePage,
@@ -54,7 +67,9 @@ function ComparePage() {
 
   const q = useQuery({
     queryKey: ["compare", [...slugs].sort().join(",")],
+
     enabled: slugs.length > 0,
+
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -64,9 +79,13 @@ function ComparePage() {
       if (error) throw error;
 
       return (data ?? []) as unknown as (Product & {
+        family_id?: string | null;
+        family_slug?: string | null;
+
         categories: {
           slug: string;
           name: string;
+          icon?: string | null;
         } | null;
       })[];
     },
@@ -75,6 +94,16 @@ function ComparePage() {
   const rows = (q.data ?? []).slice().sort((a, b) => slugs.indexOf(a.slug) - slugs.indexOf(b.slug));
 
   const { data: priceMap } = useVisiblePrices(rows.map((r) => r.sku).filter(Boolean));
+
+  /*
+   * Load images from product_images table
+   * for the products being compared.
+   */
+  const productIds = rows.map((p) => p.id).filter(Boolean);
+
+  const familyIds = rows.map((p) => p.family_id).filter((id): id is string => typeof id === "string" && id.length > 0);
+
+  const { data: compareImages = [] } = useQuery(compareProductImagesQuery(productIds, familyIds));
 
   const getSpecText = (p: Product, key: string) => {
     const raw = (p as unknown as Record<string, unknown>)[key];
@@ -85,6 +114,7 @@ function ComparePage() {
 
     if (key === "rating") {
       const rating = Number(raw);
+
       return rating > 0 ? rating.toFixed(1) : "—";
     }
 
@@ -158,9 +188,18 @@ function ComparePage() {
 
                   {rows.map((p) => {
                     const rp = priceMap?.[p.sku];
+
                     const price = rp?.price ?? Number(p.price);
+
                     const stock = Number((p as unknown as Record<string, unknown>).stock);
+
                     const rating = Number((p as unknown as Record<string, unknown>).rating);
+
+                    const resolvedImage = resolveProductImage(compareImages, {
+                      id: p.id,
+                      sku: p.sku,
+                      family_id: p.family_id ?? null,
+                    });
 
                     return (
                       <th
@@ -177,9 +216,23 @@ function ComparePage() {
                             <X className="h-4 w-4" />
                           </button>
 
-                          <Link to="/products/$slug" params={{ slug: p.slug }} className="block pr-10">
-                            <div className="overflow-hidden rounded-2xl border border-border bg-muted/20">
-                              <ProductImage product={p as never} className="aspect-square w-full object-contain" />
+                          <Link
+                            to="/products/$slug"
+                            params={{
+                              slug: p.slug,
+                            }}
+                            className="block pr-10"
+                          >
+                            <div className="overflow-hidden rounded-2xl border border-border bg-white">
+                              <ProductImage
+                                product={{
+                                  ...(p as any),
+
+                                  image_url: resolvedImage || (p as any).image_url || null,
+                                }}
+                                className="h-[240px] w-full"
+                                eager
+                              />
                             </div>
 
                             <div className="mt-3 line-clamp-2 text-base font-semibold leading-snug text-foreground">
@@ -196,7 +249,9 @@ function ComparePage() {
                           {rating > 0 && (
                             <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                               <Star className="h-4 w-4 fill-current text-yellow-500" />
+
                               <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
+
                               <span>rating</span>
                             </div>
                           )}
@@ -222,6 +277,7 @@ function ComparePage() {
                             onClick={() =>
                               cart.add.mutate({
                                 productId: p.id,
+
                                 sku: p.sku,
                               })
                             }
@@ -275,6 +331,7 @@ function ComparePage() {
                           ) : spec.key === "rating" && text !== "—" ? (
                             <span className="inline-flex items-center gap-1.5">
                               <Star className="h-4 w-4 fill-current text-yellow-500" />
+
                               <span className="font-semibold">{text}</span>
                             </span>
                           ) : (
