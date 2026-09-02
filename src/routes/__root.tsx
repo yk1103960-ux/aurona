@@ -20,6 +20,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { QuickAccessRail } from "@/components/layout/QuickAccessRail";
 import { StickyCartBar } from "@/components/layout/StickyCartBar";
+import { CompareTray } from "@/components/product/CompareTray";
 
 import { PageTransition } from "@/components/motion/PageTransition";
 import { OffersModal } from "@/components/marketing/OffersModal";
@@ -130,6 +131,7 @@ function RootComponent() {
         {!isAdminConsole && <Footer />}
         {!isAdminConsole && <QuickAccessRail />}
         {!isAdminConsole && <StickyCartBar />}
+        {!isAdminConsole && <ClientOnly fallback={null}><CompareTray /></ClientOnly>}
         {!isAdminConsole && <MobileBottomNav />}
 
       </div>

@@ -12,11 +12,14 @@ export function ProductGallery({
   fallback,
   categoryIcon,
   className,
+  resetKey,
 }: {
   images: ProductImageRow[];
   fallback: FallbackProduct;
   categoryIcon?: string | null;
   className?: string;
+  /** Changing this (e.g. the selected variant SKU) resets the gallery to the first photo. */
+  resetKey?: string;
 }) {
   const slides = useMemo(() => {
     const real = images.filter((i) => !!i.image_url);
@@ -37,7 +40,7 @@ export function ProductGallery({
   const [origin, setOrigin] = useState("50% 50%");
   const touchStart = useRef<number | null>(null);
 
-  useEffect(() => { setIdx(0); }, [fallback.slug]);
+  useEffect(() => { setIdx(0); }, [fallback.slug, resetKey, slides[0]?.id]);
 
   const goto = (n: number) => setIdx(((n % count) + count) % count);
 
