@@ -337,6 +337,56 @@ function UsersAdmin() {
           </Button>
         </div>
       )}
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-h-[88vh] w-[calc(100vw-2rem)] max-w-md overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing?.userId ? "Edit account" : "Add account"}</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Full name</Label>
+                <Input value={editing.fullName} onChange={(e) => setEditing({ ...editing, fullName: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Mobile (+91)</Label>
+                <Input inputMode="numeric" maxLength={10} value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Business name</Label>
+                <Input value={editing.businessName} onChange={(e) => setEditing({ ...editing, businessName: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Account type</Label>
+                <Select value={editing.accountType} onValueChange={(v) => setEditing({ ...editing, accountType: v as EditDraft["accountType"] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="retailer">Retailer</SelectItem>
+                    <SelectItem value="distributor">Distributor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{editing.userId ? "New password (optional)" : "Password"}</Label>
+                <Input type="text" value={editing.password} onChange={(e) => setEditing({ ...editing, password: e.target.value })} placeholder="Minimum 6 characters" />
+              </div>
+              <Button
+                className="w-full rounded-full"
+                disabled={createUser.isPending || updateUser.isPending}
+                onClick={() => (editing.userId ? updateUser.mutate(editing) : createUser.mutate(editing))}
+              >
+                {editing.userId ? "Save changes" : "Create account"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
