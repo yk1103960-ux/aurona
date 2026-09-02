@@ -15,6 +15,7 @@ import { RelatedRail } from "@/components/product/RelatedRail";
 
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useCompare } from "@/hooks/useCompare";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
@@ -180,8 +181,12 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
               <button onClick={() => productId && wl.toggle.mutate(productId)} className="inline-flex items-center gap-1 hover:text-foreground">
                 <Heart className={cn("h-3.5 w-3.5", productId && wl.has(productId) && "fill-current text-destructive")} /> Wishlist
               </button>
-              <button className="inline-flex items-center gap-1 hover:text-foreground">
-                <Repeat2 className="h-3.5 w-3.5" /> Compare
+              <button
+                type="button"
+                onClick={() => compare.toggle(family.slug, family.name)}
+                className={cn("inline-flex items-center gap-1 hover:text-foreground", compare.has(family.slug) && "font-semibold text-primary")}
+              >
+                <Repeat2 className="h-3.5 w-3.5" /> {compare.has(family.slug) ? "In compare" : "Compare"}
               </button>
             </div>
           </div>
@@ -539,6 +544,7 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
       images={images}
       fallback={{ image_seed: variantImageSeed ?? family.image_seed, image_url: variantImageUrl ?? family.image_url, name: family.name, slug: family.slug }}
       categoryIcon={categoryIcon}
+      resetKey={variantSku}
     />
   );
 }
