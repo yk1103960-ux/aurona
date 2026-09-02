@@ -27,7 +27,7 @@ function useSaleCountdown(onReset: () => void) {
   return label;
 }
 
-export function SalesOfTheDay({ count = 8 }: { count?: number }) {
+export function SalesOfTheDay({ count = 10 }: { count?: number }) {
   const reduce = useReducedMotion();
   const qc = useQueryClient();
   const { data: products = [] } = useQuery(saleOfTheDayQuery(count));
@@ -62,7 +62,7 @@ export function SalesOfTheDay({ count = 8 }: { count?: number }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {products.map((p, i) => (
             <motion.div
               key={p.id}
