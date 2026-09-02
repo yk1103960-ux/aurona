@@ -10,7 +10,6 @@ import { GoogleReviews } from "@/components/marketing/GoogleReviews";
 import { SalesOfTheDay } from "@/components/marketing/SalesOfTheDay";
 import { ProductRail } from "@/components/product/ProductRail";
 
-
 import luxFan from "@/assets/lux-fan.jpg.asset.json";
 import luxInterior from "@/assets/lux-interior.jpg.asset.json";
 
@@ -50,15 +49,13 @@ function Home() {
 
       {/* ============ COUNTERS ============ */}
       <section className="border-b border-border bg-background">
-        <div className="container-x grid grid-cols-2 gap-6 py-8 sm:grid-cols-4 lg:py-10">
+        <div className="container-x grid grid-cols-2 gap-6 py-3 sm:grid-cols-4 lg:py-6">
           <Counter to={17} suffix="+" label="Years of manufacturing" />
           <Counter to={150} suffix="+" label="Products shipped" />
           <Counter to={1000} suffix="+" label="Retail partners" />
           <Counter to={28} label="States delivered" />
         </div>
       </section>
-
-
 
       {/* ============ MARQUEE ============ */}
       <div className="overflow-hidden border-y border-border bg-primary py-3 text-primary-foreground">
@@ -81,7 +78,11 @@ function Home() {
       {/* ============ FEATURE PRODUCTS ============ */}
       <ProductRail
         eyebrow="Handpicked"
-        title={<>Feature <span className="italic text-primary">products</span>.</>}
+        title={
+          <>
+            Feature <span className="italic text-primary">products</span>.
+          </>
+        }
         subtitle="Our most-loved fixtures and appliances, curated by the Aurona team."
         filter={{ featured: true }}
         viewAllTo="/featured"
@@ -90,19 +91,24 @@ function Home() {
       {/* ============ BEST SELLING ============ */}
       <ProductRail
         eyebrow="Trending now"
-        title={<>Best <span className="italic text-primary">selling</span>.</>}
+        title={
+          <>
+            Best <span className="italic text-primary">selling</span>.
+          </>
+        }
         subtitle="What retailers and homeowners across India are ordering most."
         filter={{ bestseller: true }}
         viewAllTo="/bestsellers"
       />
 
-
       {/* ============ EDITORIAL SPLIT — luxury interior ============ */}
       <section className="relative overflow-hidden bg-surface py-10 lg:py-14">
         <div className="pointer-events-none absolute inset-0 editorial-grid opacity-30" aria-hidden />
-        <div className="pointer-events-none absolute -left-40 top-1/4 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_16%,transparent),transparent_70%)] blur-3xl" aria-hidden />
+        <div
+          className="pointer-events-none absolute -left-40 top-1/4 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--color-gold)_16%,transparent),transparent_70%)] blur-3xl"
+          aria-hidden
+        />
         <div className="container-x relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-
           <div className="relative overflow-hidden rounded-2xl">
             <img
               src={luxInterior.url}
@@ -123,9 +129,8 @@ function Home() {
               We don't manufacture lights. We compose <span className="italic">rooms</span>.
             </h3>
             <p className="mt-5 max-w-md text-sm text-muted-foreground sm:text-base">
-              Every fixture is engineered at our Rajasthan facility — copper drivers,
-              anti-glare optics, and finishes chosen to age with your home. Warmth by
-              design, not by accident.
+              Every fixture is engineered at our Rajasthan facility — copper drivers, anti-glare optics, and finishes
+              chosen to age with your home. Warmth by design, not by accident.
             </p>
             <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-8">
               {[
@@ -140,7 +145,9 @@ function Home() {
               ))}
             </div>
             <Button asChild variant="outline" className="mt-8 h-11 rounded-full border-primary/20 px-6">
-              <Link to="/about">Inside the Aurona factory <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/about">
+                Inside the Aurona factory <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -156,12 +163,14 @@ function Home() {
               <span className="italic">Statement</span> blades.
             </h3>
             <p className="mt-5 max-w-md text-sm text-muted-foreground sm:text-base">
-              Aurona fans move air the way a good tailor cuts a suit — quiet, precise,
-              built to sit at the centre of the room.
+              Aurona fans move air the way a good tailor cuts a suit — quiet, precise, built to sit at the centre of the
+              room.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="h-11 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90">
-                <Link to="/category/$slug" params={{ slug: "ceiling-fans" }}>Browse fans <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/category/$slug" params={{ slug: "ceiling-fans" }}>
+                  Browse fans <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
               <Button asChild variant="outline" className="h-11 rounded-full border-primary/20 px-6">
                 <Link to="/products">View all products</Link>
@@ -184,11 +193,23 @@ function Home() {
 
       {/* ============ CTA — partner ============ */}
       <section className="container-x py-10 lg:py-14">
-
         <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground sm:p-14 lg:p-20">
-          <div className="orb-float absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/25 blur-3xl" aria-hidden />
-          <div className="orb-float-slow absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl" aria-hidden />
-          <div className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")" }} aria-hidden />
+          <div
+            className="orb-float absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/25 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="orb-float-slow absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.05] mix-blend-overlay"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+            }}
+            aria-hidden
+          />
           <div className="relative grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
             <div>
               <div className="text-eyebrow text-gold">04 · Stock Aurona</div>
@@ -198,22 +219,31 @@ function Home() {
                 India is <span className="italic text-gold">wiring</span> its homes to.
               </h2>
               <p className="mt-5 max-w-lg text-sm text-primary-foreground/70 sm:text-base">
-                1,000+ partners across 28 states. Margin, marketing kits and next-day
-                dispatch from the factory.
+                1,000+ partners across 28 states. Margin, marketing kits and next-day dispatch from the factory.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-              <Button asChild size="lg" className="h-12 rounded-full bg-gold px-6 text-gold-foreground hover:bg-gold/90">
-                <Link to="/affiliate">Become a partner <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Button
+                asChild
+                size="lg"
+                className="h-12 rounded-full bg-gold px-6 text-gold-foreground hover:bg-gold/90"
+              >
+                <Link to="/affiliate">
+                  Become a partner <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-12 rounded-full border-primary-foreground/25 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-full border-primary-foreground/25 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10"
+              >
                 <Link to="/contact">Talk to sales</Link>
               </Button>
             </div>
           </div>
         </div>
       </section>
-
     </div>
   );
 }
