@@ -16,16 +16,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 
-type Row = Product & { 
+type Row = Product & {
   categories: { slug: string; name: string; icon?: string | null } | null;
   image_url?: string | null;
   color?: string | null;
   finish?: string | null;
 };
-
-
-
-
 
 /** Family name only — strips variant suffixes like " - 3 W, RGB, Pack of 6". */
 function baseName(name: string): string {
@@ -64,7 +60,7 @@ export function ProductCard({
   const off = discountPct(shownMrp, shownPrice);
   const icon = categoryIcon ?? product.categories?.icon ?? null;
   const inWishlist = wl.has(product.id, product.sku);
-  const detailSlug = product.family_slug ?? product.slug;
+  const detailSlug = product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
 
   const line = cart.lineFor(product.id, product.sku);
@@ -97,7 +93,6 @@ export function ProductCard({
     }
   };
 
-
   return (
     <div className="card-lift group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] hover:border-primary/40">
       <Link
@@ -116,8 +111,14 @@ export function ProductCard({
           )}
           iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
         />
-        <span className="pointer-events-none absolute inset-x-6 bottom-2 h-6 rounded-full bg-primary/15 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
-        <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
+        <span
+          className="pointer-events-none absolute inset-x-6 bottom-2 h-6 rounded-full bg-primary/15 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+          aria-hidden
+        />
+        <span
+          className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          aria-hidden
+        />
       </Link>
 
       {off > 0 && (
@@ -165,10 +166,14 @@ export function ProductCard({
             <span className="rounded-md bg-primary/8 px-1.5 py-0.5 text-[10px] font-bold text-primary">{spec}</span>
           )}
           {product.color && (
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{product.color}</span>
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {product.color}
+            </span>
           )}
           {product.finish && (
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{product.finish}</span>
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {product.finish}
+            </span>
           )}
         </div>
         <Link
@@ -238,9 +243,7 @@ export function ProductCard({
           </div>
         )}
 
-        {outOfStock && (
-          <div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>
-        )}
+        {outOfStock && <div className="text-[11px] font-semibold text-muted-foreground">Currently out of stock</div>}
 
         {role.isPartnerPending ? (
           <div className="mt-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-2 text-center text-[11px] font-semibold text-primary">
