@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          account_type: string | null
+          cart_signature: string
+          cart_value: number
+          contact_email: string | null
+          contact_phone: string | null
+          coupon_code: string | null
+          coupon_expires_at: string | null
+          created_at: string
+          customer_name: string | null
+          first_reminder_at: string | null
+          id: string
+          item_count: number
+          items: Json
+          last_activity_at: string
+          recovered_at: string | null
+          recovered_order_id: string | null
+          second_reminder_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_type?: string | null
+          cart_signature: string
+          cart_value?: number
+          contact_email?: string | null
+          contact_phone?: string | null
+          coupon_code?: string | null
+          coupon_expires_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          first_reminder_at?: string | null
+          id?: string
+          item_count?: number
+          items?: Json
+          last_activity_at?: string
+          recovered_at?: string | null
+          recovered_order_id?: string | null
+          second_reminder_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_type?: string | null
+          cart_signature?: string
+          cart_value?: number
+          contact_email?: string | null
+          contact_phone?: string | null
+          coupon_code?: string | null
+          coupon_expires_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          first_reminder_at?: string | null
+          id?: string
+          item_count?: number
+          items?: Json
+          last_activity_at?: string
+          recovered_at?: string | null
+          recovered_order_id?: string | null
+          second_reminder_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abandoned_carts_recovered_order_id_fkey"
+            columns: ["recovered_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       addresses: {
         Row: {
           city: string
@@ -760,6 +837,7 @@ export type Database = {
       career_applications: {
         Row: {
           city: string | null
+          consent_at: string | null
           created_at: string
           email: string
           experience: string | null
@@ -769,13 +847,17 @@ export type Database = {
           phone: string
           program_id: string | null
           program_title: string
+          qualification: string | null
+          resume_path: string | null
           resume_url: string | null
+          state: string | null
           status: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
           city?: string | null
+          consent_at?: string | null
           created_at?: string
           email: string
           experience?: string | null
@@ -785,13 +867,17 @@ export type Database = {
           phone: string
           program_id?: string | null
           program_title: string
+          qualification?: string | null
+          resume_path?: string | null
           resume_url?: string | null
+          state?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           city?: string | null
+          consent_at?: string | null
           created_at?: string
           email?: string
           experience?: string | null
@@ -801,7 +887,10 @@ export type Database = {
           phone?: string
           program_id?: string | null
           program_title?: string
+          qualification?: string | null
+          resume_path?: string | null
           resume_url?: string | null
+          state?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -1276,6 +1365,66 @@ export type Database = {
           provider_message?: string | null
           recipient_masked?: string | null
           status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notification_queue: {
+        Row: {
+          attempts: number
+          body: string | null
+          channel: string
+          created_at: string
+          id: string
+          payload: Json
+          provider: string | null
+          provider_message: string | null
+          recipient: string
+          related_id: string | null
+          related_type: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          template: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          body?: string | null
+          channel: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          provider?: string | null
+          provider_message?: string | null
+          recipient: string
+          related_id?: string | null
+          related_type?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          body?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          provider?: string | null
+          provider_message?: string | null
+          recipient?: string
+          related_id?: string | null
+          related_type?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template?: string
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: []
