@@ -12,6 +12,9 @@ export type ProductImageRow = {
   is_primary: boolean;
 };
 
+/**
+ * Existing single product/family image query.
+ */
 export const productImagesQuery = (opts: { familyId?: string | null; productId?: string | null }) =>
   queryOptions({
     queryKey: ["product-images", opts.familyId ?? null, opts.productId ?? null],
@@ -37,7 +40,7 @@ export const productImagesQuery = (opts: { familyId?: string | null; productId?:
       const { data, error } = await q;
 
       if (error) {
-        console.error(error);
+        console.error("Could not load product images:", error);
         return [];
       }
 
@@ -45,6 +48,10 @@ export const productImagesQuery = (opts: { familyId?: string | null; productId?:
     },
   });
 
+/**
+ * Loads images for every product currently on the compare page.
+ * Supports product images AND family images.
+ */
 export const compareProductImagesQuery = (productIds: string[], familyIds: string[]) =>
   queryOptions({
     queryKey: ["compare-product-images", [...productIds].sort().join(","), [...familyIds].sort().join(",")],
@@ -57,6 +64,7 @@ export const compareProductImagesQuery = (productIds: string[], familyIds: strin
     queryFn: async (): Promise<ProductImageRow[]> => {
       const results: ProductImageRow[] = [];
 
+      // Load images connected directly to products
       if (productIds.length > 0) {
         const { data, error } = await supabase
           .from("product_images")
@@ -65,11 +73,14 @@ export const compareProductImagesQuery = (productIds: string[], familyIds: strin
           .order("is_primary", { ascending: false })
           .order("sort_order", { ascending: true });
 
-        if (!error && data) {
+        if (error) {
+          console.error("Could not load compare product images:", error);
+        } else if (data) {
           results.push(...(data as ProductImageRow[]));
         }
       }
 
+      // Load images connected to product families
       if (familyIds.length > 0) {
         const { data, error } = await supabase
           .from("product_images")
@@ -78,15 +89,28 @@ export const compareProductImagesQuery = (productIds: string[], familyIds: strin
           .order("is_primary", { ascending: false })
           .order("sort_order", { ascending: true });
 
-        if (!error && data) {
+        if (error) {
+          console.error("Could not load compare family images:", error);
+        } else if (data) {
           results.push(...(data as ProductImageRow[]));
         }
       }
 
+      // Remove duplicates
       return results.filter((image, index, array) => array.findIndex((item) => item.id === image.id) === index);
     },
   });
 
+/**
+ * Chooses the best available image for a product.
+ *
+ * Priority:
+ * 1. Exact variant SKU image
+ * 2. Primary product image
+ * 3. Any product image
+ * 4. Primary family image
+ * 5. Any family image
+ */
 export function resolveProductImage(
   images: ProductImageRow[],
   product: {
@@ -94,32 +118,49 @@ export function resolveProductImage(
     family_id?: string | null;
     sku?: string | null;
   },
-) {
-  const variantImage = images.find((image) => image.variant_sku && product.sku && image.variant_sku === product.sku);
+): string | null {
+  // Exact variant image
+  const variantImage = images.find(
+    (image) => Boolean(image.variant_sku) && Boolean(product.sku) && image.variant_sku === product.sku,
+  );
 
-  if (variantImage) return variantImage.image_url;
+  if (variantImage?.image_url) {
+    return variantImage.image_url;
+  }
 
-  const primaryProductImage = images.find((image) => image.product_id === product.id && image.is_primary);
+  // Primary image attached directly to product
+  const primaryProductImage = images.find(
+    (image) => image.product_id === product.id && image.is_primary && Boolean(image.image_url),
+  );
 
-  if (primaryProductImage) {
+  if (primaryProductImage?.image_url) {
     return primaryProductImage.image_url;
   }
 
-  const productImage = images.find((image) => image.product_id === product.id);
+  // Any image attached directly to product
+  const productImage = images.find((image) => image.product_id === product.id && Boolean(image.image_url));
 
-  if (productImage) {
+  if (productImage?.image_url) {
     return productImage.image_url;
   }
 
+  // Primary family image
   const primaryFamilyImage = images.find(
-    (image) => product.family_id && image.family_id === product.family_id && image.is_primary,
+    (image) =>
+      Boolean(product.family_id) &&
+      image.family_id === product.family_id &&
+      image.is_primary &&
+      Boolean(image.image_url),
   );
 
-  if (primaryFamilyImage) {
+  if (primaryFamilyImage?.image_url) {
     return primaryFamilyImage.image_url;
   }
 
-  const familyImage = images.find((image) => product.family_id && image.family_id === product.family_id);
+  // Any family image
+  const familyImage = images.find(
+    (image) => Boolean(product.family_id) && image.family_id === product.family_id && Boolean(image.image_url),
+  );
 
   return familyImage?.image_url ?? null;
 }
