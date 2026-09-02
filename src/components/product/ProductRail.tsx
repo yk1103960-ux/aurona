@@ -28,7 +28,7 @@ export function ProductRail({
   if (rows.length === 0) return null;
 
   return (
-    <section className="container-x py-10 lg:py-12">
+    <section className="container-x py-4 lg:py-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="text-eyebrow text-gold">{eyebrow}</div>
@@ -47,7 +47,6 @@ export function ProductRail({
           <ProductCard key={p.id} product={p} categoryIcon={p.categories?.icon ?? null} nameOnly />
         ))}
       </div>
-
     </section>
   );
 }
