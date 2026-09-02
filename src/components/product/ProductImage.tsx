@@ -3,7 +3,15 @@ import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/queries";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Lightbulb, Fan, Flame, LayoutGrid, Zap, Lamp, Minus, CircleDot, Mirror: LayoutGrid,
+  Lightbulb,
+  Fan,
+  Flame,
+  LayoutGrid,
+  Zap,
+  Lamp,
+  Minus,
+  CircleDot,
+  Mirror: LayoutGrid,
 };
 
 const gradClass: Record<string, string> = {
@@ -14,18 +22,29 @@ const gradClass: Record<string, string> = {
   charcoal: "product-gradient-charcoal",
 };
 
-// Eagerly resolve product photo URLs so cards paint instantly (URLs only, tiny).
-const productPhotoModules = import.meta.glob("/src/assets/products/*.jpg", {
+/*
+ * Load product photos from local assets.
+ * Supports JPG, JPEG, PNG and WEBP.
+ */
+const productPhotoModules = import.meta.glob("/src/assets/products/*.{jpg,jpeg,png,webp}", {
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
 const productPhotos: Record<string, string> = Object.fromEntries(
   Object.entries(productPhotoModules).map(([path, url]) => {
-    const slug = path.split("/").pop()!.replace(/\.jpg$/, "");
-    return [slug, url];
+    const filename = path.split("/").pop() ?? "";
+
+    const key = filename.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+
+    return [key, url];
   }),
 );
+
+type ProductImageData = Pick<Product, "image_seed" | "name" | "slug" | "image_url"> & {
+  family_slug?: string | null;
+  sku?: string | null;
+};
 
 export function ProductImage({
   product,
@@ -34,23 +53,35 @@ export function ProductImage({
   categoryIcon,
   eager,
 }: {
-  product: Pick<Product, "image_seed" | "name" | "slug" | "image_url">;
+  product: ProductImageData;
   className?: string;
   iconClassName?: string;
   categoryIcon?: string | null;
   eager?: boolean;
 }) {
+  /*
+   * Image priority:
+   *
+   * 1. Database image_url
+   * 2. Exact product slug
+   * 3. Family slug
+   * 4. Image seed
+   * 5. SKU
+   */
+
   const photo =
     product.image_url ||
     (product.slug && productPhotos[product.slug]) ||
+    (product.family_slug && productPhotos[product.family_slug]) ||
     (product.image_seed && productPhotos[product.image_seed]) ||
+    (product.sku && productPhotos[product.sku]) ||
     null;
 
   if (photo) {
     return (
       <div
         className={cn(
-          "product-tile relative flex items-center justify-center overflow-hidden rounded-lg p-2",
+          "product-tile relative flex items-center justify-center overflow-hidden rounded-lg bg-white p-2",
           className,
         )}
       >
@@ -70,20 +101,14 @@ export function ProductImage({
     );
   }
 
-
-
-
   const Icon = (categoryIcon && iconMap[categoryIcon]) || Lightbulb;
+
   const grad = gradClass[product.image_seed ?? "amber"] ?? "product-gradient-amber";
+
   return (
-    <div
-      className={cn(
-        "relative flex items-center justify-center overflow-hidden rounded-lg",
-        grad,
-        className,
-      )}
-    >
+    <div className={cn("relative flex items-center justify-center overflow-hidden rounded-lg", grad, className)}>
       <div className="absolute inset-0 opacity-40 mix-blend-overlay [background:radial-gradient(circle_at_30%_20%,white,transparent_60%)]" />
+
       <Icon
         className={cn("relative z-10 h-16 w-16 text-primary/70 drop-shadow-sm", iconClassName)}
         strokeWidth={1.25}
@@ -92,20 +117,12 @@ export function ProductImage({
   );
 }
 
-export function CategoryTile({
-  categoryIcon,
-  className,
-}: {
-  categoryIcon?: string | null;
-  className?: string;
-}) {
+export function CategoryTile({ categoryIcon, className }: { categoryIcon?: string | null; className?: string }) {
   const Icon = (categoryIcon && iconMap[categoryIcon]) || Lightbulb;
+
   return (
     <div
-      className={cn(
-        "relative flex items-center justify-center overflow-hidden rounded-xl bg-surface-warm",
-        className,
-      )}
+      className={cn("relative flex items-center justify-center overflow-hidden rounded-xl bg-surface-warm", className)}
     >
       <Icon className="h-10 w-10 text-primary/80" strokeWidth={1.5} />
     </div>
