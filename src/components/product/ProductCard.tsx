@@ -128,6 +128,19 @@ export function ProductCard({
           Bestseller
         </span>
       )}
+      <button
+        type="button"
+        onClick={() => compare.toggle(detailSlug, baseName(product.name))}
+        className={cn(
+          "press absolute right-3 top-[5.5rem] grid h-10 w-10 place-items-center rounded-full bg-card/90 shadow-soft ring-1 ring-border backdrop-blur transition hover:bg-card hover:ring-primary/40",
+          compare.has(detailSlug) && "text-primary ring-primary/40",
+        )}
+        aria-label={compare.has(detailSlug) ? "Remove from compare" : "Add to compare"}
+        aria-pressed={compare.has(detailSlug)}
+      >
+        <GitCompare className="h-4 w-4" />
+      </button>
+
       <motion.button
         onClick={handleWishlist}
         whileTap={reduce ? undefined : { scale: 0.88 }}
