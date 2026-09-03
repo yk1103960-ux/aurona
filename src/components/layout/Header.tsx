@@ -1,9 +1,43 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, Heart, ShoppingCart, User, ChevronDown, ImageIcon, ChevronRight, Lightbulb, Lamp, LampCeiling, LampDesk, LampFloor, Sun, Zap, Bath, Fan, Wind, Flame, Droplets, LayoutPanelTop, Grid3x3, TreePine, Sparkles, Globe, PhoneCall, HelpCircle, Mail, Facebook, Instagram, Linkedin, Youtube, Twitter, X } from "lucide-react";
+import {
+  Menu,
+  Search,
+  Heart,
+  ShoppingCart,
+  User,
+  ChevronDown,
+  ImageIcon,
+  ChevronRight,
+  Lightbulb,
+  Lamp,
+  LampCeiling,
+  LampDesk,
+  LampFloor,
+  Sun,
+  Zap,
+  Bath,
+  Fan,
+  Wind,
+  Flame,
+  Droplets,
+  LayoutPanelTop,
+  Grid3x3,
+  TreePine,
+  Sparkles,
+  Globe,
+  PhoneCall,
+  HelpCircle,
+  Mail,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Twitter,
+  X,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { careersQuery, jobAnchor } from "@/lib/careers";
-
 
 const BROWSE_ICONS: Record<string, LucideIcon> = {
   "led-bulbs": Lightbulb,
@@ -33,7 +67,14 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { useSessionRole } from "@/lib/role-routing";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { categoriesQuery, browseProductsByCategoryQuery, searchSuggestQuery, type Category, type BrowseProduct, type SearchSuggestion } from "@/lib/queries";
+import {
+  categoriesQuery,
+  browseProductsByCategoryQuery,
+  searchSuggestQuery,
+  type Category,
+  type BrowseProduct,
+  type SearchSuggestion,
+} from "@/lib/queries";
 import { siteSettingsQuery } from "@/lib/settings";
 
 import { inr, discountPct } from "@/lib/format";
@@ -108,7 +149,6 @@ const LED_COLUMNS: MegaGroup[][] = [
     },
   ],
 
-
   [
     {
       heading: "Concealed Lights",
@@ -151,7 +191,6 @@ const LED_COLUMNS: MegaGroup[][] = [
     },
   ],
 ];
-
 
 // Home Appliances mega menu — fan sub-categories stay grouped together.
 const APPLIANCE_COLUMNS: MegaGroup[][] = [
@@ -247,7 +286,6 @@ const APPLIANCE_COLUMNS: MegaGroup[][] = [
   ],
 ];
 
-
 // Category slug -> product family links, shared by the desktop mega menu and the mobile drawer.
 const FAMILIES_BY_CATEGORY: Record<string, MegaItem[]> = Object.fromEntries(
   [...LED_COLUMNS, ...APPLIANCE_COLUMNS]
@@ -273,8 +311,111 @@ export function Header() {
   const scrolled = useScrolled(12);
   const { data: cats = [] } = useQuery({ ...categoriesQuery, initialData: [] as Category[] });
   const { data: settings } = useQuery(siteSettingsQuery);
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(() => {
+    if (typeof window === "undefined") return "en";
+    return localStorage.getItem("aurona-language") || "en";
+  });
 
+  // Load Google Website Translator once. The visible Aurona language selector
+  // below controls the hidden Google Translate selector so the whole site,
+  // including page content outside Header.tsx, can switch English ↔ Hindi.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const win = window as typeof window & {
+      google?: {
+        translate?: {
+          TranslateElement?: new (
+            options: {
+              pageLanguage: string;
+              includedLanguages: string;
+              autoDisplay: boolean;
+            },
+            elementId: string,
+          ) => unknown;
+        };
+      };
+      googleTranslateElementInit?: () => void;
+      __auronaGoogleTranslateReady?: boolean;
+    };
+
+    const initGoogleTranslate = () => {
+      const TranslateElement = win.google?.translate?.TranslateElement;
+      if (!TranslateElement || win.__auronaGoogleTranslateReady) return;
+
+      new TranslateElement(
+        {
+          pageLanguage: "en",
+          includedLanguages: "en,hi",
+          autoDisplay: false,
+        },
+        "google_translate_element",
+      );
+
+      win.__auronaGoogleTranslateReady = true;
+
+      // Apply the language already saved by the customer after the Google
+      // selector has been created.
+      window.setTimeout(() => {
+        const saved = localStorage.getItem("aurona-language") || "en";
+        const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+        if (combo && combo.value !== saved) {
+          combo.value = saved;
+          combo.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }, 250);
+    };
+
+    win.googleTranslateElementInit = initGoogleTranslate;
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[src*="translate.google.com/translate_a/element.js"]',
+    );
+
+    if (existingScript) {
+      initGoogleTranslate();
+      existingScript.addEventListener("load", initGoogleTranslate, { once: true });
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  const changeLanguage = (nextLang: string) => {
+    setLang(nextLang);
+
+    if (typeof window === "undefined") return;
+
+    localStorage.setItem("aurona-language", nextLang);
+    document.documentElement.lang = nextLang;
+
+    // Google Translate sometimes needs a moment to create its hidden select,
+    // so retry briefly instead of failing on the first click.
+    let attempts = 0;
+    const apply = () => {
+      const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+
+      if (combo) {
+        combo.value = nextLang;
+        combo.dispatchEvent(new Event("change", { bubbles: true }));
+        return;
+      }
+
+      attempts += 1;
+      if (attempts < 15) window.setTimeout(apply, 200);
+    };
+
+    apply();
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("aurona-language", lang);
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => setOpenMobile(false), [pathname]);
   useEffect(() => setOpenMenu(null), [pathname]);
@@ -299,16 +440,33 @@ export function Header() {
       )}
       onMouseLeave={() => setOpenMenu(null)}
     >
+      <div
+        id="google_translate_element"
+        aria-hidden="true"
+        className="pointer-events-none fixed -left-[9999px] top-0 h-px w-px overflow-hidden opacity-0"
+      />
+
       {/* Utility strip — helpline, language, social, quick links */}
-      <div className={cn("hidden overflow-hidden border-b border-primary/8 bg-gradient-to-r from-primary via-[oklch(0.52_0.13_248)] to-primary text-primary-foreground transition-all duration-500 lg:block", scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100")}>
+      <div
+        className={cn(
+          "hidden overflow-hidden border-b border-primary/8 bg-gradient-to-r from-primary via-[oklch(0.52_0.13_248)] to-primary text-primary-foreground transition-all duration-500 lg:block",
+          scrolled ? "max-h-0 opacity-0" : "max-h-12 opacity-100",
+        )}
+      >
         <div className="container-x flex h-9 items-center justify-between text-[11.5px] font-medium tracking-[0.04em]">
           <div className="flex items-center gap-5">
-            <a href={`tel:${(settings?.support_phone ?? "").replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+            <a
+              href={`tel:${(settings?.support_phone ?? "").replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80"
+            >
               <PhoneCall className="h-3.5 w-3.5" strokeWidth={2} />
               Helpline: {settings?.support_phone ?? "+91 96025 70026"}
             </a>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
-            <a href={`mailto:${settings?.support_email ?? ""}`} className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
+            <a
+              href={`mailto:${settings?.support_email ?? ""}`}
+              className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80"
+            >
               <Mail className="h-3.5 w-3.5" strokeWidth={2} />
               {settings?.support_email ?? "support@auronalighting.com"}
             </a>
@@ -319,7 +477,7 @@ export function Header() {
               <select
                 aria-label="Language"
                 value={lang}
-                onChange={(e) => setLang(e.target.value)}
+                onChange={(e) => changeLanguage(e.target.value)}
                 className="cursor-pointer rounded-md bg-transparent text-[11.5px] font-semibold text-primary-foreground outline-none [&>option]:text-foreground"
               >
                 <option value="en">English</option>
@@ -327,25 +485,36 @@ export function Header() {
               </select>
             </div>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
-            <Link to="/contact" className="transition-opacity hover:opacity-80">Contact Us</Link>
+            <Link to="/contact" className="transition-opacity hover:opacity-80">
+              Contact Us
+            </Link>
             <Link to="/faq" className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
               <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} /> FAQs
             </Link>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
             <div className="flex items-center gap-2.5">
-              {([
-                [settings?.social_youtube, Youtube, "YouTube"],
-                [settings?.social_facebook, Facebook, "Facebook"],
-                [settings?.social_instagram, Instagram, "Instagram"],
-                [settings?.social_linkedin, Linkedin, "LinkedIn"],
-                [settings?.social_twitter, Twitter, "X"],
-              ] as [string | undefined, LucideIcon, string][])
+              {(
+                [
+                  [settings?.social_youtube, Youtube, "YouTube"],
+                  [settings?.social_facebook, Facebook, "Facebook"],
+                  [settings?.social_instagram, Instagram, "Instagram"],
+                  [settings?.social_linkedin, Linkedin, "LinkedIn"],
+                  [settings?.social_twitter, Twitter, "X"],
+                ] as [string | undefined, LucideIcon, string][]
+              )
                 .filter(([href]) => Boolean(href) && href !== "#")
                 .map(([href, Icn, label]) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="transition-transform hover:-translate-y-0.5 hover:text-gold">
-                  <Icn className="h-3.5 w-3.5" strokeWidth={2} />
-                </a>
-              ))}
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="transition-transform hover:-translate-y-0.5 hover:text-gold"
+                  >
+                    <Icn className="h-3.5 w-3.5" strokeWidth={2} />
+                  </a>
+                ))}
             </div>
           </div>
         </div>
@@ -354,107 +523,101 @@ export function Header() {
       {/* Main bar — deep navy so the white brand mark reads cleanly */}
 
       <div className="bg-nav text-nav-foreground">
-      <div
-        className={cn(
-          "container-x flex items-center justify-between transition-[height] duration-500 lg:gap-6 xl:gap-8",
-          scrolled ? "h-[68px] lg:h-[76px]" : "h-[76px] lg:h-[92px]",
-        )}
-      >
-        {/* Left: hamburger (mobile) + logo cluster */}
-        <div className="flex min-w-0 flex-1 items-center gap-2 lg:min-w-max lg:flex-none lg:shrink-0 lg:gap-3">
-          <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-            <SheetTrigger asChild>
-              <button
-                className="press -ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 sm:-ml-2 sm:h-10 sm:w-10 lg:hidden"
-                aria-label="Menu"
-              >
-                <Menu className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
-              </button>
+        <div
+          className={cn(
+            "container-x flex items-center justify-between transition-[height] duration-500 lg:gap-6 xl:gap-8",
+            scrolled ? "h-[68px] lg:h-[76px]" : "h-[76px] lg:h-[92px]",
+          )}
+        >
+          {/* Left: hamburger (mobile) + logo cluster */}
+          <div className="flex min-w-0 flex-1 items-center gap-2 lg:min-w-max lg:flex-none lg:shrink-0 lg:gap-3">
+            <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+              <SheetTrigger asChild>
+                <button
+                  className="press -ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-nav-foreground transition-colors hover:bg-white/10 sm:-ml-2 sm:h-10 sm:w-10 lg:hidden"
+                  aria-label="Menu"
+                >
+                  <Menu className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2} />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
+                <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
+              </SheetContent>
+            </Sheet>
+            <Link
+              to="/"
+              className="flex min-w-0 flex-1 items-center justify-center px-1 py-1 lg:min-w-max lg:flex-none lg:shrink-0 lg:justify-start lg:pl-0 lg:pr-3"
+              aria-label="Aurona — Go Fearless in the Dark"
+            >
+              <img
+                src={auronaLogoWhite.url}
+                alt="Aurona — Go Fearless in the Dark"
+                className={cn(
+                  "w-auto shrink-0 object-contain object-left transition-[height,max-width] duration-500",
+                  scrolled
+                    ? "h-7 max-w-[140px] lg:h-12 lg:max-w-[320px]"
+                    : "h-8 max-w-[160px] lg:h-[62px] lg:max-w-[380px]",
+                )}
+              />
+            </Link>
+          </div>
 
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[86vw] max-w-sm border-border bg-background p-0 text-foreground">
-              <MobileMenu onClose={() => setOpenMobile(false)} cats={cats} />
-            </SheetContent>
-          </Sheet>
-          <Link
-            to="/"
-            className="flex min-w-0 flex-1 items-center justify-center px-1 py-1 lg:min-w-max lg:flex-none lg:shrink-0 lg:justify-start lg:pl-0 lg:pr-3"
-            aria-label="Aurona — Go Fearless in the Dark"
-          >
-            <img
-              src={auronaLogoWhite.url}
-              alt="Aurona — Go Fearless in the Dark"
-              className={cn(
-                "w-auto shrink-0 object-contain object-left transition-[height,max-width] duration-500",
-                scrolled
-                  ? "h-7 max-w-[140px] lg:h-12 lg:max-w-[320px]"
-                  : "h-8 max-w-[160px] lg:h-[62px] lg:max-w-[380px]",
-              )}
-            />
-          </Link>
+          {/* Center: large search with live suggestions */}
+          <div className="hidden min-w-0 flex-1 justify-center px-4 lg:flex xl:px-8">
+            <SearchBox value={q} onChange={setQ} onSubmit={submit} />
+          </div>
 
-        </div>
-
-
-        {/* Center: large search with live suggestions */}
-        <div className="hidden min-w-0 flex-1 justify-center px-4 lg:flex xl:px-8">
-          <SearchBox value={q} onChange={setQ} onSubmit={submit} />
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
-          <Link
-            to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"}
-            className="group hidden items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 transition-all hover:border-white/45 hover:bg-white/15 lg:inline-flex"
-          >
-            <User className="h-[18px] w-[18px]" strokeWidth={1.9} />
-            <span className="flex flex-col leading-none">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-70">
-                {sessionRole.signedIn ? sessionRole.label : "Account"}
+          {/* Right: actions */}
+          <div className="flex shrink-0 items-center justify-end gap-1 lg:gap-3 xl:gap-4">
+            <Link
+              to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"}
+              className="group hidden items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 transition-all hover:border-white/45 hover:bg-white/15 lg:inline-flex"
+            >
+              <User className="h-[18px] w-[18px]" strokeWidth={1.9} />
+              <span className="flex flex-col leading-none">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-70">
+                  {sessionRole.signedIn ? sessionRole.label : "Account"}
+                </span>
+                <span className="mt-0.5 text-[12.5px] font-bold">
+                  {sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Login / Register"}
+                </span>
               </span>
-              <span className="mt-0.5 text-[12.5px] font-bold">
-                {sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Login / Register"}
-              </span>
-            </span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => setOpenSearch(true)}
-            className="grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 active:scale-90 lg:hidden"
-            aria-label="Search"
-          >
-            <Search className="h-4 w-4" strokeWidth={2.5} />
-          </button>
-          <Link
-            to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"}
-            className="hidden h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
-            aria-label="Account"
-          >
-            <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
-          </Link>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setOpenSearch(true)}
+              className="grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 active:scale-90 lg:hidden"
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+            <Link
+              to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"}
+              className="hidden h-10 w-10 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid lg:hidden"
+              aria-label="Account"
+            >
+              <User className="h-[19px] w-[19px]" strokeWidth={1.75} />
+            </Link>
 
-          <Link
-            to="/wishlist"
-            className="relative hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid"
-            aria-label="Wishlist"
-          >
-            <Heart className="h-[19px] w-[19px]" strokeWidth={1.75} />
-            {wl.count > 0 && <Badge count={wl.count} />}
-          </Link>
-          <Link
-            to="/cart"
-            className="press relative -mr-1 grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:-mr-2 sm:h-10 sm:w-10 lg:mr-0 lg:h-11 lg:w-11"
-            aria-label="Cart"
-          >
-            <ShoppingCart className="h-5 w-5 lg:h-[19px] lg:w-[19px]" strokeWidth={2} />
-            {cart.count > 0 && <Badge count={cart.count} />}
-          </Link>
-
+            <Link
+              to="/wishlist"
+              className="relative hidden h-11 w-11 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:grid"
+              aria-label="Wishlist"
+            >
+              <Heart className="h-[19px] w-[19px]" strokeWidth={1.75} />
+              {wl.count > 0 && <Badge count={wl.count} />}
+            </Link>
+            <Link
+              to="/cart"
+              className="press relative -mr-1 grid h-9 w-9 place-items-center rounded-full transition-all hover:bg-white/10 hover:scale-105 sm:-mr-2 sm:h-10 sm:w-10 lg:mr-0 lg:h-11 lg:w-11"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="h-5 w-5 lg:h-[19px] lg:w-[19px]" strokeWidth={2} />
+              {cart.count > 0 && <Badge count={cart.count} />}
+            </Link>
+          </div>
         </div>
-
       </div>
-      </div>
-
 
       {/* Desktop nav row */}
       <nav className="hidden border-t border-primary/8 lg:block">
@@ -470,9 +633,21 @@ export function Header() {
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/products">All Products</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <MegaTrigger label="Home Appliances" isOpen={openMenu === "appliance"} onOpen={() => setOpenMenu("appliance")} onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))} onAnchor={setApplianceAnchor} />
+            <MegaTrigger
+              label="Home Appliances"
+              isOpen={openMenu === "appliance"}
+              onOpen={() => setOpenMenu("appliance")}
+              onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))}
+              onAnchor={setApplianceAnchor}
+            />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <MegaTrigger label="LED Lightings" isOpen={openMenu === "led"} onOpen={() => setOpenMenu("led")} onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))} onAnchor={setLedAnchor} />
+            <MegaTrigger
+              label="LED Lightings"
+              isOpen={openMenu === "led"}
+              onOpen={() => setOpenMenu("led")}
+              onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))}
+              onAnchor={setLedAnchor}
+            />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/affiliate">Affiliate With Us</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
@@ -482,12 +657,12 @@ export function Header() {
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <NavItem to="/about">About Us</NavItem>
             <span className="mx-1.5 hidden h-4 w-px shrink-0 bg-primary/15 2xl:block" aria-hidden />
-            <NavItem to="/contact" className="hidden 2xl:inline-block">Contact Us</NavItem>
+            <NavItem to="/contact" className="hidden 2xl:inline-block">
+              Contact Us
+            </NavItem>
           </div>
         </div>
       </nav>
-
-
 
       {/* Mega menu panels — desktop */}
       <MegaPanel
@@ -505,12 +680,7 @@ export function Header() {
         onLeave={() => setOpenMenu(null)}
       />
       {openMenu === "browse" && (
-        <BrowsePanel
-          open
-          onEnter={() => setOpenMenu("browse")}
-          onLeave={() => setOpenMenu(null)}
-          cats={cats}
-        />
+        <BrowsePanel open onEnter={() => setOpenMenu("browse")} onLeave={() => setOpenMenu(null)} cats={cats} />
       )}
 
       {/* Mobile inline search — appears once scrolled */}
@@ -543,7 +713,10 @@ export function Header() {
               <SearchBox
                 value={q}
                 onChange={setQ}
-                onSubmit={(e) => { setOpenSearch(false); submit(e); }}
+                onSubmit={(e) => {
+                  setOpenSearch(false);
+                  submit(e);
+                }}
                 autoFocus
                 inputId="aurona-search-input-mobile"
               />
@@ -555,14 +728,12 @@ export function Header() {
   );
 }
 
-
 /** Career With Us — dynamic dropdown of published openings (hover on desktop, tap on mobile). */
 function CareerMenu() {
   const [open, setOpen] = useState(false);
   const { data: jobs = [] } = useQuery(careersQuery);
   const openings = jobs.filter((j) => j.kind === "job");
   const referrals = jobs.filter((j) => j.kind !== "job");
-
 
   return (
     <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
@@ -585,7 +756,11 @@ function CareerMenu() {
             Open positions
           </div>
           {openings.length === 0 ? (
-            <Link to="/careers" onClick={() => setOpen(false)} className="block rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-surface">
+            <Link
+              to="/careers"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-surface"
+            >
               No openings right now — view programs
             </Link>
           ) : (
@@ -643,7 +818,6 @@ function CareerMenu() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
@@ -681,7 +855,6 @@ function MobileCareers({ onClose }: { onClose: () => void }) {
       </div>
     </details>
   );
-
 }
 
 function NavItem({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) {
@@ -742,8 +915,12 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
       </div>
 
       <div className="scrollbar-visible flex-1 overflow-y-auto p-2">
-        <MobileLink to="/" onClose={onClose}>Home</MobileLink>
-        <MobileLink to="/products" onClose={onClose}>All Products</MobileLink>
+        <MobileLink to="/" onClose={onClose}>
+          Home
+        </MobileLink>
+        <MobileLink to="/products" onClose={onClose}>
+          All Products
+        </MobileLink>
         {groups.map((g) => (
           <details key={g} className="group border-t border-border">
             <summary className="flex cursor-pointer items-center justify-between px-3 py-3 text-sm font-semibold">
@@ -751,43 +928,55 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
               <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
             </summary>
             <div className="pb-2">
-              {cats.filter((c) => c.parent_group === g).map((c) => (
-                <div key={c.id} className="px-3 py-1.5">
-                  <Link
-                    to="/category/$slug"
-                    params={{ slug: c.slug }}
-                    onClick={onClose}
-                    className="block py-1 text-[13px] font-semibold text-foreground"
-                  >
-                    {c.name}
-                  </Link>
-                  {(FAMILIES_BY_CATEGORY[c.slug] ?? []).length > 0 && (
-                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 border-l border-border pl-3">
-                      {FAMILIES_BY_CATEGORY[c.slug]!.map((it) => (
-                        <Link
-                          key={it.slug}
-                          to="/products/$slug"
-                          params={{ slug: it.slug }}
-                          onClick={onClose}
-                          className="text-[12.5px] text-muted-foreground hover:text-primary"
-                        >
-                          {it.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {cats
+                .filter((c) => c.parent_group === g)
+                .map((c) => (
+                  <div key={c.id} className="px-3 py-1.5">
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: c.slug }}
+                      onClick={onClose}
+                      className="block py-1 text-[13px] font-semibold text-foreground"
+                    >
+                      {c.name}
+                    </Link>
+                    {(FAMILIES_BY_CATEGORY[c.slug] ?? []).length > 0 && (
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 border-l border-border pl-3">
+                        {FAMILIES_BY_CATEGORY[c.slug]!.map((it) => (
+                          <Link
+                            key={it.slug}
+                            to="/products/$slug"
+                            params={{ slug: it.slug }}
+                            onClick={onClose}
+                            className="text-[12.5px] text-muted-foreground hover:text-primary"
+                          >
+                            {it.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           </details>
         ))}
         <div className="mt-2 border-t border-border">
-          <MobileLink to="/affiliate" onClose={onClose}>Affiliate With Us</MobileLink>
+          <MobileLink to="/affiliate" onClose={onClose}>
+            Affiliate With Us
+          </MobileLink>
           <MobileCareers onClose={onClose} />
-          <MobileLink to="/blogs" onClose={onClose}>Blogs</MobileLink>
-          <MobileLink to="/about" onClose={onClose}>About Us</MobileLink>
-          <MobileLink to="/contact" onClose={onClose}>Contact Us</MobileLink>
-          <MobileLink to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"} onClose={onClose}>{sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Sign In / Register"}</MobileLink>
+          <MobileLink to="/blogs" onClose={onClose}>
+            Blogs
+          </MobileLink>
+          <MobileLink to="/about" onClose={onClose}>
+            About Us
+          </MobileLink>
+          <MobileLink to="/contact" onClose={onClose}>
+            Contact Us
+          </MobileLink>
+          <MobileLink to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"} onClose={onClose}>
+            {sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Sign In / Register"}
+          </MobileLink>
         </div>
       </div>
     </div>
@@ -844,10 +1033,12 @@ function MegaTrigger({
       >
         <span className="relative">
           {label}
-          <span className={cn(
-            "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
-            isOpen ? "w-full" : "w-0 group-hover:w-full",
-          )} />
+          <span
+            className={cn(
+              "pointer-events-none absolute -bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-primary transition-all duration-300",
+              isOpen ? "w-full" : "w-0 group-hover:w-full",
+            )}
+          />
         </span>
         <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
       </button>
@@ -886,9 +1077,7 @@ function MegaPanel({
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-
         <div className="grid min-h-[268px] max-h-[70vh] grid-cols-5 items-start gap-x-5 gap-y-4 overflow-y-auto px-6 py-5">
-
           {columns.map((col, ci) => (
             <div key={ci} className="min-w-0 space-y-3">
               {col.map((group, gi) => (
@@ -908,7 +1097,9 @@ function MegaPanel({
                           params={{ slug: item.slug }}
                           className="group/mi block text-[12px] leading-tight text-foreground/70 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
-                          <span className="border-b border-transparent group-hover/mi:border-primary/40">{item.label}</span>
+                          <span className="border-b border-transparent group-hover/mi:border-primary/40">
+                            {item.label}
+                          </span>
                         </Link>
                       </li>
                     ))}
@@ -949,7 +1140,6 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
         Browse Categories
         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
-
     </div>
   );
 }
@@ -1006,7 +1196,6 @@ function BrowsePanel({
     }
   }, [products, hoverProduct]);
 
-
   return (
     <div
       className={cn(
@@ -1031,7 +1220,10 @@ function BrowsePanel({
                   <button
                     key={c.slug}
                     type="button"
-                    onMouseEnter={() => { setActiveSlug(c.slug); setHoverProduct(null); }}
+                    onMouseEnter={() => {
+                      setActiveSlug(c.slug);
+                      setHoverProduct(null);
+                    }}
                     className={cn(
                       "flex w-full items-center gap-3 border-b border-border px-5 py-3.5 text-left text-[14px] font-semibold uppercase tracking-[0.06em] transition-colors",
                       isActive
@@ -1039,7 +1231,10 @@ function BrowsePanel({
                         : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
                     )}
                   >
-                    <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-primary" : "text-foreground/45")} strokeWidth={1.6} />
+                    <Icon
+                      className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-primary" : "text-foreground/45")}
+                      strokeWidth={1.6}
+                    />
                     <span className="flex-1 truncate">{c.name}</span>
                     <ChevronRight className={cn("h-4 w-4 shrink-0", isActive ? "opacity-70" : "opacity-30")} />
                   </button>
@@ -1048,7 +1243,6 @@ function BrowsePanel({
             </div>
           ))}
         </div>
-
 
         {/* Middle: products in active category */}
         <div className="scrollbar-visible max-h-[70vh] overflow-y-auto border-r border-border bg-white">
@@ -1077,9 +1271,7 @@ function BrowsePanel({
                   ))}
                 </div>
               ) : products.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">
-                  No products yet in this category.
-                </div>
+                <div className="py-10 text-center text-sm text-muted-foreground">No products yet in this category.</div>
               ) : (
                 <ul>
                   {products.map((p) => {
@@ -1104,12 +1296,18 @@ function BrowsePanel({
                               iconClassName="h-5 w-5"
                             />
                           </span>
-                          <span className={cn("min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug", isHovered ? "text-primary" : "text-foreground/90")}>
+                          <span
+                            className={cn(
+                              "min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug",
+                              isHovered ? "text-primary" : "text-foreground/90",
+                            )}
+                          >
                             {p.name}
                           </span>
-                          <ChevronRight className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")} />
+                          <ChevronRight
+                            className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")}
+                          />
                         </Link>
-
                       </li>
                     );
                   })}
@@ -1138,7 +1336,12 @@ function BrowsePanel({
                     </span>
                   )}
                   <ProductImage
-                    product={{ slug: hoverProduct.slug, name: hoverProduct.name, image_seed: hoverProduct.image_seed, image_url: hoverProduct.image_url }}
+                    product={{
+                      slug: hoverProduct.slug,
+                      name: hoverProduct.name,
+                      image_seed: hoverProduct.image_seed,
+                      image_url: hoverProduct.image_url,
+                    }}
                     className="h-full w-full"
                     categoryIcon={activeCat?.icon ?? null}
                     eager
@@ -1150,9 +1353,7 @@ function BrowsePanel({
                   </div>
                 ) : null}
                 {hoverProduct.price ? (
-                  <div className="mt-1 text-center text-[24px] font-bold text-primary">
-                    {inr(hoverProduct.price)}
-                  </div>
+                  <div className="mt-1 text-center text-[24px] font-bold text-primary">{inr(hoverProduct.price)}</div>
                 ) : null}
                 <Link
                   to="/products/$slug"
@@ -1179,15 +1380,24 @@ function BrowsePanel({
             )}
           </div>
         </div>
-
-
       </div>
     </div>
   );
 }
 
-
-function SearchBox({ value, onChange, onSubmit, autoFocus = false, inputId = "aurona-search-input" }: { value: string; onChange: (v: string) => void; onSubmit: (e: React.FormEvent) => void; autoFocus?: boolean; inputId?: string }) {
+function SearchBox({
+  value,
+  onChange,
+  onSubmit,
+  autoFocus = false,
+  inputId = "aurona-search-input",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  autoFocus?: boolean;
+  inputId?: string;
+}) {
   const [focused, setFocused] = useState(autoFocus);
   const [debounced, setDebounced] = useState(value);
   const box = useRef<HTMLDivElement>(null);
@@ -1211,9 +1421,17 @@ function SearchBox({ value, onChange, onSubmit, autoFocus = false, inputId = "au
 
   return (
     <div ref={box} className="relative w-full max-w-[720px]">
-      <form onSubmit={(e) => { setFocused(false); onSubmit(e); }}>
+      <form
+        onSubmit={(e) => {
+          setFocused(false);
+          onSubmit(e);
+        }}
+      >
         <div className="relative">
-          <Search className="pointer-events-none absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-primary/70" strokeWidth={2} />
+          <Search
+            className="pointer-events-none absolute left-5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-primary/70"
+            strokeWidth={2}
+          />
           <Input
             id={inputId}
             value={value}
@@ -1237,7 +1455,9 @@ function SearchBox({ value, onChange, onSubmit, autoFocus = false, inputId = "au
         <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
           {isFetching && results.length === 0 ? (
             <div className="space-y-3 p-4">
-              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-primary/5" />)}
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-primary/5" />
+              ))}
             </div>
           ) : results.length === 0 ? (
             <div className="px-5 py-6 text-sm text-muted-foreground">No products match “{debounced}”.</div>
@@ -1255,12 +1475,16 @@ function SearchBox({ value, onChange, onSubmit, autoFocus = false, inputId = "au
                         className="flex items-center gap-3 border-b border-border/70 px-4 py-3 transition-colors last:border-0 hover:bg-primary/5"
                       >
                         <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
-                          <ProductImage product={{ slug: r.slug, name: r.name, image_seed: r.image_seed }} className="h-full w-full" />
+                          <ProductImage
+                            product={{ slug: r.slug, name: r.name, image_seed: r.image_seed }}
+                            className="h-full w-full"
+                          />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13.5px] font-semibold text-foreground">{r.name}</span>
                           <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                            SKU {r.sku}{r.wattage ? ` · ${r.wattage}` : ""}
+                            SKU {r.sku}
+                            {r.wattage ? ` · ${r.wattage}` : ""}
                           </span>
                         </span>
                         <span className="shrink-0 text-right">
@@ -1269,15 +1493,17 @@ function SearchBox({ value, onChange, onSubmit, autoFocus = false, inputId = "au
                               <span className="block text-[14px] font-bold text-primary">{inr(r.price)}</span>
                               {off > 0 && (
                                 <span className="block text-[11px] text-muted-foreground">
-                                  <s>{inr(r.mrp ?? 0)}</s> <span className="font-semibold text-emerald-600">{off}% off</span>
+                                  <s>{inr(r.mrp ?? 0)}</s>{" "}
+                                  <span className="font-semibold text-emerald-600">{off}% off</span>
                                 </span>
                               )}
                             </>
                           ) : (
-                            <span className="block text-[11.5px] font-semibold text-muted-foreground">Price on request</span>
+                            <span className="block text-[11.5px] font-semibold text-muted-foreground">
+                              Price on request
+                            </span>
                           )}
                         </span>
-
                       </Link>
                     </li>
                   );
