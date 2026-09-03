@@ -1101,12 +1101,12 @@ function BrowsePanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="grid w-full max-w-[1500px] grid-cols-[260px_minmax(0,1fr)_320px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
+      <div className="grid w-full grid-cols-[260px_minmax(0,1fr)_300px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
         {/* Left: dynamic category list with icons */}
-        <div className="scrollbar-visible h-[280px] max-h-[38vh] overflow-y-auto border-r border-border bg-white py-0">
+        <div className="scrollbar-visible h-[260px] max-h-[34vh] overflow-y-auto border-r border-border bg-white py-0">
           {groups.map((g) => (
             <div key={g.key}>
-              <div className="border-b border-border bg-surface/60 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
+              <div className="border-b border-border bg-surface/60 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
                 {g.label}
               </div>
               {g.items.map((c) => {
@@ -1121,7 +1121,7 @@ function BrowsePanel({
                       setHoverProduct(null);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-3 border-b border-border px-4 py-2 text-left text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors",
+                      "flex w-full items-center gap-3 border-b border-border px-4 py-1.5 text-left text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors",
                       isActive
                         ? "bg-primary/8 text-primary"
                         : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
@@ -1141,10 +1141,10 @@ function BrowsePanel({
         </div>
 
         {/* Middle: products in active category */}
-        <div className="scrollbar-visible h-[280px] max-h-[38vh] overflow-y-auto border-r border-border bg-white">
+        <div className="scrollbar-visible h-[260px] max-h-[34vh] overflow-y-auto border-r border-border bg-white">
           {activeCat ? (
             <>
-              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-4 py-1.5">
+              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-4 py-1">
                 <Link
                   to="/category/$slug"
                   params={{ slug: activeCat.slug }}
@@ -1182,11 +1182,11 @@ function BrowsePanel({
                           params={{ slug: targetSlug }}
                           onMouseEnter={() => setHoverProduct(p)}
                           className={cn(
-                            "flex items-center gap-3 border-b border-gray-200 px-3 py-1 transition-colors",
+                            "flex items-center gap-3 border-b border-gray-200 px-2.5 py-1 transition-colors",
                             isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                           )}
                         >
-                          <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
+                          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
                             <ProductImage
                               product={{ slug: p.slug, name: p.name, image_seed: p.image_seed, image_url: p.image_url }}
                               className="h-full w-full object-contain"
@@ -1221,13 +1221,13 @@ function BrowsePanel({
 
         {/* Right: hovered product preview */}
         <div className="bg-white">
-          <div className="truncate bg-nav px-5 py-2.5 text-center text-[12px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
+          <div className="truncate bg-nav px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
             {hoverProduct?.name ?? activeCat?.name ?? t("Product")}
           </div>
-          <div className="grid h-[234px] max-h-[calc(38vh-40px)] place-items-center overflow-y-auto p-4">
+          <div className="grid h-[218px] max-h-[calc(34vh-36px)] place-items-center overflow-y-auto p-4">
             {hoverProduct ? (
               <div className="w-full">
-                <div className="relative mx-auto aspect-square w-full max-w-[130px] overflow-hidden rounded-xl border border-border bg-white p-1.5 shadow-sm">
+                <div className="relative mx-auto aspect-square w-full max-w-[120px] overflow-hidden rounded-xl border border-border bg-white p-1.5 shadow-sm">
                   {discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0) > 0 && (
                     <span className="absolute left-3 top-3 z-10 rounded-md bg-primary px-2 py-1 text-[12px] font-bold text-primary-foreground">
                       -{discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0)}%
