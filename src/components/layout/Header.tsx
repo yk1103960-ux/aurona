@@ -1095,187 +1095,189 @@ function BrowsePanel({
   return (
     <div
       className={cn(
-        "container-x pointer-events-none absolute inset-x-0 top-full hidden origin-top pt-1 transition-all duration-300 lg:block",
+        "pointer-events-none absolute inset-x-0 top-full hidden origin-top pt-1 transition-all duration-300 lg:block",
         open ? "pointer-events-auto opacity-100 translate-y-0" : "opacity-0 -translate-y-3",
       )}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="grid w-full grid-cols-[260px_minmax(0,1fr)_300px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
-        {/* Left: dynamic category list with icons */}
-        <div className="scrollbar-visible h-[260px] max-h-[34vh] overflow-y-auto border-r border-border bg-white py-0">
-          {groups.map((g) => (
-            <div key={g.key}>
-              <div className="border-b border-border bg-surface/60 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
-                {g.label}
-              </div>
-              {g.items.map((c) => {
-                const Icon = BROWSE_ICONS[c.slug] ?? Lightbulb;
-                const isActive = activeSlug === c.slug;
-                return (
-                  <button
-                    key={c.slug}
-                    type="button"
-                    onMouseEnter={() => {
-                      setActiveSlug(c.slug);
-                      setHoverProduct(null);
-                    }}
-                    className={cn(
-                      "flex w-full items-center gap-3 border-b border-border px-4 py-1.5 text-left text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors",
-                      isActive
-                        ? "bg-primary/8 text-primary"
-                        : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
-                    )}
-                  >
-                    <Icon
-                      className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-foreground/45")}
-                      strokeWidth={1.6}
-                    />
-                    <span className="flex-1 truncate">{c.name}</span>
-                    <ChevronRight className={cn("h-4 w-4 shrink-0", isActive ? "opacity-70" : "opacity-30")} />
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Middle: products in active category */}
-        <div className="scrollbar-visible h-[260px] max-h-[34vh] overflow-y-auto border-r border-border bg-white">
-          {activeCat ? (
-            <>
-              <div className="flex items-center justify-between border-b border-border bg-surface/60 px-4 py-1">
-                <Link
-                  to="/category/$slug"
-                  params={{ slug: activeCat.slug }}
-                  className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
-                >
-                  {activeCat.name}
-                </Link>
-                <Link
-                  to="/category/$slug"
-                  params={{ slug: activeCat.slug }}
-                  className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
-                >
-                  {t("View all results")} →
-                </Link>
-              </div>
-              {isLoading ? (
-                <div className="space-y-3 p-6">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-5 animate-pulse rounded bg-primary/5" />
-                  ))}
+      <div className="mx-auto max-w-[1500px] px-4">
+        <div className="grid w-full grid-cols-[280px_minmax(0,1fr)_320px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
+          {/* Left: dynamic category list with icons */}
+          <div className="scrollbar-visible h-[440px] max-h-[58vh] overflow-y-auto border-r border-border bg-white py-0">
+            {groups.map((g) => (
+              <div key={g.key}>
+                <div className="border-b border-border bg-surface/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
+                  {g.label}
                 </div>
-              ) : products.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">
-                  {t("No products yet in this category.")}
-                </div>
-              ) : (
-                <ul>
-                  {products.map((p) => {
-                    const targetSlug = p.family_slug ?? p.slug;
-                    const isHovered = hoverProduct?.slug === p.slug;
-                    return (
-                      <li key={p.slug}>
-                        <Link
-                          to="/products/$slug"
-                          params={{ slug: targetSlug }}
-                          onMouseEnter={() => setHoverProduct(p)}
-                          className={cn(
-                            "flex items-center gap-3 border-b border-gray-200 px-2.5 py-1 transition-colors",
-                            isHovered ? "bg-primary/8" : "hover:bg-primary/5",
-                          )}
-                        >
-                          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
-                            <ProductImage
-                              product={{ slug: p.slug, name: p.name, image_seed: p.image_seed, image_url: p.image_url }}
-                              className="h-full w-full object-contain"
-                              categoryIcon={activeCat?.icon ?? null}
-                              iconClassName="h-8 w-8"
-                            />
-                          </span>
-                          <span
-                            className={cn(
-                              "min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug",
-                              isHovered ? "text-primary" : "text-foreground/90",
-                            )}
-                          >
-                            {p.name}
-                          </span>
-                          <ChevronRight
-                            className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")}
-                          />
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </>
-          ) : (
-            <div className="grid h-full place-items-center text-sm text-muted-foreground">
-              {t("Hover over a category to see products")}
-            </div>
-          )}
-        </div>
-
-        {/* Right: hovered product preview */}
-        <div className="bg-white">
-          <div className="truncate bg-nav px-4 py-2 text-center text-[12px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
-            {hoverProduct?.name ?? activeCat?.name ?? t("Product")}
+                {g.items.map((c) => {
+                  const Icon = BROWSE_ICONS[c.slug] ?? Lightbulb;
+                  const isActive = activeSlug === c.slug;
+                  return (
+                    <button
+                      key={c.slug}
+                      type="button"
+                      onMouseEnter={() => {
+                        setActiveSlug(c.slug);
+                        setHoverProduct(null);
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-3 border-b border-border px-3 py-1.5 text-left text-[12px] font-semibold uppercase tracking-[0.06em] transition-colors",
+                        isActive
+                          ? "bg-primary/8 text-primary"
+                          : "text-foreground/85 hover:bg-primary/5 hover:text-primary",
+                      )}
+                    >
+                      <Icon
+                        className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "text-foreground/45")}
+                        strokeWidth={1.6}
+                      />
+                      <span className="flex-1 truncate">{c.name}</span>
+                      <ChevronRight className={cn("h-4 w-4 shrink-0", isActive ? "opacity-70" : "opacity-30")} />
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-          <div className="grid h-[218px] max-h-[calc(34vh-36px)] place-items-center overflow-y-auto p-4">
-            {hoverProduct ? (
-              <div className="w-full">
-                <div className="relative mx-auto aspect-square w-full max-w-[120px] overflow-hidden rounded-xl border border-border bg-white p-1.5 shadow-sm">
-                  {discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0) > 0 && (
-                    <span className="absolute left-3 top-3 z-10 rounded-md bg-primary px-2 py-1 text-[12px] font-bold text-primary-foreground">
-                      -{discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0)}%
-                    </span>
-                  )}
-                  <ProductImage
-                    product={{
-                      slug: hoverProduct.slug,
-                      name: hoverProduct.name,
-                      image_seed: hoverProduct.image_seed,
-                      image_url: hoverProduct.image_url,
-                    }}
-                    className="h-full w-full object-contain"
-                    categoryIcon={activeCat?.icon ?? null}
-                    eager
-                  />
-                </div>
-                {hoverProduct.mrp && discountPct(hoverProduct.mrp, hoverProduct.price ?? 0) > 0 ? (
-                  <div className="mt-3 text-center text-[13px] text-muted-foreground">
-                    M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
-                  </div>
-                ) : null}
-                {hoverProduct.price ? (
-                  <div className="mt-1 text-center text-[24px] font-bold text-primary">{inr(hoverProduct.price)}</div>
-                ) : null}
-                <Link
-                  to="/products/$slug"
-                  params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
-                  className="mt-3 block rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition hover:brightness-110"
-                >
-                  {t("View product")}
-                </Link>
-                {activeCat && (
+
+          {/* Middle: products in active category */}
+          <div className="scrollbar-visible h-[440px] max-h-[58vh] overflow-y-auto border-r border-border bg-white">
+            {activeCat ? (
+              <>
+                <div className="flex items-center justify-between border-b border-border bg-surface/60 px-3 py-1">
                   <Link
                     to="/category/$slug"
                     params={{ slug: activeCat.slug }}
-                    className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
+                    className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80 hover:text-primary"
                   >
-                    View all {activeCat.name} →
+                    {activeCat.name}
                   </Link>
+                  <Link
+                    to="/category/$slug"
+                    params={{ slug: activeCat.slug }}
+                    className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
+                  >
+                    {t("View all results")} →
+                  </Link>
+                </div>
+                {isLoading ? (
+                  <div className="space-y-3 p-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-5 animate-pulse rounded bg-primary/5" />
+                    ))}
+                  </div>
+                ) : products.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    {t("No products yet in this category.")}
+                  </div>
+                ) : (
+                  <ul>
+                    {products.map((p) => {
+                      const targetSlug = p.family_slug ?? p.slug;
+                      const isHovered = hoverProduct?.slug === p.slug;
+                      return (
+                        <li key={p.slug}>
+                          <Link
+                            to="/products/$slug"
+                            params={{ slug: targetSlug }}
+                            onMouseEnter={() => setHoverProduct(p)}
+                            className={cn(
+                              "flex items-center gap-3 border-b border-gray-200 px-3 py-2 transition-colors",
+                              isHovered ? "bg-primary/8" : "hover:bg-primary/5",
+                            )}
+                          >
+                            <span className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
+                              <ProductImage
+                                product={{ slug: p.slug, name: p.name, image_seed: p.image_seed, image_url: p.image_url }}
+                                className="h-full w-full object-contain"
+                                categoryIcon={activeCat?.icon ?? null}
+                                iconClassName="h-8 w-8"
+                              />
+                            </span>
+                            <span
+                              className={cn(
+                                "min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug",
+                                isHovered ? "text-primary" : "text-foreground/90",
+                              )}
+                            >
+                              {p.name}
+                            </span>
+                            <ChevronRight
+                              className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")}
+                            />
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
-              </div>
+              </>
             ) : (
-              <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
-                <ImageIcon className="h-10 w-10" strokeWidth={1.4} />
-                <span className="text-sm">{t("Hover over a product to see details")}</span>
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                {t("Hover over a category to see products")}
               </div>
             )}
+          </div>
+
+          {/* Right: hovered product preview */}
+          <div className="bg-white">
+            <div className="truncate bg-nav px-3 py-2 text-center text-[12px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
+              {hoverProduct?.name ?? activeCat?.name ?? t("Product")}
+            </div>
+            <div className="grid h-[400px] max-h-[calc(58vh-40px)] place-items-center overflow-y-auto p-4">
+              {hoverProduct ? (
+                <div className="w-full">
+                  <div className="relative mx-auto aspect-square w-full max-w-[160px] overflow-hidden rounded-xl border border-border bg-white p-2 shadow-sm">
+                    {discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0) > 0 && (
+                      <span className="absolute left-3 top-3 z-10 rounded-md bg-primary px-2 py-1 text-[12px] font-bold text-primary-foreground">
+                        -{discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0)}%
+                      </span>
+                    )}
+                    <ProductImage
+                      product={{
+                        slug: hoverProduct.slug,
+                        name: hoverProduct.name,
+                        image_seed: hoverProduct.image_seed,
+                        image_url: hoverProduct.image_url,
+                      }}
+                      className="h-full w-full object-contain"
+                      categoryIcon={activeCat?.icon ?? null}
+                      eager
+                    />
+                  </div>
+                  {hoverProduct.mrp && discountPct(hoverProduct.mrp, hoverProduct.price ?? 0) > 0 ? (
+                    <div className="mt-3 text-center text-[13px] text-muted-foreground">
+                      M.R.P.: <s>{inr(hoverProduct.mrp)}</s>
+                    </div>
+                  ) : null}
+                  {hoverProduct.price ? (
+                    <div className="mt-1 text-center text-[24px] font-bold text-primary">{inr(hoverProduct.price)}</div>
+                  ) : null}
+                  <Link
+                    to="/products/$slug"
+                    params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
+                    className="mt-3 block rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition hover:brightness-110"
+                  >
+                    {t("View product")}
+                  </Link>
+                  {activeCat && (
+                    <Link
+                      to="/category/$slug"
+                      params={{ slug: activeCat.slug }}
+                      className="mt-2 block text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:text-gold"
+                    >
+                      View all {activeCat.name} →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+                  <ImageIcon className="h-10 w-10" strokeWidth={1.4} />
+                  <span className="text-sm">{t("Hover over a product to see details")}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
