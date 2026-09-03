@@ -192,7 +192,7 @@ function Home() {
       <GoogleReviews />
 
       {/* ============ CTA — partner ============ */}
-      <section className="container-x py-10 lg:py-14">
+      <section className="container-x pt-10 pb-2 lg:pt-14 lg:pb-4">
         <div className="relative overflow-hidden rounded-3xl border border-border bg-primary p-8 text-primary-foreground sm:p-14 lg:p-20">
           <div
             className="orb-float absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/25 blur-3xl"
