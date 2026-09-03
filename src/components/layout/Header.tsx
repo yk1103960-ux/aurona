@@ -1101,10 +1101,10 @@ function BrowsePanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="mx-auto max-w-[1500px] px-4">
-        <div className="grid w-full grid-cols-[280px_minmax(0,1fr)_320px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
+      <div className="mx-auto max-w-[1200px] px-4">
+        <div className="grid w-full grid-cols-[248px_minmax(0,1fr)_300px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
           {/* Left: dynamic category list with icons */}
-          <div className="scrollbar-visible h-[440px] max-h-[58vh] overflow-y-auto border-r border-border bg-white py-0">
+          <div className="scrollbar-visible h-[330px] max-h-[52vh] overflow-y-auto border-r border-border bg-white py-0">
             {groups.map((g) => (
               <div key={g.key}>
                 <div className="border-b border-border bg-surface/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground/80">
@@ -1142,7 +1142,7 @@ function BrowsePanel({
           </div>
 
           {/* Middle: products in active category */}
-          <div className="scrollbar-visible h-[440px] max-h-[58vh] overflow-y-auto border-r border-border bg-white">
+          <div className="scrollbar-visible h-[330px] max-h-[52vh] overflow-y-auto border-r border-border bg-white">
             {activeCat ? (
               <>
                 <div className="flex items-center justify-between border-b border-border bg-surface/60 px-3 py-1">
@@ -1233,7 +1233,7 @@ function BrowsePanel({
             <div className="truncate bg-nav px-3 py-2 text-center text-[12px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
               {hoverProduct?.name ?? activeCat?.name ?? t("Product")}
             </div>
-            <div className="grid h-[400px] max-h-[calc(58vh-40px)] place-items-center overflow-y-auto p-4">
+            <div className="grid h-[290px] max-h-[calc(52vh-40px)] place-items-center overflow-y-auto p-4">
               {hoverProduct ? (
                 <div className="w-full">
                   <div className="relative mx-auto aspect-square w-full max-w-[160px] overflow-hidden rounded-xl border border-border bg-white p-2 shadow-sm">
