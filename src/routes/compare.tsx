@@ -103,7 +103,9 @@ function ComparePage() {
 
   const familyIds = rows.map((p) => p.family_id).filter((id): id is string => typeof id === "string" && id.length > 0);
 
-  const { data: compareImages = [] } = useQuery(compareProductImagesQuery(productIds, familyIds));
+  const skus = rows.map((p) => p.sku).filter((s): s is string => typeof s === "string" && s.length > 0);
+
+  const { data: compareImages = [] } = useQuery(compareProductImagesQuery(productIds, familyIds, skus));
 
   const getSpecText = (p: Product, key: string) => {
     const raw = (p as unknown as Record<string, unknown>)[key];
