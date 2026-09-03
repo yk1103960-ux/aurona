@@ -68,7 +68,6 @@ export function ProductCard({
   const stock = Number(product.stock ?? 0);
   const lowStock = stock > 0 && stock <= 8;
   const outOfStock = stock <= 0;
-  const spec = product.wattage ?? product.size ?? null;
 
   const handleAdd = () => {
     cart.add.mutate(
@@ -161,9 +160,6 @@ export function ProductCard({
       <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</span>
-          {spec && (
-            <span className="rounded-md bg-primary/8 px-1.5 py-0.5 text-[10px] font-bold text-primary">{spec}</span>
-          )}
           {product.color && (
             <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
               {product.color}
