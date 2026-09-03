@@ -1186,12 +1186,12 @@ function BrowsePanel({
                             isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                           )}
                         >
-                          <span className="grid h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-surface/60">
+                          <span className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-white p-1.5 shadow-sm">
                             <ProductImage
                               product={{ slug: p.slug, name: p.name, image_seed: p.image_seed, image_url: p.image_url }}
-                              className="h-full w-full"
+                              className="h-full w-full object-contain"
                               categoryIcon={activeCat?.icon ?? null}
-                              iconClassName="h-5 w-5"
+                              iconClassName="h-8 w-8"
                             />
                           </span>
                           <span
@@ -1227,7 +1227,7 @@ function BrowsePanel({
           <div className="grid h-[calc(70vh-46px)] place-items-center p-5">
             {hoverProduct ? (
               <div className="w-full">
-                <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-surface/60">
+                <div className="relative mx-auto aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-sm">
                   {discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0) > 0 && (
                     <span className="absolute left-3 top-3 z-10 rounded-md bg-primary px-2 py-1 text-[12px] font-bold text-primary-foreground">
                       -{discountPct(hoverProduct.mrp ?? 0, hoverProduct.price ?? 0)}%
@@ -1240,7 +1240,7 @@ function BrowsePanel({
                       image_seed: hoverProduct.image_seed,
                       image_url: hoverProduct.image_url,
                     }}
-                    className="h-full w-full"
+                    className="h-full w-full object-contain"
                     categoryIcon={activeCat?.icon ?? null}
                     eager
                   />
