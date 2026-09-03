@@ -1183,16 +1183,21 @@ function BrowsePanel({
                             params={{ slug: targetSlug }}
                             onMouseEnter={() => setHoverProduct(p)}
                             className={cn(
-                              "flex items-center gap-3 border-b border-gray-200 px-3 py-2 transition-colors",
+                              "flex items-center gap-2 border-b border-gray-200 px-3 py-1.5 transition-colors",
                               isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                             )}
                           >
-                            <span className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
+                            <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
                               <ProductImage
-                                product={{ slug: p.slug, name: p.name, image_seed: p.image_seed, image_url: p.image_url }}
+                                product={{
+                                  slug: p.slug,
+                                  name: p.name,
+                                  image_seed: p.image_seed,
+                                  image_url: p.image_url,
+                                }}
                                 className="h-full w-full object-contain"
                                 categoryIcon={activeCat?.icon ?? null}
-                                iconClassName="h-8 w-8"
+                                iconClassName="h-6 w-6"
                               />
                             </span>
                             <span
@@ -1204,7 +1209,10 @@ function BrowsePanel({
                               {p.name}
                             </span>
                             <ChevronRight
-                              className={cn("h-3.5 w-3.5 shrink-0", isHovered ? "text-primary opacity-80" : "opacity-25")}
+                              className={cn(
+                                "h-3.5 w-3.5 shrink-0",
+                                isHovered ? "text-primary opacity-80" : "opacity-25",
+                              )}
                             />
                           </Link>
                         </li>
