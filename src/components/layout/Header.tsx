@@ -82,6 +82,7 @@ import { ProductImage } from "@/components/product/ProductImage";
 import { cn } from "@/lib/utils";
 import { useScrolled } from "@/hooks/useScrolled";
 import auronaLogoWhite from "@/assets/aurona-logo-white.png.asset.json";
+import { useI18n } from "@/lib/i18n";
 
 // Mega menu — every item links to the real product family page (verified slugs).
 type MegaItem = { label: string; slug: string };
@@ -311,111 +312,7 @@ export function Header() {
   const scrolled = useScrolled(12);
   const { data: cats = [] } = useQuery({ ...categoriesQuery, initialData: [] as Category[] });
   const { data: settings } = useQuery(siteSettingsQuery);
-  const [lang, setLang] = useState(() => {
-    if (typeof window === "undefined") return "en";
-    return localStorage.getItem("aurona-language") || "en";
-  });
-
-  // Load Google Website Translator once. The visible Aurona language selector
-  // below controls the hidden Google Translate selector so the whole site,
-  // including page content outside Header.tsx, can switch English ↔ Hindi.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const win = window as typeof window & {
-      google?: {
-        translate?: {
-          TranslateElement?: new (
-            options: {
-              pageLanguage: string;
-              includedLanguages: string;
-              autoDisplay: boolean;
-            },
-            elementId: string,
-          ) => unknown;
-        };
-      };
-      googleTranslateElementInit?: () => void;
-      __auronaGoogleTranslateReady?: boolean;
-    };
-
-    const initGoogleTranslate = () => {
-      const TranslateElement = win.google?.translate?.TranslateElement;
-      if (!TranslateElement || win.__auronaGoogleTranslateReady) return;
-
-      new TranslateElement(
-        {
-          pageLanguage: "en",
-          includedLanguages: "en,hi",
-          autoDisplay: false,
-        },
-        "google_translate_element",
-      );
-
-      win.__auronaGoogleTranslateReady = true;
-
-      // Apply the language already saved by the customer after the Google
-      // selector has been created.
-      window.setTimeout(() => {
-        const saved = localStorage.getItem("aurona-language") || "en";
-        const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-        if (combo && combo.value !== saved) {
-          combo.value = saved;
-          combo.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      }, 250);
-    };
-
-    win.googleTranslateElementInit = initGoogleTranslate;
-
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      'script[src*="translate.google.com/translate_a/element.js"]',
-    );
-
-    if (existingScript) {
-      initGoogleTranslate();
-      existingScript.addEventListener("load", initGoogleTranslate, { once: true });
-    } else {
-      const script = document.createElement("script");
-      script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  const changeLanguage = (nextLang: string) => {
-    setLang(nextLang);
-
-    if (typeof window === "undefined") return;
-
-    localStorage.setItem("aurona-language", nextLang);
-    document.documentElement.lang = nextLang;
-
-    // Google Translate sometimes needs a moment to create its hidden select,
-    // so retry briefly instead of failing on the first click.
-    let attempts = 0;
-    const apply = () => {
-      const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-
-      if (combo) {
-        combo.value = nextLang;
-        combo.dispatchEvent(new Event("change", { bubbles: true }));
-        return;
-      }
-
-      attempts += 1;
-      if (attempts < 15) window.setTimeout(apply, 200);
-    };
-
-    apply();
-  };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("aurona-language", lang);
-    document.documentElement.lang = lang;
-  }, [lang]);
+  const { language, setLanguage, t } = useI18n();
 
   useEffect(() => setOpenMobile(false), [pathname]);
   useEffect(() => setOpenMenu(null), [pathname]);
@@ -440,12 +337,6 @@ export function Header() {
       )}
       onMouseLeave={() => setOpenMenu(null)}
     >
-      <div
-        id="google_translate_element"
-        aria-hidden="true"
-        className="pointer-events-none fixed -left-[9999px] top-0 h-px w-px overflow-hidden opacity-0"
-      />
-
       {/* Utility strip — helpline, language, social, quick links */}
       <div
         className={cn(
@@ -460,7 +351,7 @@ export function Header() {
               className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80"
             >
               <PhoneCall className="h-3.5 w-3.5" strokeWidth={2} />
-              Helpline: {settings?.support_phone ?? "+91 96025 70026"}
+              {t("Helpline")}: {settings?.support_phone ?? "+91 96025 70026"}
             </a>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
             <a
@@ -476,8 +367,8 @@ export function Header() {
               <Globe className="h-3.5 w-3.5" strokeWidth={2} />
               <select
                 aria-label="Language"
-                value={lang}
-                onChange={(e) => changeLanguage(e.target.value)}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as "en" | "hi")}
                 className="cursor-pointer rounded-md bg-transparent text-[11.5px] font-semibold text-primary-foreground outline-none [&>option]:text-foreground"
               >
                 <option value="en">English</option>
@@ -486,10 +377,10 @@ export function Header() {
             </div>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
             <Link to="/contact" className="transition-opacity hover:opacity-80">
-              Contact Us
+              {t("Contact Us")}
             </Link>
             <Link to="/faq" className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80">
-              <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} /> FAQs
+              <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} /> {t("FAQs")}
             </Link>
             <span className="h-3 w-px bg-primary-foreground/25" aria-hidden />
             <div className="flex items-center gap-2.5">
@@ -576,10 +467,10 @@ export function Header() {
               <User className="h-[18px] w-[18px]" strokeWidth={1.9} />
               <span className="flex flex-col leading-none">
                 <span className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-70">
-                  {sessionRole.signedIn ? sessionRole.label : "Account"}
+                  {sessionRole.signedIn ? sessionRole.label : t("Account")}
                 </span>
                 <span className="mt-0.5 text-[12.5px] font-bold">
-                  {sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Login / Register"}
+                  {sessionRole.signedIn ? `My ${sessionRole.label} Account` : t("Login / Register")}
                 </span>
               </span>
             </Link>
@@ -629,12 +520,12 @@ export function Header() {
           />
           <span className="mx-3 h-5 w-px shrink-0 bg-primary/15" aria-hidden />
           <div className="flex min-w-0 flex-1 items-center justify-start gap-0.5">
-            <NavItem to="/">Home</NavItem>
+            <NavItem to="/">{t("Home")}</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <NavItem to="/products">All Products</NavItem>
+            <NavItem to="/products">{t("All Products")}</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <MegaTrigger
-              label="Home Appliances"
+              label={t("Home Appliances")}
               isOpen={openMenu === "appliance"}
               onOpen={() => setOpenMenu("appliance")}
               onToggle={() => setOpenMenu((v) => (v === "appliance" ? null : "appliance"))}
@@ -642,23 +533,23 @@ export function Header() {
             />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <MegaTrigger
-              label="LED Lightings"
+              label={t("LED Lightings")}
               isOpen={openMenu === "led"}
               onOpen={() => setOpenMenu("led")}
               onToggle={() => setOpenMenu((v) => (v === "led" ? null : "led"))}
               onAnchor={setLedAnchor}
             />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <NavItem to="/affiliate">Affiliate With Us</NavItem>
+            <NavItem to="/affiliate">{t("Affiliate With Us")}</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
             <CareerMenu />
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <NavItem to="/blogs">Blogs</NavItem>
+            <NavItem to="/blogs">{t("Blogs")}</NavItem>
             <span className="mx-1.5 h-4 w-px shrink-0 bg-primary/15" aria-hidden />
-            <NavItem to="/about">About Us</NavItem>
+            <NavItem to="/about">{t("About Us")}</NavItem>
             <span className="mx-1.5 hidden h-4 w-px shrink-0 bg-primary/15 2xl:block" aria-hidden />
             <NavItem to="/contact" className="hidden 2xl:inline-block">
-              Contact Us
+              {t("Contact Us")}
             </NavItem>
           </div>
         </div>
@@ -692,7 +583,7 @@ export function Header() {
             className="flex h-11 w-full items-center gap-3 rounded-full border border-primary/15 bg-white px-4 text-left text-[13px] text-muted-foreground"
           >
             <Search className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            Search premium lighting…
+            {t("Search premium lighting…")}
           </button>
         </div>
       )}
@@ -730,6 +621,7 @@ export function Header() {
 
 /** Career With Us — dynamic dropdown of published openings (hover on desktop, tap on mobile). */
 function CareerMenu() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const { data: jobs = [] } = useQuery(careersQuery);
   const openings = jobs.filter((j) => j.kind === "job");
@@ -747,13 +639,13 @@ function CareerMenu() {
           open ? "text-primary" : "text-foreground/85 hover:text-primary",
         )}
       >
-        Career With Us
+        {t("Career With Us")}
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} strokeWidth={2.5} />
       </button>
       {open && (
         <div className="absolute left-0 top-full z-50 w-64 overflow-hidden rounded-lg border border-border bg-card p-1 shadow-lift">
           <div className="px-2.5 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-            Open positions
+            {t("Open positions")}
           </div>
           {openings.length === 0 ? (
             <Link
@@ -783,7 +675,7 @@ function CareerMenu() {
           {referrals.length > 0 && (
             <>
               <div className="mt-0.5 border-t border-border px-2.5 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                Partner programs
+                {t("Partner programs")}
               </div>
               {referrals.map((r) => (
                 <Link
@@ -805,7 +697,7 @@ function CareerMenu() {
               onClick={() => setOpen(false)}
               className="block px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-surface"
             >
-              All careers & referral programs
+              {t("All careers & referral programs")}
             </Link>
             <Link
               to="/partner/$type"
@@ -813,7 +705,7 @@ function CareerMenu() {
               onClick={() => setOpen(false)}
               className="block px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-surface"
             >
-              Apply / submit your profile
+              {t("Apply / submit your profile")}
             </Link>
           </div>
         </div>
@@ -823,11 +715,12 @@ function CareerMenu() {
 }
 
 function MobileCareers({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
   const { data: jobs = [] } = useQuery(careersQuery);
   return (
     <details className="border-t border-border">
       <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-semibold">
-        Career With Us <ChevronDown className="h-4 w-4" />
+        {t("Career With Us")} <ChevronDown className="h-4 w-4" />
       </summary>
       <div className="pb-1.5">
         {jobs.map((j) => (
@@ -842,7 +735,7 @@ function MobileCareers({ onClose }: { onClose: () => void }) {
           </Link>
         ))}
         <Link to="/careers" onClick={onClose} className="block px-5 py-1 text-xs font-semibold text-primary">
-          All careers &amp; referral programs
+          {t("All careers & referral programs")}
         </Link>
         <Link
           to="/partner/$type"
@@ -850,7 +743,7 @@ function MobileCareers({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           className="block px-5 py-1 text-xs font-semibold text-primary"
         >
-          Apply / submit your profile
+          {t("Apply / submit your profile")}
         </Link>
       </div>
     </details>
@@ -900,11 +793,12 @@ function Badge({ count }: { count: number }) {
 }
 
 function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }) {
+  const { t } = useI18n();
   const groups = ["led-lighting", "fans", "home-appliances"] as const;
   const groupLabel: Record<string, string> = {
-    "led-lighting": "LED Lightings",
-    fans: "Fans",
-    "home-appliances": "Home Appliances",
+    "led-lighting": t("LED Lightings"),
+    fans: t("Fans"),
+    "home-appliances": t("Home Appliances"),
   };
   const { user } = useAuth();
   const sessionRole = useSessionRole();
@@ -916,10 +810,10 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
 
       <div className="scrollbar-visible flex-1 overflow-y-auto p-2">
         <MobileLink to="/" onClose={onClose}>
-          Home
+          {t("Home")}
         </MobileLink>
         <MobileLink to="/products" onClose={onClose}>
-          All Products
+          {t("All Products")}
         </MobileLink>
         {groups.map((g) => (
           <details key={g} className="group border-t border-border">
@@ -962,20 +856,20 @@ function MobileMenu({ onClose, cats }: { onClose: () => void; cats: Category[] }
         ))}
         <div className="mt-2 border-t border-border">
           <MobileLink to="/affiliate" onClose={onClose}>
-            Affiliate With Us
+            {t("Affiliate With Us")}
           </MobileLink>
           <MobileCareers onClose={onClose} />
           <MobileLink to="/blogs" onClose={onClose}>
-            Blogs
+            {t("Blogs")}
           </MobileLink>
           <MobileLink to="/about" onClose={onClose}>
-            About Us
+            {t("About Us")}
           </MobileLink>
           <MobileLink to="/contact" onClose={onClose}>
             Contact Us
           </MobileLink>
           <MobileLink to={sessionRole.signedIn ? sessionRole.dashboardPath : "/auth"} onClose={onClose}>
-            {sessionRole.signedIn ? `My ${sessionRole.label} Account` : "Sign In / Register"}
+            {sessionRole.signedIn ? `My ${sessionRole.label} Account` : t("Sign In / Register")}
           </MobileLink>
         </div>
       </div>
@@ -1124,6 +1018,7 @@ function MegaPanel({
 }
 
 function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: () => void; onToggle: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="relative" onMouseEnter={onOpen}>
       <button
@@ -1137,7 +1032,7 @@ function BrowseTrigger({ isOpen, onOpen, onToggle }: { isOpen: boolean; onOpen: 
         )}
       >
         <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
-        Browse Categories
+        {t("Browse Categories")}
         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
     </div>
@@ -1155,6 +1050,7 @@ function BrowsePanel({
   onLeave: () => void;
   cats: Category[];
 }) {
+  const { t } = useI18n();
   const [activeSlug, setActiveSlug] = useState<string>("");
   const [hoverProduct, setHoverProduct] = useState<BrowseProduct | null>(null);
 
@@ -1174,10 +1070,10 @@ function BrowsePanel({
       map.get(g)!.push(c);
     }
     const labels: Record<string, string> = {
-      "led-lighting": "LED Lightings",
-      fans: "Fans",
-      "home-appliances": "Home Appliances",
-      other: "More",
+      "led-lighting": t("LED Lightings"),
+      fans: t("Fans"),
+      "home-appliances": t("Home Appliances"),
+      other: t("More"),
     };
     return Array.from(map.entries()).map(([key, items]) => ({
       key,
@@ -1261,7 +1157,7 @@ function BrowsePanel({
                   params={{ slug: activeCat.slug }}
                   className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary"
                 >
-                  View all results →
+                  {t("View all results")} →
                 </Link>
               </div>
               {isLoading ? (
@@ -1271,7 +1167,9 @@ function BrowsePanel({
                   ))}
                 </div>
               ) : products.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">No products yet in this category.</div>
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  {t("No products yet in this category.")}
+                </div>
               ) : (
                 <ul>
                   {products.map((p) => {
@@ -1316,7 +1214,7 @@ function BrowsePanel({
             </>
           ) : (
             <div className="grid h-full place-items-center text-sm text-muted-foreground">
-              Hover over a category to see products
+              {t("Hover over a category to see products")}
             </div>
           )}
         </div>
@@ -1324,7 +1222,7 @@ function BrowsePanel({
         {/* Right: hovered product preview */}
         <div className="bg-white">
           <div className="truncate bg-nav px-5 py-3 text-center text-[12.5px] font-bold uppercase tracking-[0.16em] text-nav-foreground">
-            {hoverProduct?.name ?? activeCat?.name ?? "Product"}
+            {hoverProduct?.name ?? activeCat?.name ?? t("Product")}
           </div>
           <div className="grid h-[calc(70vh-46px)] place-items-center p-5">
             {hoverProduct ? (
@@ -1360,7 +1258,7 @@ function BrowsePanel({
                   params={{ slug: hoverProduct.family_slug ?? hoverProduct.slug }}
                   className="mt-4 block rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-5 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground transition hover:brightness-110"
                 >
-                  View product
+                  {t("View product")}
                 </Link>
                 {activeCat && (
                   <Link
@@ -1375,7 +1273,7 @@ function BrowsePanel({
             ) : (
               <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
                 <ImageIcon className="h-10 w-10" strokeWidth={1.4} />
-                <span className="text-sm">Hover over a product to see details</span>
+                <span className="text-sm">{t("Hover over a product to see details")}</span>
               </div>
             )}
           </div>
@@ -1398,6 +1296,7 @@ function SearchBox({
   autoFocus?: boolean;
   inputId?: string;
 }) {
+  const { t } = useI18n();
   const [focused, setFocused] = useState(autoFocus);
   const [debounced, setDebounced] = useState(value);
   const box = useRef<HTMLDivElement>(null);
@@ -1438,7 +1337,7 @@ function SearchBox({
             onChange={(e) => onChange(e.target.value)}
             onFocus={() => setFocused(true)}
             autoFocus={autoFocus}
-            placeholder="Search LED bulbs, panel lights, ceiling fans, geysers or SKU…"
+            placeholder={t("Search premium lighting…")}
             className="h-[52px] rounded-full border-primary/20 bg-white pl-[52px] pr-[112px] text-[14px] font-medium text-foreground shadow-[0_2px_14px_-10px_oklch(0.55_0.14_240/0.55)] placeholder:font-normal placeholder:text-muted-foreground focus-visible:border-primary/45 focus-visible:ring-primary/25"
             autoComplete="off"
           />
@@ -1446,7 +1345,7 @@ function SearchBox({
             type="submit"
             className="absolute right-2 top-1/2 grid h-9 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-r from-primary to-[oklch(0.52_0.13_248)] px-6 text-[11px] font-bold uppercase tracking-[0.18em] text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.97]"
           >
-            Search
+            {t("Search")}
           </button>
         </div>
       </form>
