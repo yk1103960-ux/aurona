@@ -1183,11 +1183,11 @@ function BrowsePanel({
                             params={{ slug: targetSlug }}
                             onMouseEnter={() => setHoverProduct(p)}
                             className={cn(
-                              "flex items-center gap-2 border-b border-gray-200 px-3 py-1.5 transition-colors",
+                              "flex items-center gap-2 border-b border-gray-200 px-3 py-1 transition-colors",
                               isHovered ? "bg-primary/8" : "hover:bg-primary/5",
                             )}
                           >
-                            <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
+                            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-white p-1 shadow-sm">
                               <ProductImage
                                 product={{
                                   slug: p.slug,
