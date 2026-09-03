@@ -102,15 +102,14 @@ export function ProductCard({
         className="relative block overflow-hidden bg-gradient-to-b from-white via-white to-sky-50/40"
         aria-label={product.name}
       >
-        <ProductImage
-          product={product}
-          categoryIcon={icon}
-          className={cn(
-            "aspect-square w-full transform-gpu transition-transform duration-[800ms] ease-out will-change-transform group-hover:scale-[1.07]",
-            compact && "aspect-[5/4]",
-          )}
-          iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
-        />
+        <div className={cn("aspect-square w-full overflow-hidden bg-white p-3 sm:p-4", compact && "aspect-square")}>
+          <ProductImage
+            product={product}
+            categoryIcon={icon}
+            className="h-full w-full object-contain transform-gpu transition-transform duration-[800ms] ease-out will-change-transform group-hover:scale-[1.04]"
+            iconClassName={compact ? "h-12 w-12" : "h-20 w-20"}
+          />
+        </div>
         <span
           className="pointer-events-none absolute inset-x-6 bottom-2 h-6 rounded-full bg-primary/15 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
           aria-hidden
