@@ -117,3 +117,7 @@ export function useLanguage() {
 
   return context;
 }
+
+export const I18nProvider = LanguageProvider;
+export const useI18n = useLanguage;
+
