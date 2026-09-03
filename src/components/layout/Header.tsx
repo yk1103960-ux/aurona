@@ -1101,7 +1101,7 @@ function BrowsePanel({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      <div className="grid w-full max-w-[1200px] grid-cols-[260px_minmax(0,1fr)_320px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
+      <div className="grid w-full max-w-[1500px] grid-cols-[260px_minmax(0,1fr)_320px] gap-0 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]">
         {/* Left: dynamic category list with icons */}
         <div className="scrollbar-visible h-[280px] max-h-[38vh] overflow-y-auto border-r border-border bg-white py-0">
           {groups.map((g) => (
