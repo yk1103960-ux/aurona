@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { translateTexts } from "@/lib/translate.functions";
 
 export type Language = "en" | "hi";
 
@@ -73,6 +74,150 @@ const translations: Record<string, string> = {
   More: "और",
 };
 
+/* ------------------------------------------------------------------ */
+/* Page-wide auto translation                                          */
+/* ------------------------------------------------------------------ */
+
+const CACHE_KEY = "aurona-translation-cache-hi";
+const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE", "TEXTAREA", "SVG", "CANVAS"]);
+const DEVANAGARI = /[\u0900-\u097F]/;
+const HAS_LETTERS = /[A-Za-z]{2,}/;
+
+let cache: Record<string, string> = { ...translations };
+let cacheLoaded = false;
+let pending = new Set<string>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let observer: MutationObserver | null = null;
+const originals = new WeakMap<Text, string>();
+
+function loadCache() {
+  if (cacheLoaded || typeof window === "undefined") return;
+  cacheLoaded = true;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) cache = { ...cache, ...(JSON.parse(raw) as Record<string, string>) };
+  } catch {
+    /* ignore corrupt cache */
+  }
+}
+
+function persistCache() {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* quota — ignore */
+  }
+}
+
+function translatable(node: Text): boolean {
+  const value = node.nodeValue ?? "";
+  const text = value.trim();
+  if (text.length < 2 || text.length > 400) return false;
+  if (!HAS_LETTERS.test(text)) return false;
+  if (DEVANAGARI.test(text)) return false;
+
+  let el = node.parentElement;
+  while (el) {
+    if (SKIP_TAGS.has(el.tagName)) return false;
+    if (el.getAttribute("data-no-translate") !== null) return false;
+    el = el.parentElement;
+  }
+  return true;
+}
+
+function applyToNode(node: Text) {
+  const value = node.nodeValue ?? "";
+  const key = value.trim();
+  const hit = cache[key];
+  if (!hit) {
+    pending.add(key);
+    return;
+  }
+  if (!originals.has(node)) originals.set(node, value);
+  const next = value.replace(key, hit);
+  if (node.nodeValue !== next) node.nodeValue = next;
+}
+
+function walk(root: Node) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  let current = walker.nextNode();
+  while (current) {
+    nodes.push(current as Text);
+    current = walker.nextNode();
+  }
+  if (root.nodeType === Node.TEXT_NODE) nodes.push(root as Text);
+  for (const node of nodes) if (translatable(node)) applyToNode(node);
+}
+
+function scheduleFlush() {
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    void flush();
+  }, 350);
+}
+
+async function flush() {
+  if (pending.size === 0) return;
+  const batch = [...pending].slice(0, 100);
+  pending = new Set([...pending].slice(100));
+
+  try {
+    const result = await translateTexts({ data: { texts: batch, target: "hi" } });
+    let changed = false;
+    for (const [source, value] of Object.entries(result)) {
+      if (value && value !== cache[source]) {
+        cache[source] = value;
+        changed = true;
+      }
+    }
+    if (changed) {
+      persistCache();
+      walk(document.body);
+    }
+  } catch {
+    /* leave English on failure */
+  }
+
+  if (pending.size > 0) scheduleFlush();
+}
+
+function startAutoTranslate() {
+  if (typeof window === "undefined" || observer) return;
+  loadCache();
+  walk(document.body);
+  scheduleFlush();
+
+  observer = new MutationObserver((records) => {
+    for (const record of records) {
+      if (record.type === "characterData") {
+        const node = record.target as Text;
+        if (translatable(node)) applyToNode(node);
+      } else {
+        record.addedNodes.forEach((added) => {
+          if (added.nodeType === Node.TEXT_NODE) {
+            if (translatable(added as Text)) applyToNode(added as Text);
+          } else if (added.nodeType === Node.ELEMENT_NODE) {
+            walk(added);
+          }
+        });
+      }
+    }
+    scheduleFlush();
+  });
+
+  observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+}
+
+function stopAutoTranslate() {
+  observer?.disconnect();
+  observer = null;
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = null;
+  pending = new Set();
+}
+
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
@@ -87,20 +232,34 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setLanguage = (nextLanguage: Language) => {
-    setLanguageState(nextLanguage);
+  useEffect(() => {
+    if (language === "hi") startAutoTranslate();
+    else stopAutoTranslate();
 
+    return () => stopAutoTranslate();
+  }, [language]);
+
+  const setLanguage = (nextLanguage: Language) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("aurona-language", nextLanguage);
       document.documentElement.lang = nextLanguage;
+
+      // Switching back to English restores the server-rendered copy cleanly.
+      if (nextLanguage === "en" && language === "hi") {
+        stopAutoTranslate();
+        window.location.reload();
+        return;
+      }
     }
+
+    setLanguageState(nextLanguage);
   };
 
   const value = useMemo(
     () => ({
       language,
       setLanguage,
-      t: (english: string) => (language === "hi" ? (translations[english] ?? english) : english),
+      t: (english: string) => (language === "hi" ? (cache[english] ?? translations[english] ?? english) : english),
     }),
     [language],
   );
@@ -120,4 +279,3 @@ export function useLanguage() {
 
 export const I18nProvider = LanguageProvider;
 export const useI18n = useLanguage;
-
