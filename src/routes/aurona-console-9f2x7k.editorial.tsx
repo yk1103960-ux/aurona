@@ -255,6 +255,13 @@ type Career = {
   closes_at: string | null;
   sort_order: number;
   is_published: boolean;
+  responsibilities: string | null;
+  requirements: string | null;
+  salary_range: string | null;
+  experience: string | null;
+  age_criteria: string | null;
+  details: string | null;
+
 };
 
 function CareersPanel() {
