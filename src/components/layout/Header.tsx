@@ -971,25 +971,28 @@ function MegaPanel({
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid h-[296px] grid-cols-5 items-start gap-x-7 gap-y-3 overflow-hidden px-8 py-3">
+        <div
+          className="grid grid-cols-5 items-start gap-x-7 overflow-hidden px-8 py-2"
+          style={{ height: "296px", overflow: "hidden" }}
+        >
           {columns.map((col, ci) => (
-            <div key={ci} className="min-w-0 space-y-2">
+            <div key={ci} className="min-w-0 space-y-1">
               {col.map((group, gi) => (
                 <div key={`${group.heading}-${gi}`}>
                   <Link
                     to="/category/$slug"
                     params={{ slug: group.slug }}
-                    className="block text-[13px] font-bold uppercase tracking-[0.13em] text-primary transition-colors hover:text-foreground"
+                    className="block text-[12.5px] font-bold uppercase tracking-[0.12em] leading-none text-primary transition-colors hover:text-foreground"
                   >
                     {group.heading}
                   </Link>
-                  <ul className="mt-1">
+                  <ul className="mt-0.5">
                     {group.items.map((item) => (
-                      <li key={item.slug} className="border-b border-gray-200">
+                      <li key={item.slug} className="m-0 border-b border-gray-200">
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className="group/mi block py-1 text-[14px] leading-[1.15] text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className="group/mi block py-[3px] text-[13px] leading-[1.05] text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">
                             {item.label}
