@@ -971,25 +971,25 @@ function MegaPanel({
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid h-[296px] max-h-[66vh] grid-cols-5 items-start gap-x-7 gap-y-5 overflow-y-auto px-8 py-4">
+        <div className="grid h-[296px] grid-cols-5 items-start gap-x-7 gap-y-3 overflow-hidden px-8 py-3">
           {columns.map((col, ci) => (
-            <div key={ci} className="min-w-0 space-y-3">
+            <div key={ci} className="min-w-0 space-y-2">
               {col.map((group, gi) => (
                 <div key={`${group.heading}-${gi}`}>
                   <Link
                     to="/category/$slug"
                     params={{ slug: group.slug }}
-                    className="block text-[14px] font-bold uppercase tracking-[0.14em] text-primary transition-colors hover:text-foreground"
+                    className="block text-[13px] font-bold uppercase tracking-[0.13em] text-primary transition-colors hover:text-foreground"
                   >
                     {group.heading}
                   </Link>
-                  <ul className="mt-2">
+                  <ul className="mt-1">
                     {group.items.map((item) => (
                       <li key={item.slug} className="border-b border-gray-200">
                         <Link
                           to="/products/$slug"
                           params={{ slug: item.slug }}
-                          className="group/mi block py-2 text-[15px] leading-snug text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
+                          className="group/mi block py-1 text-[14px] leading-[1.15] text-foreground/75 transition-all hover:translate-x-0.5 hover:text-primary"
                         >
                           <span className="border-b border-transparent group-hover/mi:border-primary/40">
                             {item.label}
