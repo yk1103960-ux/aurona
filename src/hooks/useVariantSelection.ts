@@ -11,6 +11,14 @@ function getInitialSelection(family: ProductFamily, initialSku?: string) {
   return sel;
 }
 
+/**
+ * Variant picker for sparse option matrices (e.g. Track Light, where the Lens,
+ * Glass and COB models each carry different wattages).
+ *
+ * Choosing a value never gets blocked by the current selection: we take the
+ * closest matching variant and adopt its full attribute set, so every model and
+ * every option that exists in the catalogue is actually selectable.
+ */
 export function useVariantSelection(family: ProductFamily, initialSku?: string) {
   const initial = useMemo(() => getInitialSelection(family, initialSku), [family.id, initialSku]);
 
@@ -20,26 +28,50 @@ export function useVariantSelection(family: ProductFamily, initialSku?: string) 
     setSelection(getInitialSelection(family, initialSku));
   }, [family.id, initialSku]);
 
+  const matchScore = (v: ProductVariant, sel: Record<string, string>) =>
+    family.axes.reduce((n, a) => n + ((v.attributes[a.axis_key] ?? "") === sel[a.axis_key] ? 1 : 0), 0);
+
   const variant: ProductVariant = useMemo(() => {
     if (family.axes.length === 0) return family.variants[0];
-    const match = family.variants.find((v) =>
-      family.axes.every((a) => (v.attributes[a.axis_key] ?? "") === selection[a.axis_key]),
-    );
-    return match ?? family.variants[0];
+    let best = family.variants[0];
+    let bestScore = -1;
+    for (const v of family.variants) {
+      const score = matchScore(v, selection);
+      if (score > bestScore) {
+        best = v;
+        bestScore = score;
+      }
+    }
+    return best;
   }, [family, selection]);
 
+  /** A value is offered whenever some variant in the catalogue carries it. */
   const isAvailable = (axisKey: string, value: string) =>
-    family.variants.some((v) => {
-      if (v.attributes[axisKey] !== value) return false;
-      for (const a of family.axes) {
-        if (a.axis_key === axisKey) continue;
-        if ((v.attributes[a.axis_key] ?? "") !== selection[a.axis_key]) return false;
-      }
-      return true;
-    });
+    family.variants.some((v) => (v.attributes[axisKey] ?? "") === value);
 
+  /**
+   * Set one axis and repair the rest of the selection from the best-matching
+   * variant, so the shopper always lands on a real, orderable SKU.
+   */
   const setAxis = (axisKey: string, value: string) =>
-    setSelection((s) => ({ ...s, [axisKey]: value }));
+    setSelection((s) => {
+      const wanted = { ...s, [axisKey]: value };
+      const candidates = family.variants.filter((v) => (v.attributes[axisKey] ?? "") === value);
+      if (candidates.length === 0) return wanted;
+      let best = candidates[0];
+      let bestScore = -1;
+      for (const v of candidates) {
+        const score = matchScore(v, wanted);
+        if (score > bestScore) {
+          best = v;
+          bestScore = score;
+        }
+      }
+      const next: Record<string, string> = {};
+      for (const a of family.axes) next[a.axis_key] = (best.attributes[a.axis_key] as string) ?? wanted[a.axis_key];
+      next[axisKey] = value;
+      return next;
+    });
 
   return { selection, setAxis, variant, isAvailable };
 }

@@ -58,9 +58,23 @@ function CartPage() {
   const recommended = useQuery(productsQuery({ bestseller: true, limit: 6 }));
 
   if (loading) return <PageLoading label="Loading your cart" />;
-  if (!user) return <SignInPrompt />;
   if (cart.loading && cart.items.length === 0) return <PageLoading label="Loading your cart" />;
   if (cart.items.length === 0) return <EmptyCart />;
+
+  const compareSlugs = cart.items.map((i) => i.products.slug).filter(Boolean);
+  const compareInCart = compareSlugs.filter((s) => compare.has(s));
+  const addAllToCompare = () => {
+    let slots = compare.max - compare.count;
+    for (const slug of compareSlugs) {
+      if (compare.has(slug)) continue;
+      if (slots <= 0) break;
+      compare.toggle(slug);
+      slots--;
+    }
+    navigate({ to: "/compare" });
+  };
+
+
 
   const deliveryKnown = Boolean(s.address) && s.rates.length > 0;
 
@@ -253,6 +267,31 @@ function CartPage() {
               );
             })}
           </ul>
+
+          {/* Compare from cart — uses the same comparison system as the storefront */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+            <div className="flex items-center gap-2 text-sm">
+              <Scale className="h-4 w-4 shrink-0 text-primary" />
+              <span className="font-semibold">Compare items</span>
+              <span className="text-xs text-muted-foreground">
+                {compareInCart.length > 0
+                  ? `${compareInCart.length} of these items selected (max ${compare.max})`
+                  : `Pick up to ${compare.max} items to compare specs side by side`}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="rounded-full" onClick={addAllToCompare}>
+                Compare cart items
+              </Button>
+              {compare.count > 1 && (
+                <Button asChild size="sm" className="rounded-full">
+                  <Link to="/compare">View comparison ({compare.count})</Link>
+                </Button>
+              )}
+            </div>
+          </div>
+
+
 
           <CouponBox
             code={s.couponCode}
