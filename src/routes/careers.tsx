@@ -41,6 +41,8 @@ function CareersPage() {
   const { data: jobs = [], isLoading } = useQuery(careersQuery);
   const { data: referrals = [] } = useQuery(referralProgramsQuery);
   const [applyTarget, setApplyTarget] = useState<ApplyTarget>(null);
+  const [detail, setDetail] = useState<CareerProgram | null>(null);
+  const [refDetail, setRefDetail] = useState<ReferralProgram | null>(null);
   const openings = jobs.filter((j) => j.kind === "job");
   const programs = jobs.filter((j) => j.kind !== "job");
   return (
@@ -51,7 +53,7 @@ function CareersPage() {
         We're always looking for engineers, designers, and operators who want to build serious products for modern India.
       </p>
 
-      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-12 grid gap-5 sm:grid-cols-2">
         {isLoading && <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">Loading open roles…</div>}
         {!isLoading && openings.length === 0 && (
           <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
@@ -77,25 +79,25 @@ function CareersPage() {
                 {j.department && <span>{j.department}</span>}
                 {j.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
                 {j.employment_type && <span>{j.employment_type}</span>}
+                {j.experience && <span>{j.experience}</span>}
+                {j.salary_range && <span>{j.salary_range}</span>}
                 {closeDate && (
                   <span className="flex items-center gap-1">
                     <CalendarClock className="h-3 w-3" /> {closed ? `Closed on ${closeDate}` : `Apply by ${closeDate}`}
                   </span>
                 )}
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">{j.description}</p>
-              {j.eligibility && <p className="mt-2 text-xs text-muted-foreground"><b>Eligibility:</b> {j.eligibility}</p>}
-              <div className="mt-5 pt-1">
+              <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{j.description}</p>
+              <div className="mt-auto flex flex-wrap gap-2 pt-5">
+                <Button size="sm" variant="outline" className="rounded-full" onClick={() => setDetail(j)}>
+                  Read more
+                </Button>
                 {closed ? (
                   <span className="inline-block rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
                     Applications closed
                   </span>
                 ) : (
-                  <Button
-                    size="sm"
-                    className="w-full rounded-full"
-                    onClick={() => setApplyTarget({ id: j.id, title: j.title })}
-                  >
+                  <Button size="sm" className="rounded-full" onClick={() => setApplyTarget({ id: j.id, title: j.title })}>
                     Apply now
                   </Button>
                 )}
@@ -114,7 +116,7 @@ function CareersPage() {
           program that fits you and start earning with Aurona.
         </p>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
           {programs.map((r, i) => {
             const Icon = PROGRAM_ICONS[i % PROGRAM_ICONS.length];
             const closed = isClosed(r);
@@ -131,21 +133,18 @@ function CareersPage() {
                   )}
                 </div>
                 <h3 className="text-display mt-5 text-2xl">{r.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{r.description}</p>
-                {r.eligibility && <p className="mt-2 text-xs text-muted-foreground"><b>Who can join:</b> {r.eligibility}</p>}
-                <div className="mt-auto pt-5">
+                <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{r.description}</p>
+                <div className="mt-auto flex flex-wrap gap-2 pt-5">
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setDetail(r)}>
+                    Read more
+                  </Button>
                   {closed ? (
                     <span className="inline-block rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
                       Applications closed
                     </span>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full rounded-full"
-                      onClick={() => setApplyTarget({ id: r.id, title: r.title })}
-                    >
-                      Apply for this program
+                    <Button size="sm" className="rounded-full" onClick={() => setApplyTarget({ id: r.id, title: r.title })}>
+                      Apply now
                     </Button>
                   )}
                 </div>
@@ -153,6 +152,7 @@ function CareersPage() {
             );
           })}
         </div>
+
 
 
         {referrals.length > 0 && (
