@@ -477,13 +477,15 @@ function AuthPage() {
           return toast.error(res.message);
         }
 
-        if (!("tokenHash" in res) || !res.tokenHash) {
+        const signupTokenHash = "tokenHash" in res && typeof res.tokenHash === "string" ? res.tokenHash : null;
+
+        if (!signupTokenHash) {
           setOtpSent(false);
           return toast.error("Account created, but automatic sign-in could not be completed. Please sign in.");
         }
 
         const { error } = await supabase.auth.verifyOtp({
-          token_hash: res.tokenHash,
+          token_hash: signupTokenHash,
           type: "magiclink",
         });
         if (error) {
