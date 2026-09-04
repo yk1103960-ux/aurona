@@ -159,9 +159,9 @@ function CareersPage() {
           <div className="mt-12">
             <div className="text-eyebrow">Referral rewards</div>
             <h3 className="text-display mt-2 text-3xl">Current referral programs</h3>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {referrals.map((p) => (
-                <div key={p.id} className="rounded-2xl border border-border bg-card p-5">
+                <div key={p.id} className="flex flex-col rounded-2xl border border-border bg-card p-5">
                   <div className="flex items-center justify-between gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-full bg-gold/10 text-gold">
                       <Gift className="h-4 w-4" strokeWidth={1.8} />
@@ -171,16 +171,11 @@ function CareersPage() {
                     </span>
                   </div>
                   <h4 className="mt-4 text-lg font-semibold">{p.name}</h4>
-                  {p.description && <p className="mt-1.5 text-sm text-muted-foreground">{p.description}</p>}
+                  {p.description && <p className="mt-1.5 line-clamp-3 text-sm text-muted-foreground">{p.description}</p>}
                   <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
                     {Number(p.min_order_value) > 0 && (
                       <li className="flex items-center gap-1.5">
                         <IndianRupee className="h-3 w-3" /> Minimum order ₹{Number(p.min_order_value)}
-                      </li>
-                    )}
-                    {p.eligibility && (
-                      <li className="flex items-start gap-1.5">
-                        <Users className="mt-0.5 h-3 w-3 shrink-0" /> {p.eligibility}
                       </li>
                     )}
                     {p.closes_at && (
@@ -189,10 +184,22 @@ function CareersPage() {
                       </li>
                     )}
                   </ul>
-                  {p.terms && <p className="mt-3 text-[11px] text-muted-foreground">{p.terms}</p>}
+                  <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => setRefDetail(p)}>
+                      Read more
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setApplyTarget({ id: programs[0]?.id ?? openings[0]?.id ?? "", title: p.name })}
+                    >
+                      Apply now
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
+
           </div>
         )}
 
