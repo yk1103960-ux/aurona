@@ -1,117 +1,154 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assessPassword, normalisePhone, EMAIL_RE } from "./auth-security";
-import { validateEmail } from "./email-validation";
-import { roleEmail } from "./role-identity";
+import {
+  findAuthUser,
+  generateCode,
+  hashCode,
+  hourlyQuotaExceeded,
+  OTP_EXPIRY_SECONDS,
+  OTP_MAX_ATTEMPTS,
+  OTP_RESEND_COOLDOWN,
+  safeEqual,
+  sendSms,
+  invalidateOpenChallenges,
+} from "./otp.server";
+import { assessPassword, normalisePhone } from "./auth-security";
 
-const registrationInput = z.object({
-  fullName: z.string().trim().min(3).max(80),
-  email: z.string().trim().toLowerCase().max(200),
-  phone: z.string().trim().max(20),
-  password: z.string().min(1).max(200),
-  role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
-});
-
-type Issue = { field: "fullName" | "email" | "phone" | "password"; message: string };
-
-async function hasMxRecord(domain: string): Promise<boolean> {
-  try {
-    const r = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=MX`, {
-      headers: { accept: "application/dns-json" },
-    });
-    if (!r.ok) return true; // fail-open on resolver trouble
-    const j = (await r.json()) as { Status?: number; Answer?: { type: number; data: string }[] };
-    if (j.Status === 3) return false; // NXDOMAIN
-    const mx = (j.Answer ?? []).filter((a) => a.type === 15);
-    if (mx.length > 0) return true;
-    // Some domains accept mail on the A record only.
-    const a = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`, {
-      headers: { accept: "application/dns-json" },
-    });
-    const aj = (await a.json()) as { Answer?: unknown[] };
-    return (aj.Answer ?? []).length > 0;
-  } catch {
-    return true;
-  }
-}
-
-async function emailExists(email: string): Promise<boolean> {
-  try {
-    const url = process.env["SUPABASE_URL"];
-    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-    if (!url || !key) return false;
-
-    const res = await fetch(`${url}/auth/v1/admin/users?per_page=100&filter=${encodeURIComponent(email)}`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-    });
-    if (!res.ok) return false;
-
-    const j = (await res.json()) as {
-      users?: {
-        email?: string;
-        email_confirmed_at?: string | null;
-        phone_confirmed_at?: string | null;
-      }[];
-    };
-
-    const user = (j.users ?? []).find((u) => (u.email ?? "").toLowerCase() === email.toLowerCase());
-
-    if (!user) return false;
-
-    // Only a verified account blocks a new registration.
-    // Old abandoned pre-fix users are allowed to restart OTP registration.
-    return Boolean(user.email_confirmed_at || user.phone_confirmed_at);
-  } catch {
-    return false;
-  }
-}
-
-/** Full server-side gate that must pass before an account is created. */
-export const validateRegistration = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => registrationInput.parse(input))
+/** Sends a 6-digit code by SMS to the mobile number used at registration. */
+export const sendSignupSmsOtp = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        email: z.string().trim().toLowerCase().email().max(200),
+        phone: z.string().trim().max(20),
+      })
+      .parse(input),
+  )
   .handler(async ({ data }) => {
-    const issues: Issue[] = [];
+    const p = normalisePhone(data.phone);
+    if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const phoneE164 = p.e164;
+    if (!phoneE164) return { ok: false, message: "Enter a valid mobile number." };
 
-    if (!/^[a-zA-Z][a-zA-Z .'-]{2,}$/.test(data.fullName)) {
-      issues.push({ field: "fullName", message: "Enter your real full name (letters only)." });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (await hourlyQuotaExceeded(supabaseAdmin, phoneE164)) {
+      return { ok: false, message: "Too many OTP requests for this number. Please try again after an hour." };
     }
 
-    const email = data.email;
-    const emailCheck = validateEmail(email);
-    if (!EMAIL_RE.test(email) || !emailCheck.ok) {
-      issues.push({ field: "email", message: emailCheck.reason ?? "Enter a valid email address." });
-    } else {
-      const domain = email.split("@")[1]!;
-      if (!(await hasMxRecord(domain))) {
-        issues.push({
-          field: "email",
-          message: `“${domain}” cannot receive email. Please use a valid personal/business email address.`,
-        });
-      } else if (await emailExists(roleEmail(email, data.role))) {
-        issues.push({
-          field: "email",
-          message: `You already have a ${data.role} account with this email. Try signing in instead.`,
-        });
-      }
+    const { data: recent } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .select("created_at")
+      .eq("email", data.email)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const last = recent?.[0]?.created_at ? new Date(recent[0].created_at).getTime() : 0;
+    const waited = (Date.now() - last) / 1000;
+    if (last && waited < OTP_RESEND_COOLDOWN) {
+      return {
+        ok: false,
+        message: `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN - waited)}s before requesting another code.`,
+      };
     }
 
-    const phone = normalisePhone(data.phone);
-    if (!phone.ok) {
-      issues.push({ field: "phone", message: phone.reason! });
-    } else {
-      // The same mobile number may back one account per role, never two of the same role.
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const last10 = phone.e164!.slice(-10);
-      const { data: dup } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .ilike("phone", `%${last10}`)
-        .eq("account_type", data.role)
-        .limit(1);
-      if (dup && dup.length > 0) {
-        issues.push({ field: "phone", message: `This mobile number already has a ${data.role} account.` });
-      }
+    await invalidateOpenChallenges(supabaseAdmin, { purpose: "signup", email: data.email });
+    const code = generateCode();
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000).toISOString();
+    const { data: row, error } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .insert({
+        email: data.email,
+        phone: phoneE164,
+        channel: "sms",
+        purpose: "signup",
+        code_hash: "pending",
+        expires_at: expiresAt,
+      })
+      .select("id")
+      .single();
+    if (error || !row) return { ok: false, message: "Could not start verification. Please try again." };
+
+    await supabaseAdmin
+      .from("auth_otp_challenges")
+      .update({ code_hash: hashCode(code, row.id) })
+      .eq("id", row.id);
+
+    try {
+      await sendSms(phoneE164, code);
+    } catch (err: unknown) {
+      await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
+      return { ok: false, message: "SMS OTP could not be sent. Please try again.", fallback: "email" as const };
+    }
+
+    return {
+      ok: true,
+      message: "SMS OTP request accepted.",
+      expirySeconds: OTP_EXPIRY_SECONDS,
+      maxAttempts: OTP_MAX_ATTEMPTS,
+    };
+  });
+
+/**
+ * Verifies the SMS code. Only on success is the freshly created account confirmed —
+ * until then Auth refuses every sign-in, so the site cannot be accessed without OTP.
+ */
+export const verifySignupSmsOtp = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        email: z.string().trim().toLowerCase().email().max(200),
+        code: z
+          .string()
+          .trim()
+          .regex(/^\d{6}$/),
+        fullName: z.string().trim().min(3).max(80),
+        phone: z.string().trim().max(20),
+        password: z.string().min(1).max(200),
+        businessName: z.string().trim().max(160).optional(),
+        role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: rows } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .select("id, code_hash, attempts, expires_at, consumed_at, phone")
+      .eq("email", data.email)
+      .eq("purpose", "signup")
+      .is("consumed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const ch = rows?.[0];
+    if (!ch) return { ok: false, message: "No active code. Please request a new one." };
+    if (new Date(ch.expires_at).getTime() < Date.now()) {
+      return { ok: false, message: "This code has expired. Please request a new one." };
+    }
+    if ((ch.attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
+      return { ok: false, message: "Too many incorrect attempts. Please request a new code." };
+    }
+
+    if (!safeEqual(ch.code_hash, hashCode(data.code, ch.id))) {
+      const attempts = (ch.attempts ?? 0) + 1;
+      await supabaseAdmin.from("auth_otp_challenges").update({ attempts }).eq("id", ch.id);
+      const left = Math.max(0, OTP_MAX_ATTEMPTS - attempts);
+      return {
+        ok: false,
+        message:
+          left > 0
+            ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left.`
+            : "Too many incorrect attempts. Please request a new code.",
+        attemptsLeft: left,
+      };
+    }
+
+    const normalized = normalisePhone(data.phone);
+    if (!normalized.ok || !normalized.e164) {
+      return { ok: false, message: normalized.reason ?? "Enter a valid mobile number." };
+    }
+    if (ch.phone && normalized.e164 !== ch.phone) {
+      return { ok: false, message: "The mobile number does not match this verification request." };
     }
 
     const verdict = assessPassword(data.password, {
@@ -120,125 +157,278 @@ export const validateRegistration = createServerFn({ method: "POST" })
       phone: data.phone,
     });
     if (!verdict.ok) {
-      issues.push({ field: "password", message: verdict.problems[0] ?? "Choose a stronger password." });
+      return { ok: false, message: verdict.problems[0] ?? "Choose a stronger password." };
     }
 
-    return { ok: issues.length === 0, issues, phoneE164: phone.e164 ?? null };
-  });
+    // Clean up only abandoned UNVERIFIED users left by the old flow.
+    const existing = await findAuthUser(data.email);
+    if (existing) {
+      const verified = Boolean((existing as any).email_confirmed_at || (existing as any).phone_confirmed_at);
+      if (verified) {
+        return { ok: false, message: "This account is already registered. Please sign in instead." };
+      }
 
-/** Called before a password sign-in attempt: enforces lockout + blocked accounts. */
-export const loginGuard = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ identifier: z.string().trim().toLowerCase().max(200) }).parse(input))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const settings = await loadSecuritySettings();
-    const since = new Date(Date.now() - settings.lockMinutes * 60_000).toISOString();
-    const { data: rows } = await supabaseAdmin
-      .from("auth_login_attempts")
-      .select("success, created_at")
-      .eq("identifier", data.identifier)
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    let failures = 0;
-    for (const r of rows ?? []) {
-      if (r.success) break;
-      failures += 1;
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existing.id);
+      if (deleteError) {
+        return {
+          ok: false,
+          message: "An unfinished registration already exists. Please try again later.",
+        };
+      }
     }
-    const locked = failures >= settings.maxFailures;
+
+    // Create the real Auth user ONLY after the OTP is correct.
+    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      phone: normalized.e164,
+      phone_confirm: true,
+      user_metadata: {
+        full_name: data.fullName,
+        phone: normalized.e164,
+        business_name: data.businessName ?? "",
+        intended_role: data.role,
+      },
+    } as never);
+
+    const user = created?.user;
+    if (createError || !user) {
+      return {
+        ok: false,
+        message: createError?.message ?? "Account could not be created. Please try again.",
+      };
+    }
+
+    const now = new Date().toISOString();
+
+    await supabaseAdmin.from("auth_otp_challenges").update({ consumed_at: now }).eq("id", ch.id);
+
+    await supabaseAdmin.from("user_security").upsert({
+      user_id: user.id,
+      email_verified_at: now,
+      phone_verified_at: now,
+      updated_at: now,
+    } as never);
+
+    try {
+      const { notifyWelcome } = await import("./notify.server");
+      await notifyWelcome({
+        userId: user.id,
+        email: data.email,
+        name: data.fullName,
+        mobile: normalized.e164,
+      });
+    } catch {
+      /* notifications are never fatal */
+    }
+
+    // Mint a one-time token so the browser can establish a session immediately.
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    if (!url || !key) {
+      return { ok: false, message: "Account created, but automatic sign-in is temporarily unavailable." };
+    }
+
+    const linkRes = await fetch(`${url}/auth/v1/admin/generate_link`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ type: "magiclink", email: data.email }),
+    });
+
+    if (!linkRes.ok) {
+      return { ok: false, message: "Account created, but automatic sign-in could not be completed." };
+    }
+
+    const linkJson = (await linkRes.json()) as {
+      hashed_token?: string;
+      properties?: { hashed_token?: string };
+    };
+    const tokenHash = linkJson.hashed_token ?? linkJson.properties?.hashed_token;
+
+    if (!tokenHash) {
+      return { ok: false, message: "Account created, but automatic sign-in could not be completed." };
+    }
+
     return {
-      locked,
-      failures,
-      remaining: Math.max(0, settings.maxFailures - failures),
-      lockMinutes: settings.lockMinutes,
+      ok: true,
+      message: "Mobile verified — account created.",
+      tokenHash,
     };
   });
 
-/** Records every attempt (success or failure) for lockout + admin activity log. */
-export const recordLoginAttempt = createServerFn({ method: "POST" })
+/** Sends a login code by SMS using our own provider (Supabase has no phone provider). */
+export const sendLoginSmsOtp = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z
       .object({
-        identifier: z.string().trim().toLowerCase().max(200),
-        method: z.enum(["password", "otp", "google"]).default("password"),
-        success: z.boolean(),
-        reason: z.string().max(300).optional(),
-        device: z.string().max(300).optional(),
+        phone: z.string().trim().max(20),
+        role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    const p = normalisePhone(data.phone);
+    if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const phoneE164 = p.e164;
+    if (!phoneE164) return { ok: false, message: "Enter a valid mobile number." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("auth_login_attempts").insert({
-      identifier: data.identifier,
-      method: data.method,
-      success: data.success,
-      reason: data.reason ?? null,
-      user_agent: data.device ?? null,
-    });
-    return { ok: true };
-  });
-
-/** Runs right after a session exists: stamps security row + device session. */
-export const registerSession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ device: z.string().max(300).optional() }).parse(input ?? {}))
-  .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const now = new Date().toISOString();
-    const { data: sec } = await supabaseAdmin
-      .from("user_security")
-      .select("blocked, blocked_reason")
-      .eq("user_id", context.userId)
-      .maybeSingle();
-    if (sec?.blocked) {
-      return { ok: false, blocked: true, reason: sec.blocked_reason ?? "Your account has been suspended." };
+    const last10 = phoneE164.slice(-10);
+    if (await hourlyQuotaExceeded(supabaseAdmin, phoneE164)) {
+      return { ok: false, message: "Too many OTP requests for this number. Please try again after an hour." };
     }
-    await supabaseAdmin.from("user_security").upsert({
-      user_id: context.userId,
-      email_verified_at: (context.claims?.email_verified ? now : null) as string | null,
-      failed_login_count: 0,
-      locked_until: null,
-      last_login_at: now,
-      last_login_device: data.device ?? null,
-      updated_at: now,
-    });
-    await supabaseAdmin.from("user_sessions").insert({
-      user_id: context.userId,
-      device: data.device ?? null,
-      last_seen_at: now,
-    });
-    return { ok: true, blocked: false };
+
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("phone", `%${last10}`)
+      .eq("account_type", data.role)
+      .limit(1);
+    const userId = prof?.[0]?.id;
+    if (!userId) {
+      return { ok: false, message: `No ${data.role} account found with this mobile number. Please register first.` };
+    }
+
+    const { data: recent } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .select("created_at")
+      .eq("phone", phoneE164)
+      .eq("purpose", "login")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const last = recent?.[0]?.created_at ? new Date(recent[0].created_at).getTime() : 0;
+    const waited = (Date.now() - last) / 1000;
+    if (last && waited < OTP_RESEND_COOLDOWN) {
+      return {
+        ok: false,
+        message: `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN - waited)}s before requesting another code.`,
+      };
+    }
+
+    await invalidateOpenChallenges(supabaseAdmin, { purpose: "login", phone: phoneE164 });
+    const code = generateCode();
+    const { data: row, error } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .insert({
+        email: `sms:${phoneE164}`,
+        phone: phoneE164,
+        channel: "sms",
+        purpose: "login",
+        code_hash: "pending",
+        expires_at: new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000).toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error || !row) return { ok: false, message: "Could not start verification. Please try again." };
+    await supabaseAdmin
+      .from("auth_otp_challenges")
+      .update({ code_hash: hashCode(code, row.id) })
+      .eq("id", row.id);
+
+    try {
+      await sendSms(phoneE164, code);
+    } catch (err: unknown) {
+      await supabaseAdmin.from("auth_otp_challenges").delete().eq("id", row.id);
+      return { ok: false, message: "SMS OTP could not be sent. Please try again.", fallback: "email" as const };
+    }
+    return {
+      ok: true,
+      message: "SMS OTP request accepted.",
+      expirySeconds: OTP_EXPIRY_SECONDS,
+      maxAttempts: OTP_MAX_ATTEMPTS,
+    };
   });
 
-/** Signs the user out of every other device by revoking their tracked sessions. */
-export const revokeOtherSessions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+/** Verifies a login code and returns a one-time token the browser exchanges for a session. */
+export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        phone: z.string().trim().max(20),
+        code: z
+          .string()
+          .trim()
+          .regex(/^\d{6}$/),
+        role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const p = normalisePhone(data.phone);
+    if (!p.ok) return { ok: false, message: p.reason ?? "Enter a valid mobile number." };
+    const phoneE164 = p.e164;
+    if (!phoneE164) return { ok: false, message: "Enter a valid mobile number." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: rows } = await supabaseAdmin
+      .from("auth_otp_challenges")
+      .select("id, code_hash, attempts, expires_at")
+      .eq("phone", phoneE164)
+      .eq("purpose", "login")
+      .is("consumed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const ch = rows?.[0];
+    if (!ch) return { ok: false, message: "No active code. Please request a new one." };
+    if (new Date(ch.expires_at).getTime() < Date.now())
+      return { ok: false, message: "This code has expired. Please request a new one." };
+    if ((ch.attempts ?? 0) >= OTP_MAX_ATTEMPTS)
+      return { ok: false, message: "Too many incorrect attempts. Please request a new code." };
+    if (!safeEqual(ch.code_hash, hashCode(data.code, ch.id))) {
+      const attempts = (ch.attempts ?? 0) + 1;
+      await supabaseAdmin.from("auth_otp_challenges").update({ attempts }).eq("id", ch.id);
+      const left = Math.max(0, OTP_MAX_ATTEMPTS - attempts);
+      return {
+        ok: false,
+        message:
+          left > 0
+            ? `Incorrect code — ${left} attempt${left === 1 ? "" : "s"} left.`
+            : "Too many incorrect attempts. Please request a new code.",
+      };
+    }
+
+    const last10 = phoneE164.slice(-10);
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("phone", `%${last10}`)
+      .eq("account_type", data.role)
+      .limit(1);
+    const userId = prof?.[0]?.id;
+    if (!userId) return { ok: false, message: `No ${data.role} account found with this mobile number.` };
+
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    if (!url || !key) return { ok: false, message: "Sign-in is temporarily unavailable. Please try your password." };
+
+    const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const email = userRes?.user?.email;
+    if (!email) return { ok: false, message: "This account has no email on file. Please sign in with your password." };
+
+    // Mark the phone verified and mint a one-time link token for the browser.
+    await supabaseAdmin.auth.admin
+      .updateUserById(userId, { phone_confirm: true, email_confirm: true } as never)
+      .catch(() => null);
+
+    const res = await fetch(`${url}/auth/v1/admin/generate_link`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "magiclink", email }),
+    });
+    if (!res.ok) return { ok: false, message: "Could not complete sign-in. Please try your password." };
+    const j = (await res.json()) as { hashed_token?: string; properties?: { hashed_token?: string } };
+    const tokenHash = j.hashed_token ?? j.properties?.hashed_token;
+    if (!tokenHash) return { ok: false, message: "Could not complete sign-in. Please try your password." };
+
+    await supabaseAdmin.from("auth_otp_challenges").update({ consumed_at: new Date().toISOString() }).eq("id", ch.id);
     const now = new Date().toISOString();
     await supabaseAdmin
-      .from("user_sessions")
-      .update({ revoked_at: now })
-      .eq("user_id", context.userId)
-      .is("revoked_at", null);
-    await supabaseAdmin.auth.admin.signOut(context.userId as string, "others" as never).catch(() => null);
-    return { ok: true };
+      .from("user_security")
+      .upsert({ user_id: userId, phone_verified_at: now, updated_at: now } as never);
+
+    return { ok: true, message: "Verified — signing you in…", tokenHash, email };
   });
-
-async function loadSecuritySettings() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.from("site_settings").select("key, value");
-  const map = new Map((data ?? []).map((r) => [r.key, r.value] as const));
-  const num = (k: string, d: number) => Number(map.get(k) ?? d) || d;
-  return {
-    otpExpirySeconds: num("otp_expiry_seconds", 300),
-    otpMaxAttempts: num("otp_max_attempts", 5),
-    otpResendCooldown: num("otp_resend_cooldown", 60),
-    maxFailures: num("login_max_failures", 5),
-    lockMinutes: num("login_lock_minutes", 15),
-  };
-}
-
-/** Public read of the OTP/lockout knobs so the UI matches the admin configuration. */
-export const getAuthPolicy = createServerFn({ method: "GET" }).handler(async () => loadSecuritySettings());
