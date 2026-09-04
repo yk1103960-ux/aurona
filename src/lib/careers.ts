@@ -15,6 +15,12 @@ export type CareerProgram = {
   apply_email: string | null;
   closes_at: string | null;
   sort_order: number;
+  responsibilities: string | null;
+  requirements: string | null;
+  salary_range: string | null;
+  experience: string | null;
+  age_criteria: string | null;
+  details: string | null;
 };
 
 /** Live career listings — the nav dropdown and the careers page share this cache. */
@@ -24,7 +30,7 @@ export const careersQuery = queryOptions({
   queryFn: async (): Promise<CareerProgram[]> => {
     const { data, error } = await supabase
       .from("career_programs")
-      .select("id, title, department, location, employment_type, kind, description, eligibility, reward, apply_url, apply_email, closes_at, sort_order")
+      .select("id, title, department, location, employment_type, kind, description, eligibility, reward, apply_url, apply_email, closes_at, sort_order, responsibilities, requirements, salary_range, experience, age_criteria, details")
       .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .order("title", { ascending: true });
@@ -32,6 +38,7 @@ export const careersQuery = queryOptions({
     return (data ?? []) as CareerProgram[];
   },
 });
+
 
 export function jobAnchor(id: string) {
   return `job-${id}`;

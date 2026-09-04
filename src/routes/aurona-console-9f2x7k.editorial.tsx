@@ -255,6 +255,13 @@ type Career = {
   closes_at: string | null;
   sort_order: number;
   is_published: boolean;
+  responsibilities: string | null;
+  requirements: string | null;
+  salary_range: string | null;
+  experience: string | null;
+  age_criteria: string | null;
+  details: string | null;
+
 };
 
 function CareersPanel() {
@@ -286,7 +293,14 @@ function CareersPanel() {
       closes_at: row.closes_at ? new Date(row.closes_at).toISOString() : null,
       sort_order: Number(row.sort_order ?? (data?.length ?? 0) + 1),
       is_published: row.is_published ?? true,
+      responsibilities: row.responsibilities || null,
+      requirements: row.requirements || null,
+      salary_range: row.salary_range || null,
+      experience: row.experience || null,
+      age_criteria: row.age_criteria || null,
+      details: row.details || null,
     };
+
     const { error } = row.id
       ? await supabase.from("career_programs").update(payload).eq("id", row.id)
       : await supabase.from("career_programs").insert(payload);
@@ -388,6 +402,39 @@ function CareersPanel() {
               onChange={(e) => setDraft({ ...draft, eligibility: e.target.value })}
             />
           </Field>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Field label="Experience required">
+              <Input value={draft.experience ?? ""} onChange={(e) => setDraft({ ...draft, experience: e.target.value })} />
+            </Field>
+            <Field label="Salary / stipend range">
+              <Input value={draft.salary_range ?? ""} onChange={(e) => setDraft({ ...draft, salary_range: e.target.value })} />
+            </Field>
+            <Field label="Age criteria">
+              <Input value={draft.age_criteria ?? ""} onChange={(e) => setDraft({ ...draft, age_criteria: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Key responsibilities (one per line)">
+            <Textarea
+              rows={4}
+              value={draft.responsibilities ?? ""}
+              onChange={(e) => setDraft({ ...draft, responsibilities: e.target.value })}
+            />
+          </Field>
+          <Field label="Requirements / skills (one per line)">
+            <Textarea
+              rows={3}
+              value={draft.requirements ?? ""}
+              onChange={(e) => setDraft({ ...draft, requirements: e.target.value })}
+            />
+          </Field>
+          <Field label="Other details shown under Read more">
+            <Textarea
+              rows={3}
+              value={draft.details ?? ""}
+              onChange={(e) => setDraft({ ...draft, details: e.target.value })}
+            />
+          </Field>
+
           <div className="flex gap-2">
             <Button onClick={() => save(draft)}>
               <Save className="mr-1 h-4 w-4" /> Save

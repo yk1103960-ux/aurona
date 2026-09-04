@@ -907,55 +907,73 @@ export type Database = {
       }
       career_programs: {
         Row: {
+          age_criteria: string | null
           apply_email: string | null
           apply_url: string | null
           closes_at: string | null
           created_at: string
           department: string | null
           description: string
+          details: string | null
           eligibility: string | null
           employment_type: string | null
+          experience: string | null
           id: string
           is_published: boolean
           kind: string
           location: string | null
+          requirements: string | null
+          responsibilities: string | null
           reward: string | null
+          salary_range: string | null
           sort_order: number
           title: string
           updated_at: string
         }
         Insert: {
+          age_criteria?: string | null
           apply_email?: string | null
           apply_url?: string | null
           closes_at?: string | null
           created_at?: string
           department?: string | null
           description?: string
+          details?: string | null
           eligibility?: string | null
           employment_type?: string | null
+          experience?: string | null
           id?: string
           is_published?: boolean
           kind?: string
           location?: string | null
+          requirements?: string | null
+          responsibilities?: string | null
           reward?: string | null
+          salary_range?: string | null
           sort_order?: number
           title: string
           updated_at?: string
         }
         Update: {
+          age_criteria?: string | null
           apply_email?: string | null
           apply_url?: string | null
           closes_at?: string | null
           created_at?: string
           department?: string | null
           description?: string
+          details?: string | null
           eligibility?: string | null
           employment_type?: string | null
+          experience?: string | null
           id?: string
           is_published?: boolean
           kind?: string
           location?: string | null
+          requirements?: string | null
+          responsibilities?: string | null
           reward?: string | null
+          salary_range?: string | null
           sort_order?: number
           title?: string
           updated_at?: string
