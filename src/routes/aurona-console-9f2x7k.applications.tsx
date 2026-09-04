@@ -6,17 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  listPartnerApplications,
-  reviewPartnerApplication,
-} from "@/lib/partner-admin.functions";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { listPartnerApplications, reviewPartnerApplication } from "@/lib/partner-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/applications")({
   head: () => ({
@@ -103,8 +94,7 @@ function ApplicationsPage() {
 
   const q = useQuery({
     queryKey: ["admin-partner-apps", tab, search],
-    queryFn: async () =>
-      (await list({ data: { ...filter, search: search || undefined } })) as unknown as App[],
+    queryFn: async () => (await list({ data: { ...filter, search: search || undefined } })) as unknown as App[],
     refetchInterval: 30_000,
   });
 
@@ -127,8 +117,8 @@ function ApplicationsPage() {
       <header>
         <h1 className="text-xl font-semibold sm:text-2xl">Partner Applications</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Retailer and distributor requests. Review, verify, approve or reject — all changes are
-          saved server-side and audit-logged.
+          Retailer and distributor requests. Review, verify, approve or reject — all changes are saved server-side and
+          audit-logged.
         </p>
       </header>
 
@@ -192,9 +182,7 @@ function ApplicationsPage() {
               <div className="text-xs text-slate-400">{a.mobile}</div>
             </div>
             <div className="text-slate-600 capitalize">{a.partner_type}</div>
-            <div className="text-xs text-slate-500">
-              {new Date(a.created_at).toLocaleDateString("en-IN")}
-            </div>
+            <div className="text-xs text-slate-500">{new Date(a.created_at).toLocaleDateString("en-IN")}</div>
             <div>
               <span
                 className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
@@ -271,30 +259,25 @@ function ApplicationsPage() {
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button
                   variant="outline"
-                  disabled={mut.isPending || open.status !== "pending"}
+                  disabled={mut.isPending || open.status === "under_review"}
                   onClick={() => mut.mutate({ id: open.id, decision: "under_review" })}
                 >
                   Mark under review
                 </Button>
-                <Button
-                  disabled={mut.isPending || open.status === "approved" || open.status === "rejected"}
-                  onClick={() => mut.mutate({ id: open.id, decision: "approved" })}
-                >
+                <Button disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
                   Verify & approve
                 </Button>
                 <Button
                   variant="destructive"
-                  disabled={mut.isPending || open.status === "approved" || open.status === "rejected"}
+                  disabled={mut.isPending}
                   onClick={() => mut.mutate({ id: open.id, decision: "rejected" })}
                 >
                   Reject
                 </Button>
               </div>
-              {(open.status === "approved" || open.status === "rejected") && (
-                <p className="mt-3 text-xs text-slate-500">
-                  This application is final and can no longer be changed.
-                </p>
-              )}
+              <p className="mt-3 text-xs text-slate-500">
+                Status can be changed later by Admin if required. Add a note/reason before changing the decision.
+              </p>
             </>
           )}
         </SheetContent>
