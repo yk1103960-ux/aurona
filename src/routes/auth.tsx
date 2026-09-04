@@ -236,32 +236,19 @@ function AuthPage() {
   const mmss = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
   const verdict = useMemo(() => assessPassword(password, { email, name, phone }), [password, email, name, phone]);
 
-  // When the OTP step replaces the longer form, immediately bring the auth card
-  // and OTP field back into view. This prevents the page from staying at the old
-  // scroll position after the registration form collapses.
+  // When OTP replaces the longer form, bring verification into view and focus it.
   useEffect(() => {
     if (!otpSent && !twoFa) return;
 
-    let frame1 = 0;
-    let frame2 = 0;
     const timer = window.setTimeout(() => {
-      frame1 = window.requestAnimationFrame(() => {
-        frame2 = window.requestAnimationFrame(() => {
-          authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => {
+        const input = document.getElementById("aurona-otp-input") as HTMLInputElement | null;
+        input?.focus({ preventScroll: true });
+      }, 220);
+    }, 80);
 
-          window.setTimeout(() => {
-            const input = document.getElementById("aurona-otp-input") as HTMLInputElement | null;
-            input?.focus({ preventScroll: true });
-          }, 250);
-        });
-      });
-    }, 50);
-
-    return () => {
-      window.clearTimeout(timer);
-      if (frame1) window.cancelAnimationFrame(frame1);
-      if (frame2) window.cancelAnimationFrame(frame2);
-    };
+    return () => window.clearTimeout(timer);
   }, [otpSent, twoFa]);
 
   const finishLogin = async (method: "password" | "otp" | "google") => {
@@ -386,29 +373,7 @@ function AuthPage() {
         toast.error(check.issues[0]?.message ?? "Please correct the highlighted fields.");
         return;
       }
-      // Each role gets its own Auth identity, so the same credentials work for
-      // a customer, a retailer and a distributor account — but never twice per role.
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: roleEmail(email, role),
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            full_name: name.trim(),
-            phone: check.phoneE164 ?? phone,
-            business_name: business,
-            intended_role: role,
-          },
-        },
-      });
-      if (error) {
-        setErrors({ email: error.message });
-        toast.error(error.message);
-        return;
-      }
-      // Never let an unverified account stay signed in, whatever the server returns.
-      if (signUpData.session) await supabase.auth.signOut();
-
+      // Account creation happens only after successful OTP verification.
       await deliverSignupOtp();
     } catch (err: any) {
       toast.error(
@@ -505,13 +470,30 @@ function AuthPage() {
       }
 
       if (mode === "up") {
-        const res = await verifySignupSmsOtp({ data: { email: roleEmail(email, role), code: token } });
+        const res = await verifySignupSmsOtp({
+          data: {
+            email: roleEmail(email, role),
+            code: token,
+            fullName: name.trim(),
+            phone,
+            password,
+            businessName: business.trim() || undefined,
+            role,
+          },
+        });
         if (!res.ok) {
           setAttempts((a) => a + 1);
           return toast.error(res.message);
         }
-        const { error } = await supabase.auth.signInWithPassword({ email: roleEmail(email, role), password });
-        if (error) return toast.error("Mobile verified — please sign in to continue.");
+
+        const { error } = await supabase.auth.signInWithPassword({
+          email: roleEmail(email, role),
+          password,
+        });
+        if (error) {
+          setOtpSent(false);
+          return toast.error("Account created and verified. Please sign in to continue.");
+        }
       } else {
         const res = await verifyLoginSmsOtp({ data: { phone, code: token, role } });
         if (!res.ok || !res.tokenHash) {
