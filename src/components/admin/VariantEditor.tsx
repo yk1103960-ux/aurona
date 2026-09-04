@@ -68,11 +68,25 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     enabled: !!productSku,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const { data: fam } = await supabase
-        .from("product_families")
-        .select("id, name")
-        .eq("main_sku", productSku)
-        .maybeSingle();
+      // Most products are the family's main SKU, but many rows are individual
+      // variant SKUs — resolve the family from either.
+      let fam: { id: string; name: string } | null =
+        (
+          await supabase
+            .from("product_families")
+            .select("id, name")
+            .eq("main_sku", productSku)
+            .maybeSingle()
+        ).data ?? null;
+      if (!fam) {
+        const { data: viaVariant } = await supabase
+          .from("product_variants")
+          .select("family_id, product_families(id, name)")
+          .eq("sku", productSku)
+          .maybeSingle();
+        const rel = (viaVariant as { product_families?: { id: string; name: string } } | null)?.product_families;
+        if (rel) fam = rel;
+      }
       if (!fam) return { family: null, variants: [] as Variant[], axes: [] as { axis_key: string; label: string }[] };
       const [{ data, error }, { data: axes }] = await Promise.all([
         supabase.from("product_variants").select(COLS).eq("family_id", fam.id).order("sort_order"),
