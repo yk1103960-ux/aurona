@@ -360,7 +360,7 @@ function AuthPage() {
     try {
       const check = await validateRegistration({ data: { fullName: name, email, phone, password, role } });
       if (!check.ok) {
-        setErrors(Object.fromEntries(check.issues.map((i) => [i.field, i.message])));
+        setErrors(Object.fromEntries(check.issues.map((i: { field: string; message: string }) => [i.field, i.message])));
         toast.error(check.issues[0]?.message ?? "Please correct the highlighted fields.");
         return;
       }

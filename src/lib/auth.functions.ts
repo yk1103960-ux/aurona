@@ -12,7 +12,8 @@ import {
   sendSms,
   invalidateOpenChallenges,
 } from "./otp.server";
-import { assessPassword, normalisePhone } from "./auth-security";
+import { assessPassword, normalisePhone, EMAIL_RE, looksFakeEmail } from "./auth-security";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Sends a 6-digit code by SMS to the mobile number used at registration. */
 export const sendSignupSmsOtp = createServerFn({ method: "POST" })
@@ -431,4 +432,141 @@ export const verifyLoginSmsOtp = createServerFn({ method: "POST" })
       .upsert({ user_id: userId, phone_verified_at: now, updated_at: now } as never);
 
     return { ok: true, message: "Verified — signing you in…", tokenHash, email };
+  });
+
+/** Client-visible OTP / lockout policy so the UI counts down with the same numbers the server enforces. */
+export const getAuthPolicy = createServerFn({ method: "GET" }).handler(async () => ({
+  otpExpirySeconds: OTP_EXPIRY_SECONDS,
+  otpMaxAttempts: OTP_MAX_ATTEMPTS,
+  otpResendCooldown: OTP_RESEND_COOLDOWN,
+  maxFailures: 5,
+  lockMinutes: 15,
+}));
+
+/** Pre-flight registration validation: password strength, email sanity, per-role duplicates. */
+export const validateRegistration = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        fullName: z.string().trim().max(120),
+        email: z.string().trim().toLowerCase().max(200),
+        phone: z.string().trim().max(20),
+        password: z.string().max(200),
+        role: z.enum(["customer", "retailer", "distributor"]).default("customer"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const issues: { field: string; message: string }[] = [];
+
+    if (data.fullName.length < 3) issues.push({ field: "name", message: "Enter your full name." });
+    if (!EMAIL_RE.test(data.email)) issues.push({ field: "email", message: "Enter a valid email address." });
+    else {
+      const fake = looksFakeEmail(data.email);
+      if (fake.fake) issues.push({ field: "email", message: fake.reason ?? "Enter a real email address." });
+    }
+
+    const p = normalisePhone(data.phone);
+    if (!p.ok || !p.e164) {
+      issues.push({ field: "phone", message: p.reason ?? "Enter a valid 10-digit Indian mobile number." });
+    }
+
+    const verdict = assessPassword(data.password, {
+      email: data.email,
+      name: data.fullName,
+      phone: data.phone,
+    });
+    if (!verdict.ok) {
+      issues.push({ field: "password", message: verdict.problems[0] ?? "Choose a stronger password." });
+    }
+
+    if (!issues.length) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const existing = await findAuthUser(data.email);
+      if (existing) {
+        const { data: prof } = await supabaseAdmin
+          .from("profiles")
+          .select("account_type")
+          .eq("id", existing.id)
+          .maybeSingle();
+        const verified = Boolean((existing as any).email_confirmed_at || (existing as any).phone_confirmed_at);
+        if (verified && (prof?.account_type ?? "customer") === data.role) {
+          issues.push({
+            field: "email",
+            message: `A ${data.role} account already exists with this email. Please sign in instead.`,
+          });
+        }
+      }
+    }
+
+    return { ok: issues.length === 0, issues };
+  });
+
+/** Security audit trail for sign-in attempts. Never fatal. */
+export const recordLoginAttempt = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        identifier: z.string().trim().max(200),
+        method: z.enum(["password", "otp", "google"]).default("password"),
+        success: z.boolean().default(false),
+        reason: z.string().max(300).optional(),
+        device: z.string().max(200).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("auth_login_attempts")
+      .insert({
+        identifier: data.identifier || "unknown",
+        method: data.method,
+        success: data.success,
+        reason: data.reason ?? null,
+        user_agent: data.device ?? null,
+      })
+      .then(
+        () => null,
+        () => null,
+      );
+    return { ok: true };
+  });
+
+/** Records the signed-in device and reports whether the account is suspended. */
+export const registerSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ device: z.string().max(200).optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const userId = context.userId;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date().toISOString();
+
+    const { data: sec } = await supabaseAdmin
+      .from("user_security")
+      .select("blocked, blocked_reason")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (sec?.blocked) {
+      return { ok: false, blocked: true, reason: sec.blocked_reason ?? "Your account has been suspended." };
+    }
+
+    await supabaseAdmin
+      .from("user_sessions")
+      .insert({ user_id: userId, device: data.device ?? null, last_seen_at: now })
+      .then(
+        () => null,
+        () => null,
+      );
+
+    await supabaseAdmin
+      .from("user_security")
+      .upsert({ user_id: userId, last_login_device: data.device ?? null, updated_at: now } as never)
+      .then(
+        () => null,
+        () => null,
+      );
+
+    return { ok: true, blocked: false, reason: null as string | null };
   });
