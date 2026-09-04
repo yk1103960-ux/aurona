@@ -13,8 +13,7 @@ import { User, Store, Building2, ShieldCheck, Info, Check, X, Eye, EyeOff, Loade
 import { cn } from "@/lib/utils";
 import { assessPassword } from "@/lib/auth-security";
 import { roleEmail } from "@/lib/role-identity";
-import { useMyRole } from "@/lib/pricing";
-import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel, useAccessState } from "@/lib/role-routing";
+import { DASHBOARD_PATHS, roleLabel, useAccessState } from "@/lib/role-routing";
 import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { validateRegistration, recordLoginAttempt, registerSession, getAuthPolicy } from "@/lib/auth.functions";
@@ -92,7 +91,6 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const search = Route.useSearch() as { role?: Role };
-  const sessionRole = useMyRole();
   const qc = useQueryClient();
   const [role, setRoleState] = useState<Role>(search.role ?? "customer");
 
