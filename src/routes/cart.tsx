@@ -375,15 +375,3 @@ function EmptyCart() {
   );
 }
 
-function SignInPrompt() {
-  return (
-    <EmptyState
-      icon={LogIn}
-      eyebrow="Sign in required"
-      title="Sign in to view your cart"
-      description="Your saved items, addresses and one-tap checkout are one step away."
-      primary={{ label: "Sign in / Register", to: "/auth" }}
-      secondary={{ label: "Continue browsing", to: "/products" }}
-    />
-  );
-}
