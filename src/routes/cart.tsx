@@ -64,12 +64,16 @@ function CartPage() {
   const compareSlugs = cart.items.map((i) => i.products.slug).filter(Boolean);
   const compareInCart = compareSlugs.filter((s) => compare.has(s));
   const addAllToCompare = () => {
+    let slots = compare.max - compare.count;
     for (const slug of compareSlugs) {
-      if (compare.count >= compare.max) break;
-      if (!compare.has(slug)) compare.toggle(slug);
+      if (compare.has(slug)) continue;
+      if (slots <= 0) break;
+      compare.toggle(slug);
+      slots--;
     }
     navigate({ to: "/compare" });
   };
+
 
 
   const deliveryKnown = Boolean(s.address) && s.rates.length > 0;
