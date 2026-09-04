@@ -293,7 +293,14 @@ function CareersPanel() {
       closes_at: row.closes_at ? new Date(row.closes_at).toISOString() : null,
       sort_order: Number(row.sort_order ?? (data?.length ?? 0) + 1),
       is_published: row.is_published ?? true,
+      responsibilities: row.responsibilities || null,
+      requirements: row.requirements || null,
+      salary_range: row.salary_range || null,
+      experience: row.experience || null,
+      age_criteria: row.age_criteria || null,
+      details: row.details || null,
     };
+
     const { error } = row.id
       ? await supabase.from("career_programs").update(payload).eq("id", row.id)
       : await supabase.from("career_programs").insert(payload);
