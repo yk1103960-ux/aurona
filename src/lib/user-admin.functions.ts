@@ -78,9 +78,9 @@ export const adminListUsers = createServerFn({ method: "POST" })
           createdAt: u.created_at,
         };
       })
-      .filter((r) =>
-        !term ||
-        [r.email, r.phone, r.fullName, r.businessName].some((v) => (v ?? "").toLowerCase().includes(term)),
+      .filter(
+        (r) =>
+          !term || [r.email, r.phone, r.fullName, r.businessName].some((v) => (v ?? "").toLowerCase().includes(term)),
       )
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     return rows;
@@ -107,7 +107,11 @@ export const adminSetUserBlocked = createServerFn({ method: "POST" })
       .updateUserById(data.userId, { ban_duration: data.blocked ? "876000h" : "none" } as never)
       .catch(() => null);
     if (data.blocked) {
-      await supabaseAdmin.from("user_sessions").update({ revoked_at: now }).eq("user_id", data.userId).is("revoked_at", null);
+      await supabaseAdmin
+        .from("user_sessions")
+        .update({ revoked_at: now })
+        .eq("user_id", data.userId)
+        .is("revoked_at", null);
     }
     await supabaseAdmin.from("audit_logs").insert({
       actor_user_id: context.userId,
@@ -125,9 +129,7 @@ export const adminResetVerification = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.auth.admin
-      .updateUserById(data.userId, { email_confirm: false } as never)
-      .catch(() => null);
+    await supabaseAdmin.auth.admin.updateUserById(data.userId, { email_confirm: false } as never).catch(() => null);
     await supabaseAdmin.from("user_security").upsert({
       user_id: data.userId,
       email_verified_at: null,
@@ -145,7 +147,9 @@ export const adminResetVerification = createServerFn({ method: "POST" })
 export const adminLoginActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ identifier: z.string().max(200).optional(), limit: z.number().min(1).max(200).default(50) }).parse(input ?? {}),
+    z
+      .object({ identifier: z.string().max(200).optional(), limit: z.number().min(1).max(200).default(50) })
+      .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -175,7 +179,10 @@ export const adminGetSecuritySettings = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.from("site_settings").select("key, value").in("key", SECURITY_KEYS as unknown as string[]);
+    const { data } = await supabaseAdmin
+      .from("site_settings")
+      .select("key, value")
+      .in("key", SECURITY_KEYS as unknown as string[]);
     return Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
   });
 
@@ -207,7 +214,12 @@ export const adminCreateUser = createServerFn({ method: "POST" })
         email: z.string().trim().email().max(255),
         password: z.string().min(6).max(72),
         fullName: z.string().trim().min(2).max(100),
-        phone: z.string().trim().regex(/^[6-9]\d{9}$/).optional().or(z.literal("")),
+        phone: z
+          .string()
+          .trim()
+          .regex(/^[6-9]\d{9}$/)
+          .optional()
+          .or(z.literal("")),
         accountType: z.enum(["customer", "retailer", "distributor"]).default("customer"),
         businessName: z.string().trim().max(160).optional().or(z.literal("")),
       })
@@ -257,7 +269,12 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       .object({
         userId: z.string().uuid(),
         fullName: z.string().trim().max(100).optional(),
-        phone: z.string().trim().regex(/^[6-9]\d{9}$/).optional().or(z.literal("")),
+        phone: z
+          .string()
+          .trim()
+          .regex(/^[6-9]\d{9}$/)
+          .optional()
+          .or(z.literal("")),
         businessName: z.string().trim().max(160).optional().or(z.literal("")),
         accountType: z.enum(["customer", "retailer", "distributor"]).optional(),
         email: z.string().trim().email().max(255).optional().or(z.literal("")),
@@ -283,7 +300,10 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     if (data.businessName !== undefined) profilePatch["business_name"] = data.businessName || null;
     if (data.accountType) profilePatch["account_type"] = data.accountType;
     if (Object.keys(profilePatch).length) {
-      const { error } = await supabaseAdmin.from("profiles").update(profilePatch as never).eq("id", data.userId);
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .update(profilePatch as never)
+        .eq("id", data.userId);
       if (error) throw new Error(error.message);
     }
 
@@ -319,8 +339,21 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
       .maybeSingle();
     if (isTargetAdmin) throw new Error("Admin accounts cannot be deleted here");
 
+    // Revoke all app-level sessions first so the deleted user loses access
+    // as soon as the frontend/server performs its next session check.
+    const now = new Date().toISOString();
+
+    await supabaseAdmin
+      .from("user_sessions")
+      .update({ revoked_at: now })
+      .eq("user_id", data.userId)
+      .is("revoked_at", null);
+
+    // Permanently remove the Supabase Auth user. This also prevents any
+    // future login with this account.
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
+
     await supabaseAdmin.from("audit_logs").insert({
       actor_user_id: context.userId,
       action: "user.delete",
