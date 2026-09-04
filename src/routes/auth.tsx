@@ -154,7 +154,7 @@ function AuthPage() {
       return;
     }
     if (activeSessionRole && activeSessionRole !== "customer") return; // show the switch-account panel
-    nav({ to: DASHBOARD_PATHS.customer, replace: true });
+    nav({ to: "/", replace: true });
   }, [
     user,
     loading,
@@ -272,16 +272,9 @@ function AuthPage() {
       nav({ to: "/partner-access", search: { role }, replace: true });
       return;
     }
-    let landed: string = DASHBOARD_PATHS.customer;
-    try {
-      const { data, error } = await supabase.rpc("my_role_status");
-      if (error) throw error;
-      const resolvedRole = (data as { role?: string }[] | null)?.[0]?.role;
-      if (resolvedRole) landed = dashboardPathFor(resolvedRole);
-    } catch {
-      /* customer dashboard is the safe fallback */
-    }
-    nav({ to: landed, replace: true });
+    // Normal customers should land on the public Home page after sign-in.
+    // Retailer/distributor flows are handled above by the approval gate.
+    nav({ to: "/", replace: true });
   };
 
   const google = async () => {
@@ -486,13 +479,18 @@ function AuthPage() {
           return toast.error(res.message);
         }
 
-        const { error } = await supabase.auth.signInWithPassword({
-          email: roleEmail(email, role),
-          password,
+        if (!("tokenHash" in res) || !res.tokenHash) {
+          setOtpSent(false);
+          return toast.error("Account created, but automatic sign-in could not be completed. Please sign in.");
+        }
+
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: res.tokenHash,
+          type: "magiclink",
         });
         if (error) {
           setOtpSent(false);
-          return toast.error("Account created and verified. Please sign in to continue.");
+          return toast.error("Account created, but automatic sign-in could not be completed. Please sign in.");
         }
       } else {
         const res = await verifyLoginSmsOtp({ data: { phone, code: token, role } });
