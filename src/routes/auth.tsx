@@ -194,6 +194,7 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const authCardRef = useRef<HTMLDivElement>(null);
 
   // OTP state
   const [otpSent, setOtpSent] = useState(false);
@@ -234,6 +235,34 @@ function AuthPage() {
   const locked = attempts >= policy.otpMaxAttempts;
   const mmss = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
   const verdict = useMemo(() => assessPassword(password, { email, name, phone }), [password, email, name, phone]);
+
+  // When the OTP step replaces the longer form, immediately bring the auth card
+  // and OTP field back into view. This prevents the page from staying at the old
+  // scroll position after the registration form collapses.
+  useEffect(() => {
+    if (!otpSent && !twoFa) return;
+
+    let frame1 = 0;
+    let frame2 = 0;
+    const timer = window.setTimeout(() => {
+      frame1 = window.requestAnimationFrame(() => {
+        frame2 = window.requestAnimationFrame(() => {
+          authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          window.setTimeout(() => {
+            const input = document.getElementById("aurona-otp-input") as HTMLInputElement | null;
+            input?.focus({ preventScroll: true });
+          }, 250);
+        });
+      });
+    }, 50);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (frame1) window.cancelAnimationFrame(frame1);
+      if (frame2) window.cancelAnimationFrame(frame2);
+    };
+  }, [otpSent, twoFa]);
 
   const finishLogin = async (method: "password" | "otp" | "google") => {
     if (remember) localStorage.setItem(REMEMBER_KEY, email);
@@ -607,7 +636,7 @@ function AuthPage() {
         </div>
 
         {/* Auth form */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8">
+        <div ref={authCardRef} className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8">
           <div className="flex items-center gap-2 rounded-full bg-primary/8 px-3 py-1.5 text-xs font-semibold text-primary">
             <active.icon className="h-3.5 w-3.5" /> {active.title} account
           </div>
@@ -989,19 +1018,6 @@ function OtpPanel(props: {
     masked,
     onBack,
   } = props;
-  const otpInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const input = otpInputRef.current;
-      if (!input) return;
-      input.scrollIntoView({ behavior: "smooth", block: "center" });
-      input.focus({ preventScroll: true });
-    }, 120);
-
-    return () => window.clearTimeout(timer);
-  }, []);
-
   return (
     <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
@@ -1027,7 +1043,8 @@ function OtpPanel(props: {
       </p>
 
       <Input
-        ref={otpInputRef}
+        id="aurona-otp-input"
+        autoFocus
         value={otp}
         onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
         inputMode="numeric"
