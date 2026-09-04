@@ -402,6 +402,39 @@ function CareersPanel() {
               onChange={(e) => setDraft({ ...draft, eligibility: e.target.value })}
             />
           </Field>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Field label="Experience required">
+              <Input value={draft.experience ?? ""} onChange={(e) => setDraft({ ...draft, experience: e.target.value })} />
+            </Field>
+            <Field label="Salary / stipend range">
+              <Input value={draft.salary_range ?? ""} onChange={(e) => setDraft({ ...draft, salary_range: e.target.value })} />
+            </Field>
+            <Field label="Age criteria">
+              <Input value={draft.age_criteria ?? ""} onChange={(e) => setDraft({ ...draft, age_criteria: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Key responsibilities (one per line)">
+            <Textarea
+              rows={4}
+              value={draft.responsibilities ?? ""}
+              onChange={(e) => setDraft({ ...draft, responsibilities: e.target.value })}
+            />
+          </Field>
+          <Field label="Requirements / skills (one per line)">
+            <Textarea
+              rows={3}
+              value={draft.requirements ?? ""}
+              onChange={(e) => setDraft({ ...draft, requirements: e.target.value })}
+            />
+          </Field>
+          <Field label="Other details shown under Read more">
+            <Textarea
+              rows={3}
+              value={draft.details ?? ""}
+              onChange={(e) => setDraft({ ...draft, details: e.target.value })}
+            />
+          </Field>
+
           <div className="flex gap-2">
             <Button onClick={() => save(draft)}>
               <Save className="mr-1 h-4 w-4" /> Save
