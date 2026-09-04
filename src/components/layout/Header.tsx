@@ -967,11 +967,11 @@ function MegaPanel({
     >
       <div
         className={cn(
-          "absolute left-1/2 top-1 w-[900px] max-w-[calc(100vw-3rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
+          "absolute left-1/2 top-1 w-[1170px] max-w-[calc(100vw-3rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-primary/12 bg-white shadow-[0_28px_60px_-28px_rgba(15,23,42,0.35)]",
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
-        <div className="grid min-h-[268px] max-h-[70vh] grid-cols-5 items-start gap-x-5 gap-y-4 overflow-y-auto px-6 py-5">
+        <div className="grid min-h-[348px] max-h-[78vh] grid-cols-5 items-start gap-x-7 gap-y-5 overflow-y-auto px-8 py-7">
           {columns.map((col, ci) => (
             <div key={ci} className="min-w-0 space-y-3">
               {col.map((group, gi) => (
