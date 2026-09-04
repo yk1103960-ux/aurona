@@ -100,6 +100,21 @@ function CartPage() {
 
       <div className="container-x grid gap-5 py-5 lg:grid-cols-[1fr_380px] lg:gap-8">
         <div className="space-y-4">
+          {!user && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <div className="flex items-center gap-2 text-sm">
+                <LogIn className="h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  <b>Shopping as a guest.</b> Your cart is saved on this device — sign in when you’re ready to place the
+                  order.
+                </span>
+              </div>
+              <Button asChild size="sm" variant="outline" className="rounded-full">
+                <Link to="/auth">Sign in / Register</Link>
+              </Button>
+            </div>
+          )}
+
           {/* Deliver to */}
           <Link
             to="/address"
