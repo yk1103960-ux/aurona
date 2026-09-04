@@ -17,18 +17,8 @@ import { useMyRole } from "@/lib/pricing";
 import { dashboardPathFor, dashboardRoleOf, DASHBOARD_PATHS, roleLabel, useAccessState } from "@/lib/role-routing";
 import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
-import {
-  validateRegistration,
-  recordLoginAttempt,
-  registerSession,
-  getAuthPolicy,
-} from "@/lib/auth.functions";
-import {
-  sendSignupSmsOtp,
-  verifySignupSmsOtp,
-  sendLoginSmsOtp,
-  verifyLoginSmsOtp,
-} from "@/lib/otp.functions";
+import { validateRegistration, recordLoginAttempt, registerSession, getAuthPolicy } from "@/lib/auth.functions";
+import { sendSignupSmsOtp, verifySignupSmsOtp, sendLoginSmsOtp, verifyLoginSmsOtp } from "@/lib/otp.functions";
 import {
   beginPasswordLogin,
   beginSessionTwoFactor,
@@ -36,20 +26,25 @@ import {
   verifyTwoFactorOtp,
 } from "@/lib/twofactor.functions";
 
-
-
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => {
-    const r = search['role'];
+    const r = search["role"];
     const role = r === "retailer" || r === "distributor" || r === "customer" ? r : undefined;
     return role ? { role } : {};
   },
   head: () => ({
     meta: [
       { title: "Sign in or create your Aurona account" },
-      { name: "description", content: "Secure Aurona sign-in with OTP verification, verified-email checks and trade pricing for retailers and distributors." },
+      {
+        name: "description",
+        content:
+          "Secure Aurona sign-in with OTP verification, verified-email checks and trade pricing for retailers and distributors.",
+      },
       { property: "og:title", content: "Sign in or create your Aurona account" },
-      { property: "og:description", content: "Secure Aurona sign-in with OTP verification and role-based trade pricing." },
+      {
+        property: "og:description",
+        content: "Secure Aurona sign-in with OTP verification and role-based trade pricing.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -60,16 +55,33 @@ export const Route = createFileRoute("/auth")({
 type Role = "customer" | "retailer" | "distributor";
 
 const ROLES: { id: Role; title: string; icon: any; blurb: string; accent: string }[] = [
-  { id: "customer", title: "Customer", icon: User, blurb: "Shop retail prices, add to cart & buy now.", accent: "from-primary/10 to-accent/20" },
-  { id: "retailer", title: "Retailer", icon: Store, blurb: "Wholesale pricing, bulk orders, retailer catalogues.", accent: "from-accent/20 to-primary/10" },
-  { id: "distributor", title: "Distributor", icon: Building2, blurb: "Enterprise pricing, direct sales channel.", accent: "from-primary/15 to-primary/5" },
+  {
+    id: "customer",
+    title: "Customer",
+    icon: User,
+    blurb: "Shop retail prices, add to cart & buy now.",
+    accent: "from-primary/10 to-accent/20",
+  },
+  {
+    id: "retailer",
+    title: "Retailer",
+    icon: Store,
+    blurb: "Wholesale pricing, bulk orders, retailer catalogues.",
+    accent: "from-accent/20 to-primary/10",
+  },
+  {
+    id: "distributor",
+    title: "Distributor",
+    icon: Building2,
+    blurb: "Enterprise pricing, direct sales channel.",
+    accent: "from-primary/15 to-primary/5",
+  },
 ];
 
 const REMEMBER_KEY = "aurona.remember";
 const SESSION_MARK = "aurona.session";
 /** Marks the user id that already cleared mobile-OTP 2FA in this browser tab. */
 const TWOFA_MARK = "aurona.2fa.verified";
-
 
 function deviceLabel() {
   if (typeof navigator === "undefined") return "Unknown device";
@@ -103,7 +115,9 @@ function AuthPage() {
   // ---- Mobile-OTP two-factor state -------------------------------------------------
   // `twoFa` holds the live challenge (no session exists while it is set).
   // `twoFaCleared` remembers which user id already satisfied 2FA in this tab.
-  const [twoFa, setTwoFa] = useState<{ challengeId: string; masked: string; source: "password" | "google" } | null>(null);
+  const [twoFa, setTwoFa] = useState<{ challengeId: string; masked: string; source: "password" | "google" } | null>(
+    null,
+  );
   const [twoFaCleared, setTwoFaCleared] = useState<string | null>(() =>
     typeof window === "undefined" ? null : sessionStorage.getItem(TWOFA_MARK),
   );
@@ -113,8 +127,6 @@ function AuthPage() {
     if (typeof window !== "undefined") sessionStorage.setItem(TWOFA_MARK, userId);
     setTwoFaCleared(userId);
   };
-
-
 
   // Hard gate: an unverified session can never reach the site. Retailer and
   // distributor selections always pass through the application/approval gate.
@@ -143,9 +155,18 @@ function AuthPage() {
     }
     if (activeSessionRole && activeSessionRole !== "customer") return; // show the switch-account panel
     nav({ to: DASHBOARD_PATHS.customer, replace: true });
-  }, [user, loading, nav, access.loading, access.retailer, access.distributor, activeSessionRole, role, twoFa, twoFaCleared]);
-
-
+  }, [
+    user,
+    loading,
+    nav,
+    access.loading,
+    access.retailer,
+    access.distributor,
+    activeSessionRole,
+    role,
+    twoFa,
+    twoFaCleared,
+  ]);
 
   const switchAccount = async () => {
     setBusy(true);
@@ -162,7 +183,6 @@ function AuthPage() {
   const [mode, setMode] = useState<"in" | "up">("in");
   // "password" = email + password, "otp" = mobile number + SMS OTP
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
-  
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -181,12 +201,23 @@ function AuthPage() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [attempts, setAttempts] = useState(0);
-  const [policy, setPolicy] = useState({ otpExpirySeconds: 300, otpMaxAttempts: 5, otpResendCooldown: 60, maxFailures: 5, lockMinutes: 15 });
+  const [policy, setPolicy] = useState({
+    otpExpirySeconds: 300,
+    otpMaxAttempts: 5,
+    otpResendCooldown: 60,
+    maxFailures: 5,
+    lockMinutes: 15,
+  });
 
   useEffect(() => {
-    getAuthPolicy().then(setPolicy).catch(() => null);
+    getAuthPolicy()
+      .then(setPolicy)
+      .catch(() => null);
     const stored = typeof window !== "undefined" ? localStorage.getItem(REMEMBER_KEY) : null;
-    if (stored) { setEmail(stored); setRemember(true); }
+    if (stored) {
+      setEmail(stored);
+      setRemember(true);
+    }
   }, []);
 
   // Expiry + resend countdowns
@@ -208,7 +239,9 @@ function AuthPage() {
     if (remember) localStorage.setItem(REMEMBER_KEY, email);
     else localStorage.removeItem(REMEMBER_KEY);
     sessionStorage.setItem(SESSION_MARK, "1");
-    await recordLoginAttempt({ data: { identifier: email || phone, method, success: true, device: deviceLabel() } }).catch(() => null);
+    await recordLoginAttempt({
+      data: { identifier: email || phone, method, success: true, device: deviceLabel() },
+    }).catch(() => null);
     const res = await registerSession({ data: { device: deviceLabel() } }).catch(() => null);
     if (res && res.blocked) {
       await supabase.auth.signOut();
@@ -280,9 +313,6 @@ function AuthPage() {
     }
   };
 
-
-
-
   const startOtp = (expirySeconds = 600) => {
     setOtpSent(true);
     setOtp("");
@@ -295,12 +325,14 @@ function AuthPage() {
   /** Mobile OTP over MSG91 is the single production verification channel. */
   const deliverSignupOtp = async () => {
     const res = await sendSignupSmsOtp({ data: { email: roleEmail(email, role), phone } });
-    if (!res.ok) { toast.error(res.message); return false; }
+    if (!res.ok) {
+      toast.error(res.message);
+      return false;
+    }
     startOtp(res.expirySeconds);
     toast.success(res.message);
     return true;
   };
-
 
   const register = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,7 +344,10 @@ function AuthPage() {
     if (!confirm) local.confirm = "Please re-enter your password.";
     else if (password !== confirm) local.confirm = "Passwords do not match.";
     if (role !== "customer" && business.trim().length < 3) local.business = "Enter your business name.";
-    if (Object.keys(local).length) { setErrors(local); return; }
+    if (Object.keys(local).length) {
+      setErrors(local);
+      return;
+    }
 
     setBusy(true);
     try {
@@ -347,7 +382,11 @@ function AuthPage() {
 
       await deliverSignupOtp();
     } catch (err: any) {
-      toast.error(err?.message?.includes("fetch") ? "Network problem — please try again." : err?.message || "Something went wrong. Please try again.");
+      toast.error(
+        err?.message?.includes("fetch")
+          ? "Network problem — please try again."
+          : err?.message || "Something went wrong. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -378,7 +417,10 @@ function AuthPage() {
   /** Sign-in by mobile OTP — same MSG91 verified template as registration. */
   const requestLoginOtp = async () => {
     const res = await sendLoginSmsOtp({ data: { phone, role } });
-    if (!res.ok) { toast.error(res.message); return false; }
+    if (!res.ok) {
+      toast.error(res.message);
+      return false;
+    }
     startOtp(res.expirySeconds);
     toast.success(res.message);
     return true;
@@ -387,7 +429,11 @@ function AuthPage() {
   const startLoginOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    try { await requestLoginOtp(); } finally { setBusy(false); }
+    try {
+      await requestLoginOtp();
+    } finally {
+      setBusy(false);
+    }
   };
 
   /** Abandons an in-progress 2FA challenge and returns to the sign-in form. */
@@ -410,7 +456,9 @@ function AuthPage() {
     try {
       // ---- Two-factor step of a password / social sign-in ----
       if (twoFa) {
-        const res = await verifyTwoFactorOtp({ data: { challengeId: twoFa.challengeId, code: token, device: deviceLabel() } });
+        const res = await verifyTwoFactorOtp({
+          data: { challengeId: twoFa.challengeId, code: token, device: deviceLabel() },
+        });
         if (!res.ok || !("tokenHash" in res) || !res.tokenHash) {
           setAttempts((a) => a + 1);
           return toast.error(res.message);
@@ -506,10 +554,6 @@ function AuthPage() {
     }
   };
 
-
-
-
-
   const active = ROLES.find((r) => r.id === role)!;
 
   return (
@@ -538,10 +582,12 @@ function AuthPage() {
                       : "border-border bg-card hover:border-primary/40 hover:shadow-soft",
                   )}
                 >
-                  <div className={cn(
-                    "grid h-12 w-12 shrink-0 place-items-center rounded-full transition",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
-                  )}>
+                  <div
+                    className={cn(
+                      "grid h-12 w-12 shrink-0 place-items-center rounded-full transition",
+                      isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
+                    )}
+                  >
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
@@ -569,16 +615,21 @@ function AuthPage() {
           {roleConflict ? (
             <div className="mt-5 space-y-4">
               <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
-                <div className="text-sm font-bold text-primary">
-                  You’re signed in as {roleLabel(activeSessionRole)}
-                </div>
+                <div className="text-sm font-bold text-primary">You’re signed in as {roleLabel(activeSessionRole)}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
                   {user?.email} — a {roleLabel(activeSessionRole).toLowerCase()} session can’t be used for your{" "}
-                  {active.title.toLowerCase()} account. Sign out to sign in or register as a {active.title.toLowerCase()}.
+                  {active.title.toLowerCase()} account. Sign out to sign in or register as a{" "}
+                  {active.title.toLowerCase()}.
                 </div>
               </div>
               <Button onClick={switchAccount} disabled={busy} className="h-11 w-full rounded-full">
-                {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing out…</> : `Continue as ${active.title}`}
+                {busy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing out…
+                  </>
+                ) : (
+                  `Continue as ${active.title}`
+                )}
               </Button>
               <Button
                 variant="outline"
@@ -589,161 +640,271 @@ function AuthPage() {
               </Button>
             </div>
           ) : (
-          <>
+            <>
+              <Button
+                onClick={google}
+                disabled={busy}
+                variant="outline"
+                className="mt-5 h-11 w-full gap-2 rounded-full"
+              >
+                <GoogleIcon /> Continue with Google
+              </Button>
 
-
-          <Button onClick={google} disabled={busy} variant="outline" className="mt-5 h-11 w-full gap-2 rounded-full">
-            <GoogleIcon /> Continue with Google
-          </Button>
-
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> OR <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <Tabs value={mode} onValueChange={(v) => { setMode(v as any); setErrors({}); }}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="in">Sign in</TabsTrigger>
-              <TabsTrigger value="up">Create account</TabsTrigger>
-            </TabsList>
-
-            {/* ---------------- SIGN IN ---------------- */}
-            <TabsContent value="in" className="pt-4">
-              <div className="mb-3 grid grid-cols-2 gap-2 rounded-full bg-muted/60 p-1 text-xs font-semibold">
-                {(["password", "otp"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => { setLoginMode(m); setOtpSent(false); setErrors({}); }}
-                    className={cn("h-8 rounded-full transition", loginMode === m ? "bg-card shadow-soft text-primary" : "text-muted-foreground")}
-                  >
-                    {m === "password" ? "Email & password" : "Mobile OTP"}
-                  </button>
-                ))}
+              <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" /> OR <div className="h-px flex-1 bg-border" />
               </div>
-              {twoFa ? (
-                <OtpPanel
-                  {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown }}
-                  target={twoFa.masked}
-                  masked
-                  onBack={cancelTwoFa}
-                />
-              ) : loginMode === "otp" ? (
-                otpSent ? (
-                  <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
-                ) : (
-                  <form onSubmit={startLoginOtp} className="space-y-3">
-                    <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
-                    <p className="text-[11px] text-muted-foreground">
-                      We’ll SMS a 6-digit code from <b>AURONA</b> to your registered mobile number.
-                    </p>
-                    <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                      {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending OTP…</> : "Send OTP"}
-                    </Button>
-                  </form>
-                )
-              ) : (
 
-              <form onSubmit={signIn} className="space-y-3">
-                <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
-                <Field
-                  label="Password" value={password} onChange={setPassword}
-                  type={showPw ? "text" : "password"} error={errors.password}
-                  trailing={
-                    <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
-                      {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  }
-                />
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
-                  Remember me on this device
-                </label>
-                <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
-                  {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</> : `Sign in as ${active.title}`}
-                </Button>
-              </form>
-              )}
-            </TabsContent>
+              <Tabs
+                value={mode}
+                onValueChange={(v) => {
+                  setMode(v as any);
+                  setErrors({});
+                }}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="in">Sign in</TabsTrigger>
+                  <TabsTrigger value="up">Create account</TabsTrigger>
+                </TabsList>
 
+                {/* ---------------- SIGN IN ---------------- */}
+                <TabsContent value="in" className="pt-4">
+                  <div className="mb-3 grid grid-cols-2 gap-2 rounded-full bg-muted/60 p-1 text-xs font-semibold">
+                    {(["password", "otp"] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setLoginMode(m);
+                          setOtpSent(false);
+                          setErrors({});
+                        }}
+                        className={cn(
+                          "h-8 rounded-full transition",
+                          loginMode === m ? "bg-card shadow-soft text-primary" : "text-muted-foreground",
+                        )}
+                      >
+                        {m === "password" ? "Email & password" : "Mobile OTP"}
+                      </button>
+                    ))}
+                  </div>
+                  {twoFa ? (
+                    <OtpPanel
+                      {...{
+                        otp,
+                        setOtp,
+                        verifyOtp,
+                        busy,
+                        expired,
+                        locked,
+                        mmss,
+                        attempts,
+                        maxAttempts: policy.otpMaxAttempts,
+                        resend,
+                        cooldown,
+                      }}
+                      target={twoFa.masked}
+                      masked
+                      onBack={cancelTwoFa}
+                    />
+                  ) : loginMode === "otp" ? (
+                    otpSent ? (
+                      <OtpPanel
+                        {...{
+                          otp,
+                          setOtp,
+                          verifyOtp,
+                          busy,
+                          expired,
+                          locked,
+                          mmss,
+                          attempts,
+                          maxAttempts: policy.otpMaxAttempts,
+                          resend,
+                          cooldown,
+                          target: phone,
+                        }}
+                      />
+                    ) : (
+                      <form onSubmit={startLoginOtp} className="space-y-3">
+                        <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
+                        <p className="text-[11px] text-muted-foreground">
+                          We’ll SMS a 6-digit code from <b>AURONA</b> to your registered mobile number.
+                        </p>
+                        <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                          {busy ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending OTP…
+                            </>
+                          ) : (
+                            "Send OTP"
+                          )}
+                        </Button>
+                      </form>
+                    )
+                  ) : (
+                    <form onSubmit={signIn} className="space-y-3">
+                      <Field label="Email" value={email} onChange={setEmail} type="email" error={errors.email} />
+                      <Field
+                        label="Password"
+                        value={password}
+                        onChange={setPassword}
+                        type={showPw ? "text" : "password"}
+                        error={errors.password}
+                        trailing={
+                          <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
+                            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        }
+                      />
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={remember}
+                          onChange={(e) => setRemember(e.target.checked)}
+                          className="h-3.5 w-3.5 accent-primary"
+                        />
+                        Remember me on this device
+                      </label>
+                      <Button className="mt-2 h-11 w-full rounded-full" disabled={busy}>
+                        {busy ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…
+                          </>
+                        ) : (
+                          `Sign in as ${active.title}`
+                        )}
+                      </Button>
+                    </form>
+                  )}
+                </TabsContent>
 
-            {/* ---------------- REGISTER ---------------- */}
-            <TabsContent value="up" className="pt-4">
-              {!otpSent ? (
-                <form onSubmit={register} className="space-y-3">
-                  <Field label="Full name" value={name} onChange={setName} error={errors.fullName} />
-                  <Field
-                    label="Email address"
-                    value={email}
-                    onChange={(value) => {
-                      setEmail(value);
-                      if (errors.email) setErrors((current) => ({ ...current, email: "" }));
-                    }}
-                    onBlur={() => {
-                      const check = validateEmail(email);
-                      setErrors((current) => ({ ...current, email: check.ok ? "" : check.reason ?? "Enter a valid email address." }));
-                    }}
-                    type="email"
-                    error={errors.email}
-                  />
-                  <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
-                  {role !== "customer" && (
-                    <Field
-                      label={role === "retailer" ? "Shop / Store name" : "Company / Distribution firm"}
-                      value={business} onChange={setBusiness} error={errors.business}
+                {/* ---------------- REGISTER ---------------- */}
+                <TabsContent value="up" className="pt-4">
+                  {!otpSent ? (
+                    <form onSubmit={register} className="space-y-3">
+                      <Field label="Full name" value={name} onChange={setName} error={errors.fullName} />
+                      <Field
+                        label="Email address"
+                        value={email}
+                        onChange={(value) => {
+                          setEmail(value);
+                          if (errors.email) setErrors((current) => ({ ...current, email: "" }));
+                        }}
+                        onBlur={() => {
+                          const check = validateEmail(email);
+                          setErrors((current) => ({
+                            ...current,
+                            email: check.ok ? "" : (check.reason ?? "Enter a valid email address."),
+                          }));
+                        }}
+                        type="email"
+                        error={errors.email}
+                      />
+                      <PhoneField value={phone} onChange={setPhone} error={errors.phone} />
+                      {role !== "customer" && (
+                        <Field
+                          label={role === "retailer" ? "Shop / Store name" : "Company / Distribution firm"}
+                          value={business}
+                          onChange={setBusiness}
+                          error={errors.business}
+                        />
+                      )}
+                      <Field
+                        label="Password"
+                        value={password}
+                        onChange={setPassword}
+                        type={showPw ? "text" : "password"}
+                        error={errors.password}
+                        trailing={
+                          <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
+                            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        }
+                      />
+                      {password.length > 0 && <StrengthMeter verdict={verdict} />}
+                      <Field
+                        label="Confirm password"
+                        value={confirm}
+                        onChange={setConfirm}
+                        type={showPw ? "text" : "password"}
+                        error={errors.confirm}
+                      />
+                      {confirm.length > 0 &&
+                        (confirm === password ? (
+                          <div className="flex items-center gap-1 text-[11px] font-semibold text-primary">
+                            <Check className="h-3 w-3" /> Passwords match
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[11px] font-semibold text-destructive">
+                            <X className="h-3 w-3" /> Passwords do not match
+                          </div>
+                        ))}
+                      {role !== "customer" && (
+                        <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-[11px] text-muted-foreground">
+                          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                          Your {role} application will be reviewed by our team. Trade pricing unlocks after approval.
+                        </div>
+                      )}
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                          Mobile verification
+                        </div>
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          We’ll SMS a 6-digit code to <b>{phone || "your mobile number"}</b>. Verification is mandatory
+                          — the account stays locked until the code is verified.
+                        </p>
+                      </div>
+                      <Button
+                        className="mt-2 h-11 w-full rounded-full"
+                        disabled={busy || !verdict.ok || password !== confirm || phone.length !== 10}
+                      >
+                        {busy ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…
+                          </>
+                        ) : (
+                          `Create ${active.title} account`
+                        )}
+                      </Button>
+                      <p className="text-center text-[11px] text-muted-foreground">
+                        We verify your email and mobile number are real before creating the account.
+                      </p>
+                    </form>
+                  ) : (
+                    <OtpPanel
+                      {...{
+                        otp,
+                        setOtp,
+                        verifyOtp,
+                        busy,
+                        expired,
+                        locked,
+                        mmss,
+                        attempts,
+                        maxAttempts: policy.otpMaxAttempts,
+                        resend,
+                        cooldown,
+                        target: phone,
+                      }}
                     />
                   )}
-                  <Field
-                    label="Password" value={password} onChange={setPassword}
-                    type={showPw ? "text" : "password"} error={errors.password}
-                    trailing={
-                      <button type="button" onClick={() => setShowPw((s) => !s)} className="text-muted-foreground">
-                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    }
-                  />
-                  {password.length > 0 && <StrengthMeter verdict={verdict} />}
-                  <Field label="Confirm password" value={confirm} onChange={setConfirm} type={showPw ? "text" : "password"} error={errors.confirm} />
-                  {confirm.length > 0 && (
-                    confirm === password ? (
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-primary"><Check className="h-3 w-3" /> Passwords match</div>
-                    ) : (
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-destructive"><X className="h-3 w-3" /> Passwords do not match</div>
-                    )
-                  )}
-                  {role !== "customer" && (
-                    <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-[11px] text-muted-foreground">
-                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                      Your {role} application will be reviewed by our team. Trade pricing unlocks after approval.
-                    </div>
-                  )}
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Mobile verification</div>
-                    <p className="mt-2 text-[11px] text-muted-foreground">
-                      We’ll SMS a 6-digit code to <b>{phone || "your mobile number"}</b>. Verification is
-                      mandatory — the account stays locked until the code is verified.
-                    </p>
-                  </div>
-                  <Button className="mt-2 h-11 w-full rounded-full" disabled={busy || !verdict.ok || password !== confirm || phone.length !== 10}>
-                    {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying details…</> : `Create ${active.title} account`}
-                  </Button>
-                  <p className="text-center text-[11px] text-muted-foreground">
-                    We verify your email and mobile number are real before creating the account.
-                  </p>
-                </form>
-              ) : (
-                <OtpPanel {...{ otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts: policy.otpMaxAttempts, resend, cooldown, target: phone }} />
-              )}
+                </TabsContent>
+              </Tabs>
 
-            </TabsContent>
-          </Tabs>
-
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            By continuing you agree to Aurona's <Link to="/policies/$slug" params={{ slug: "terms" }} className="underline">Terms</Link> and <Link to="/policies/$slug" params={{ slug: "privacy" }} className="underline">Privacy Policy</Link>.
-          </p>
-          </>
+              <p className="mt-6 text-center text-xs text-muted-foreground">
+                By continuing you agree to Aurona's{" "}
+                <Link to="/policies/$slug" params={{ slug: "terms" }} className="underline">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link to="/policies/$slug" params={{ slug: "privacy" }} className="underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            </>
           )}
         </div>
-
       </div>
     </div>
   );
@@ -762,35 +923,85 @@ function StrengthMeter({ verdict }: { verdict: ReturnType<typeof assessPassword>
     <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
       <div className="flex items-center justify-between text-[11px] font-semibold">
         <span className="text-muted-foreground">Password strength</span>
-        <span className={verdict.score >= 3 ? "text-emerald-600" : verdict.score === 2 ? "text-amber-600" : "text-destructive"}>
+        <span
+          className={
+            verdict.score >= 3 ? "text-emerald-600" : verdict.score === 2 ? "text-amber-600" : "text-destructive"
+          }
+        >
           {verdict.label}
         </span>
       </div>
       <div className="flex gap-1">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={cn("h-1.5 flex-1 rounded-full", i < verdict.score ? colors[verdict.score] : "bg-border")} />
+          <div
+            key={i}
+            className={cn("h-1.5 flex-1 rounded-full", i < verdict.score ? colors[verdict.score] : "bg-border")}
+          />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-1">
         {rules.map(([k, label]) => (
-          <div key={k} className={cn("flex items-center gap-1 text-[11px]", verdict.checks[k] ? "text-emerald-600" : "text-muted-foreground")}>
+          <div
+            key={k}
+            className={cn(
+              "flex items-center gap-1 text-[11px]",
+              verdict.checks[k] ? "text-emerald-600" : "text-muted-foreground",
+            )}
+          >
             {verdict.checks[k] ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />} {label}
           </div>
         ))}
       </div>
-      {verdict.problems.length > 0 && (
-        <div className="text-[11px] text-destructive">{verdict.problems[0]}</div>
-      )}
+      {verdict.problems.length > 0 && <div className="text-[11px] text-destructive">{verdict.problems[0]}</div>}
     </div>
   );
 }
 
 function OtpPanel(props: {
-  otp: string; setOtp: (v: string) => void; verifyOtp: (e: React.FormEvent) => void;
-  busy: boolean; expired: boolean; locked: boolean; mmss: string; attempts: number; maxAttempts: number;
-  resend: () => void; cooldown: number; target: string; masked?: boolean; onBack?: () => void;
+  otp: string;
+  setOtp: (v: string) => void;
+  verifyOtp: (e: React.FormEvent) => void;
+  busy: boolean;
+  expired: boolean;
+  locked: boolean;
+  mmss: string;
+  attempts: number;
+  maxAttempts: number;
+  resend: () => void;
+  cooldown: number;
+  target: string;
+  masked?: boolean;
+  onBack?: () => void;
 }) {
-  const { otp, setOtp, verifyOtp, busy, expired, locked, mmss, attempts, maxAttempts, resend, cooldown, target, masked, onBack } = props;
+  const {
+    otp,
+    setOtp,
+    verifyOtp,
+    busy,
+    expired,
+    locked,
+    mmss,
+    attempts,
+    maxAttempts,
+    resend,
+    cooldown,
+    target,
+    masked,
+    onBack,
+  } = props;
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const input = otpInputRef.current;
+      if (!input) return;
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+      input.focus({ preventScroll: true });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
       <div className="flex items-center justify-between">
@@ -803,56 +1014,88 @@ function OtpPanel(props: {
       </div>
 
       <p className="text-[11px] text-muted-foreground">
-        {masked
-          ? <>We sent a verification code to <b>{target}</b>. Enter it below to finish signing in.</>
-          : <>Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in until it is complete.</>}
+        {masked ? (
+          <>
+            We sent a verification code to <b>{target}</b>. Enter it below to finish signing in.
+          </>
+        ) : (
+          <>
+            Enter the 6-digit code sent to {target || "your account"}. Verification is mandatory — you cannot sign in
+            until it is complete.
+          </>
+        )}
       </p>
 
-
       <Input
+        ref={otpInputRef}
         value={otp}
         onChange={(ev) => setOtp(ev.target.value.replace(/\D/g, "").slice(0, 6))}
-        inputMode="numeric" placeholder="••••••"
-        className="h-11 text-center text-lg tracking-[0.5em]" required
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        placeholder="••••••"
+        className="h-11 text-center text-lg tracking-[0.5em]"
+        required
       />
       {attempts > 0 && !locked && (
         <div className="text-[11px] text-destructive">
           Invalid code — {maxAttempts - attempts} attempt{maxAttempts - attempts === 1 ? "" : "s"} left
         </div>
       )}
-      {locked && <div className="text-[11px] text-destructive">Maximum attempts reached. Request a fresh code to continue.</div>}
+      {locked && (
+        <div className="text-[11px] text-destructive">Maximum attempts reached. Request a fresh code to continue.</div>
+      )}
       <Button type="submit" className="h-11 w-full rounded-full" disabled={busy || otp.length < 6 || expired || locked}>
         {busy ? "Verifying…" : "Verify & continue"}
       </Button>
       <button
-        type="button" onClick={resend} disabled={busy || cooldown > 0}
+        type="button"
+        onClick={resend}
+        disabled={busy || cooldown > 0}
         className="w-full text-center text-[11px] font-semibold text-primary underline disabled:opacity-50"
       >
         {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
       </button>
       {onBack && (
         <button
-          type="button" onClick={onBack} disabled={busy}
+          type="button"
+          onClick={onBack}
+          disabled={busy}
           className="w-full text-center text-[11px] font-medium text-muted-foreground underline disabled:opacity-50"
         >
           Back to sign in
         </button>
       )}
-
-
     </form>
   );
 }
 
-function Field({ label, value, onChange, onBlur, type = "text", error, trailing }: {
-  label: string; value: string; onChange: (v: string) => void; onBlur?: () => void; type?: string; error?: string; trailing?: React.ReactNode;
+function Field({
+  label,
+  value,
+  onChange,
+  onBlur,
+  type = "text",
+  error,
+  trailing,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  type?: string;
+  error?: string;
+  trailing?: React.ReactNode;
 }) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
       <div className="relative">
         <Input
-          value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} type={type} required
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          type={type}
+          required
           className={cn("mt-1 h-11", trailing && "pr-10", error && "border-destructive")}
         />
         {trailing && <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span>}
@@ -867,7 +1110,13 @@ function PhoneField({ value, onChange, error }: { value: string; onChange: (v: s
   return (
     <div>
       <Label className="text-xs">Mobile number</Label>
-      <PhoneInput value={value} onChange={onChange} required invalid={Boolean(error) || short} autoComplete="tel-national" />
+      <PhoneInput
+        value={value}
+        onChange={onChange}
+        required
+        invalid={Boolean(error) || short}
+        autoComplete="tel-national"
+      />
       {(error || short) && (
         <div className="mt-1 text-[11px] text-destructive">{error ?? "Mobile number must be exactly 10 digits."}</div>
       )}
@@ -878,10 +1127,22 @@ function PhoneField({ value, onChange, error }: { value: string; onChange: (v: s
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4">
-      <path fill="#4285F4" d="M22.5 12.3c0-.8-.1-1.5-.2-2.3H12v4.5h5.9c-.3 1.4-1.1 2.6-2.4 3.4v2.8h3.9c2.3-2.1 3.6-5.2 3.6-8.4z"/>
-      <path fill="#34A853" d="M12 23c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3 0-5.6-2-6.5-4.7H1.4v3C3.4 20.5 7.4 23 12 23z"/>
-      <path fill="#FBBC05" d="M5.5 13.6C5.3 13 5.2 12.3 5.2 11.7s.1-1.3.3-2v-3H1.4C.5 8.4 0 10 0 11.7s.5 3.3 1.4 4.9l4.1-3z"/>
-      <path fill="#EA4335" d="M12 4.6c1.7 0 3.3.6 4.5 1.7l3.4-3.4C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.5 1.4 6.7l4.1 3C6.4 6.6 9 4.6 12 4.6z"/>
+      <path
+        fill="#4285F4"
+        d="M22.5 12.3c0-.8-.1-1.5-.2-2.3H12v4.5h5.9c-.3 1.4-1.1 2.6-2.4 3.4v2.8h3.9c2.3-2.1 3.6-5.2 3.6-8.4z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3 0-5.6-2-6.5-4.7H1.4v3C3.4 20.5 7.4 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.5 13.6C5.3 13 5.2 12.3 5.2 11.7s.1-1.3.3-2v-3H1.4C.5 8.4 0 10 0 11.7s.5 3.3 1.4 4.9l4.1-3z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.6c1.7 0 3.3.6 4.5 1.7l3.4-3.4C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.5 1.4 6.7l4.1 3C6.4 6.6 9 4.6 12 4.6z"
+      />
     </svg>
   );
 }
