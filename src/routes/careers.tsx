@@ -234,6 +234,136 @@ function CareersPage() {
 
       <ApplyDialog target={applyTarget} onOpenChange={(open) => !open && setApplyTarget(null)} />
 
+      {/* Full job / programme details */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detail?.title}</DialogTitle>
+          </DialogHeader>
+          {detail && (
+            <div className="space-y-4 text-sm">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {detail.department && <span>{detail.department}</span>}
+                {detail.location && <span>{detail.location}</span>}
+                {detail.employment_type && <span>{detail.employment_type}</span>}
+                {formatCloseDate(detail.closes_at) && (
+                  <span>
+                    {isClosed(detail) ? "Closed on " : "Apply by "}
+                    {formatCloseDate(detail.closes_at)}
+                  </span>
+                )}
+              </div>
+              <p className="whitespace-pre-wrap text-muted-foreground">{detail.description}</p>
+              {(
+                [
+                  ["Experience", detail.experience],
+                  ["Salary / stipend", detail.salary_range],
+                  ["Age criteria", detail.age_criteria],
+                  ["Eligibility", detail.eligibility],
+                  ["Reward", detail.reward],
+                ] as const
+              )
+                .filter(([, v]) => !!v)
+                .map(([k, v]) => (
+                  <div key={k}>
+                    <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">{k}</div>
+                    <p className="mt-1 whitespace-pre-wrap">{v}</p>
+                  </div>
+                ))}
+              {detail.responsibilities && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Responsibilities
+                  </div>
+                  <ul className="mt-1 list-disc space-y-1 pl-5">
+                    {detail.responsibilities.split("\n").filter(Boolean).map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {detail.requirements && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Requirements
+                  </div>
+                  <ul className="mt-1 list-disc space-y-1 pl-5">
+                    {detail.requirements.split("\n").filter(Boolean).map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {detail.details && <p className="whitespace-pre-wrap text-muted-foreground">{detail.details}</p>}
+              {isClosed(detail) ? (
+                <p className="text-xs font-semibold text-muted-foreground">Applications for this role are closed.</p>
+              ) : (
+                <Button
+                  className="w-full rounded-full"
+                  onClick={() => {
+                    const target = { id: detail.id, title: detail.title };
+                    setDetail(null);
+                    setApplyTarget(target);
+                  }}
+                >
+                  Apply now
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Full referral programme details */}
+      <Dialog open={!!refDetail} onOpenChange={(o) => !o && setRefDetail(null)}>
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{refDetail?.name}</DialogTitle>
+          </DialogHeader>
+          {refDetail && (
+            <div className="space-y-4 text-sm">
+              <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                {commissionLabel(refDetail)}
+              </div>
+              <p className="whitespace-pre-wrap text-muted-foreground">{refDetail.description}</p>
+              {Number(refDetail.min_order_value) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Minimum order value ₹{Number(refDetail.min_order_value)}
+                  {refDetail.max_commission ? ` · Maximum payout ₹${Number(refDetail.max_commission)}` : ""}
+                </p>
+              )}
+              {refDetail.eligibility && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Who can join
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap">{refDetail.eligibility}</p>
+                </div>
+              )}
+              {refDetail.closes_at && (
+                <p className="text-xs text-muted-foreground">Open till {formatCloseDate(refDetail.closes_at)}</p>
+              )}
+              {refDetail.terms && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Terms</div>
+                  <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{refDetail.terms}</p>
+                </div>
+              )}
+              <Button
+                className="w-full rounded-full"
+                onClick={() => {
+                  const title = refDetail.name;
+                  setRefDetail(null);
+                  setApplyTarget({ id: programs[0]?.id ?? openings[0]?.id ?? "", title });
+                }}
+              >
+                Apply now
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
