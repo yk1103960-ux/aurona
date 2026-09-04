@@ -58,9 +58,19 @@ function CartPage() {
   const recommended = useQuery(productsQuery({ bestseller: true, limit: 6 }));
 
   if (loading) return <PageLoading label="Loading your cart" />;
-  if (!user) return <SignInPrompt />;
   if (cart.loading && cart.items.length === 0) return <PageLoading label="Loading your cart" />;
   if (cart.items.length === 0) return <EmptyCart />;
+
+  const compareSlugs = cart.items.map((i) => i.products.slug).filter(Boolean);
+  const compareInCart = compareSlugs.filter((s) => compare.has(s));
+  const addAllToCompare = () => {
+    for (const slug of compareSlugs) {
+      if (compare.count >= compare.max) break;
+      if (!compare.has(slug)) compare.toggle(slug);
+    }
+    navigate({ to: "/compare" });
+  };
+
 
   const deliveryKnown = Boolean(s.address) && s.rates.length > 0;
 
