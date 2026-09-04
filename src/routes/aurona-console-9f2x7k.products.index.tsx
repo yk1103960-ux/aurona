@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, Copy, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/aurona-console-9f2x7k/products")({
+export const Route = createFileRoute("/aurona-console-9f2x7k/products/")({
   component: ProductsAdmin,
 });
 

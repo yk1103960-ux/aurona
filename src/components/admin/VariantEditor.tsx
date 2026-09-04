@@ -68,11 +68,25 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     enabled: !!productSku,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const { data: fam } = await supabase
-        .from("product_families")
-        .select("id, name")
-        .eq("main_sku", productSku)
-        .maybeSingle();
+      // Most products are the family's main SKU, but many rows are individual
+      // variant SKUs — resolve the family from either.
+      let fam: { id: string; name: string } | null =
+        (
+          await supabase
+            .from("product_families")
+            .select("id, name")
+            .eq("main_sku", productSku)
+            .maybeSingle()
+        ).data ?? null;
+      if (!fam) {
+        const { data: viaVariant } = await supabase
+          .from("product_variants")
+          .select("family_id, product_families(id, name)")
+          .eq("sku", productSku)
+          .maybeSingle();
+        const rel = (viaVariant as { product_families?: { id: string; name: string } } | null)?.product_families;
+        if (rel) fam = rel;
+      }
       if (!fam) return { family: null, variants: [] as Variant[], axes: [] as { axis_key: string; label: string }[] };
       const [{ data, error }, { data: axes }] = await Promise.all([
         supabase.from("product_variants").select(COLS).eq("family_id", fam.id).order("sort_order"),
@@ -98,6 +112,8 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
   const family = q.data?.family;
   const axes = q.data?.axes ?? [];
   if (!family) return null;
+
+  const axesBlock = <AxisEditor familyId={family.id} onSaved={() => q.refetch()} />;
 
   const upd = (id: string, patch: Partial<Variant>) => {
     dirty.current = true;
@@ -211,6 +227,8 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
         </div>
       </div>
 
+      {axesBlock}
+
       {rows.length === 0 ? (
         <p className="text-sm text-slate-500">No variants yet. Add one to start selling options for this product.</p>
       ) : (
@@ -277,6 +295,135 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
         Prices here drive the storefront. Leave retailer or distributor blank to fall back to the normal price. Weight and
         dimensions are used for shipping charges.
       </div>
+    </div>
+  );
+}
+
+type Axis = { id: string; axis_key: string; label: string; values: string[]; sort_order: number };
+
+/** Manage the option lists (axes) shoppers pick from on the product page. */
+function AxisEditor({ familyId, onSaved }: { familyId: string; onSaved: () => void }) {
+  const [rows, setRows] = useState<Axis[]>([]);
+  const [saving, setSaving] = useState(false);
+  const dirty = useRef(false);
+  const qc = useQueryClient();
+
+  const q = useQuery({
+    queryKey: ["admin-variant-axes", familyId],
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_variant_axes")
+        .select("id, axis_key, label, values, sort_order")
+        .eq("family_id", familyId)
+        .order("sort_order");
+      if (error) throw error;
+      return (data ?? []).map((a) => ({
+        ...a,
+        values: Array.isArray(a.values) ? (a.values as string[]) : [],
+      })) as Axis[];
+    },
+  });
+
+  useEffect(() => {
+    if (q.data && !dirty.current) setRows(q.data);
+  }, [q.data]);
+
+  const upd = (id: string, patch: Partial<Axis>) => {
+    dirty.current = true;
+    setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  };
+
+  const addAxis = async () => {
+    const key = prompt("Option key (e.g. watt_option)")?.trim();
+    if (!key) return;
+    const { data, error } = await supabase
+      .from("product_variant_axes")
+      .insert({ family_id: familyId, axis_key: key, label: key.replace(/_/g, " "), values: [], sort_order: rows.length })
+      .select("id, axis_key, label, values, sort_order")
+      .maybeSingle();
+    if (error) return toast.error(error.message);
+    if (data) setRows((r) => [...r, { ...(data as any), values: [] }]);
+  };
+
+  const removeAxis = async (a: Axis) => {
+    if (!confirm(`Delete option "${a.label}"?`)) return;
+    const { error } = await supabase.from("product_variant_axes").delete().eq("id", a.id);
+    if (error) return toast.error(error.message);
+    setRows((r) => r.filter((x) => x.id !== a.id));
+    toast.success("Option removed");
+  };
+
+  const saveAxes = async () => {
+    setSaving(true);
+    for (const a of rows) {
+      const { error } = await supabase
+        .from("product_variant_axes")
+        .update({
+          axis_key: a.axis_key.trim(),
+          label: a.label.trim(),
+          values: a.values.map((v) => v.trim()).filter(Boolean),
+          sort_order: a.sort_order,
+        })
+        .eq("id", a.id);
+      if (error) {
+        setSaving(false);
+        return toast.error(`${a.label}: ${error.message}`);
+      }
+    }
+    setSaving(false);
+    dirty.current = false;
+    toast.success("Options saved");
+    for (const key of ["product", "family", "family-products", "products", "admin-product-variants"]) {
+      qc.invalidateQueries({ queryKey: [key] });
+    }
+    q.refetch();
+    onSaved();
+  };
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-3 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Product options (variant axes)</div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={addAxis}>
+            <Plus className="w-4 h-4 mr-1" /> Add option
+          </Button>
+          <Button size="sm" onClick={saveAxes} disabled={saving || rows.length === 0}>
+            <Save className="w-4 h-4 mr-1" /> {saving ? "Saving…" : "Save options"}
+          </Button>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-sm text-slate-500">No options yet. Add one (e.g. watt_option) to let shoppers choose.</p>
+      ) : (
+        rows.map((a) => (
+          <div key={a.id} className="flex flex-wrap items-end gap-3">
+            <label className="text-xs uppercase tracking-wider text-slate-500">
+              Key
+              <Input className="mt-1 h-9 font-mono w-40" value={a.axis_key} onChange={(e) => upd(a.id, { axis_key: e.target.value })} />
+            </label>
+            <label className="text-xs uppercase tracking-wider text-slate-500">
+              Label
+              <Input className="mt-1 h-9 w-40" value={a.label} onChange={(e) => upd(a.id, { label: e.target.value })} />
+            </label>
+            <label className="min-w-[240px] flex-1 text-xs uppercase tracking-wider text-slate-500">
+              Values (comma separated)
+              <Input
+                className="mt-1 h-9"
+                value={a.values.join(", ")}
+                onChange={(e) => upd(a.id, { values: e.target.value.split(",").map((v) => v.replace(/^\s+/, "")) })}
+              />
+            </label>
+            <Button size="sm" variant="outline" onClick={() => removeAxis(a)}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ))
+      )}
+      <p className="text-xs text-slate-500">
+        These are the choices shown on the product page. Each variant below must use values from these lists.
+      </p>
     </div>
   );
 }
