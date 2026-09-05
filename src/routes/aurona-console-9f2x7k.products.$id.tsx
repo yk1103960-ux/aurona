@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ type ProductForm = {
   slug: string;
   sku: string;
   brand: string;
+
   category_id: string | null;
   short_description: string;
   description: string;
@@ -72,7 +73,9 @@ type ProductForm = {
   is_sale: boolean;
 
   affiliate_enabled: boolean;
+
   affiliate_commission_kind: "" | "percentage" | "fixed";
+
   affiliate_commission_value: number | null;
   affiliate_max_commission: number | null;
 
@@ -87,6 +90,7 @@ const EMPTY: ProductForm = {
   slug: "",
   sku: "",
   brand: "Aurona",
+
   category_id: null,
   short_description: "",
   description: "",
@@ -116,6 +120,7 @@ const EMPTY: ProductForm = {
   is_sale: false,
 
   affiliate_enabled: true,
+
   affiliate_commission_kind: "",
   affiliate_commission_value: null,
   affiliate_max_commission: null,
@@ -129,7 +134,7 @@ const EMPTY: ProductForm = {
 const TABS: {
   key: MainTab;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }[] = [
   {
     key: "general",
@@ -143,17 +148,17 @@ const TABS: {
   },
   {
     key: "customer",
-    label: "Price & Stock for Customers",
+    label: "Customer Price & Stock",
     icon: <Users className="h-4 w-4" />,
   },
   {
     key: "retailer",
-    label: "Price & Stock for Retailers",
+    label: "Retailer Price & Stock",
     icon: <Store className="h-4 w-4" />,
   },
   {
     key: "distributor",
-    label: "Price & Stock for Distributors",
+    label: "Distributor Price & Stock",
     icon: <Warehouse className="h-4 w-4" />,
   },
   {
@@ -184,6 +189,7 @@ function ProductEditor() {
   });
 
   const isNew = id === "new";
+
   const nav = useNavigate();
   const qc = useQueryClient();
 
@@ -195,24 +201,30 @@ function ProductEditor() {
 
   const cats = useQuery({
     queryKey: ["admin-categories-list"],
+
     queryFn: async () => (await supabase.from("categories").select("id, name").order("name")).data ?? [],
   });
 
   const product = useQuery({
     queryKey: ["admin-product", id],
+
     enabled: !isNew,
+
     refetchOnWindowFocus: false,
 
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
 
       if (error) throw error;
+
       return data;
     },
   });
 
   useRealtime(["products"], () => {
-    if (!dirty.current) product.refetch();
+    if (!dirty.current) {
+      product.refetch();
+    }
   });
 
   useEffect(() => {
@@ -227,12 +239,15 @@ function ProductEditor() {
       brand: data.brand ?? "Aurona",
 
       category_id: data.category_id,
+
       short_description: data.short_description ?? "",
+
       description: data.description ?? "",
 
       mrp: Number(data.mrp ?? 0),
       price: Number(data.price ?? 0),
       stock: Number(data.stock ?? 0),
+
       unit: data.unit ?? "Pc",
 
       wattage: data.wattage ?? "",
@@ -242,19 +257,25 @@ function ProductEditor() {
       warranty: data.warranty ?? "",
 
       model: (data as any).model ?? "",
+
       body_type: (data as any).body_type ?? "",
 
       pack_size: (data as any).pack_size != null ? Number((data as any).pack_size) : null,
 
       features: featuresToText((data as any).features),
+
       specifications: specsToText((data as any).specifications),
 
       image_seed: data.image_seed ?? "",
 
       is_published: data.is_published ?? true,
+
       is_featured: !!data.is_featured,
+
       is_bestseller: !!data.is_bestseller,
+
       is_new: !!data.is_new,
+
       is_sale: !!data.is_sale,
 
       affiliate_enabled: data.affiliate_enabled ?? true,
@@ -295,14 +316,17 @@ function ProductEditor() {
 
     try {
       const features = textToFeatures(f.features);
+
       const specifications = textToSpecs(f.specifications);
 
       const { features: _features, specifications: _specifications, ...rest } = f;
 
       const payload = {
         ...rest,
+
         name: f.name.trim(),
         sku: f.sku.trim(),
+
         slug: f.slug.trim() || slugify(f.name),
 
         features,
@@ -324,7 +348,9 @@ function ProductEditor() {
           .from("product_families")
           .update({
             name: f.name,
+
             category_id: f.category_id,
+
             brand: f.brand,
 
             short_description: f.short_description || null,
@@ -379,6 +405,7 @@ function ProductEditor() {
       if (isNew && result.data) {
         nav({
           to: "/aurona-console-9f2x7k/products/$id",
+
           params: {
             id: result.data.id,
           },
@@ -405,6 +432,8 @@ function ProductEditor() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4 pb-12">
+      {/* HEADER */}
+
       <Link
         to="/aurona-console-9f2x7k/products"
         className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
@@ -432,27 +461,30 @@ function ProductEditor() {
         </Button>
       </div>
 
-      <div className="sticky top-0 z-20 rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <div className="flex min-w-max p-2">
-            {TABS.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setTab(item.key)}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  tab === item.key
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
-          </div>
+      {/* ADMIN TABS - NO HORIZONTAL SLIDER */}
+
+      <div className="sticky top-0 z-20 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {TABS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setTab(item.key)}
+              className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-center text-sm font-medium transition ${
+                tab === item.key
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <span className="shrink-0">{item.icon}</span>
+
+              <span className="leading-tight">{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* GENERAL */}
 
       {tab === "general" && (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -585,9 +617,7 @@ function ProductEditor() {
               />
             </Field>
 
-            <div className="text-xs text-slate-500">
-              This remains flexible, so you can add different specifications for different product categories.
-            </div>
+            <div className="text-xs text-slate-500">Add different specifications for different product categories.</div>
           </Section>
 
           <Section title="Affiliate Commission" className="lg:col-span-2">
@@ -607,7 +637,9 @@ function ProductEditor() {
                   }
                 >
                   <option value="">Inherit program default</option>
+
                   <option value="percentage">Percentage</option>
+
                   <option value="fixed">Fixed ₹ per unit</option>
                 </select>
               </Field>
@@ -630,6 +662,8 @@ function ProductEditor() {
         </div>
       )}
 
+      {/* MEDIA */}
+
       {tab === "media" && (
         <>
           {!isNew && f.sku ? (
@@ -643,15 +677,19 @@ function ProductEditor() {
         </>
       )}
 
+      {/* CUSTOMER */}
+
       {tab === "customer" && (
         <VariantArea
           isNew={isNew}
           sku={f.sku}
           id={id}
           title="Customer Price & Stock"
-          text="Open Customer Price & Stock inside the variant editor below. Customer MRP, price, discount, pack size, MOQ and stock are managed per SKU."
+          text="Customer MRP, price, discount, pack size, MOQ and stock are managed per SKU."
         />
       )}
+
+      {/* RETAILER */}
 
       {tab === "retailer" && (
         <VariantArea
@@ -659,9 +697,11 @@ function ProductEditor() {
           sku={f.sku}
           id={id}
           title="Retailer Price & Stock"
-          text="Retailer pricing and retailer MOQ are managed per variation. Existing shared stock remains unchanged until separate retailer stock fields are intentionally added."
+          text="Retailer pricing and retailer MOQ are managed per variation."
         />
       )}
+
+      {/* DISTRIBUTOR */}
 
       {tab === "distributor" && (
         <VariantArea
@@ -669,9 +709,11 @@ function ProductEditor() {
           sku={f.sku}
           id={id}
           title="Distributor Price & Stock"
-          text="Distributor pricing and distributor MOQ are managed per variation without changing your existing customer pricing."
+          text="Distributor pricing and distributor MOQ are managed per variation."
         />
       )}
+
+      {/* SEO */}
 
       {tab === "seo" && (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -693,8 +735,8 @@ function ProductEditor() {
             </Field>
 
             <div className="text-xs text-slate-500">
-              Dedicated SEO title/meta-description columns are not being invented here because they are not present in
-              the current product form.
+              Dedicated SEO title and meta-description fields can be connected later if those database columns are
+              added.
             </div>
           </Section>
 
@@ -702,7 +744,7 @@ function ProductEditor() {
             <div className="rounded-lg border p-4">
               <div className="truncate text-lg text-blue-700">{f.name || "Product Name"}</div>
 
-              <div className="mt-1 text-sm text-emerald-700">
+              <div className="mt-1 break-all text-sm text-emerald-700">
                 aurona.co.in/products/
                 {f.slug || slugify(f.name) || "product"}
               </div>
@@ -714,6 +756,8 @@ function ProductEditor() {
           </Section>
         </div>
       )}
+
+      {/* SHIPPING */}
 
       {tab === "shipping" && (
         <div className="space-y-4">
@@ -736,9 +780,7 @@ function ProductEditor() {
               </Field>
             </div>
 
-            <div className="text-xs text-slate-500">
-              These are the product-level defaults used by your existing checkout/shipping logic.
-            </div>
+            <div className="text-xs text-slate-500">These are product-level default shipping dimensions.</div>
           </Section>
 
           {!isNew && f.sku ? (
@@ -752,6 +794,8 @@ function ProductEditor() {
         </div>
       )}
 
+      {/* WARRANTY */}
+
       {tab === "warranty" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Section title="Warranty">
@@ -764,7 +808,7 @@ function ProductEditor() {
             </Field>
 
             <div className="text-xs text-slate-500">
-              Warranty is also mirrored to the corresponding product family when you save.
+              Warranty is mirrored to the corresponding product family when saved.
             </div>
           </Section>
 
@@ -780,17 +824,22 @@ function ProductEditor() {
         </div>
       )}
 
+      {/* FREQUENTLY BOUGHT */}
+
       {tab === "frequently" && (
         <Notice
           title="Frequently Bought Together"
-          text="The current product schema/file does not contain a frequently-bought relationship field. I have kept the tab ready without creating fake data or breaking the existing database. We'll wire this to the real relationship table in the next step."
+          text="This tab is ready. We will connect it to the real product relationship data instead of creating fake database fields."
         />
       )}
+
+      {/* BOTTOM SAVE */}
 
       <div className="sticky bottom-3 z-20 flex justify-end">
         <div className="rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
           <Button onClick={save} disabled={saving} size="lg">
             <Save className="mr-2 h-4 w-4" />
+
             {saving ? "Saving…" : "Save Product"}
           </Button>
         </div>
@@ -830,15 +879,7 @@ function VariantArea({
   );
 }
 
-function Section({
-  title,
-  children,
-  className = "",
-}: {
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function Section({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   return (
     <div className={`space-y-3 rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
       <div className="text-sm font-semibold uppercase tracking-wider text-slate-500">{title}</div>
@@ -848,7 +889,7 @@ function Section({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
       <div className="text-xs font-medium text-slate-600">{label}</div>
@@ -927,9 +968,12 @@ function textToSpecs(text: string): Record<string, string> {
   for (const line of text.split("\n")) {
     const index = line.indexOf(":");
 
-    if (index <= 0) continue;
+    if (index <= 0) {
+      continue;
+    }
 
     const key = line.slice(0, index).trim();
+
     const value = line.slice(index + 1).trim();
 
     if (key && value) {
