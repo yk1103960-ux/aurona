@@ -17,6 +17,21 @@ export const Route = createFileRoute("/aurona-console-9f2x7k/coupons")({
   component: CouponsAdmin,
 });
 
+/** Local "YYYY-MM-DDTHH:mm" from the picker → absolute UTC timestamp. */
+function toIso(v?: string | null) {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+/** Stored timestamp → local value the datetime picker expects. */
+function toLocalInput(v?: string | null) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 type Coupon = {
   id: string;
   code: string;
@@ -48,7 +63,8 @@ function CouponsAdmin() {
   });
 
   const save = async () => {
-    if (!editing?.code || !editing.type || !editing.value) return toast.error("Code, type and value required");
+    if (!editing?.code || !editing.type || !(Number(editing.value) > 0))
+      return toast.error("Code, type and value required");
     const payload = {
       code: editing.code.trim().toUpperCase(),
       description: editing.description ?? null,
@@ -56,8 +72,8 @@ function CouponsAdmin() {
       value: Number(editing.value),
       min_order_value: Number(editing.min_order_value ?? 0),
       max_discount: editing.max_discount ? Number(editing.max_discount) : null,
-      starts_at: editing.starts_at || null,
-      expires_at: editing.expires_at || null,
+      starts_at: toIso(editing.starts_at),
+      expires_at: toIso(editing.expires_at),
       usage_limit: editing.usage_limit ? Number(editing.usage_limit) : null,
       per_user_limit: Number(editing.per_user_limit ?? 1),
       eligible_roles: editing.eligible_roles?.length ? editing.eligible_roles : ["customer", "retailer", "distributor"],
@@ -163,7 +179,7 @@ function CouponDialog({ editing, setEditing, save }: { editing: Partial<Coupon> 
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Total usage cap</Label><Input type="number" value={editing.usage_limit ?? ""} onChange={(e) => set("usage_limit", e.target.value)} placeholder="Unlimited" /></div>
-          <div><Label>Expires at</Label><Input type="datetime-local" value={editing.expires_at?.slice(0,16) ?? ""} onChange={(e) => set("expires_at", e.target.value)} /></div>
+          <div><Label>Expires at</Label><Input type="datetime-local" value={toLocalInput(editing.expires_at)} onChange={(e) => set("expires_at", e.target.value)} /></div>
         </div>
         <div><Label>Description</Label><Textarea value={editing.description ?? ""} onChange={(e) => set("description", e.target.value)} rows={2} /></div>
         <div>
