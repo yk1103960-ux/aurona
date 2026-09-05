@@ -6,7 +6,6 @@ import { useAuth } from "./useAuth";
 import { useCart } from "./useCart";
 import { readFlow, writeFlow, type CheckoutFlow } from "@/lib/checkout-flow";
 import { quoteShipping } from "@/lib/shipping.functions";
-import { applyCoupon } from "@/lib/coupons.functions";
 import type { AddressRow } from "@/components/account/AddressManager";
 
 export type DeliveryOption = { id: string; label: string; eta: string; price: number };
