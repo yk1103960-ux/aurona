@@ -32,10 +32,6 @@ const STEPS = [
 ];
 
 export const Route = createFileRoute("/careers")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    applyId: typeof search.applyId === "string" ? search.applyId : undefined,
-    applyTitle: typeof search.applyTitle === "string" ? search.applyTitle : undefined,
-  }),
   head: () => ({
     meta: [
       { title: "Careers & Referral Programs — Aurona Lighting" },
@@ -59,7 +55,6 @@ export const Route = createFileRoute("/careers")({
 function CareersPage() {
   const { data: jobs = [], isLoading } = useQuery(careersQuery);
   const { data: referrals = [] } = useQuery(referralProgramsQuery);
-  const { applyId, applyTitle } = Route.useSearch();
   const [applyTarget, setApplyTarget] = useState<ApplyTarget>(null);
   const lastAutoApply = useRef<string | null>(null);
   const [detail, setDetail] = useState<CareerProgram | null>(null);
@@ -67,9 +62,15 @@ function CareersPage() {
   const programs = jobs.filter((j) => j.kind !== "job");
 
   useEffect(() => {
-    if (isLoading || (!applyId && !applyTitle)) return;
+    if (isLoading || typeof window === "undefined") return;
 
-    const key = `${applyId ?? ""}|${applyTitle ?? ""}`;
+    const params = new URLSearchParams(window.location.search);
+    const applyId = params.get("applyId") ?? "";
+    const applyTitle = params.get("applyTitle") ?? "";
+
+    if (!applyId && !applyTitle) return;
+
+    const key = `${applyId}|${applyTitle}`;
     if (lastAutoApply.current === key) return;
 
     const allTargets = [...openings, ...programs];
@@ -93,11 +94,6 @@ function CareersPage() {
         allTargets.find((item) => {
           const candidate = normalize(item.title);
           return candidate.includes(wanted) || wanted.includes(candidate);
-        }) ??
-        allTargets.find((item) => {
-          const wantedWords = new Set(wanted.split(" ").filter((w) => w.length > 3));
-          const candidateWords = normalize(item.title).split(" ");
-          return candidateWords.some((word) => wantedWords.has(word));
         });
     }
 
@@ -114,7 +110,7 @@ function CareersPage() {
         title: applyTitle,
       });
     }
-  }, [applyId, applyTitle, isLoading, jobs]);
+  }, [isLoading, jobs]);
 
   return (
     <div className="container-x py-16">
