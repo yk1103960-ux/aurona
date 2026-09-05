@@ -747,15 +747,13 @@ function PartnerProgramPage() {
             application.
           </p>
           <Button asChild size="lg" className="mt-6 rounded-full px-10">
-            <Link
-              to="/careers"
-              search={{
-                applyId: program?.id,
-                applyTitle: program?.title,
-              }}
+            <a
+              href={`/careers?applyId=${encodeURIComponent(program?.id ?? "")}&applyTitle=${encodeURIComponent(
+                program?.title ?? "",
+              )}`}
             >
               Apply Now
-            </Link>
+            </a>
           </Button>
         </section>
       </div>
