@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "./useAuth";
 import { resolveProductId } from "@/lib/resolve-product";
-import type { Product } from "@/lib/queries";
+import { attachProductImages, type Product } from "@/lib/queries";
 
 export type CartRow = {
   id: string;
