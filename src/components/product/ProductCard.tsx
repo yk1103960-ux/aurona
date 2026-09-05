@@ -312,19 +312,86 @@ function QuickAddDialog({
   // Normally ProductCard already has family_slug. If it doesn't, resolve
   // the family through public_product_variants using the card SKU.
   const { data: resolvedFamilySlug } = useQuery({
-    queryKey: ["quick-add-family-slug", product.family_slug ?? null, product.sku],
-    enabled: open && !product.family_slug && Boolean(product.sku),
+    queryKey: [
+      "quick-add-family-slug-v2",
+      product.family_slug ?? null,
+      product.slug,
+      product.sku,
+      baseName(product.name),
+    ],
+    enabled: open && !product.family_slug,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("public_product_variants")
-        .select("family_id, product_families!inner(slug)")
-        .eq("sku", product.sku)
-        .maybeSingle();
+      const sku = String(product.sku ?? "").trim();
+      const slug = String(product.slug ?? "")
+        .trim()
+        .toLowerCase();
+      const name = baseName(product.name).trim().toLowerCase();
 
-      if (error) throw error;
+      // 1) Exact variant SKU -> family. This is the same relationship
+      // the real PDP loader uses.
+      if (sku) {
+        const exact = await supabase
+          .from("public_product_variants")
+          .select("family_id, product_families!inner(slug)")
+          .eq("sku", sku)
+          .maybeSingle();
 
-      return (data as { product_families?: { slug?: string | null } } | null)?.product_families?.slug ?? null;
+        if (exact.error) throw exact.error;
+
+        const exactSlug =
+          (exact.data as { product_families?: { slug?: string | null } } | null)?.product_families?.slug ?? null;
+
+        if (exactSlug) return exactSlug;
+      }
+
+      // 2) Product cards can be FAMILY SUMMARY rows whose SKU is the
+      // main SKU (for example IL-TRA) rather than a real variant SKU.
+      // Resolve those against product_families.main_sku.
+      const familiesResult = await supabase.from("product_families").select("slug, main_sku, name");
+
+      if (familiesResult.error) throw familiesResult.error;
+
+      const families = (familiesResult.data ?? []) as Array<{
+        slug: string;
+        main_sku: string | null;
+        name?: string | null;
+      }>;
+
+      if (sku) {
+        const byMainSku = families
+          .filter((f) => {
+            const mainSku = String(f.main_sku ?? "").trim();
+            if (!mainSku) return false;
+            return sku === mainSku || sku.startsWith(`${mainSku}-`) || mainSku.startsWith(`${sku}-`);
+          })
+          .sort((a, b) => String(b.main_sku ?? "").length - String(a.main_sku ?? "").length)[0];
+
+        if (byMainSku?.slug) return byMainSku.slug;
+      }
+
+      // 3) Last safe fallback: match the family slug/name carried by
+      // aggregate catalogue cards.
+      const normalize = (value: string) =>
+        value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+
+      const normalizedName = normalize(name);
+      const byIdentity = families.find((f) => {
+        const familySlug = String(f.slug ?? "").toLowerCase();
+        const familyName = normalize(String(f.name ?? ""));
+        return (
+          familySlug === slug ||
+          slug === familySlug ||
+          slug.startsWith(`${familySlug}-`) ||
+          familySlug.startsWith(`${slug}-`) ||
+          (familyName && familyName === normalizedName)
+        );
+      });
+
+      return byIdentity?.slug ?? null;
     },
   });
 
@@ -335,9 +402,7 @@ function QuickAddDialog({
   });
 
   const family = familyResult.data ?? null;
-  const isLoading =
-    familyResult.isLoading ||
-    (open && !product.family_slug && Boolean(product.sku) && resolvedFamilySlug === undefined);
+  const isLoading = familyResult.isLoading || (open && !product.family_slug && resolvedFamilySlug === undefined);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
