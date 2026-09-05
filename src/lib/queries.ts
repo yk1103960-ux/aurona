@@ -105,6 +105,33 @@ async function primaryImages(
   return out;
 }
 
+/**
+ * Attach primary photos to plain `products` rows (cart, checkout, order lines).
+ * Falls back to the product family photo when the product itself has none.
+ */
+export async function attachProductImages<T extends { id: string; sku?: string | null }>(
+  rows: T[],
+): Promise<(T & { image_url: string | null })[]> {
+  if (rows.length === 0) return [];
+  const imgs = await primaryImages("product_id", rows.map((r) => r.id));
+  const missing = rows.filter((r) => !imgs[r.id] && r.sku);
+  const famBySku = new Map<string, string>();
+  if (missing.length > 0) {
+    const { data } = await supabase
+      .from("public_product_variants")
+      .select("sku, family_id")
+      .in("sku", missing.map((r) => r.sku as string));
+    for (const link of (data ?? []) as unknown as { sku: string; family_id: string | null }[]) {
+      if (link.family_id) famBySku.set(link.sku, link.family_id);
+    }
+  }
+  const famImgs = await primaryImages("family_id", [...famBySku.values()]);
+  return rows.map((r) => {
+    const famId = r.sku ? famBySku.get(r.sku) : undefined;
+    return { ...r, image_url: imgs[r.id] ?? (famId ? famImgs[famId] ?? null : null) };
+  });
+}
+
 export const productsQuery = (filter?: {
   categorySlug?: string;
   featured?: boolean;

@@ -6,7 +6,6 @@ import { useAuth } from "./useAuth";
 import { useCart } from "./useCart";
 import { readFlow, writeFlow, type CheckoutFlow } from "@/lib/checkout-flow";
 import { quoteShipping } from "@/lib/shipping.functions";
-import { applyCoupon } from "@/lib/coupons.functions";
 import type { AddressRow } from "@/components/account/AddressManager";
 
 export type DeliveryOption = { id: string; label: string; eta: string; price: number };
@@ -66,15 +65,31 @@ export function useCheckoutSummary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rate?.id]);
 
-  const couponFn = useServerFn(applyCoupon);
+  // Validated by the database (SECURITY DEFINER `validate_coupon`) using the
+  // shopper's own session, so eligibility/limits are checked server-side and
+  // the real reason is shown when a code doesn't apply. The order total is
+  // recomputed and re-validated again when the order is placed.
   const couponQuery = useQuery({
-    queryKey: ["coupon", flow.coupon ?? null, cart.subtotal],
+    queryKey: ["coupon", flow.coupon ?? null, cart.subtotal, user?.id ?? null],
     enabled: Boolean(flow.coupon) && cart.subtotal > 0,
-    queryFn: () => couponFn({ data: { code: flow.coupon!, subtotal: cart.subtotal } }),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("validate_coupon", {
+        _code: flow.coupon!,
+        _subtotal: cart.subtotal,
+      });
+      if (error) return { valid: false, discount: 0, reason: error.message };
+      const row = Array.isArray(data) ? data[0] : data;
+      return {
+        valid: Boolean(row?.coupon_id),
+        discount: Number(row?.discount ?? 0),
+        reason: row?.reason ?? null,
+      };
+    },
     retry: false,
   });
   const couponValid = Boolean(couponQuery.data?.valid);
   const discount = couponValid ? Number(couponQuery.data?.discount ?? 0) : 0;
+
 
   const delivery = rate?.price ?? 0;
   const mrpSavings = Math.max(0, cart.mrpTotal - cart.subtotal);
