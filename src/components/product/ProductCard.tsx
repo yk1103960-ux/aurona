@@ -454,11 +454,13 @@ function FamilyQuickAddContent({
 }) {
   const cart = useCart();
   const [quickQty, setQuickQty] = useState(1);
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+
   const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
 
   const skus = useMemo(() => family.variants.map((v) => v.sku).filter(Boolean), [family]);
-  const { data: productMap } = useQuery(familyProductsQuery(skus));
 
+  const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
 
   const stock = Number(variant.stock ?? 0);
@@ -466,22 +468,71 @@ function FamilyQuickAddContent({
   const packSize = Number(variant.pack_size ?? variant.moq ?? 1);
   const maxQty = Math.max(1, stock);
 
-  // Related photos: selected variant first, then other family variants with
-  // their own image, deduplicated by image identity.
-  const relatedPhotoVariants = useMemo(() => {
-    const ordered = [variant, ...family.variants.filter((v) => v.sku !== variant.sku)];
+  // REAL related photos from product_images, not repeated variant thumbnails.
+  const imagesQuery = useQuery({
+    queryKey: ["quick-add-product-images", family.id, variant.sku, productId],
+    enabled: Boolean(family.id),
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("id, image_url, alt_text, sort_order, is_primary, family_id, product_id, variant_sku")
+        .eq("family_id", family.id)
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true });
 
+      if (error) throw error;
+
+      const rows = data ?? [];
+
+      // Prefer photos for the selected SKU, then general family photos,
+      // then the remaining family photos.
+      return [...rows].sort((a, b) => {
+        const score = (row: (typeof rows)[number]) => {
+          if (row.variant_sku === variant.sku) return 0;
+          if (!row.variant_sku) return 1;
+          return 2;
+        };
+        return score(a) - score(b) || Number(a.sort_order) - Number(b.sort_order);
+      });
+    },
+  });
+
+  const galleryImages = useMemo(() => {
     const seen = new Set<string>();
+    const result: Array<{ id: string; image_url: string; alt_text?: string | null }> = [];
 
-    return ordered
-      .filter((v) => {
-        const key = String(v.image_url ?? v.image_seed ?? "");
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 5);
-  }, [family.variants, variant]);
+    for (const row of imagesQuery.data ?? []) {
+      const url = String(row.image_url ?? "").trim();
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      result.push({
+        id: row.id,
+        image_url: url,
+        alt_text: row.alt_text,
+      });
+      if (result.length >= 6) break;
+    }
+
+    // Fallback to selected variant/family image only when DB has no photos.
+    if (result.length === 0) {
+      const fallback = String(variant.image_url ?? family.image_url ?? "").trim();
+      if (fallback) {
+        result.push({
+          id: `fallback-${variant.sku}`,
+          image_url: fallback,
+          alt_text: family.name,
+        });
+      }
+    }
+
+    return result;
+  }, [imagesQuery.data, variant.sku, variant.image_url, family.image_url, family.name]);
+
+  const selectedImageUrl =
+    activeImageUrl && galleryImages.some((img) => img.image_url === activeImageUrl)
+      ? activeImageUrl
+      : (galleryImages[0]?.image_url ?? null);
 
   const addSelected = () => {
     if (!productId) {
@@ -511,72 +562,119 @@ function FamilyQuickAddContent({
   };
 
   return (
-    <div className="grid gap-0 md:grid-cols-[230px_minmax(0,1fr)]">
-      {/* Compact image/gallery side keeps the dialog rectangular instead of square. */}
-      <div className="border-b border-border bg-surface/40 p-4 md:border-b-0 md:border-r">
-        <div className="mx-auto aspect-square w-full max-w-[210px] overflow-hidden rounded-xl border border-border/70 bg-white p-2">
-          <ProductImage
-            product={
-              {
-                ...variant,
-                name: family.name,
-                slug: family.slug,
-                image_seed: variant.image_seed ?? family.image_seed,
-                image_url: variant.image_url ?? family.image_url,
-              } as any
-            }
-            categoryIcon={categoryIcon}
-            className="h-full w-full object-contain"
-          />
+    <div className="grid min-h-0 gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
+      {/* LEFT: compact real-photo gallery */}
+      <div className="border-b border-border bg-surface/40 p-3 sm:border-b-0 sm:border-r">
+        <div className="mx-auto flex h-[190px] w-full max-w-[210px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-2">
+          {selectedImageUrl ? (
+            <img src={selectedImageUrl} alt={family.name} className="h-full w-full object-contain" />
+          ) : (
+            <ProductImage
+              product={
+                {
+                  ...variant,
+                  name: family.name,
+                  slug: family.slug,
+                  image_seed: variant.image_seed ?? family.image_seed,
+                  image_url: variant.image_url ?? family.image_url,
+                } as any
+              }
+              categoryIcon={categoryIcon}
+              className="h-full w-full object-contain"
+            />
+          )}
         </div>
 
-        {relatedPhotoVariants.length > 1 && (
-          <div className="mt-3">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              Related photos
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {relatedPhotoVariants.map((photoVariant) => (
-                <div
-                  key={photoVariant.sku}
-                  className={cn(
-                    "grid h-12 w-12 place-items-center overflow-hidden rounded-lg border bg-white p-1",
-                    photoVariant.sku === variant.sku ? "border-primary ring-1 ring-primary/25" : "border-border",
-                  )}
-                  title={photoVariant.sku}
-                >
-                  <ProductImage
-                    product={
-                      {
-                        ...photoVariant,
-                        name: family.name,
-                        slug: family.slug,
-                        image_seed: photoVariant.image_seed ?? family.image_seed,
-                        image_url: photoVariant.image_url ?? family.image_url,
-                      } as any
-                    }
-                    categoryIcon={categoryIcon}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
+        <div className="mt-3">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            Related photos
+          </div>
+
+          {imagesQuery.isLoading ? (
+            <div className="flex gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-11 w-11 animate-pulse rounded-lg bg-muted" />
               ))}
             </div>
-          </div>
-        )}
+          ) : galleryImages.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {galleryImages.map((image, index) => {
+                const active = selectedImageUrl === image.image_url;
+
+                return (
+                  <button
+                    key={image.id}
+                    type="button"
+                    onClick={() => setActiveImageUrl(image.image_url)}
+                    className={cn(
+                      "relative grid h-12 w-12 place-items-center overflow-hidden rounded-lg border bg-white p-1 transition",
+                      active ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/60",
+                    )}
+                    aria-label={`Show product photo ${index + 1}`}
+                  >
+                    <img
+                      src={image.image_url}
+                      alt={image.alt_text || `${family.name} photo ${index + 1}`}
+                      className="h-full w-full object-contain"
+                    />
+                    <span className="absolute bottom-0.5 right-1 rounded bg-background/80 px-1 text-[8px] font-bold">
+                      {index + 1}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-[11px] text-muted-foreground">No additional photos uploaded for this variation.</div>
+          )}
+        </div>
       </div>
 
+      {/* RIGHT: choices + quantity + CTA */}
       <div className="p-4 sm:p-5">
         <DialogHeader>
-          <DialogTitle className="text-display text-xl sm:text-2xl">{family.name}</DialogTitle>
+          <DialogTitle className="text-display text-xl">{family.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-xl font-bold sm:text-2xl">{inr(Number(variant.price ?? 0))}</span>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-xl font-bold">{inr(Number(variant.price ?? 0))}</span>
           {Number(variant.mrp ?? 0) > Number(variant.price ?? 0) && (
-            <span className="text-xs text-muted-foreground line-through sm:text-sm">
-              {inr(Number(variant.mrp ?? 0))}
-            </span>
+            <span className="text-xs text-muted-foreground line-through">{inr(Number(variant.mrp ?? 0))}</span>
           )}
+        </div>
+
+        {/* Quantity is intentionally near the top so it cannot disappear below the fold. */}
+        <div className="mt-4 rounded-xl border border-border bg-surface/30 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-bold">Quantity</span>
+            <span className="text-[11px] text-muted-foreground">{stock} available</span>
+          </div>
+
+          <div className="inline-flex h-10 items-center overflow-hidden rounded-full border border-primary/30 bg-background shadow-sm">
+            <button
+              type="button"
+              onClick={() => setQuickQty((q) => Math.max(1, q - 1))}
+              disabled={quickQty <= 1}
+              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Decrease quantity"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+
+            <span className="min-w-12 border-x border-border px-3 text-center text-base font-black tabular-nums">
+              {quickQty}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setQuickQty((q) => Math.min(maxQty, q + 1))}
+              disabled={!inStock || quickQty >= maxQty}
+              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Increase quantity"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {family.axes.length > 0 ? (
@@ -601,6 +699,7 @@ function FamilyQuickAddContent({
                         onClick={() => {
                           setAxis(axis.axis_key, value);
                           setQuickQty(1);
+                          setActiveImageUrl(null);
                         }}
                         className={cn(
                           "rounded-lg border px-3 py-1.5 text-xs font-medium transition",
@@ -624,39 +723,9 @@ function FamilyQuickAddContent({
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Quantity</div>
-            <div className="mt-1 flex h-9 items-center overflow-hidden rounded-full border border-border bg-background">
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center transition hover:bg-surface disabled:opacity-40"
-                onClick={() => setQuickQty((q) => Math.max(1, q - 1))}
-                disabled={quickQty <= 1}
-                aria-label="Decrease quantity"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="min-w-10 text-center text-sm font-bold tabular-nums">{quickQty}</span>
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center transition hover:bg-surface disabled:opacity-40"
-                onClick={() => setQuickQty((q) => Math.min(maxQty, q + 1))}
-                disabled={!inStock || quickQty >= maxQty}
-                aria-label="Increase quantity"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="text-right text-[11px] text-muted-foreground">
-            <div>SKU {variant.sku}</div>
-            <div>
-              {stock} available
-              {packSize > 1 ? ` · Pack of ${packSize}` : ""}
-            </div>
-          </div>
+        <div className="mt-4 text-[11px] text-muted-foreground">
+          SKU {variant.sku}
+          {packSize > 1 ? ` · Pack of ${packSize}` : ""}
         </div>
 
         <Button
@@ -686,9 +755,57 @@ function LegacyQuickAddContent({
   cart: ReturnType<typeof useCart>;
 }) {
   const [quickQty, setQuickQty] = useState(1);
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+
   const stock = Number(product.stock ?? 0);
   const inStock = stock > 0;
   const maxQty = Math.max(1, stock);
+
+  const imagesQuery = useQuery({
+    queryKey: ["quick-add-legacy-images", product.id, product.sku],
+    enabled: Boolean(product.id),
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("id, image_url, alt_text, sort_order, is_primary, product_id, variant_sku")
+        .eq("product_id", product.id)
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const galleryImages = useMemo(() => {
+    const seen = new Set<string>();
+    const result: Array<{ id: string; image_url: string; alt_text?: string | null }> = [];
+
+    for (const row of imagesQuery.data ?? []) {
+      const url = String(row.image_url ?? "").trim();
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      result.push({ id: row.id, image_url: url, alt_text: row.alt_text });
+      if (result.length >= 6) break;
+    }
+
+    const fallback = String(product.image_url ?? "").trim();
+    if (result.length === 0 && fallback) {
+      result.push({
+        id: `fallback-${product.id}`,
+        image_url: fallback,
+        alt_text: product.name,
+      });
+    }
+
+    return result;
+  }, [imagesQuery.data, product.id, product.image_url, product.name]);
+
+  const selectedImageUrl =
+    activeImageUrl && galleryImages.some((img) => img.image_url === activeImageUrl)
+      ? activeImageUrl
+      : (galleryImages[0]?.image_url ?? null);
 
   const add = () => {
     if (!inStock) {
@@ -717,71 +834,94 @@ function LegacyQuickAddContent({
   };
 
   return (
-    <div className="grid gap-0 md:grid-cols-[230px_minmax(0,1fr)]">
-      <div className="border-b border-border bg-surface/40 p-4 md:border-b-0 md:border-r">
-        <div className="mx-auto aspect-square w-full max-w-[210px] overflow-hidden rounded-xl border border-border/70 bg-white p-2">
-          <ProductImage product={product} categoryIcon={categoryIcon} className="h-full w-full object-contain" />
+    <div className="grid gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="border-b border-border bg-surface/40 p-3 sm:border-b-0 sm:border-r">
+        <div className="mx-auto flex h-[190px] w-full max-w-[210px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-2">
+          {selectedImageUrl ? (
+            <img src={selectedImageUrl} alt={product.name} className="h-full w-full object-contain" />
+          ) : (
+            <ProductImage product={product} categoryIcon={categoryIcon} className="h-full w-full object-contain" />
+          )}
         </div>
 
         <div className="mt-3">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            Related photo
+            Related photos
           </div>
-          <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-lg border border-primary bg-white p-1 ring-1 ring-primary/25">
-            <ProductImage product={product} categoryIcon={categoryIcon} className="h-full w-full object-contain" />
+
+          <div className="flex flex-wrap gap-2">
+            {galleryImages.map((image, index) => (
+              <button
+                key={image.id}
+                type="button"
+                onClick={() => setActiveImageUrl(image.image_url)}
+                className={cn(
+                  "relative grid h-12 w-12 place-items-center overflow-hidden rounded-lg border bg-white p-1",
+                  selectedImageUrl === image.image_url ? "border-primary ring-2 ring-primary/20" : "border-border",
+                )}
+              >
+                <img
+                  src={image.image_url}
+                  alt={image.alt_text || `${product.name} photo ${index + 1}`}
+                  className="h-full w-full object-contain"
+                />
+                <span className="absolute bottom-0.5 right-1 rounded bg-background/80 px-1 text-[8px] font-bold">
+                  {index + 1}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-5">
         <DialogHeader>
-          <DialogTitle className="text-display text-xl sm:text-2xl">{baseName(product.name)}</DialogTitle>
+          <DialogTitle className="text-display text-xl">{baseName(product.name)}</DialogTitle>
         </DialogHeader>
 
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-xl font-bold sm:text-2xl">{inr(Number(product.price ?? 0))}</span>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-xl font-bold">{inr(Number(product.price ?? 0))}</span>
           {Number(product.mrp ?? 0) > Number(product.price ?? 0) && (
-            <span className="text-xs text-muted-foreground line-through sm:text-sm">
-              {inr(Number(product.mrp ?? 0))}
-            </span>
+            <span className="text-xs text-muted-foreground line-through">{inr(Number(product.mrp ?? 0))}</span>
           )}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-border bg-surface/30 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-bold">Quantity</span>
+            <span className="text-[11px] text-muted-foreground">{stock} available</span>
+          </div>
+
+          <div className="inline-flex h-10 items-center overflow-hidden rounded-full border border-primary/30 bg-background shadow-sm">
+            <button
+              type="button"
+              onClick={() => setQuickQty((q) => Math.max(1, q - 1))}
+              disabled={quickQty <= 1}
+              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:opacity-35"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+
+            <span className="min-w-12 border-x border-border px-3 text-center text-base font-black tabular-nums">
+              {quickQty}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setQuickQty((q) => Math.min(maxQty, q + 1))}
+              disabled={!inStock || quickQty >= maxQty}
+              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:opacity-35"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 rounded-lg border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
           This product has one available variation.
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Quantity</div>
-            <div className="mt-1 flex h-9 items-center overflow-hidden rounded-full border border-border bg-background">
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center transition hover:bg-surface disabled:opacity-40"
-                onClick={() => setQuickQty((q) => Math.max(1, q - 1))}
-                disabled={quickQty <= 1}
-                aria-label="Decrease quantity"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="min-w-10 text-center text-sm font-bold tabular-nums">{quickQty}</span>
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center transition hover:bg-surface disabled:opacity-40"
-                onClick={() => setQuickQty((q) => Math.min(maxQty, q + 1))}
-                disabled={!inStock || quickQty >= maxQty}
-                aria-label="Increase quantity"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="text-right text-[11px] text-muted-foreground">
-            <div>SKU {product.sku}</div>
-            <div>{stock} available</div>
-          </div>
-        </div>
+        <div className="mt-4 text-[11px] text-muted-foreground">SKU {product.sku}</div>
 
         <Button
           type="button"
