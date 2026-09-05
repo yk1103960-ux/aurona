@@ -517,6 +517,7 @@ function AuthPage() {
       await finishLogin("otp");
     } finally {
       setBusy(false);
+      signupFinishing.current = false;
     }
   };
 
