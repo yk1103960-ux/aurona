@@ -62,14 +62,21 @@ export function ProductCard({
   const inWishlist = wl.has(product.id, product.sku);
   const detailSlug = product.slug;
   const detailSearch = product.family_slug ? { v: product.sku } : {};
+  const requiresVariantSelection = Boolean(product.family_slug);
+  const optionSlug = product.family_slug ?? product.slug;
 
   const line = cart.lineFor(product.id, product.sku);
   const qty = line?.quantity ?? 0;
   const stock = Number(product.stock ?? 0);
   const lowStock = stock > 0 && stock <= 8;
   const outOfStock = stock <= 0;
+  const spec = product.wattage ?? product.size ?? null;
 
   const handleAdd = () => {
+    // Never quick-add a product family. The customer must first choose
+    // the complete real variant/SKU combination on the product page.
+    if (requiresVariantSelection) return;
+
     cart.add.mutate(
       { productId: product.id, sku: product.sku },
       { onSuccess: () => toast.success("Added to cart", { description: product.name, duration: 1600 }) },
@@ -160,6 +167,9 @@ export function ProductCard({
       <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-eyebrow text-[10px]">{product.categories?.name ?? "Aurona"}</span>
+          {spec && (
+            <span className="rounded-md bg-primary/8 px-1.5 py-0.5 text-[10px] font-bold text-primary">{spec}</span>
+          )}
           {product.color && (
             <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
               {product.color}
@@ -272,6 +282,17 @@ export function ProductCard({
               <Plus className="h-3.5 w-3.5" />
             </button>
           </div>
+        ) : requiresVariantSelection ? (
+          <Button asChild size="sm" className="press mt-2 w-full gap-2 rounded-full">
+            <Link
+              to="/products/$slug"
+              params={{ slug: optionSlug }}
+              search={{}}
+              aria-label={`Select options for ${baseName(product.name)}`}
+            >
+              <ShoppingCart className="h-4 w-4" /> SELECT OPTIONS
+            </Link>
+          </Button>
         ) : (
           <Button
             size="sm"
