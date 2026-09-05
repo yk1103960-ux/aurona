@@ -179,7 +179,7 @@ function CouponDialog({ editing, setEditing, save }: { editing: Partial<Coupon> 
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Total usage cap</Label><Input type="number" value={editing.usage_limit ?? ""} onChange={(e) => set("usage_limit", e.target.value)} placeholder="Unlimited" /></div>
-          <div><Label>Expires at</Label><Input type="datetime-local" value={editing.expires_at?.slice(0,16) ?? ""} onChange={(e) => set("expires_at", e.target.value)} /></div>
+          <div><Label>Expires at</Label><Input type="datetime-local" value={toLocalInput(editing.expires_at)} onChange={(e) => set("expires_at", e.target.value)} /></div>
         </div>
         <div><Label>Description</Label><Textarea value={editing.description ?? ""} onChange={(e) => set("description", e.target.value)} rows={2} /></div>
         <div>
