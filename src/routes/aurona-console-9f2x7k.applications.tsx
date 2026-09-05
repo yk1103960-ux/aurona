@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { listPartnerApplications, reviewPartnerApplication } from "@/lib/partner-admin.functions";
+import {
+  deletePartnerApplication,
+  listPartnerApplications,
+  reviewPartnerApplication,
+} from "@/lib/partner-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/applications")({
   head: () => ({
@@ -68,6 +72,7 @@ const TABS = [
   { key: "under_review", label: "Under Review" },
   { key: "approved", label: "Approved" },
   { key: "rejected", label: "Rejected" },
+  { key: "disabled", label: "Disabled" },
 ] as const;
 
 const STATUS_STYLE: Record<string, string> = {
@@ -75,6 +80,7 @@ const STATUS_STYLE: Record<string, string> = {
   under_review: "bg-sky-100 text-sky-800",
   approved: "bg-emerald-100 text-emerald-800",
   rejected: "bg-rose-100 text-rose-800",
+  disabled: "bg-slate-200 text-slate-700",
 };
 
 function ApplicationsPage() {
