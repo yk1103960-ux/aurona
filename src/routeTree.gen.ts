@@ -46,6 +46,7 @@ import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-co
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
 import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
+import { Route as PartnerProgramIdRouteImport } from './routes/partner-program.$id'
 import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
@@ -265,6 +266,11 @@ const PartnerTypeRoute = PartnerTypeRouteImport.update({
   id: '/$type',
   path: '/$type',
   getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerProgramIdRoute = PartnerProgramIdRouteImport.update({
+  id: '/partner-program/$id',
+  path: '/partner-program/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
   id: '/orders/$orderId',
@@ -511,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/partner-program/$id': typeof PartnerProgramIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -580,6 +587,7 @@ export interface FileRoutesByTo {
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/partner-program/$id': typeof PartnerProgramIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -653,6 +661,7 @@ export interface FileRoutesById {
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
+  '/partner-program/$id': typeof PartnerProgramIdRoute
   '/partner/$type': typeof PartnerTypeRoute
   '/policies/$slug': typeof PoliciesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -727,6 +736,7 @@ export interface FileRouteTypes {
     | '/blogs/$slug'
     | '/category/$slug'
     | '/orders/$orderId'
+    | '/partner-program/$id'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -796,6 +806,7 @@ export interface FileRouteTypes {
     | '/blogs/$slug'
     | '/category/$slug'
     | '/orders/$orderId'
+    | '/partner-program/$id'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -868,6 +879,7 @@ export interface FileRouteTypes {
     | '/blogs/$slug'
     | '/category/$slug'
     | '/orders/$orderId'
+    | '/partner-program/$id'
     | '/partner/$type'
     | '/policies/$slug'
     | '/products/$slug'
@@ -923,6 +935,7 @@ export interface RootRouteChildren {
   BlogsSlugRoute: typeof BlogsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
   OrdersOrderIdRoute: typeof OrdersOrderIdRoute
+  PartnerProgramIdRoute: typeof PartnerProgramIdRoute
   PoliciesSlugRoute: typeof PoliciesSlugRoute
   BlogsIndexRoute: typeof BlogsIndexRoute
   ApiPublicCartRemindersRoute: typeof ApiPublicCartRemindersRoute
@@ -1194,6 +1207,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/$type'
       preLoaderRoute: typeof PartnerTypeRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/partner-program/$id': {
+      id: '/partner-program/$id'
+      path: '/partner-program/$id'
+      fullPath: '/partner-program/$id'
+      preLoaderRoute: typeof PartnerProgramIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/orders/$orderId': {
       id: '/orders/$orderId'
@@ -1559,6 +1579,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogsSlugRoute: BlogsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
   OrdersOrderIdRoute: OrdersOrderIdRoute,
+  PartnerProgramIdRoute: PartnerProgramIdRoute,
   PoliciesSlugRoute: PoliciesSlugRoute,
   BlogsIndexRoute: BlogsIndexRoute,
   ApiPublicCartRemindersRoute: ApiPublicCartRemindersRoute,

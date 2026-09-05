@@ -136,9 +136,12 @@ function CareersPage() {
                 <h3 className="text-display mt-5 text-2xl">{r.title}</h3>
                 <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{r.description}</p>
                 <div className="mt-auto flex flex-wrap gap-2 pt-5">
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setDetail(r)}>
-                    Read more
+                  <Button asChild size="sm" variant="outline" className="rounded-full">
+                    <Link to="/partner-program/$id" params={{ id: r.id }}>
+                      Read more
+                    </Link>
                   </Button>
+
                   {closed ? (
                     <span className="inline-block rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
                       Applications closed
