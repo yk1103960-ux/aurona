@@ -120,6 +120,8 @@ function AuthPage() {
     typeof window === "undefined" ? null : sessionStorage.getItem(TWOFA_MARK),
   );
   const twoFaBusy = useRef(false);
+  /** True while a just-verified sign-up is finishing — the gate must not run. */
+  const signupFinishing = useRef(false);
 
   const markTwoFaCleared = (userId: string) => {
     if (typeof window !== "undefined") sessionStorage.setItem(TWOFA_MARK, userId);
