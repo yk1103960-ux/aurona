@@ -1,206 +1,136 @@
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+import { useCart } from "./useCart";
+import { readFlow, writeFlow, type CheckoutFlow } from "@/lib/checkout-flow";
+import { quoteShipping } from "@/lib/shipping.functions";
+import { applyCoupon } from "@/lib/coupons.functions";
+import type { AddressRow } from "@/components/account/AddressManager";
 
-
-
-const AddressSchema = z.object({
-  full_name: z.string().trim().min(1).max(120),
-  phone: z.string().trim().min(6).max(20).regex(/^[+\d\s\-()]+$/),
-  email: z.string().trim().email().max(200).optional().or(z.literal("")),
-  address: z.string().trim().min(4).max(500),
-  city: z.string().trim().min(1).max(120),
-  state: z.string().trim().min(1).max(120),
-  pincode: z.string().trim().min(4).max(12).regex(/^\d+$/),
-});
-
-const PlaceOrderInput = z.object({
-  address: AddressSchema,
-  payment_method: z.enum(["cod", "upi", "card"]),
-  shipping_rate_id: z.string().trim().min(1).max(60),
-  coupon_code: z.string().trim().min(2).max(64).optional(),
-});
-
+export type DeliveryOption = { id: string; label: string; eta: string; price: number };
 
 /**
- * Server-authoritative order placement.
- * - Reads the caller's cart via RLS (no client price input trusted).
- * - Recomputes item prices from product_variants using the caller's pricing role.
- * - Recomputes shipping from the server-side rate table.
- * - Distributors cannot check out (contact-sales only).
- * - Inserts order + items in a single controlled server call.
+ * Single source of truth for the money shown across cart → checkout → payment.
+ * Delivery is quoted on the server from real product weights and the
+ * destination pincode. Coupon validation goes through applyCoupon(), which
+ * avoids the broken validate_coupon SQL RPC.
+ *
+ * The figures here are display-only — the order total is recomputed
+ * server-side when the order is placed.
  */
-export const placeOrder = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => PlaceOrderInput.parse(input))
-  .handler(async ({ data, context }) => {
-    const supabase = context.supabase;
+export function useCheckoutSummary() {
+  const { user, loading: authLoading } = useAuth();
+  const cart = useCart();
 
-    // 1) Pricing role — if distributor, block checkout entirely.
-    const { data: roleData } = await supabase.rpc("current_pricing_role");
-    const role = (roleData as string | null) ?? "guest";
-    if (role === "distributor") {
-      throw new Error("Distributor accounts must contact sales to place orders.");
-    }
+  const [flow, setFlow] = useState<CheckoutFlow>({});
+  const [hydrated, setHydrated] = useState(false);
 
-    // 2) Load the caller's cart via RLS. Trust nothing from the client.
-    const { data: cartRows, error: cartErr } = await supabase
-      .from("cart_items")
-      .select("id, product_id, quantity, products(id, sku, name, price)")
-      .order("created_at", { ascending: false });
-    if (cartErr) throw new Error("Unable to load cart. Please try again.");
-    const items = (cartRows ?? []) as Array<{
-      id: string;
-      product_id: string;
-      quantity: number;
-      products: { id: string; sku: string | null; name: string; price: number } | null;
-    }>;
-    if (items.length === 0) throw new Error("Your cart is empty.");
+  useEffect(() => {
+    setFlow(readFlow());
+    setHydrated(true);
+  }, []);
 
-    // 3) Validate quantities and collect SKUs for authoritative pricing.
-    for (const it of items) {
-      if (!it.products) throw new Error("A product in your cart is unavailable.");
-      if (!Number.isInteger(it.quantity) || it.quantity <= 0 || it.quantity > 999) {
-        throw new Error("Invalid quantity in cart.");
-      }
-    }
-    const skus = items.map((i) => i.products!.sku).filter(Boolean) as string[];
+  const patchFlow = (patch: CheckoutFlow) => setFlow(writeFlow(patch));
 
-    // 4) Ask the DB for the caller's visible (role-adjusted) prices.
-    const priceMap = new Map<string, number>();
-    if (skus.length > 0) {
-      const { data: priced, error: priceErr } = await supabase.rpc("get_visible_prices", { _skus: skus });
-      if (priceErr) throw new Error("Unable to price your cart. Please try again.");
-      for (const row of (priced ?? []) as Array<{ sku: string; price: number | null }>) {
-        if (row.price != null) priceMap.set(row.sku, Number(row.price));
-      }
-    }
+  const addressesQuery = useQuery({
+    queryKey: ["addresses", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
 
-    // 5) Recompute totals from the authoritative prices.
-    let subtotal = 0;
-    let mrpTotal = 0;
-    const orderItems = items.map((it) => {
-      const sku = it.products!.sku;
-      const authoritative = sku ? priceMap.get(sku) : undefined;
-      const price = authoritative ?? Number(it.products!.price);
-      if (!Number.isFinite(price) || price <= 0) {
-        throw new Error("A product in your cart is unavailable.");
-      }
-      subtotal += price * it.quantity;
-      mrpTotal += price * it.quantity;
-      return {
-        product_id: it.product_id,
-        product_name: it.products!.name,
-        price,
-        quantity: it.quantity,
-      };
-    });
-    subtotal = Math.round(subtotal * 100) / 100;
-
-    // 6) Shipping. Courier (Shiprocket) charges apply to retail customers only:
-    // retailer and distributor orders ship through our local transport network
-    // and are never charged a customer courier rate. Enforced here on the
-    // server so the browser cannot influence it.
-    const wholesale = role === "retailer" || role === "distributor";
-    let shipping = 0;
-
-    if (wholesale) {
-      shipping = 0;
-    } else {
-      const { quoteShippingForCart } = await import("./shipping.server");
-      const quote = await quoteShippingForCart({
-        lines: items.map((it) => ({
-          sku: it.products!.sku,
-          name: it.products!.name,
-          price: Number(it.products!.price),
-          quantity: it.quantity,
-        })),
-        pincode: data.address.pincode,
-        cod: data.payment_method === "cod",
-        subtotal,
-      });
-      if (!quote.serviceable) {
-        throw new Error(quote.message ?? "Delivery is unavailable for this pincode.");
-      }
-      const rate = quote.rates.find((r) => r.id === data.shipping_rate_id) ?? quote.rates[0];
-      if (!rate) throw new Error("Selected shipping option is no longer available.");
-      shipping = Math.round(Number(rate.price) * 100) / 100;
-    }
-
-
-    // 6b) Coupon — validated server-side; the browser never supplies a discount.
-    let couponId: string | null = null;
-    let couponDiscount = 0;
-    if (data.coupon_code) {
-      const { data: rows } = await supabase.rpc("validate_coupon", {
-        _code: data.coupon_code,
-        _subtotal: subtotal,
-      });
-      const row = Array.isArray(rows) ? rows[0] : rows;
-      if (!row?.coupon_id) {
-        throw new Error(row?.reason ?? "This coupon is not valid for your order.");
-      }
-      couponId = row.coupon_id as string;
-      couponDiscount = Math.min(subtotal, Math.max(0, Number(row.discount ?? 0)));
-    }
-
-    const total = Math.round((subtotal - couponDiscount + shipping) * 100) / 100;
-
-
-    // 7) Insert order + items using the user-scoped client (RLS enforces ownership).
-    const { data: order, error: orderErr } = await supabase
-      .from("orders")
-      .insert({
-        user_id: context.userId,
-        subtotal,
-        discount: Math.max(0, mrpTotal - subtotal) + couponDiscount,
-        shipping,
-        total,
-        discount_code: data.coupon_code ?? null,
-        payment_method: data.payment_method,
-        payment_status: "pending",
-        status: "pending",
-        full_name: data.address.full_name,
-        phone: data.address.phone,
-        email: data.address.email || null,
-        address: data.address.address,
-        city: data.address.city,
-        state: data.address.state,
-        pincode: data.address.pincode,
-      })
-      .select("id, order_number")
-      .single();
-
-    if (orderErr || !order) throw new Error("Unable to place your order. Please try again.");
-
-    const { error: itemsErr } = await supabase.from("order_items").insert(
-      orderItems.map((it) => ({ ...it, order_id: order.id })),
-    );
-    if (itemsErr) {
-      // best-effort rollback
-      await supabase.from("orders").delete().eq("id", order.id);
-      throw new Error("Unable to place your order. Please try again.");
-    }
-
-    // 7b) Record the coupon redemption (never blocks the order).
-    if (couponId) {
-      await supabase
-        .rpc("redeem_coupon", { _coupon_id: couponId, _order_id: order.id, _amount: couponDiscount })
-        .then(() => undefined, () => undefined);
-    }
-
-
-    // 8) Affiliate commission (no-op when the buyer isn't attributed).
-    try {
-      const { recordCommissionForOrder } = await import("./affiliate.server");
-      await recordCommissionForOrder(order.id);
-    } catch {
-      // Commission accounting must never block a paid order.
-    }
-
-    // 9) Clear the cart.
-    await supabase.from("cart_items").delete().eq("user_id", context.userId);
-
-
-    return { orderId: order.id, orderNumber: order.order_number, total };
+      if (error) throw error;
+      return (data ?? []) as AddressRow[];
+    },
   });
+
+  const addresses = addressesQuery.data ?? [];
+  const address = addresses.find((a) => a.id === flow.addressId) ?? null;
+
+  const method = flow.method ?? "cod";
+  const cod = method === "cod";
+
+  const quoteFn = useServerFn(quoteShipping);
+  const deliveryQuery = useQuery({
+    queryKey: ["delivery-quote", address?.pincode ?? null, cod, cart.count, cart.subtotal],
+    enabled: Boolean(address?.pincode) && cart.items.length > 0,
+    queryFn: () => quoteFn({ data: { pincode: address!.pincode, cod } }),
+    retry: false,
+  });
+
+  const rates: DeliveryOption[] = deliveryQuery.data?.rates ?? [];
+  const serviceable = deliveryQuery.data?.serviceable ?? false;
+  const rate = rates.find((r) => r.id === flow.rateId) ?? rates[0] ?? null;
+
+  useEffect(() => {
+    if (rate && flow.rateId !== rate.id) patchFlow({ rateId: rate.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rate?.id]);
+
+  const applyCouponFn = useServerFn(applyCoupon);
+
+  const couponQuery = useQuery({
+    queryKey: ["coupon", flow.coupon ?? null, cart.subtotal, user?.id ?? null],
+    enabled: Boolean(flow.coupon) && cart.subtotal > 0,
+    queryFn: async () => {
+      try {
+        return await applyCouponFn({
+          data: {
+            code: flow.coupon!,
+            subtotal: cart.subtotal,
+          },
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not validate coupon";
+
+        return {
+          valid: false,
+          couponId: null,
+          discount: 0,
+          reason: message,
+        };
+      }
+    },
+    retry: false,
+  });
+
+  const couponValid = Boolean(couponQuery.data?.valid);
+  const discount = couponValid ? Number(couponQuery.data?.discount ?? 0) : 0;
+
+  const delivery = rate?.price ?? 0;
+  const mrpSavings = Math.max(0, cart.mrpTotal - cart.subtotal);
+  const total = Math.max(0, cart.subtotal - discount + delivery);
+
+  return {
+    user,
+    authLoading,
+    cart,
+    flow,
+    patchFlow,
+    hydrated,
+    addresses,
+    addressesLoading: addressesQuery.isLoading,
+    address,
+    method,
+    rates,
+    rate,
+    serviceable,
+    deliveryLoading: deliveryQuery.isFetching,
+    deliveryMessage: deliveryQuery.data?.message ?? null,
+    deliveryFailed: deliveryQuery.isError,
+    couponCode: flow.coupon ?? null,
+    couponValid,
+    couponChecking: couponQuery.isFetching,
+    couponReason: couponQuery.data?.reason ?? null,
+    discount,
+    delivery,
+    mrpSavings,
+    subtotal: cart.subtotal,
+    total,
+  };
+}
