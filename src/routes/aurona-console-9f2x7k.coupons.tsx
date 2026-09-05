@@ -17,6 +17,21 @@ export const Route = createFileRoute("/aurona-console-9f2x7k/coupons")({
   component: CouponsAdmin,
 });
 
+/** Local "YYYY-MM-DDTHH:mm" from the picker → absolute UTC timestamp. */
+function toIso(v?: string | null) {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+/** Stored timestamp → local value the datetime picker expects. */
+function toLocalInput(v?: string | null) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 type Coupon = {
   id: string;
   code: string;
