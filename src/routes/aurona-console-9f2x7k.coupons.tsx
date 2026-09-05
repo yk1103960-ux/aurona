@@ -48,7 +48,8 @@ function CouponsAdmin() {
   });
 
   const save = async () => {
-    if (!editing?.code || !editing.type || !editing.value) return toast.error("Code, type and value required");
+    if (!editing?.code || !editing.type || !(Number(editing.value) > 0))
+      return toast.error("Code, type and value required");
     const payload = {
       code: editing.code.trim().toUpperCase(),
       description: editing.description ?? null,
@@ -56,8 +57,8 @@ function CouponsAdmin() {
       value: Number(editing.value),
       min_order_value: Number(editing.min_order_value ?? 0),
       max_discount: editing.max_discount ? Number(editing.max_discount) : null,
-      starts_at: editing.starts_at || null,
-      expires_at: editing.expires_at || null,
+      starts_at: toIso(editing.starts_at),
+      expires_at: toIso(editing.expires_at),
       usage_limit: editing.usage_limit ? Number(editing.usage_limit) : null,
       per_user_limit: Number(editing.per_user_limit ?? 1),
       eligible_roles: editing.eligible_roles?.length ? editing.eligible_roles : ["customer", "retailer", "distributor"],
