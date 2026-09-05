@@ -468,32 +468,102 @@ function FamilyQuickAddContent({
   const packSize = Number(variant.pack_size ?? variant.moq ?? 1);
   const maxQty = Math.max(1, stock);
 
-  // REAL related photos from product_images, not repeated variant thumbnails.
+  // REAL related photos from product_images.
+  //
+  // Important: older uploads are not always linked by family_id.
+  // Some rows are linked only by product_id or variant_sku, so we load
+  // all three relationships and merge them. This prevents an empty gallery
+  // when family_id is null on existing image rows.
   const imagesQuery = useQuery({
-    queryKey: ["quick-add-product-images", family.id, variant.sku, productId],
-    enabled: Boolean(family.id),
+    queryKey: [
+      "quick-add-product-images-v3",
+      family.id,
+      variant.sku,
+      productId,
+      skus.join("|"),
+      Object.values(productMap ?? {})
+        .map((row: any) => row?.id)
+        .filter(Boolean)
+        .join("|"),
+    ],
+    enabled: Boolean(family.id || variant.sku || productId),
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("product_images")
-        .select("id, image_url, alt_text, sort_order, is_primary, family_id, product_id, variant_sku")
-        .eq("family_id", family.id)
-        .order("is_primary", { ascending: false })
-        .order("sort_order", { ascending: true });
+      const columns = "id, image_url, alt_text, sort_order, is_primary, family_id, product_id, variant_sku";
 
-      if (error) throw error;
+      const productIds = Array.from(
+        new Set(
+          [productId, ...Object.values(productMap ?? {}).map((row: any) => row?.id ?? null)].filter(
+            Boolean,
+          ) as string[],
+        ),
+      );
 
-      const rows = data ?? [];
+      const requests: PromiseLike<any>[] = [];
 
-      // Prefer photos for the selected SKU, then general family photos,
-      // then the remaining family photos.
-      return [...rows].sort((a, b) => {
-        const score = (row: (typeof rows)[number]) => {
+      if (family.id) {
+        requests.push(
+          supabase
+            .from("product_images")
+            .select(columns)
+            .eq("family_id", family.id)
+            .order("is_primary", { ascending: false })
+            .order("sort_order", { ascending: true }),
+        );
+      }
+
+      if (skus.length > 0) {
+        requests.push(
+          supabase
+            .from("product_images")
+            .select(columns)
+            .in("variant_sku", skus)
+            .order("is_primary", { ascending: false })
+            .order("sort_order", { ascending: true }),
+        );
+      }
+
+      if (productIds.length > 0) {
+        requests.push(
+          supabase
+            .from("product_images")
+            .select(columns)
+            .in("product_id", productIds)
+            .order("is_primary", { ascending: false })
+            .order("sort_order", { ascending: true }),
+        );
+      }
+
+      const results = await Promise.all(requests);
+
+      const merged: any[] = [];
+      const seenIds = new Set<string>();
+
+      for (const result of results) {
+        if (result.error) throw result.error;
+
+        for (const row of result.data ?? []) {
+          if (!row?.id || seenIds.has(row.id)) continue;
+          seenIds.add(row.id);
+          merged.push(row);
+        }
+      }
+
+      // Selected variation first, then selected product, then family/general images.
+      return merged.sort((a, b) => {
+        const score = (row: any) => {
           if (row.variant_sku === variant.sku) return 0;
-          if (!row.variant_sku) return 1;
-          return 2;
+          if (productId && row.product_id === productId) return 1;
+          if (row.family_id === family.id && !row.variant_sku) return 2;
+          if (!row.variant_sku) return 3;
+          return 4;
         };
-        return score(a) - score(b) || Number(a.sort_order) - Number(b.sort_order);
+
+        return (
+          score(a) - score(b) ||
+          Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary)) ||
+          Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0)
+        );
       });
     },
   });
