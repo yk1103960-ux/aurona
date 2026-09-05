@@ -402,14 +402,14 @@ function QuickAddDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[680px] overflow-hidden p-0 sm:rounded-2xl">
+      <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[720px] overflow-hidden p-0 sm:rounded-2xl">
         {isLoading ? (
-          <div className="grid gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="grid gap-0 sm:grid-cols-[300px_minmax(0,1fr)]">
             <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
-              <div className="aspect-square w-full animate-pulse rounded-xl bg-muted" />
+              <div className="mx-auto aspect-square w-full max-w-[165px] animate-pulse rounded-xl bg-muted" />
               <div className="mt-3 grid w-full grid-cols-3 gap-2">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="aspect-square w-full animate-pulse rounded-lg bg-muted" />
+                  <div key={i} className="aspect-square w-full animate-pulse rounded-xl bg-muted" />
                 ))}
               </div>
             </div>
@@ -632,10 +632,10 @@ function FamilyQuickAddContent({
   };
 
   return (
-    <div className="grid min-h-0 gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
+    <div className="grid min-h-0 gap-0 sm:grid-cols-[300px_minmax(0,1fr)]">
       {/* LEFT: compact real-photo gallery */}
       <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
-        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5">
+        <div className="mx-auto flex h-[140px] w-full max-w-none items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px]">
           {selectedImageUrl ? (
             <img src={selectedImageUrl} alt={family.name} className="h-full w-full object-contain" />
           ) : (
@@ -663,7 +663,7 @@ function FamilyQuickAddContent({
           {imagesQuery.isLoading ? (
             <div className="grid w-full grid-cols-3 gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="aspect-square w-full animate-pulse rounded-lg bg-muted" />
+                <div key={i} className="aspect-square w-full animate-pulse rounded-xl bg-muted" />
               ))}
             </div>
           ) : galleryImages.length > 0 ? (
@@ -677,14 +677,14 @@ function FamilyQuickAddContent({
                     type="button"
                     onClick={() => setActiveImageUrl(image.image_url)}
                     className={cn(
-                      "relative grid aspect-square w-full place-items-center overflow-hidden rounded-lg border bg-white p-1 transition",
+                      "aspect-square w-full overflow-hidden rounded-xl border bg-white p-1.5 transition-all",
                       active ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/60",
                     )}
-                    aria-label={`Show ${image.alt_text || family.name} photo`}
+                    aria-label={`Show product photo ${index + 1}`}
                   >
                     <img
                       src={image.image_url}
-                      alt={image.alt_text || family.name}
+                      alt={image.alt_text || `${family.name} photo ${index + 1}`}
                       className="h-full w-full object-contain"
                     />
                   </button>
@@ -901,9 +901,9 @@ function LegacyQuickAddContent({
   };
 
   return (
-    <div className="grid gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
+    <div className="grid gap-0 sm:grid-cols-[300px_minmax(0,1fr)]">
       <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
-        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5">
+        <div className="mx-auto flex h-[140px] w-full max-w-none items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px]">
           {selectedImageUrl ? (
             <img src={selectedImageUrl} alt={product.name} className="h-full w-full object-contain" />
           ) : (
@@ -923,13 +923,13 @@ function LegacyQuickAddContent({
                 type="button"
                 onClick={() => setActiveImageUrl(image.image_url)}
                 className={cn(
-                  "relative grid aspect-square w-full place-items-center overflow-hidden rounded-lg border bg-white p-1",
+                  "aspect-square w-full overflow-hidden rounded-xl border bg-white p-1.5 transition-all",
                   selectedImageUrl === image.image_url ? "border-primary ring-2 ring-primary/20" : "border-border",
                 )}
               >
                 <img
                   src={image.image_url}
-                  alt={image.alt_text || product.name}
+                  alt={image.alt_text || `${product.name} photo ${index + 1}`}
                   className="h-full w-full object-contain"
                 />
               </button>
