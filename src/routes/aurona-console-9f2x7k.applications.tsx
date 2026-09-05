@@ -91,6 +91,7 @@ function ApplicationsPage() {
   const qc = useQueryClient();
   const list = useServerFn(listPartnerApplications);
   const review = useServerFn(reviewPartnerApplication);
+  const remove = useServerFn(deletePartnerApplication);
 
   const filter = useMemo(() => {
     if (tab === "retailer" || tab === "distributor") return { partnerType: tab };
@@ -114,6 +115,17 @@ function ApplicationsPage() {
       qc.invalidateQueries({ queryKey: ["admin-partner-apps"] });
     },
     onError: (e: Error) => toast.error(e.message || "Could not update application"),
+  });
+
+  const del = useMutation({
+    mutationFn: async (vars: { id: string }) => remove({ data: { id: vars.id, note: note || undefined } }),
+    onSuccess: () => {
+      toast.success("Application deleted");
+      setNote("");
+      setOpen(null);
+      qc.invalidateQueries({ queryKey: ["admin-partner-apps"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not delete application"),
   });
 
   const rows = q.data ?? [];
