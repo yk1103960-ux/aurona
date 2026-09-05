@@ -15,7 +15,7 @@ export type DeliveryOption = { id: string; label: string; eta: string; price: nu
  * Single source of truth for the money shown across cart → checkout → payment.
  * Delivery is quoted on the server from real product weights and the
  * destination pincode. Coupon validation goes through applyCoupon(), which
- * avoids the broken validate_coupon SQL RPC.
+ * avoids the broken  SQL RPC.
  *
  * The figures here are display-only — the order total is recomputed
  * server-side when the order is placed.
