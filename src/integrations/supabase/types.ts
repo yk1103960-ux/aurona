@@ -3094,7 +3094,12 @@ export type Database = {
     Enums: {
       affiliate_status: "pending" | "approved" | "suspended" | "rejected"
       app_role: "admin" | "customer" | "retailer" | "distributor" | "staff"
-      application_status: "pending" | "under_review" | "approved" | "rejected"
+      application_status:
+        | "pending"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "disabled"
       commission_kind: "percentage" | "fixed"
       commission_status:
         | "pending"
@@ -3264,7 +3269,13 @@ export const Constants = {
     Enums: {
       affiliate_status: ["pending", "approved", "suspended", "rejected"],
       app_role: ["admin", "customer", "retailer", "distributor", "staff"],
-      application_status: ["pending", "under_review", "approved", "rejected"],
+      application_status: [
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+        "disabled",
+      ],
       commission_kind: ["percentage", "fixed"],
       commission_status: [
         "pending",
