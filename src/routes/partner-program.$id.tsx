@@ -1,18 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { careersQuery } from "@/lib/careers";
-import { submitCareerApplication } from "@/lib/careers.functions";
 
 export const Route = createFileRoute("/partner-program/$id")({
   head: () => ({
@@ -20,31 +11,18 @@ export const Route = createFileRoute("/partner-program/$id")({
       { title: "Partner Program — Aurona Lighting Industries" },
       {
         name: "description",
-        content:
-          "Details and application form for an Aurona Lighting Industries business partner program — apply online in a few minutes.",
+        content: "Full details for an Aurona Lighting Industries business partner program.",
       },
       { property: "og:title", content: "Partner Program — Aurona Lighting Industries" },
       {
         property: "og:description",
-        content: "Read the program details and submit your partner application to Aurona Lighting Industries.",
+        content: "Read the full program details and use the Careers page to apply.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: PartnerProgramPage,
-});
-
-const MAX_RESUME_BYTES = 3 * 1024 * 1024;
-
-const schema = z.object({
-  full_name: z.string().trim().min(2, "Enter your full name").max(100),
-  email: z.string().trim().email("Enter a valid email").max(255),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
-  address: z.string().trim().min(5, "Enter your address").max(500),
 });
 
 type DetailSection = {
@@ -128,7 +106,7 @@ const PROGRAM_CONTENT: Record<string, ProgramContent> = {
       {
         heading: "Onboarding Process",
         bullets: [
-          "Application Submission: Fill out the application form below.",
+          "Application Submission: Use the Apply Now button to continue to the Careers page.",
           "Interview: Attend a brief interview to discuss your skills and interest.",
           "Training: Participate in a free online product and sales training session.",
           "Activation: Receive your Sales Partner ID, commission structure details, and marketing materials.",
@@ -137,7 +115,7 @@ const PROGRAM_CONTENT: Record<string, ProgramContent> = {
       {
         heading: "How to Join",
         bullets: [
-          "Fill out the application form below to apply online.",
+          "Use the Apply Now button to continue to the Careers page and apply online.",
           "Contact Aurona for assistance if required.",
           "Complete the registration process and begin earning as an official Aurona Sales Partner.",
         ],
@@ -234,7 +212,7 @@ const PROGRAM_CONTENT: Record<string, ProgramContent> = {
       {
         heading: "How to Join",
         bullets: [
-          "Complete the application form below.",
+          "Use the Apply Now button to continue to the Careers page.",
           "Submit the required details.",
           "Await confirmation and onboarding from the Aurona team.",
         ],
@@ -428,7 +406,7 @@ const PROGRAM_CONTENT: Record<string, ProgramContent> = {
       {
         heading: "How to Join",
         bullets: [
-          "Fill out the application below.",
+          "Use the Apply Now button to continue to the Careers page.",
           "Submit required business details and documents.",
           "Complete approval and onboarding.",
           "Start selling after activation.",
@@ -510,7 +488,7 @@ const PROGRAM_CONTENT: Record<string, ProgramContent> = {
       {
         heading: "How to Join",
         bullets: [
-          "Complete the application below.",
+          "Use the Apply Now button to continue to the Careers page.",
           "Wait for review and confirmation.",
           "Start promoting after approval and activation.",
         ],
@@ -599,7 +577,7 @@ const PROGRAM_CONTENT: Record<string, ProgramContent> = {
       {
         heading: "How to Join",
         bullets: [
-          "Submit the application below.",
+          "Use the Apply Now button to continue to the Careers page.",
           "Provide your business and project details.",
           "Schedule a consultation with the Aurona team.",
         ],
@@ -633,30 +611,11 @@ function normalizeTitle(value?: string | null) {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-async function toBase64(file: File): Promise<string> {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  let binary = "";
-  for (let i = 0; i < buf.length; i += 8192) {
-    binary += String.fromCharCode(...buf.subarray(i, i + 8192));
-  }
-  return btoa(binary);
-}
-
 function PartnerProgramPage() {
   const { id } = Route.useParams();
   const { data: jobs = [], isLoading } = useQuery(careersQuery);
   const programs = jobs.filter((j) => j.kind !== "job");
   const program = programs.find((p) => p.id === id);
-
-  const [partnerType, setPartnerType] = useState("");
-  const [resume, setResume] = useState<File | null>(null);
-  const [consent, setConsent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const submit = useServerFn(submitCareerApplication);
-
-  useEffect(() => {
-    if (program?.title) setPartnerType(program.title);
-  }, [program?.title]);
 
   const titleKey = normalizeTitle(program?.title);
   const content = useMemo(() => {
@@ -673,74 +632,6 @@ function PartnerProgramPage() {
 
     return null;
   }, [titleKey]);
-
-  const selectedType = partnerType || program?.title || "";
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-
-    const parsed = schema.safeParse({
-      full_name: String(fd.get("full_name") ?? ""),
-      email: String(fd.get("email") ?? ""),
-      phone: String(fd.get("phone") ?? "").replace(/^\+?91/, ""),
-      address: String(fd.get("address") ?? ""),
-    });
-
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Please check your details");
-      return;
-    }
-
-    if (!selectedType) {
-      toast.error("Please choose a partner type");
-      return;
-    }
-
-    if (!consent) {
-      toast.error("Please accept the declaration to submit your application.");
-      return;
-    }
-
-    if (resume && resume.size > MAX_RESUME_BYTES) {
-      toast.error("Resume must be 3 MB or smaller.");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const v = parsed.data;
-      await submit({
-        data: {
-          program_id: /^[0-9a-f-]{36}$/i.test(id) ? id : null,
-          program_title: selectedType,
-          full_name: v.full_name,
-          email: v.email,
-          phone: v.phone,
-          message: `Address: ${v.address}`,
-          consent: true,
-          resume_file: resume
-            ? {
-                name: resume.name,
-                type: resume.type,
-                data: await toBase64(resume),
-              }
-            : null,
-        },
-      });
-
-      toast.success("Application received — our team will get in touch shortly.");
-      form.reset();
-      setResume(null);
-      setConsent(false);
-      setPartnerType(program?.title ?? "");
-    } catch {
-      toast.error("Could not submit your application. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   if (!isLoading && !program) {
     return (
@@ -759,8 +650,6 @@ function PartnerProgramPage() {
       </div>
     );
   }
-
-  const partnerChoices = content?.partnerChoices?.length ? content.partnerChoices : programs.map((p) => p.title);
 
   return (
     <div className="container-x py-10 md:py-14">
@@ -785,57 +674,62 @@ function PartnerProgramPage() {
         )}
       </div>
 
-      <div className="mt-8 space-y-7">
+      <div className="mt-8">
         {content ? (
-          content.sections.map((section) => (
-            <section key={section.heading} className="rounded-2xl border border-border bg-card p-6 md:p-8">
-              <h2 className="text-2xl font-semibold text-foreground">{section.heading}</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {content.sections.map((section) => (
+              <section
+                key={section.heading}
+                className="group rounded-2xl border-2 border-border/80 bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg md:p-7"
+              >
+                <h2 className="text-2xl font-semibold text-foreground">{section.heading}</h2>
 
-              {section.paragraphs?.map((paragraph) => (
-                <p key={paragraph} className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">
-                  {paragraph}
-                </p>
-              ))}
+                {section.paragraphs?.map((paragraph) => (
+                  <p key={paragraph} className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">
+                    {paragraph}
+                  </p>
+                ))}
 
-              {section.bullets && (
-                <ul className="mt-4 list-disc space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
-                  {section.bullets.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              )}
+                {section.bullets && (
+                  <ul className="mt-4 list-disc space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
+                    {section.bullets.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
 
-              {section.numbered && (
-                <ol className="mt-4 list-decimal space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
-                  {section.numbered.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ol>
-              )}
+                {section.numbered && (
+                  <ol className="mt-4 list-decimal space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
+                    {section.numbered.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ol>
+                )}
 
-              {section.subsections?.map((sub) => (
-                <div key={sub.heading} className="mt-6">
-                  <h3 className="text-lg font-semibold text-foreground">{sub.heading}</h3>
+                {section.subsections?.map((sub) => (
+                  <div key={sub.heading} className="mt-6">
+                    <h3 className="text-lg font-semibold text-foreground">{sub.heading}</h3>
 
-                  {sub.paragraphs?.map((paragraph) => (
-                    <p key={paragraph} className="mt-2 text-sm leading-7 text-muted-foreground md:text-base">
-                      {paragraph}
-                    </p>
-                  ))}
+                    {sub.paragraphs?.map((paragraph) => (
+                      <p key={paragraph} className="mt-2 text-sm leading-7 text-muted-foreground md:text-base">
+                        {paragraph}
+                      </p>
+                    ))}
 
-                  {sub.bullets && (
-                    <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
-                      {sub.bullets.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </section>
-          ))
+                    {sub.bullets && (
+                      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
+                        {sub.bullets.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </section>
+            ))}
+          </div>
         ) : (
-          <section className="rounded-2xl border border-border bg-card p-6 md:p-8">
+          <section className="rounded-2xl border-2 border-border/80 bg-card p-6 shadow-sm md:p-8">
             <h2 className="text-2xl font-semibold">About the Program</h2>
             <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">
               {(program as any)?.description ||
@@ -845,77 +739,16 @@ function PartnerProgramPage() {
             </p>
           </section>
         )}
-
-        <section className="rounded-2xl border border-border bg-card p-6 md:p-8">
-          <div className="text-eyebrow">APPLICATION FORM</div>
-          <h2 className="mt-2 text-2xl font-semibold">Join as Partner</h2>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            Fill in your details below and the Aurona partnerships team will review your application.
+        <section className="mt-8 rounded-2xl border-2 border-primary/20 bg-card p-6 text-center shadow-md md:p-8">
+          <div className="text-eyebrow">Ready to apply?</div>
+          <h2 className="mt-2 text-2xl font-semibold">Apply from the Careers page</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            This page is only for full program details. Use the Careers page Apply Now button to submit your
+            application.
           </p>
-
-          <form onSubmit={onSubmit} className="mt-6 grid gap-5 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="full_name">Name *</Label>
-              <Input id="full_name" name="full_name" required maxLength={100} autoComplete="name" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email *</Label>
-              <Input id="email" name="email" type="email" required maxLength={255} autoComplete="email" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Phone Number *</Label>
-              <Input id="phone" name="phone" required inputMode="numeric" maxLength={13} placeholder="98XXXXXXXX" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="partner_type">Choose For Partner *</Label>
-              <Select value={selectedType} onValueChange={setPartnerType}>
-                <SelectTrigger id="partner_type">
-                  <SelectValue placeholder="Select partner type" />
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  {partnerChoices.map((choice) => (
-                    <SelectItem key={choice} value={choice}>
-                      {choice}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <Label htmlFor="address">Address *</Label>
-              <Textarea id="address" name="address" required rows={4} maxLength={500} />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <Label htmlFor="resume_file">Resume (PDF/DOC/DOCX, max 3 MB)</Label>
-              <Input
-                id="resume_file"
-                name="resume_file"
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={(e) => setResume(e.target.files?.[0] ?? null)}
-              />
-            </div>
-
-            <label className="flex items-start gap-2 text-xs text-muted-foreground md:col-span-2">
-              <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
-              <span>
-                I confirm that the information provided is accurate and allow Aurona Lighting Industries to contact me
-                regarding this application.
-              </span>
-            </label>
-
-            <div className="md:col-span-2">
-              <Button type="submit" className="w-full rounded-full sm:w-auto sm:px-12" disabled={busy}>
-                {busy ? "Submitting…" : "Apply Now"}
-              </Button>
-            </div>
-          </form>
+          <Button asChild size="lg" className="mt-6 rounded-full px-10">
+            <Link to="/careers">Apply Now</Link>
+          </Button>
         </section>
       </div>
     </div>
