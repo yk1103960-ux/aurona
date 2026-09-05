@@ -463,6 +463,7 @@ function AuthPage() {
       }
 
       if (mode === "up") {
+        signupFinishing.current = true;
         const res = await verifySignupSmsOtp({
           data: {
             email: roleEmail(email, role),
