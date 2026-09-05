@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { listPartnerApplications, reviewPartnerApplication } from "@/lib/partner-admin.functions";
+import {
+  deletePartnerApplication,
+  listPartnerApplications,
+  reviewPartnerApplication,
+} from "@/lib/partner-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/applications")({
   head: () => ({
@@ -68,6 +72,7 @@ const TABS = [
   { key: "under_review", label: "Under Review" },
   { key: "approved", label: "Approved" },
   { key: "rejected", label: "Rejected" },
+  { key: "disabled", label: "Disabled" },
 ] as const;
 
 const STATUS_STYLE: Record<string, string> = {
@@ -75,6 +80,7 @@ const STATUS_STYLE: Record<string, string> = {
   under_review: "bg-sky-100 text-sky-800",
   approved: "bg-emerald-100 text-emerald-800",
   rejected: "bg-rose-100 text-rose-800",
+  disabled: "bg-slate-200 text-slate-700",
 };
 
 function ApplicationsPage() {
@@ -85,6 +91,7 @@ function ApplicationsPage() {
   const qc = useQueryClient();
   const list = useServerFn(listPartnerApplications);
   const review = useServerFn(reviewPartnerApplication);
+  const remove = useServerFn(deletePartnerApplication);
 
   const filter = useMemo(() => {
     if (tab === "retailer" || tab === "distributor") return { partnerType: tab };
@@ -108,6 +115,17 @@ function ApplicationsPage() {
       qc.invalidateQueries({ queryKey: ["admin-partner-apps"] });
     },
     onError: (e: Error) => toast.error(e.message || "Could not update application"),
+  });
+
+  const del = useMutation({
+    mutationFn: async (vars: { id: string }) => remove({ data: { id: vars.id, note: note || undefined } }),
+    onSuccess: () => {
+      toast.success("Application deleted");
+      setNote("");
+      setOpen(null);
+      qc.invalidateQueries({ queryKey: ["admin-partner-apps"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not delete application"),
   });
 
   const rows = q.data ?? [];
@@ -257,26 +275,61 @@ function ApplicationsPage() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  disabled={mut.isPending || open.status === "under_review"}
-                  onClick={() => mut.mutate({ id: open.id, decision: "under_review" })}
-                >
-                  Mark under review
-                </Button>
-                <Button disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
-                  Verify & approve
-                </Button>
-                <Button
-                  variant="destructive"
-                  disabled={mut.isPending}
-                  onClick={() => mut.mutate({ id: open.id, decision: "rejected" })}
-                >
-                  Reject
-                </Button>
+                {(open.status === "pending" || open.status === "under_review") && (
+                  <>
+                    <Button
+                      variant="outline"
+                      disabled={mut.isPending || open.status === "under_review"}
+                      onClick={() => mut.mutate({ id: open.id, decision: "under_review" })}
+                    >
+                      Mark under review
+                    </Button>
+                    <Button disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
+                      Verify & approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      disabled={mut.isPending}
+                      onClick={() => mut.mutate({ id: open.id, decision: "rejected" })}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+
+                {open.status === "approved" && (
+                  <Button
+                    variant="outline"
+                    disabled={mut.isPending}
+                    onClick={() => mut.mutate({ id: open.id, decision: "disabled" })}
+                  >
+                    Temporarily disable
+                  </Button>
+                )}
+
+                {open.status === "disabled" && (
+                  <Button disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
+                    Re-enable access
+                  </Button>
+                )}
+
+                {open.status !== "pending" && open.status !== "under_review" && (
+                  <Button
+                    variant="destructive"
+                    disabled={del.isPending}
+                    onClick={() => {
+                      if (window.confirm("Delete this application permanently? Partner access will be removed.")) {
+                        del.mutate({ id: open.id });
+                      }
+                    }}
+                  >
+                    {del.isPending ? "Deleting…" : "Delete account"}
+                  </Button>
+                )}
               </div>
               <p className="mt-3 text-xs text-slate-500">
-                Status can be changed later by Admin if required. Add a note/reason before changing the decision.
+                Temporary disable removes retailer/distributor access immediately and can be re-enabled later. Delete
+                removes the application permanently. Add a note/reason before changing the decision.
               </p>
             </>
           )}
