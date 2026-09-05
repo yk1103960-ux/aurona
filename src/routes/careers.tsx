@@ -2,14 +2,28 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Gift, Users, IndianRupee, Share2, BadgeCheck, Briefcase, Handshake, Store, Crown, Globe, Megaphone, Package, CalendarClock } from "lucide-react";
+import {
+  MapPin,
+  Gift,
+  Users,
+  IndianRupee,
+  Share2,
+  BadgeCheck,
+  Briefcase,
+  Handshake,
+  Store,
+  Crown,
+  Globe,
+  Megaphone,
+  Package,
+  CalendarClock,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { careersQuery, jobAnchor, isClosed, formatCloseDate, type CareerProgram } from "@/lib/careers";
 import { referralProgramsQuery, commissionLabel, type ReferralProgram } from "@/lib/referral-programs";
 import { ApplyDialog, type ApplyTarget } from "@/components/careers/ApplyDialog";
 
 const PROGRAM_ICONS = [Handshake, Store, Share2, Crown, Globe, Megaphone, Package];
-
 
 const STEPS = [
   "Pick a program and submit your application or profile",
@@ -43,7 +57,6 @@ function CareersPage() {
   const { data: referrals = [] } = useQuery(referralProgramsQuery);
   const [applyTarget, setApplyTarget] = useState<ApplyTarget>(null);
   const [detail, setDetail] = useState<CareerProgram | null>(null);
-  const [refDetail, setRefDetail] = useState<ReferralProgram | null>(null);
   const openings = jobs.filter((j) => j.kind === "job");
   const programs = jobs.filter((j) => j.kind !== "job");
   return (
@@ -51,11 +64,14 @@ function CareersPage() {
       <div className="text-eyebrow">Careers</div>
       <h1 className="text-display mt-3 max-w-3xl text-5xl">Build the future of lighting with us.</h1>
       <p className="mt-4 max-w-2xl text-muted-foreground">
-        We're always looking for engineers, designers, and operators who want to build serious products for modern India.
+        We're always looking for engineers, designers, and operators who want to build serious products for modern
+        India.
       </p>
 
       <div className="mt-12 grid gap-5 sm:grid-cols-2">
-        {isLoading && <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">Loading open roles…</div>}
+        {isLoading && (
+          <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">Loading open roles…</div>
+        )}
         {!isLoading && openings.length === 0 && (
           <div className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
             No open positions right now. Write to us and we'll keep your profile on file.
@@ -78,7 +94,11 @@ function CareersPage() {
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 {j.department && <span>{j.department}</span>}
-                {j.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
+                {j.location && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> {j.location}
+                  </span>
+                )}
                 {j.employment_type && <span>{j.employment_type}</span>}
                 {j.experience && <span>{j.experience}</span>}
                 {j.salary_range && <span>{j.salary_range}</span>}
@@ -98,7 +118,11 @@ function CareersPage() {
                     Applications closed
                   </span>
                 ) : (
-                  <Button size="sm" className="rounded-full" onClick={() => setApplyTarget({ id: j.id, title: j.title })}>
+                  <Button
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setApplyTarget({ id: j.id, title: j.title })}
+                  >
                     Apply now
                   </Button>
                 )}
@@ -122,7 +146,11 @@ function CareersPage() {
             const Icon = PROGRAM_ICONS[i % PROGRAM_ICONS.length];
             const closed = isClosed(r);
             return (
-              <div key={r.id} id={jobAnchor(r.id)} className="flex scroll-mt-28 flex-col rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
+              <div
+                key={r.id}
+                id={jobAnchor(r.id)}
+                className="flex scroll-mt-28 flex-col rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lift"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" strokeWidth={1.8} />
@@ -147,7 +175,11 @@ function CareersPage() {
                       Applications closed
                     </span>
                   ) : (
-                    <Button size="sm" className="rounded-full" onClick={() => setApplyTarget({ id: r.id, title: r.title })}>
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setApplyTarget({ id: r.id, title: r.title })}
+                    >
                       Apply now
                     </Button>
                   )}
@@ -156,8 +188,6 @@ function CareersPage() {
             );
           })}
         </div>
-
-
 
         {referrals.length > 0 && (
           <div className="mt-12">
@@ -175,7 +205,9 @@ function CareersPage() {
                     </span>
                   </div>
                   <h4 className="mt-4 text-lg font-semibold">{p.name}</h4>
-                  {p.description && <p className="mt-1.5 line-clamp-3 text-sm text-muted-foreground">{p.description}</p>}
+                  {p.description && (
+                    <p className="mt-1.5 line-clamp-3 text-sm text-muted-foreground">{p.description}</p>
+                  )}
                   <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
                     {Number(p.min_order_value) > 0 && (
                       <li className="flex items-center gap-1.5">
@@ -189,8 +221,19 @@ function CareersPage() {
                     )}
                   </ul>
                   <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => setRefDetail(p)}>
-                      Read more
+                    <Button asChild size="sm" variant="outline" className="rounded-full">
+                      <Link
+                        to="/partner-program/$id"
+                        params={{
+                          id:
+                            programs.find((r) => r.title.toLowerCase().includes(p.name.toLowerCase().split(" ")[0]))
+                              ?.id ??
+                            programs[0]?.id ??
+                            "",
+                        }}
+                      >
+                        Read more
+                      </Link>
                     </Button>
                     <Button
                       size="sm"
@@ -203,7 +246,6 @@ function CareersPage() {
                 </div>
               ))}
             </div>
-
           </div>
         )}
 
@@ -280,9 +322,12 @@ function CareersPage() {
                     Responsibilities
                   </div>
                   <ul className="mt-1 list-disc space-y-1 pl-5">
-                    {detail.responsibilities.split("\n").filter(Boolean).map((l) => (
-                      <li key={l}>{l}</li>
-                    ))}
+                    {detail.responsibilities
+                      .split("\n")
+                      .filter(Boolean)
+                      .map((l) => (
+                        <li key={l}>{l}</li>
+                      ))}
                   </ul>
                 </div>
               )}
@@ -292,9 +337,12 @@ function CareersPage() {
                     Requirements
                   </div>
                   <ul className="mt-1 list-disc space-y-1 pl-5">
-                    {detail.requirements.split("\n").filter(Boolean).map((l) => (
-                      <li key={l}>{l}</li>
-                    ))}
+                    {detail.requirements
+                      .split("\n")
+                      .filter(Boolean)
+                      .map((l) => (
+                        <li key={l}>{l}</li>
+                      ))}
                   </ul>
                 </div>
               )}
@@ -317,57 +365,6 @@ function CareersPage() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Full referral programme details */}
-      <Dialog open={!!refDetail} onOpenChange={(o) => !o && setRefDetail(null)}>
-        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{refDetail?.name}</DialogTitle>
-          </DialogHeader>
-          {refDetail && (
-            <div className="space-y-4 text-sm">
-              <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                {commissionLabel(refDetail)}
-              </div>
-              <p className="whitespace-pre-wrap text-muted-foreground">{refDetail.description}</p>
-              {Number(refDetail.min_order_value) > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Minimum order value ₹{Number(refDetail.min_order_value)}
-                  {refDetail.max_commission ? ` · Maximum payout ₹${Number(refDetail.max_commission)}` : ""}
-                </p>
-              )}
-              {refDetail.eligibility && (
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Who can join
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap">{refDetail.eligibility}</p>
-                </div>
-              )}
-              {refDetail.closes_at && (
-                <p className="text-xs text-muted-foreground">Open till {formatCloseDate(refDetail.closes_at)}</p>
-              )}
-              {refDetail.terms && (
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Terms</div>
-                  <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{refDetail.terms}</p>
-                </div>
-              )}
-              <Button
-                className="w-full rounded-full"
-                onClick={() => {
-                  const title = refDetail.name;
-                  setRefDetail(null);
-                  setApplyTarget({ id: programs[0]?.id ?? openings[0]?.id ?? "", title });
-                }}
-              >
-                Apply now
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
-
