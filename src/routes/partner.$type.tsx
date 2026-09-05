@@ -294,7 +294,9 @@ function PartnerProgram() {
             application.
           </p>
           <Button asChild size="lg" className="mt-6 rounded-full px-10">
-            <Link to="/careers">Apply Now</Link>
+            <Link to="/careers" search={{ applyTitle: program.title }}>
+              Apply Now
+            </Link>
           </Button>
         </div>
       </div>
