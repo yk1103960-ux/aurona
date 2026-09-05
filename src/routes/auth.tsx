@@ -120,6 +120,8 @@ function AuthPage() {
     typeof window === "undefined" ? null : sessionStorage.getItem(TWOFA_MARK),
   );
   const twoFaBusy = useRef(false);
+  /** True while a just-verified sign-up is finishing — the gate must not run. */
+  const signupFinishing = useRef(false);
 
   const markTwoFaCleared = (userId: string) => {
     if (typeof window !== "undefined") sessionStorage.setItem(TWOFA_MARK, userId);
@@ -132,7 +134,7 @@ function AuthPage() {
   // the mobile OTP challenge is verified (the session is dropped meanwhile).
   useEffect(() => {
     if (loading || !user) return;
-    if (twoFa) return; // an OTP challenge is in progress — never redirect
+    if (twoFa || signupFinishing.current) return; // an OTP challenge / sign-up is in progress
     const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
     if (!verified) {
       supabase.auth.signOut();
@@ -461,6 +463,7 @@ function AuthPage() {
       }
 
       if (mode === "up") {
+        signupFinishing.current = true;
         const res = await verifySignupSmsOtp({
           data: {
             email: roleEmail(email, role),
@@ -514,6 +517,7 @@ function AuthPage() {
       await finishLogin("otp");
     } finally {
       setBusy(false);
+      signupFinishing.current = false;
     }
   };
 

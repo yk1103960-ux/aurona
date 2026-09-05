@@ -570,3 +570,29 @@ export const registerSession = createServerFn({ method: "POST" })
 
     return { ok: true, blocked: false, reason: null as string | null };
   });
+
+/**
+ * Live account status for the signed-in session. Used by the client to force a
+ * sign-out the moment an admin blocks (or deletes) the account.
+ */
+export const getAccountStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(context.userId as string);
+    if (!userRes?.user) {
+      return { valid: false, reason: "Your account is no longer available." };
+    }
+    if ((userRes.user as any).banned_until && new Date((userRes.user as any).banned_until).getTime() > Date.now()) {
+      return { valid: false, reason: "Your account has been suspended." };
+    }
+    const { data: sec } = await supabaseAdmin
+      .from("user_security")
+      .select("blocked, blocked_reason")
+      .eq("user_id", context.userId as string)
+      .maybeSingle();
+    if (sec?.blocked) {
+      return { valid: false, reason: sec.blocked_reason ?? "Your account has been suspended." };
+    }
+    return { valid: true, reason: null as string | null };
+  });

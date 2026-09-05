@@ -223,7 +223,28 @@ export const verifySignupSmsOtp = createServerFn({ method: "POST" })
       /* notifications are never fatal */
     }
 
-    return { ok: true, message: "Mobile verified — account created." };
+    // Mint a one-time sign-in token so the new account stays signed in and
+    // never has to enter its email / password / OTP a second time.
+    let tokenHash: string | null = null;
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    if (url && key) {
+      try {
+        const res = await fetch(`${url}/auth/v1/admin/generate_link`, {
+          method: "POST",
+          headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "magiclink", email: data.email }),
+        });
+        if (res.ok) {
+          const j = (await res.json()) as { hashed_token?: string; properties?: { hashed_token?: string } };
+          tokenHash = j.hashed_token ?? j.properties?.hashed_token ?? null;
+        }
+      } catch {
+        tokenHash = null;
+      }
+    }
+
+    return { ok: true, message: "Mobile verified — account created.", tokenHash };
   });
 
 /** Sends a login code by SMS using our own provider (Supabase has no phone provider). */
