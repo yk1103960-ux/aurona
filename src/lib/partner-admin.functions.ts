@@ -56,7 +56,7 @@ export const listPartnerApplications = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(data.limit);
 
-    if (data.status) q = q.eq("status", data.status);
+    if (data.status) q = q.eq("status", data.status as never);
     if (data.partnerType) q = q.eq("partner_type", data.partnerType as never);
 
     if (data.search) {
@@ -140,7 +140,7 @@ export const reviewPartnerApplication = createServerFn({ method: "POST" })
     const { data: after, error } = await supabaseAdmin
       .from("partner_applications")
       .update({
-        status: next,
+        status: next as never,
         admin_notes: data.note ? data.note : before.admin_notes,
         reviewed_by: actor.userId,
         reviewed_at: new Date().toISOString(),
