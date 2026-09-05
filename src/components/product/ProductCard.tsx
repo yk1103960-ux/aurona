@@ -635,7 +635,7 @@ function FamilyQuickAddContent({
     <div className="grid min-h-0 gap-0 sm:grid-cols-[300px_minmax(0,1fr)]">
       {/* LEFT: compact real-photo gallery */}
       <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
-        <div className="mx-auto flex h-[140px] w-full max-w-none items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px]">
+        <div className="mx-auto flex h-[140px] w-[140px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px] sm:w-[165px]">
           {selectedImageUrl ? (
             <img src={selectedImageUrl} alt={family.name} className="h-full w-full object-contain" />
           ) : (
@@ -903,7 +903,7 @@ function LegacyQuickAddContent({
   return (
     <div className="grid gap-0 sm:grid-cols-[300px_minmax(0,1fr)]">
       <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
-        <div className="mx-auto flex h-[140px] w-full max-w-none items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px]">
+        <div className="mx-auto flex h-[140px] w-[140px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px] sm:w-[165px]">
           {selectedImageUrl ? (
             <img src={selectedImageUrl} alt={product.name} className="h-full w-full object-contain" />
           ) : (
