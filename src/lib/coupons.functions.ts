@@ -7,57 +7,50 @@ const ApplyCouponSchema = z.object({
   subtotal: z.number().positive(),
 });
 
-type CouponRow = {
-  id: string;
-  code: string;
-  description: string | null;
-  type: "flat" | "percentage";
-  value: number;
-  min_order_value: number;
-  max_discount: number | null;
-  starts_at: string | null;
-  expires_at: string | null;
-  usage_limit: number | null;
-  per_user_limit: number;
-  eligible_roles: string[] | null;
-  times_used: number;
-  active: boolean;
-};
-
 export const applyCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ApplyCouponSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
     const code = data.code.trim().toUpperCase();
     const subtotal = Number(data.subtotal);
 
-    // IMPORTANT:
-    // Do NOT call validate_coupon().
-    // The live SQL function currently throws:
-    // column reference "coupon_id" is ambiguous.
-    //
-    // We validate directly from the coupon tables here so checkout works
-    // without creating/running another migration.
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-    const { data: couponData, error: couponError } = await context.supabase
+    if (userError || !user) {
+      return {
+        valid: false,
+        couponId: null,
+        discount: 0,
+        reason: "Please sign in to use a coupon.",
+      };
+    }
+
+    // IMPORTANT:
+    // Never call validate_coupon() here.
+    // That database RPC currently contains the ambiguous coupon_id reference.
+
+    const { data: coupon, error: couponError } = await supabase
       .from("coupons")
       .select(
-        [
-          "id",
-          "code",
-          "description",
-          "type",
-          "value",
-          "min_order_value",
-          "max_discount",
-          "starts_at",
-          "expires_at",
-          "usage_limit",
-          "per_user_limit",
-          "eligible_roles",
-          "times_used",
-          "active",
-        ].join(","),
+        `
+        id,
+        code,
+        type,
+        value,
+        min_order_value,
+        max_discount,
+        starts_at,
+        expires_at,
+        usage_limit,
+        per_user_limit,
+        eligible_roles,
+        times_used,
+        active
+        `,
       )
       .ilike("code", code)
       .eq("active", true)
@@ -65,17 +58,21 @@ export const applyCoupon = createServerFn({ method: "POST" })
 
     if (couponError) {
       console.error("Coupon lookup failed:", couponError);
-      throw new Error(couponError.message || "Could not validate coupon");
-    }
 
-    const coupon = couponData as CouponRow | null;
+      return {
+        valid: false,
+        couponId: null,
+        discount: 0,
+        reason: couponError.message || "Could not validate coupon.",
+      };
+    }
 
     if (!coupon) {
       return {
         valid: false,
         couponId: null,
         discount: 0,
-        reason: "Invalid coupon code",
+        reason: "Invalid coupon code.",
       };
     }
 
@@ -86,7 +83,7 @@ export const applyCoupon = createServerFn({ method: "POST" })
         valid: false,
         couponId: null,
         discount: 0,
-        reason: "Coupon not yet active",
+        reason: "Coupon not yet active.",
       };
     }
 
@@ -95,7 +92,7 @@ export const applyCoupon = createServerFn({ method: "POST" })
         valid: false,
         couponId: null,
         discount: 0,
-        reason: "Coupon expired",
+        reason: "Coupon expired.",
       };
     }
 
@@ -104,7 +101,7 @@ export const applyCoupon = createServerFn({ method: "POST" })
         valid: false,
         couponId: null,
         discount: 0,
-        reason: "Coupon usage limit reached",
+        reason: "Coupon usage limit reached.",
       };
     }
 
@@ -113,61 +110,66 @@ export const applyCoupon = createServerFn({ method: "POST" })
         valid: false,
         couponId: null,
         discount: 0,
-        reason: "Minimum order not met",
+        reason: "Minimum order not met for this coupon.",
       };
     }
 
-    // Keep the same role rules as the original SQL validate_coupon() function.
-    const { data: roleData, error: roleError } = await context.supabase.rpc("current_pricing_role");
+    const { data: roleData, error: roleError } = await supabase.rpc("current_pricing_role");
 
     if (roleError) {
-      console.error("current_pricing_role failed:", roleError);
-      throw new Error(roleError.message || "Could not determine account type");
+      console.error("Role lookup failed:", roleError);
+
+      return {
+        valid: false,
+        couponId: null,
+        discount: 0,
+        reason: "Could not verify account eligibility.",
+      };
     }
 
-    const role =
-      typeof roleData === "string"
-        ? roleData
-        : Array.isArray(roleData)
-          ? String(roleData[0] ?? "customer")
-          : "customer";
+    const role = (roleData as string | null) ?? "customer";
 
-    const eligibleRoles = Array.isArray(coupon.eligible_roles)
-      ? coupon.eligible_roles
-      : ["customer", "retailer", "distributor"];
+    const eligibleRoles = Array.isArray(coupon.eligible_roles) ? coupon.eligible_roles : [];
 
     if (!eligibleRoles.includes(role)) {
       return {
         valid: false,
         couponId: null,
         discount: 0,
-        reason: "Not eligible for this account type",
+        reason: "This coupon is not available for your account type.",
       };
     }
 
-    // requireSupabaseAuth guarantees an authenticated user.
-    const userId = context.userId;
+    const { count, error: redemptionError } = await supabase
+      .from("coupon_redemptions")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("coupon_id", coupon.id)
+      .eq("user_id", user.id);
 
-    if (userId) {
-      const { count, error: usageError } = await context.supabase
-        .from("coupon_redemptions")
-        .select("id", { count: "exact", head: true })
-        .eq("coupon_id", coupon.id)
-        .eq("user_id", userId);
+    if (redemptionError) {
+      console.error("Coupon redemption lookup failed:", redemptionError);
 
-      if (usageError) {
-        console.error("Coupon usage lookup failed:", usageError);
-        throw new Error(usageError.message || "Could not check coupon usage");
-      }
+      return {
+        valid: false,
+        couponId: null,
+        discount: 0,
+        reason: "Could not verify coupon usage.",
+      };
+    }
 
-      if (Number(count ?? 0) >= Number(coupon.per_user_limit ?? 1)) {
-        return {
-          valid: false,
-          couponId: null,
-          discount: 0,
-          reason: "Coupon already used",
-        };
-      }
+    const usedByUser = Number(count ?? 0);
+    const perUserLimit = Number(coupon.per_user_limit ?? 1);
+
+    if (usedByUser >= perUserLimit) {
+      return {
+        valid: false,
+        couponId: null,
+        discount: 0,
+        reason: "Coupon already used.",
+      };
     }
 
     let discount = 0;
@@ -175,14 +177,14 @@ export const applyCoupon = createServerFn({ method: "POST" })
     if (coupon.type === "flat") {
       discount = Math.min(Number(coupon.value), subtotal);
     } else {
-      discount = (subtotal * Number(coupon.value)) / 100;
+      discount = subtotal * (Number(coupon.value) / 100);
 
       if (coupon.max_discount !== null) {
         discount = Math.min(discount, Number(coupon.max_discount));
       }
     }
 
-    discount = Math.max(0, Math.round(discount * 100) / 100);
+    discount = Math.max(0, Number(discount.toFixed(2)));
 
     return {
       valid: true,
