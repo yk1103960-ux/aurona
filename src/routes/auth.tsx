@@ -134,7 +134,7 @@ function AuthPage() {
   // the mobile OTP challenge is verified (the session is dropped meanwhile).
   useEffect(() => {
     if (loading || !user) return;
-    if (twoFa) return; // an OTP challenge is in progress — never redirect
+    if (twoFa || signupFinishing.current) return; // an OTP challenge / sign-up is in progress
     const verified = Boolean((user as any).email_confirmed_at || (user as any).phone_confirmed_at);
     if (!verified) {
       supabase.auth.signOut();
