@@ -70,7 +70,10 @@ export function useCart() {
         .select("id, product_id, quantity, products(*)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as CartRow[];
+      const rows = (data ?? []) as unknown as CartRow[];
+      const withImages = await attachProductImages(rows.map((r) => r.products));
+      const byId = new Map(withImages.map((p) => [p.id, p]));
+      return rows.map((r) => ({ ...r, products: (byId.get(r.products.id) ?? r.products) as Product }));
     },
   });
 
@@ -82,7 +85,8 @@ export function useCart() {
       const ids = guestLines.map((l) => l.product_id);
       const { data, error } = await supabase.from("products").select("*").in("id", ids);
       if (error) throw error;
-      const byId = new Map((data ?? []).map((p) => [p.id, p as unknown as Product]));
+      const withImages = await attachProductImages((data ?? []) as unknown as Product[]);
+      const byId = new Map(withImages.map((p) => [p.id, p as unknown as Product]));
       return guestLines
         .filter((l) => byId.has(l.product_id))
         .map((l) => ({
@@ -93,6 +97,7 @@ export function useCart() {
         })) as CartRow[];
     },
   });
+
 
   const items = isGuest ? (guestLines.length ? (guestCart.data ?? []) : []) : (cart.data ?? []);
 
