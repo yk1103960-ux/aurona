@@ -402,18 +402,18 @@ function QuickAddDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[84vh] w-[calc(100vw-1.25rem)] max-w-2xl overflow-y-auto p-0 sm:rounded-2xl">
+      <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[720px] overflow-hidden p-0 sm:rounded-2xl">
         {isLoading ? (
-          <div className="grid gap-0 md:grid-cols-[230px_minmax(0,1fr)]">
-            <div className="border-b border-border bg-surface/40 p-4 md:border-b-0 md:border-r">
-              <div className="mx-auto aspect-square w-full max-w-[210px] animate-pulse rounded-xl bg-muted" />
+          <div className="grid gap-0 sm:grid-cols-[200px_minmax(0,1fr)]">
+            <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
+              <div className="mx-auto aspect-square w-full max-w-[165px] animate-pulse rounded-xl bg-muted" />
               <div className="mt-3 flex justify-center gap-2">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-12 w-12 animate-pulse rounded-lg bg-muted" />
                 ))}
               </div>
             </div>
-            <div className="p-4 sm:p-5">
+            <div className="p-3.5 sm:p-4">
               <div className="h-7 w-44 animate-pulse rounded bg-muted" />
               <div className="mt-4 h-9 animate-pulse rounded bg-muted" />
               <div className="mt-3 h-9 animate-pulse rounded bg-muted" />
@@ -632,10 +632,10 @@ function FamilyQuickAddContent({
   };
 
   return (
-    <div className="grid min-h-0 gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
+    <div className="grid min-h-0 gap-0 sm:grid-cols-[200px_minmax(0,1fr)]">
       {/* LEFT: compact real-photo gallery */}
-      <div className="border-b border-border bg-surface/40 p-3 sm:border-b-0 sm:border-r">
-        <div className="mx-auto flex h-[190px] w-full max-w-[210px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-2">
+      <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
+        <div className="mx-auto flex h-[140px] w-full max-w-[175px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px]">
           {selectedImageUrl ? (
             <img src={selectedImageUrl} alt={family.name} className="h-full w-full object-contain" />
           ) : (
@@ -655,8 +655,8 @@ function FamilyQuickAddContent({
           )}
         </div>
 
-        <div className="mt-3">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="mt-2.5">
+          <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
             Related photos
           </div>
 
@@ -677,7 +677,7 @@ function FamilyQuickAddContent({
                     type="button"
                     onClick={() => setActiveImageUrl(image.image_url)}
                     className={cn(
-                      "relative grid h-12 w-12 place-items-center overflow-hidden rounded-lg border bg-white p-1 transition",
+                      "relative grid h-10 w-10 place-items-center overflow-hidden rounded-md border bg-white p-0.5 transition",
                       active ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/60",
                     )}
                     aria-label={`Show product photo ${index + 1}`}
@@ -701,37 +701,37 @@ function FamilyQuickAddContent({
       </div>
 
       {/* RIGHT: choices + quantity + CTA */}
-      <div className="p-4 sm:p-5">
+      <div className="p-3.5 sm:p-4">
         <DialogHeader>
-          <DialogTitle className="text-display text-xl">{family.name}</DialogTitle>
+          <DialogTitle className="text-display text-lg leading-tight">{family.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-xl font-bold">{inr(Number(variant.price ?? 0))}</span>
+        <div className="mt-1.5 flex items-baseline gap-2">
+          <span className="text-lg font-bold">{inr(Number(variant.price ?? 0))}</span>
           {Number(variant.mrp ?? 0) > Number(variant.price ?? 0) && (
             <span className="text-xs text-muted-foreground line-through">{inr(Number(variant.mrp ?? 0))}</span>
           )}
         </div>
 
         {/* Quantity is intentionally near the top so it cannot disappear below the fold. */}
-        <div className="mt-4 rounded-xl border border-border bg-surface/30 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-bold">Quantity</span>
+        <div className="mt-3 rounded-xl border border-border bg-surface/30 p-2.5">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-xs font-bold">Quantity</span>
             <span className="text-[11px] text-muted-foreground">{stock} available</span>
           </div>
 
-          <div className="inline-flex h-10 items-center overflow-hidden rounded-full border border-primary/30 bg-background shadow-sm">
+          <div className="inline-flex h-9 items-center overflow-hidden rounded-full border border-primary/30 bg-background shadow-sm">
             <button
               type="button"
               onClick={() => setQuickQty((q) => Math.max(1, q - 1))}
               disabled={quickQty <= 1}
-              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-35"
+              className="grid h-9 w-9 place-items-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-35"
               aria-label="Decrease quantity"
             >
               <Minus className="h-4 w-4" />
             </button>
 
-            <span className="min-w-12 border-x border-border px-3 text-center text-base font-black tabular-nums">
+            <span className="min-w-10 border-x border-border px-2 text-center text-sm font-black tabular-nums">
               {quickQty}
             </span>
 
@@ -739,7 +739,7 @@ function FamilyQuickAddContent({
               type="button"
               onClick={() => setQuickQty((q) => Math.min(maxQty, q + 1))}
               disabled={!inStock || quickQty >= maxQty}
-              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-35"
+              className="grid h-9 w-9 place-items-center text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-35"
               aria-label="Increase quantity"
             >
               <Plus className="h-4 w-4" />
@@ -748,10 +748,10 @@ function FamilyQuickAddContent({
         </div>
 
         {family.axes.length > 0 ? (
-          <div className="mt-4 space-y-3">
+          <div className="mt-3 space-y-2.5">
             {family.axes.map((axis) => (
               <div key={axis.axis_key}>
-                <div className="mb-1.5 text-xs font-semibold">
+                <div className="mb-1 text-[11px] font-semibold">
                   {axis.label}
                   <span className="ml-2 font-normal text-muted-foreground">{selection[axis.axis_key]}</span>
                 </div>
@@ -772,7 +772,7 @@ function FamilyQuickAddContent({
                           setActiveImageUrl(null);
                         }}
                         className={cn(
-                          "rounded-lg border px-3 py-1.5 text-xs font-medium transition",
+                          "rounded-md border px-2.5 py-1 text-[11px] font-medium transition",
                           active
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-border bg-background hover:border-primary/60",
@@ -788,12 +788,12 @@ function FamilyQuickAddContent({
             ))}
           </div>
         ) : (
-          <div className="mt-4 rounded-lg border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
+          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
             This product has one available variation.
           </div>
         )}
 
-        <div className="mt-4 text-[11px] text-muted-foreground">
+        <div className="mt-2.5 text-[10px] text-muted-foreground">
           SKU {variant.sku}
           {packSize > 1 ? ` · Pack of ${packSize}` : ""}
         </div>
@@ -801,7 +801,7 @@ function FamilyQuickAddContent({
         <Button
           type="button"
           size="lg"
-          className="mt-4 w-full gap-2 rounded-full"
+          className="mt-3 h-10 w-full gap-2 rounded-full text-sm font-bold"
           onClick={addSelected}
           disabled={cart.add.isPending || !inStock || !productId}
         >
@@ -904,9 +904,9 @@ function LegacyQuickAddContent({
   };
 
   return (
-    <div className="grid gap-0 sm:grid-cols-[220px_minmax(0,1fr)]">
-      <div className="border-b border-border bg-surface/40 p-3 sm:border-b-0 sm:border-r">
-        <div className="mx-auto flex h-[190px] w-full max-w-[210px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-2">
+    <div className="grid gap-0 sm:grid-cols-[200px_minmax(0,1fr)]">
+      <div className="border-b border-border bg-surface/40 p-2.5 sm:border-b-0 sm:border-r">
+        <div className="mx-auto flex h-[140px] w-full max-w-[175px] items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-white p-1.5 sm:h-[165px]">
           {selectedImageUrl ? (
             <img src={selectedImageUrl} alt={product.name} className="h-full w-full object-contain" />
           ) : (
@@ -944,35 +944,35 @@ function LegacyQuickAddContent({
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className="p-3.5 sm:p-4">
         <DialogHeader>
-          <DialogTitle className="text-display text-xl">{baseName(product.name)}</DialogTitle>
+          <DialogTitle className="text-display text-lg leading-tight">{baseName(product.name)}</DialogTitle>
         </DialogHeader>
 
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-xl font-bold">{inr(Number(product.price ?? 0))}</span>
+        <div className="mt-1.5 flex items-baseline gap-2">
+          <span className="text-lg font-bold">{inr(Number(product.price ?? 0))}</span>
           {Number(product.mrp ?? 0) > Number(product.price ?? 0) && (
             <span className="text-xs text-muted-foreground line-through">{inr(Number(product.mrp ?? 0))}</span>
           )}
         </div>
 
-        <div className="mt-4 rounded-xl border border-border bg-surface/30 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-bold">Quantity</span>
+        <div className="mt-3 rounded-xl border border-border bg-surface/30 p-2.5">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-xs font-bold">Quantity</span>
             <span className="text-[11px] text-muted-foreground">{stock} available</span>
           </div>
 
-          <div className="inline-flex h-10 items-center overflow-hidden rounded-full border border-primary/30 bg-background shadow-sm">
+          <div className="inline-flex h-9 items-center overflow-hidden rounded-full border border-primary/30 bg-background shadow-sm">
             <button
               type="button"
               onClick={() => setQuickQty((q) => Math.max(1, q - 1))}
               disabled={quickQty <= 1}
-              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:opacity-35"
+              className="grid h-9 w-9 place-items-center text-primary transition hover:bg-primary/10 disabled:opacity-35"
             >
               <Minus className="h-4 w-4" />
             </button>
 
-            <span className="min-w-12 border-x border-border px-3 text-center text-base font-black tabular-nums">
+            <span className="min-w-10 border-x border-border px-2 text-center text-sm font-black tabular-nums">
               {quickQty}
             </span>
 
@@ -980,23 +980,23 @@ function LegacyQuickAddContent({
               type="button"
               onClick={() => setQuickQty((q) => Math.min(maxQty, q + 1))}
               disabled={!inStock || quickQty >= maxQty}
-              className="grid h-10 w-10 place-items-center text-primary transition hover:bg-primary/10 disabled:opacity-35"
+              className="grid h-9 w-9 place-items-center text-primary transition hover:bg-primary/10 disabled:opacity-35"
             >
               <Plus className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="mt-4 rounded-lg border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
+        <div className="mt-3 rounded-lg border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
           This product has one available variation.
         </div>
 
-        <div className="mt-4 text-[11px] text-muted-foreground">SKU {product.sku}</div>
+        <div className="mt-2.5 text-[10px] text-muted-foreground">SKU {product.sku}</div>
 
         <Button
           type="button"
           size="lg"
-          className="mt-4 w-full gap-2 rounded-full"
+          className="mt-3 h-10 w-full gap-2 rounded-full text-sm font-bold"
           onClick={add}
           disabled={cart.add.isPending || !inStock}
         >
