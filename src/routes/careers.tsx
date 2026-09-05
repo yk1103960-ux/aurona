@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { careersQuery, jobAnchor, isClosed, formatCloseDate, type CareerProgram } from "@/lib/careers";
-import { referralProgramsQuery, commissionLabel, type ReferralProgram } from "@/lib/referral-programs";
+import { referralProgramsQuery, commissionLabel } from "@/lib/referral-programs";
 import { ApplyDialog, type ApplyTarget } from "@/components/careers/ApplyDialog";
 
 const PROGRAM_ICONS = [Handshake, Store, Share2, Crown, Globe, Megaphone, Package];
@@ -63,7 +63,6 @@ function CareersPage() {
   const [applyTarget, setApplyTarget] = useState<ApplyTarget>(null);
   const lastAutoApply = useRef<string | null>(null);
   const [detail, setDetail] = useState<CareerProgram | null>(null);
-  const [refDetail, setRefDetail] = useState<ReferralProgram | null>(null);
   const openings = jobs.filter((j) => j.kind === "job");
   const programs = jobs.filter((j) => j.kind !== "job");
 
@@ -279,8 +278,19 @@ function CareersPage() {
                     )}
                   </ul>
                   <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => setRefDetail(p)}>
-                      Read more
+                    <Button asChild size="sm" variant="outline" className="rounded-full">
+                      <Link
+                        to="/partner-program/$id"
+                        params={{
+                          id:
+                            programs.find((r) => r.title.toLowerCase().includes(p.name.toLowerCase().split(" ")[0]))
+                              ?.id ??
+                            programs[0]?.id ??
+                            "",
+                        }}
+                      >
+                        Read more
+                      </Link>
                     </Button>
                     <Button
                       size="sm"
@@ -408,56 +418,6 @@ function CareersPage() {
                   Apply now
                 </Button>
               )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Full referral programme details */}
-      <Dialog open={!!refDetail} onOpenChange={(o) => !o && setRefDetail(null)}>
-        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{refDetail?.name}</DialogTitle>
-          </DialogHeader>
-          {refDetail && (
-            <div className="space-y-4 text-sm">
-              <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                {commissionLabel(refDetail)}
-              </div>
-              <p className="whitespace-pre-wrap text-muted-foreground">{refDetail.description}</p>
-              {Number(refDetail.min_order_value) > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Minimum order value ₹{Number(refDetail.min_order_value)}
-                  {refDetail.max_commission ? ` · Maximum payout ₹${Number(refDetail.max_commission)}` : ""}
-                </p>
-              )}
-              {refDetail.eligibility && (
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Who can join
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap">{refDetail.eligibility}</p>
-                </div>
-              )}
-              {refDetail.closes_at && (
-                <p className="text-xs text-muted-foreground">Open till {formatCloseDate(refDetail.closes_at)}</p>
-              )}
-              {refDetail.terms && (
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Terms</div>
-                  <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{refDetail.terms}</p>
-                </div>
-              )}
-              <Button
-                className="w-full rounded-full"
-                onClick={() => {
-                  const title = refDetail.name;
-                  setRefDetail(null);
-                  setApplyTarget({ id: programs[0]?.id ?? openings[0]?.id ?? "", title });
-                }}
-              >
-                Apply now
-              </Button>
             </div>
           )}
         </DialogContent>
