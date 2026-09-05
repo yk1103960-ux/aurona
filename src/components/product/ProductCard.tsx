@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { GitCompare, Heart, Link2, Minus, Plus, ShoppingCart, Star, Phone, Truck, Zap } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { discountPct, inr } from "@/lib/format";
 import type { Product } from "@/lib/queries";
@@ -15,6 +17,7 @@ import { useCompare } from "@/hooks/useCompare";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyRole, useVisiblePrices } from "@/lib/pricing";
 import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 type Row = Product & {
   categories: { slug: string; name: string; icon?: string | null } | null;
@@ -43,6 +46,7 @@ export function ProductCard({
   const cart = useCart();
   const wl = useWishlist();
   const compare = useCompare();
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const { user } = useAuth();
   const fetchAffiliate = useServerFn(getMyApprovedAffiliateIdentity);
   const { data: affiliateData } = useQuery({
@@ -69,6 +73,10 @@ export function ProductCard({
   const lowStock = stock > 0 && stock <= 8;
   const outOfStock = stock <= 0;
   const spec = product.wattage ?? product.size ?? null;
+
+  const handleAdd = () => {
+    setQuickAddOpen(true);
+  };
 
   const handleWishlist = () => {
     wl.toggle.mutate({ productId: product.id, sku: product.sku });
@@ -270,19 +278,308 @@ export function ProductCard({
             </button>
           </div>
         ) : (
-          <Button asChild size="sm" className="press mt-2 w-full gap-2 rounded-full">
-            <Link
-              to="/products/$slug"
-              params={{ slug: product.family_slug ?? product.slug }}
-              search={{}}
-              aria-label={`Select options for ${baseName(product.name)}`}
-            >
-              <ShoppingCart className="h-4 w-4" />
-              {outOfStock ? "VIEW PRODUCT" : "SELECT OPTIONS"}
-            </Link>
+          <Button
+            size="sm"
+            className="press mt-2 w-full gap-2 rounded-full"
+            onClick={handleAdd}
+            disabled={cart.add.isPending || outOfStock}
+          >
+            <ShoppingCart className="h-4 w-4" /> {outOfStock ? "Notify me" : "ADD"}
           </Button>
         )}
       </div>
+
+      <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} product={product} categoryIcon={icon} />
     </div>
+  );
+}
+
+const QUICK_OPTION_KEYS = [
+  "model",
+  "wattage",
+  "output_color",
+  "color",
+  "finish",
+  "body_color",
+  "body_type",
+  "size",
+  "pack_size",
+  "capacity",
+  "sweep",
+  "power",
+  "base_type",
+  "shape",
+] as const;
+
+const QUICK_OPTION_LABELS: Record<string, string> = {
+  model: "Model",
+  wattage: "Watt",
+  output_color: "Output Colour",
+  color: "Colour",
+  finish: "Finish",
+  body_color: "Body Colour",
+  body_type: "Body Type",
+  size: "Size",
+  pack_size: "Pack Size",
+  capacity: "Capacity",
+  sweep: "Sweep",
+  power: "Power",
+  base_type: "Base Type",
+  shape: "Shape",
+};
+
+function cleanOptionValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  return s ? s : null;
+}
+
+function QuickAddDialog({
+  open,
+  onOpenChange,
+  product,
+  categoryIcon,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  product: Row;
+  categoryIcon?: string | null;
+}) {
+  const cart = useCart();
+  const familyKey = product.family_slug ?? product.slug;
+  const [selected, setSelected] = useState<Record<string, string>>({});
+
+  const { data: rawVariants = [], isLoading } = useQuery({
+    queryKey: ["quick-add-variants", familyKey],
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .or(`family_slug.eq.${familyKey},slug.eq.${familyKey}`);
+
+      if (error) throw error;
+      return (data ?? []) as unknown as Row[];
+    },
+  });
+
+  const variants = useMemo(() => {
+    if (rawVariants.length > 0) return rawVariants;
+    return [product];
+  }, [rawVariants, product]);
+
+  const optionKeys = useMemo(() => {
+    return QUICK_OPTION_KEYS.filter((key) => {
+      const values = new Set(
+        variants.map((v) => cleanOptionValue((v as any)[key])).filter((v): v is string => Boolean(v)),
+      );
+      return values.size > 1;
+    });
+  }, [variants]);
+
+  const compatibleVariants = (ignoreKey?: string) =>
+    variants.filter((variant) =>
+      Object.entries(selected).every(([key, value]) => {
+        if (key === ignoreKey) return true;
+        return cleanOptionValue((variant as any)[key]) === value;
+      }),
+    );
+
+  const selectedVariant = useMemo(() => {
+    if (optionKeys.length === 0) {
+      return variants.find((v) => Number(v.stock ?? 0) > 0) ?? variants[0] ?? product;
+    }
+
+    if (!optionKeys.every((key) => selected[key])) return null;
+
+    return (
+      variants.find((variant) =>
+        optionKeys.every((key) => cleanOptionValue((variant as any)[key]) === selected[key]),
+      ) ?? null
+    );
+  }, [variants, optionKeys, selected, product]);
+
+  const displayVariant = selectedVariant ?? compatibleVariants()[0] ?? product;
+  const displayPrice = Number(displayVariant.price ?? product.price ?? 0);
+  const displayMrp = Number(displayVariant.mrp ?? product.mrp ?? 0);
+  const displayStock = Number(displayVariant.stock ?? 0);
+  const complete = optionKeys.every((key) => Boolean(selected[key]));
+  const valid = Boolean(selectedVariant) && displayStock > 0;
+
+  const chooseOption = (key: string, value: string) => {
+    setSelected((current) => {
+      const next = { ...current, [key]: value };
+
+      // Drop selections that became impossible after changing one option.
+      for (const otherKey of optionKeys) {
+        if (otherKey === key || !next[otherKey]) continue;
+        const exists = variants.some(
+          (variant) =>
+            Object.entries(next).every(([k, v]) => {
+              if (k === otherKey) return true;
+              return cleanOptionValue((variant as any)[k]) === v;
+            }) && cleanOptionValue((variant as any)[otherKey]) === next[otherKey],
+        );
+        if (!exists) delete next[otherKey];
+      }
+
+      return next;
+    });
+  };
+
+  const addSelected = () => {
+    if (!complete) {
+      toast.error("Please select all required options.");
+      return;
+    }
+
+    if (!selectedVariant) {
+      toast.error("This combination is not available.");
+      return;
+    }
+
+    if (Number(selectedVariant.stock ?? 0) <= 0) {
+      toast.error("This variation is currently out of stock.");
+      return;
+    }
+
+    cart.add.mutate(
+      { productId: selectedVariant.id, sku: selectedVariant.sku },
+      {
+        onSuccess: () => {
+          toast.success("Added to cart", {
+            description: selectedVariant.name,
+            duration: 1600,
+          });
+          onOpenChange(false);
+          setSelected({});
+        },
+      },
+    );
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen);
+        if (!nextOpen) setSelected({});
+      }}
+    >
+      <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-3xl overflow-y-auto p-0 sm:rounded-2xl">
+        <div className="grid gap-0 md:grid-cols-[0.9fr_1.1fr]">
+          <div className="border-b border-border bg-surface/40 p-5 md:border-b-0 md:border-r">
+            <div className="mx-auto aspect-square w-full max-w-[320px] overflow-hidden rounded-xl bg-white">
+              <ProductImage
+                product={displayVariant}
+                categoryIcon={categoryIcon}
+                className="h-full w-full object-contain"
+              />
+            </div>
+          </div>
+
+          <div className="p-5 sm:p-7">
+            <DialogHeader>
+              <DialogTitle className="text-display text-2xl">{baseName(product.name)}</DialogTitle>
+            </DialogHeader>
+
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl font-bold">{inr(displayPrice)}</span>
+              {displayMrp > displayPrice && (
+                <span className="text-sm text-muted-foreground line-through">{inr(displayMrp)}</span>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="mt-6 space-y-3">
+                <div className="h-10 animate-pulse rounded-lg bg-muted" />
+                <div className="h-10 animate-pulse rounded-lg bg-muted" />
+                <div className="h-10 animate-pulse rounded-lg bg-muted" />
+              </div>
+            ) : optionKeys.length > 0 ? (
+              <div className="mt-6 space-y-5">
+                {optionKeys.map((key) => {
+                  const values = Array.from(
+                    new Set(
+                      compatibleVariants(key)
+                        .map((v) => cleanOptionValue((v as any)[key]))
+                        .filter((v): v is string => Boolean(v)),
+                    ),
+                  );
+
+                  return (
+                    <div key={key}>
+                      <div className="mb-2 text-sm font-semibold">
+                        {QUICK_OPTION_LABELS[key] ?? key}
+                        {!selected[key] && (
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">Select one</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {values.map((value) => {
+                          const optionAvailable = variants.some((variant) => {
+                            if (cleanOptionValue((variant as any)[key]) !== value || Number(variant.stock ?? 0) <= 0) {
+                              return false;
+                            }
+
+                            return Object.entries(selected).every(([otherKey, otherValue]) => {
+                              if (otherKey === key) return true;
+                              return cleanOptionValue((variant as any)[otherKey]) === otherValue;
+                            });
+                          });
+
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              disabled={!optionAvailable}
+                              onClick={() => chooseOption(key, value)}
+                              className={cn(
+                                "rounded-lg border px-4 py-2 text-sm font-medium transition",
+                                selected[key] === value
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border bg-background hover:border-primary/60",
+                                !optionAvailable && "cursor-not-allowed opacity-35",
+                              )}
+                            >
+                              {value}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                This product has one available variation.
+              </div>
+            )}
+
+            <div className="mt-6 text-xs text-muted-foreground">
+              {selectedVariant
+                ? `SKU ${selectedVariant.sku} · ${displayStock} available`
+                : complete
+                  ? "Selected combination is unavailable."
+                  : "Select all options before adding to cart."}
+            </div>
+
+            <Button
+              type="button"
+              size="lg"
+              className="mt-5 w-full rounded-full gap-2"
+              onClick={addSelected}
+              disabled={cart.add.isPending || !complete || !valid}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {cart.add.isPending ? "Adding..." : "Add to cart"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
