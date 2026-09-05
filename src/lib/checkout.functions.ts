@@ -1,136 +1,347 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./useAuth";
-import { useCart } from "./useCart";
-import { readFlow, writeFlow, type CheckoutFlow } from "@/lib/checkout-flow";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { quoteShipping } from "@/lib/shipping.functions";
-import { applyCoupon } from "@/lib/coupons.functions";
-import type { AddressRow } from "@/components/account/AddressManager";
 
-export type DeliveryOption = { id: string; label: string; eta: string; price: number };
+const AddressSchema = z.object({
+  full_name: z.string().trim().min(1).max(120),
+  phone: z
+    .string()
+    .trim()
+    .min(6)
+    .max(20)
+    .regex(/^\+?\d[\d\s\-()]+$/),
+  email: z.string().trim().email().max(200).optional().or(z.literal("")),
+  address: z.string().trim().min(4).max(500),
+  city: z.string().trim().min(1).max(120),
+  state: z.string().trim().min(1).max(120),
+  pincode: z.string().trim().min(4).max(12).regex(/^\d+$/),
+});
+
+const PlaceOrderInput = z.object({
+  address: AddressSchema,
+  payment_method: z.enum(["cod", "upi", "card"]),
+  shipping_rate_id: z.string().trim().min(1).max(60),
+  coupon_code: z.string().trim().min(2).max(64).optional(),
+});
 
 /**
- * Single source of truth for the money shown across cart → checkout → payment.
- * Delivery is quoted on the server from real product weights and the
- * destination pincode. Coupon validation goes through applyCoupon(), which
- * avoids the broken  SQL RPC.
+ * Server-authoritative order placement.
  *
- * The figures here are display-only — the order total is recomputed
- * server-side when the order is placed.
+ * - Reads the signed-in user's cart from Supabase.
+ * - Re-checks stock and published products.
+ * - Recomputes role-aware prices with get_visible_prices().
+ * - Re-quotes shipping on the server and verifies shipping_rate_id.
+ * - Validates coupons directly from coupons/coupon_redemptions, avoiding the
+ *   broken validate_coupon() RPC that currently throws "coupon_id is ambiguous".
+ * - Writes orders + order_items, redeems the coupon, then clears the cart.
  */
-export function useCheckoutSummary() {
-  const { user, loading: authLoading } = useAuth();
-  const cart = useCart();
+export const placeOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => PlaceOrderInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
 
-  const [flow, setFlow] = useState<CheckoutFlow>({});
-  const [hydrated, setHydrated] = useState(false);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    setFlow(readFlow());
-    setHydrated(true);
-  }, []);
+    if (userError || !user) {
+      throw new Error("Please sign in again before placing your order.");
+    }
 
-  const patchFlow = (patch: CheckoutFlow) => setFlow(writeFlow(patch));
+    // 1) Pricing/account role.
+    const { data: roleData, error: roleError } = await supabase.rpc("current_pricing_role");
 
-  const addressesQuery = useQuery({
-    queryKey: ["addresses", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("addresses")
-        .select("*")
-        .order("is_default", { ascending: false })
-        .order("created_at", { ascending: false });
+    if (roleError) {
+      throw new Error(roleError.message || "Could not verify your account type.");
+    }
 
-      if (error) throw error;
-      return (data ?? []) as AddressRow[];
-    },
-  });
+    const role = (roleData as string | null) ?? "customer";
 
-  const addresses = addressesQuery.data ?? [];
-  const address = addresses.find((a) => a.id === flow.addressId) ?? null;
+    if (role === "distributor") {
+      throw new Error("Distributor accounts must contact sales to place orders.");
+    }
 
-  const method = flow.method ?? "cod";
-  const cod = method === "cod";
+    // 2) Load the caller's cart. Never trust prices/totals sent by the browser.
+    const { data: cartRows, error: cartError } = await supabase
+      .from("cart_items")
+      .select("id, product_id, quantity")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
 
-  const quoteFn = useServerFn(quoteShipping);
-  const deliveryQuery = useQuery({
-    queryKey: ["delivery-quote", address?.pincode ?? null, cod, cart.count, cart.subtotal],
-    enabled: Boolean(address?.pincode) && cart.items.length > 0,
-    queryFn: () => quoteFn({ data: { pincode: address!.pincode, cod } }),
-    retry: false,
-  });
+    if (cartError) {
+      throw new Error(cartError.message || "Could not load your cart.");
+    }
 
-  const rates: DeliveryOption[] = deliveryQuery.data?.rates ?? [];
-  const serviceable = deliveryQuery.data?.serviceable ?? false;
-  const rate = rates.find((r) => r.id === flow.rateId) ?? rates[0] ?? null;
+    const cart = cartRows ?? [];
 
-  useEffect(() => {
-    if (rate && flow.rateId !== rate.id) patchFlow({ rateId: rate.id });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rate?.id]);
+    if (cart.length === 0) {
+      throw new Error("Your cart is empty.");
+    }
 
-  const applyCouponFn = useServerFn(applyCoupon);
+    // 3) Load authoritative product records.
+    const productIds = [...new Set(cart.map((row) => row.product_id))];
 
-  const couponQuery = useQuery({
-    queryKey: ["coupon", flow.coupon ?? null, cart.subtotal, user?.id ?? null],
-    enabled: Boolean(flow.coupon) && cart.subtotal > 0,
-    queryFn: async () => {
-      try {
-        return await applyCouponFn({
-          data: {
-            code: flow.coupon!,
-            subtotal: cart.subtotal,
-          },
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Could not validate coupon";
+    const { data: products, error: productError } = await supabase
+      .from("products")
+      .select("id, sku, name, price, stock, is_published")
+      .in("id", productIds);
 
-        return {
-          valid: false,
-          couponId: null,
-          discount: 0,
-          reason: message,
-        };
+    if (productError) {
+      throw new Error(productError.message || "Could not load products.");
+    }
+
+    const productById = new Map((products ?? []).map((product) => [product.id, product]));
+
+    const items = cart.map((row) => {
+      const product = productById.get(row.product_id);
+
+      if (!product || !product.is_published) {
+        throw new Error("A product in your cart is no longer available.");
       }
-    },
-    retry: false,
+
+      const quantity = Number(row.quantity);
+
+      if (!Number.isFinite(quantity) || quantity < 1) {
+        throw new Error(`Invalid quantity for ${product.name}.`);
+      }
+
+      if (Number(product.stock ?? 0) < quantity) {
+        throw new Error(`${product.name} has only ${Number(product.stock ?? 0)} available.`);
+      }
+
+      return {
+        cartId: row.id,
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        quantity,
+        fallbackPrice: Number(product.price ?? 0),
+      };
+    });
+
+    // 4) Recompute the shopper's actual visible price for every SKU.
+    const skus = [...new Set(items.map((item) => item.sku).filter(Boolean))];
+
+    const { data: visiblePrices, error: priceError } = await supabase.rpc("get_visible_prices", {
+      _skus: skus,
+    });
+
+    if (priceError) {
+      throw new Error(priceError.message || "Could not calculate current product prices.");
+    }
+
+    const priceBySku = new Map((visiblePrices ?? []).map((row) => [row.sku, Number(row.price ?? 0)]));
+
+    const pricedItems = items.map((item) => {
+      const price = priceBySku.get(item.sku);
+
+      if (price === undefined || !Number.isFinite(price) || price < 0) {
+        throw new Error(`Could not calculate the current price for ${item.name}.`);
+      }
+
+      return {
+        ...item,
+        price,
+      };
+    });
+
+    const subtotal = Number(pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+
+    if (!(subtotal > 0)) {
+      throw new Error("Order subtotal is invalid.");
+    }
+
+    // 5) Re-quote delivery on the server and verify the chosen rate.
+    const shippingQuote = await quoteShipping({
+      data: {
+        pincode: data.address.pincode,
+        cod: data.payment_method === "cod",
+      },
+    });
+
+    if (!shippingQuote?.serviceable || !Array.isArray(shippingQuote.rates)) {
+      throw new Error(shippingQuote?.message || "Sorry, delivery is not available to this pincode.");
+    }
+
+    const selectedRate = shippingQuote.rates.find((rate) => String(rate.id) === data.shipping_rate_id);
+
+    if (!selectedRate) {
+      throw new Error("The selected delivery option is no longer available. Please choose delivery again.");
+    }
+
+    const shipping = Math.max(0, Number(selectedRate.price ?? 0));
+
+    if (!Number.isFinite(shipping)) {
+      throw new Error("Could not calculate delivery charges.");
+    }
+
+    // 6) Validate coupon directly from tables.
+    //    IMPORTANT: do NOT call validate_coupon() here while that SQL RPC is broken.
+    let couponId: string | null = null;
+    let couponCode: string | null = null;
+    let discount = 0;
+
+    if (data.coupon_code) {
+      const code = data.coupon_code.trim().toUpperCase();
+
+      const { data: coupon, error: couponError } = await supabase
+        .from("coupons")
+        .select(
+          "id, code, type, value, min_order_value, max_discount, starts_at, expires_at, usage_limit, per_user_limit, eligible_roles, times_used, active",
+        )
+        .ilike("code", code)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (couponError) {
+        throw new Error(couponError.message || "Could not validate coupon.");
+      }
+
+      if (!coupon) {
+        throw new Error("Invalid coupon code.");
+      }
+
+      const now = Date.now();
+
+      if (coupon.starts_at && new Date(coupon.starts_at).getTime() > now) {
+        throw new Error("Coupon not yet active.");
+      }
+
+      if (coupon.expires_at && new Date(coupon.expires_at).getTime() < now) {
+        throw new Error("Coupon expired.");
+      }
+
+      if (coupon.usage_limit !== null && Number(coupon.times_used ?? 0) >= Number(coupon.usage_limit)) {
+        throw new Error("Coupon usage limit reached.");
+      }
+
+      if (subtotal < Number(coupon.min_order_value ?? 0)) {
+        throw new Error("Minimum order not met for this coupon.");
+      }
+
+      const eligibleRoles = Array.isArray(coupon.eligible_roles) ? coupon.eligible_roles : [];
+
+      if (!eligibleRoles.includes(role)) {
+        throw new Error("This coupon is not eligible for your account type.");
+      }
+
+      const { count: usedCount, error: usageError } = await supabase
+        .from("coupon_redemptions")
+        .select("id", { count: "exact", head: true })
+        .eq("coupon_id", coupon.id)
+        .eq("user_id", user.id);
+
+      if (usageError) {
+        throw new Error(usageError.message || "Could not verify coupon usage.");
+      }
+
+      if (Number(usedCount ?? 0) >= Number(coupon.per_user_limit ?? 1)) {
+        throw new Error("Coupon already used.");
+      }
+
+      if (coupon.type === "flat") {
+        discount = Math.min(Number(coupon.value ?? 0), subtotal);
+      } else {
+        discount = (subtotal * Number(coupon.value ?? 0)) / 100;
+
+        if (coupon.max_discount !== null) {
+          discount = Math.min(discount, Number(coupon.max_discount));
+        }
+      }
+
+      discount = Math.max(0, Number(discount.toFixed(2)));
+      couponId = coupon.id;
+      couponCode = coupon.code;
+    }
+
+    const total = Math.max(0, Number((subtotal - discount + shipping).toFixed(2)));
+
+    // 7) Create order.
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        user_id: user.id,
+        full_name: data.address.full_name,
+        phone: data.address.phone,
+        email: data.address.email || user.email || null,
+        address: data.address.address,
+        city: data.address.city,
+        state: data.address.state,
+        pincode: data.address.pincode,
+        payment_method: data.payment_method,
+        subtotal,
+        shipping,
+        discount,
+        discount_code: couponCode,
+        total,
+      })
+      .select("id")
+      .single();
+
+    if (orderError || !order) {
+      throw new Error(orderError?.message || "Could not create your order.");
+    }
+
+    // 8) Snapshot order items at the exact prices used for this order.
+    const { error: itemError } = await supabase.from("order_items").insert(
+      pricedItems.map((item) => ({
+        order_id: order.id,
+        product_id: item.productId,
+        product_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    );
+
+    if (itemError) {
+      // Best-effort cleanup. If RLS prevents deletion, the original error is
+      // still returned and the cart is NOT cleared.
+      await supabase.from("orders").delete().eq("id", order.id).eq("user_id", user.id);
+      throw new Error(itemError.message || "Could not save order items.");
+    }
+
+    // 9) Record redemption + increment coupon usage through the dedicated RPC.
+    // redeem_coupon does not contain the ambiguous coupon_id query.
+    if (couponId && discount > 0) {
+      const { error: redeemError } = await supabase.rpc("redeem_coupon", {
+        _coupon_id: couponId,
+        _order_id: order.id,
+        _amount: discount,
+      });
+
+      if (redeemError) {
+        throw new Error(redeemError.message || "Could not redeem coupon.");
+      }
+    }
+
+    // 10) Clear only the cart rows that were used for this order.
+    const cartIds = pricedItems.map((item) => item.cartId);
+
+    const { error: clearError } = await supabase.from("cart_items").delete().eq("user_id", user.id).in("id", cartIds);
+
+    if (clearError) {
+      console.error("Order created but cart cleanup failed:", clearError);
+    }
+
+    // Best-effort abandoned-cart recovery mark.
+    await supabase
+      .from("abandoned_carts")
+      .update({
+        status: "recovered",
+        recovered_at: new Date().toISOString(),
+        recovered_order_id: order.id,
+      })
+      .eq("user_id", user.id)
+      .neq("status", "recovered");
+
+    return {
+      orderId: order.id,
+      subtotal,
+      shipping,
+      discount,
+      total,
+    };
   });
-
-  const couponValid = Boolean(couponQuery.data?.valid);
-  const discount = couponValid ? Number(couponQuery.data?.discount ?? 0) : 0;
-
-  const delivery = rate?.price ?? 0;
-  const mrpSavings = Math.max(0, cart.mrpTotal - cart.subtotal);
-  const total = Math.max(0, cart.subtotal - discount + delivery);
-
-  return {
-    user,
-    authLoading,
-    cart,
-    flow,
-    patchFlow,
-    hydrated,
-    addresses,
-    addressesLoading: addressesQuery.isLoading,
-    address,
-    method,
-    rates,
-    rate,
-    serviceable,
-    deliveryLoading: deliveryQuery.isFetching,
-    deliveryMessage: deliveryQuery.data?.message ?? null,
-    deliveryFailed: deliveryQuery.isError,
-    couponCode: flow.coupon ?? null,
-    couponValid,
-    couponChecking: couponQuery.isFetching,
-    couponReason: couponQuery.data?.reason ?? null,
-    discount,
-    delivery,
-    mrpSavings,
-    subtotal: cart.subtotal,
-    total,
-  };
-}
