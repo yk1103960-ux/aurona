@@ -785,57 +785,62 @@ function PartnerProgramPage() {
         )}
       </div>
 
-      <div className="mt-8 space-y-7">
+      <div className="mt-8">
         {content ? (
-          content.sections.map((section) => (
-            <section key={section.heading} className="rounded-2xl border border-border bg-card p-6 md:p-8">
-              <h2 className="text-2xl font-semibold text-foreground">{section.heading}</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {content.sections.map((section) => (
+              <section
+                key={section.heading}
+                className="group rounded-2xl border-2 border-border/80 bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg md:p-7"
+              >
+                <h2 className="text-2xl font-semibold text-foreground">{section.heading}</h2>
 
-              {section.paragraphs?.map((paragraph) => (
-                <p key={paragraph} className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">
-                  {paragraph}
-                </p>
-              ))}
+                {section.paragraphs?.map((paragraph) => (
+                  <p key={paragraph} className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">
+                    {paragraph}
+                  </p>
+                ))}
 
-              {section.bullets && (
-                <ul className="mt-4 list-disc space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
-                  {section.bullets.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              )}
+                {section.bullets && (
+                  <ul className="mt-4 list-disc space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
+                    {section.bullets.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
 
-              {section.numbered && (
-                <ol className="mt-4 list-decimal space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
-                  {section.numbered.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ol>
-              )}
+                {section.numbered && (
+                  <ol className="mt-4 list-decimal space-y-2.5 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
+                    {section.numbered.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ol>
+                )}
 
-              {section.subsections?.map((sub) => (
-                <div key={sub.heading} className="mt-6">
-                  <h3 className="text-lg font-semibold text-foreground">{sub.heading}</h3>
+                {section.subsections?.map((sub) => (
+                  <div key={sub.heading} className="mt-6">
+                    <h3 className="text-lg font-semibold text-foreground">{sub.heading}</h3>
 
-                  {sub.paragraphs?.map((paragraph) => (
-                    <p key={paragraph} className="mt-2 text-sm leading-7 text-muted-foreground md:text-base">
-                      {paragraph}
-                    </p>
-                  ))}
+                    {sub.paragraphs?.map((paragraph) => (
+                      <p key={paragraph} className="mt-2 text-sm leading-7 text-muted-foreground md:text-base">
+                        {paragraph}
+                      </p>
+                    ))}
 
-                  {sub.bullets && (
-                    <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
-                      {sub.bullets.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </section>
-          ))
+                    {sub.bullets && (
+                      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground md:text-base">
+                        {sub.bullets.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </section>
+            ))}
+          </div>
         ) : (
-          <section className="rounded-2xl border border-border bg-card p-6 md:p-8">
+          <section className="rounded-2xl border-2 border-border/80 bg-card p-6 shadow-sm md:p-8">
             <h2 className="text-2xl font-semibold">About the Program</h2>
             <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">
               {(program as any)?.description ||
@@ -846,7 +851,7 @@ function PartnerProgramPage() {
           </section>
         )}
 
-        <section className="rounded-2xl border border-border bg-card p-6 md:p-8">
+        <section className="mt-8 rounded-2xl border-2 border-primary/20 bg-card p-6 shadow-md md:p-8">
           <div className="text-eyebrow">APPLICATION FORM</div>
           <h2 className="mt-2 text-2xl font-semibold">Join as Partner</h2>
 
