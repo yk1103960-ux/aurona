@@ -72,6 +72,32 @@ const translations: Record<string, string> = {
   "Room Heater": "रूम हीटर",
   Fans: "फैन",
   More: "और",
+  Cart: "कार्ट",
+  Checkout: "चेकआउट",
+  "Add to cart": "कार्ट में जोड़ें",
+  "Buy now": "अभी खरीदें",
+  "Continue shopping": "खरीदारी जारी रखें",
+  "Proceed to checkout": "चेकआउट पर जाएँ",
+  Quantity: "मात्रा",
+  Price: "मूल्य",
+  Subtotal: "उप-योग",
+  Discount: "छूट",
+  Shipping: "डिलीवरी",
+  Tax: "कर",
+  Total: "कुल",
+  "Apply a coupon": "कूपन लगाएँ",
+  "Enter coupon code": "कूपन कोड दर्ज करें",
+  Apply: "लागू करें",
+  Remove: "हटाएँ",
+  Address: "पता",
+  Payment: "भुगतान",
+  "Place order": "ऑर्डर करें",
+  "Order summary": "ऑर्डर सारांश",
+  "Out of stock": "स्टॉक में नहीं",
+  "In stock": "स्टॉक में उपलब्ध",
+  "My Account": "मेरा खाता",
+  "My Orders": "मेरे ऑर्डर",
+  Logout: "लॉग आउट",
 };
 
 /* ------------------------------------------------------------------ */
@@ -148,6 +174,22 @@ function walk(root: Node) {
   }
   if (root.nodeType === Node.TEXT_NODE) nodes.push(root as Text);
   for (const node of nodes) if (translatable(node)) applyToNode(node);
+
+  // Text-node translation alone misses form placeholders, tooltips and
+  // accessibility labels. Translate those too, while keeping unknown copy in
+  // English until a safe translation is available.
+  const elements = root.nodeType === Node.ELEMENT_NODE
+    ? [root as Element, ...(root as Element).querySelectorAll("[placeholder],[title],[aria-label]")]
+    : [];
+  for (const element of elements) {
+    for (const attribute of ["placeholder", "title", "aria-label"]) {
+      const source = element.getAttribute(attribute)?.trim();
+      if (!source || !HAS_LETTERS.test(source) || DEVANAGARI.test(source)) continue;
+      const translated = cache[source];
+      if (translated) element.setAttribute(attribute, translated);
+      else pending.add(source);
+    }
+  }
 }
 
 function scheduleFlush() {

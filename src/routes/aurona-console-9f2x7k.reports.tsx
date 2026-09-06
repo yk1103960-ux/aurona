@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { adminGetReport } from "@/lib/report-admin.functions";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { inr } from "@/lib/format";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/reports")({ component: ReportsAdmin });
@@ -18,11 +20,17 @@ function ReportsAdmin() {
   const getReport = useServerFn(adminGetReport);
   const q = useQuery({ queryKey: ["admin-report", from, to], queryFn: () => getReport({ data: { from, to } }), enabled: Boolean(from && to) });
   const report: any = q.data;
+  const exportCsv = () => {
+    if (!report) return;
+    const lines = ["metric,value", `orders,${report.orders}`, `gross_revenue,${report.gross_revenue}`, `average_order_value,${report.average_order_value}`, `discounts,${report.discounts}`, `cancelled_orders,${report.cancelled_orders}`, `customer_registrations,${report.customer_registrations}`, `return_refund_total,${report.return_refund_total}`];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `aurona-report-${from}-${to}.csv`; anchor.click(); URL.revokeObjectURL(url);
+  };
 
   return <div className="space-y-5">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><h1 className="text-2xl font-semibold">Reports</h1><p className="text-sm text-slate-500">Sales, fulfilment and inventory health from authoritative order and SKU data.</p></div>
-      <div className="flex gap-2"><label className="text-xs text-slate-500">From<Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label className="text-xs text-slate-500">To<Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></div>
+      <div className="flex items-end gap-2"><label className="text-xs text-slate-500">From<Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label className="text-xs text-slate-500">To<Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label><Button variant="outline" onClick={exportCsv} disabled={!report}><Download className="mr-1 h-4 w-4" />Export CSV</Button></div>
     </div>
     {q.isLoading && <div className="rounded-xl border bg-white p-10 text-center text-slate-500">Building report…</div>}
     {q.error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{(q.error as Error).message}</div>}
@@ -43,6 +51,11 @@ function ReportsAdmin() {
         <Panel title="Low stock SKUs">
           <div className="divide-y">{report.low_stock.map((row: any) => <Link key={row.id} to="/aurona-console-9f2x7k/inventory" className="flex justify-between gap-3 py-2 text-sm hover:text-sky-700"><div><div className="font-medium">{row.name}</div><div className="font-mono text-xs text-slate-500">{row.sku}</div></div><div className={Number(row.available) <= 0 ? "font-semibold text-rose-600" : "font-semibold text-amber-600"}>{row.available} available</div></Link>)}</div>
         </Panel>
+        <Panel title="Customer registrations"><div className="mb-2 text-2xl font-semibold">{report.customer_registrations}</div><Rows rows={report.customer_types} name="name" value="count" /></Panel>
+        <Panel title="Coupon performance"><div className="divide-y">{report.coupons.map((row: any) => <div key={row.code} className="flex justify-between py-2 text-sm"><span className="font-mono font-medium">{row.code}</span><span>{row.times_used} uses · {row.active && !row.archived_at ? "active" : "inactive"}</span></div>)}</div></Panel>
+        <Panel title="Returns & refunds"><div className="mb-2 text-sm text-slate-500">Recorded refund value: <strong>{inr(Number(report.return_refund_total))}</strong></div><Rows rows={report.returns} name="name" value="count" /></Panel>
+        <Panel title="Gateway payment states"><Rows rows={report.gateway_payments} name="name" value="count" /><div className="mt-3 border-t pt-2"><Rows rows={report.payment_providers} name="name" value="count" /></div></Panel>
+        <Panel title="Wishlist products"><div className="divide-y">{report.wishlist.map((row: any) => <div key={row.product_id} className="flex justify-between py-2 text-sm"><span>{row.name}<span className="ml-2 font-mono text-xs text-slate-500">{row.sku}</span></span><strong>{row.count}</strong></div>)}</div></Panel>
       </div>
     </>}
   </div>;
