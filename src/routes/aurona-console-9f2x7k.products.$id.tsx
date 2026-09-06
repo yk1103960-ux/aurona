@@ -22,7 +22,10 @@ import {
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
-import { adminSaveProductFamily, adminSaveRelatedProductFamilies } from "@/lib/catalog-admin.functions";
+import {
+  adminSaveProductFamily,
+  adminSaveRelatedProductFamilies,
+} from "@/lib/catalog-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ProductEditor,
@@ -227,7 +230,8 @@ function ProductEditor() {
   const cats = useQuery({
     queryKey: ["admin-categories-list"],
 
-    queryFn: async () => (await supabase.from("categories").select("id, name").order("name")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("categories").select("id, name").order("name")).data ?? [],
   });
 
   const product = useQuery({
@@ -238,7 +242,11 @@ function ProductEditor() {
     refetchOnWindowFocus: false,
 
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("product_families").select("*").eq("legacy_product_id", id).single();
+      const { data, error } = await (supabase as any)
+        .from("product_families")
+        .select("*")
+        .eq("legacy_product_id", id)
+        .single();
 
       if (error) throw error;
 
@@ -305,12 +313,14 @@ function ProductEditor() {
 
       affiliate_enabled: data.affiliate_enabled ?? true,
 
-      affiliate_commission_kind: (data.affiliate_commission_kind as ProductForm["affiliate_commission_kind"]) ?? "",
+      affiliate_commission_kind:
+        (data.affiliate_commission_kind as ProductForm["affiliate_commission_kind"]) ?? "",
 
       affiliate_commission_value:
         data.affiliate_commission_value != null ? Number(data.affiliate_commission_value) : null,
 
-      affiliate_max_commission: data.affiliate_max_commission != null ? Number(data.affiliate_max_commission) : null,
+      affiliate_max_commission:
+        data.affiliate_max_commission != null ? Number(data.affiliate_max_commission) : null,
 
       weight_g: data.weight_g != null ? Number(data.weight_g) : null,
 
@@ -328,7 +338,8 @@ function ProductEditor() {
       shipping_type: data.shipping_type ?? "calculated",
       shipping_cost: Number(data.shipping_cost ?? 0),
       shipping_cost_per_quantity: !!data.shipping_cost_per_quantity,
-      estimated_shipping_days: data.estimated_shipping_days != null ? Number(data.estimated_shipping_days) : null,
+      estimated_shipping_days:
+        data.estimated_shipping_days != null ? Number(data.estimated_shipping_days) : null,
       refundable: data.refundable ?? true,
       refund_note: data.refund_note ?? "",
     });
@@ -377,7 +388,8 @@ function ProductEditor() {
           ...payload,
           productId: isNew ? undefined : id,
           slug: payload.slug,
-          affiliate_commission_kind: payload.affiliate_commission_kind as "inherit" | "percentage" | "fixed",
+          affiliate_commission_kind: payload.affiliate_commission_kind as
+            "inherit" | "percentage" | "fixed",
         },
       });
 
@@ -445,7 +457,9 @@ function ProductEditor() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{isNew ? "Add New Product" : "Edit Product"}</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {isNew ? "Add New Product" : "Edit Product"}
+          </h1>
 
           {!isNew && f.name && (
             <div className="mt-1 text-sm text-slate-500">
@@ -542,9 +556,17 @@ function ProductEditor() {
           </Section>
 
           <Section title="Status">
-            <Check label="Published" checked={f.is_published} onChange={(value) => upd("is_published", value)} />
+            <Check
+              label="Published"
+              checked={f.is_published}
+              onChange={(value) => upd("is_published", value)}
+            />
 
-            <Check label="Featured" checked={f.is_featured} onChange={(value) => upd("is_featured", value)} />
+            <Check
+              label="Featured"
+              checked={f.is_featured}
+              onChange={(value) => upd("is_featured", value)}
+            />
 
             <Check
               label="Today's Deal / Bestseller"
@@ -552,9 +574,17 @@ function ProductEditor() {
               onChange={(value) => upd("is_bestseller", value)}
             />
 
-            <Check label="New Arrival" checked={f.is_new} onChange={(value) => upd("is_new", value)} />
+            <Check
+              label="New Arrival"
+              checked={f.is_new}
+              onChange={(value) => upd("is_new", value)}
+            />
 
-            <Check label="On Sale" checked={f.is_sale} onChange={(value) => upd("is_sale", value)} />
+            <Check
+              label="On Sale"
+              checked={f.is_sale}
+              onChange={(value) => upd("is_sale", value)}
+            />
 
             <div className="border-t pt-3">
               <Field label="Image Seed">
@@ -577,7 +607,11 @@ function ProductEditor() {
             </Field>
 
             <Field label="Full Description">
-              <Textarea rows={8} value={f.description} onChange={(e) => upd("description", e.target.value)} />
+              <Textarea
+                rows={8}
+                value={f.description}
+                onChange={(e) => upd("description", e.target.value)}
+              />
             </Field>
           </Section>
 
@@ -618,7 +652,9 @@ function ProductEditor() {
               />
             </Field>
 
-            <div className="text-xs text-slate-500">Add different specifications for different product categories.</div>
+            <div className="text-xs text-slate-500">
+              Add different specifications for different product categories.
+            </div>
           </Section>
 
           <Section title="Affiliate Commission" className="lg:col-span-2">
@@ -634,7 +670,10 @@ function ProductEditor() {
                   className="h-10 w-full rounded-md border bg-white px-3 text-sm"
                   value={f.affiliate_commission_kind}
                   onChange={(e) =>
-                    upd("affiliate_commission_kind", e.target.value as ProductForm["affiliate_commission_kind"])
+                    upd(
+                      "affiliate_commission_kind",
+                      e.target.value as ProductForm["affiliate_commission_kind"],
+                    )
                   }
                 >
                   <option value="">Inherit program default</option>
@@ -645,7 +684,9 @@ function ProductEditor() {
                 </select>
               </Field>
 
-              <Field label={f.affiliate_commission_kind === "fixed" ? "Commission ₹" : "Commission %"}>
+              <Field
+                label={f.affiliate_commission_kind === "fixed" ? "Commission ₹" : "Commission %"}
+              >
                 <NullableNumber
                   value={f.affiliate_commission_value}
                   onChange={(value) => upd("affiliate_commission_value", value)}
@@ -677,9 +718,37 @@ function ProductEditor() {
           )}
           <Section title="Video & Specification File">
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Video Provider"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={f.video_provider} onChange={(e) => upd("video_provider", e.target.value as ProductForm["video_provider"])}><option value="">None</option><option value="youtube">YouTube</option><option value="vimeo">Vimeo</option><option value="dailymotion">Dailymotion</option><option value="other">Other</option></select></Field>
-              <Field label="Video URL"><Input type="url" value={f.video_url} placeholder="https://…" onChange={(e) => upd("video_url", e.target.value)} /></Field>
-              <Field label="Specification PDF URL"><Input type="url" value={f.specification_pdf_url} placeholder="https://…/specification.pdf" onChange={(e) => upd("specification_pdf_url", e.target.value)} /></Field>
+              <Field label="Video Provider">
+                <select
+                  className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+                  value={f.video_provider}
+                  onChange={(e) =>
+                    upd("video_provider", e.target.value as ProductForm["video_provider"])
+                  }
+                >
+                  <option value="">None</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="vimeo">Vimeo</option>
+                  <option value="dailymotion">Dailymotion</option>
+                  <option value="other">Other</option>
+                </select>
+              </Field>
+              <Field label="Video URL">
+                <Input
+                  type="url"
+                  value={f.video_url}
+                  placeholder="https://…"
+                  onChange={(e) => upd("video_url", e.target.value)}
+                />
+              </Field>
+              <Field label="Specification PDF URL">
+                <Input
+                  type="url"
+                  value={f.specification_pdf_url}
+                  placeholder="https://…/specification.pdf"
+                  onChange={(e) => upd("specification_pdf_url", e.target.value)}
+                />
+              </Field>
             </div>
           </Section>
         </div>
@@ -741,14 +810,36 @@ function ProductEditor() {
                 onChange={(e) => upd("short_description", e.target.value)}
               />
             </Field>
-            <Field label="Meta Title"><Input value={f.meta_title} maxLength={240} onChange={(e) => upd("meta_title", e.target.value)} /></Field>
-            <Field label="Meta Description"><Textarea rows={4} value={f.meta_description} maxLength={600} onChange={(e) => upd("meta_description", e.target.value)} /></Field>
-            <Field label="Meta Image URL"><Input type="url" value={f.meta_image_url} placeholder="https://…" onChange={(e) => upd("meta_image_url", e.target.value)} /></Field>
+            <Field label="Meta Title">
+              <Input
+                value={f.meta_title}
+                maxLength={240}
+                onChange={(e) => upd("meta_title", e.target.value)}
+              />
+            </Field>
+            <Field label="Meta Description">
+              <Textarea
+                rows={4}
+                value={f.meta_description}
+                maxLength={600}
+                onChange={(e) => upd("meta_description", e.target.value)}
+              />
+            </Field>
+            <Field label="Meta Image URL">
+              <Input
+                type="url"
+                value={f.meta_image_url}
+                placeholder="https://…"
+                onChange={(e) => upd("meta_image_url", e.target.value)}
+              />
+            </Field>
           </Section>
 
           <Section title="Preview">
             <div className="rounded-lg border p-4">
-              <div className="truncate text-lg text-blue-700">{f.meta_title || f.name || "Product Name"}</div>
+              <div className="truncate text-lg text-blue-700">
+                {f.meta_title || f.name || "Product Name"}
+              </div>
 
               <div className="mt-1 break-all text-sm text-emerald-700">
                 aurona.co.in/products/
@@ -756,7 +847,9 @@ function ProductEditor() {
               </div>
 
               <div className="mt-2 text-sm text-slate-600">
-                {f.meta_description || f.short_description || "Add a meta description to improve the product preview."}
+                {f.meta_description ||
+                  f.short_description ||
+                  "Add a meta description to improve the product preview."}
               </div>
             </div>
           </Section>
@@ -786,16 +879,48 @@ function ProductEditor() {
               </Field>
             </div>
 
-            <div className="text-xs text-slate-500">These are product-level default shipping dimensions.</div>
+            <div className="text-xs text-slate-500">
+              These are product-level default shipping dimensions.
+            </div>
           </Section>
 
           <Section title="Shipping Charge & Promise">
             <div className="grid gap-3 md:grid-cols-3">
-              <Field label="Shipping Type"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={f.shipping_type} onChange={(e) => upd("shipping_type", e.target.value as ProductForm["shipping_type"])}><option value="calculated">Calculated by shipping rules</option><option value="free">Free shipping</option><option value="flat">Flat charge</option></select></Field>
-              <Field label="Flat Shipping Cost ₹"><Input type="number" min="0" step="0.01" disabled={f.shipping_type !== "flat"} value={f.shipping_cost} onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))} /></Field>
-              <Field label="Estimated Delivery (days)"><NullableNumber value={f.estimated_shipping_days} onChange={(value) => upd("estimated_shipping_days", value)} /></Field>
+              <Field label="Shipping Type">
+                <select
+                  className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+                  value={f.shipping_type}
+                  onChange={(e) =>
+                    upd("shipping_type", e.target.value as ProductForm["shipping_type"])
+                  }
+                >
+                  <option value="calculated">Calculated by shipping rules</option>
+                  <option value="free">Free shipping</option>
+                  <option value="flat">Flat charge</option>
+                </select>
+              </Field>
+              <Field label="Flat Shipping Cost ₹">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  disabled={f.shipping_type !== "flat"}
+                  value={f.shipping_cost}
+                  onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))}
+                />
+              </Field>
+              <Field label="Estimated Delivery (days)">
+                <NullableNumber
+                  value={f.estimated_shipping_days}
+                  onChange={(value) => upd("estimated_shipping_days", value)}
+                />
+              </Field>
             </div>
-            <Check label="Multiply flat shipping cost by order quantity" checked={f.shipping_cost_per_quantity} onChange={(value) => upd("shipping_cost_per_quantity", value)} />
+            <Check
+              label="Multiply flat shipping cost by order quantity"
+              checked={f.shipping_cost_per_quantity}
+              onChange={(value) => upd("shipping_cost_per_quantity", value)}
+            />
           </Section>
 
           {!isNew && f.sku ? (
@@ -822,8 +947,19 @@ function ProductEditor() {
               />
             </Field>
 
-            <Check label="Refundable product" checked={f.refundable} onChange={(value) => upd("refundable", value)} />
-            <Field label="Refund / Return Note"><Textarea rows={4} value={f.refund_note} placeholder="Eligibility, exclusions and customer-facing instructions" onChange={(e) => upd("refund_note", e.target.value)} /></Field>
+            <Check
+              label="Refundable product"
+              checked={f.refundable}
+              onChange={(value) => upd("refundable", value)}
+            />
+            <Field label="Refund / Return Note">
+              <Textarea
+                rows={4}
+                value={f.refund_note}
+                placeholder="Eligibility, exclusions and customer-facing instructions"
+                onChange={(e) => upd("refund_note", e.target.value)}
+              />
+            </Field>
 
             <div className="text-xs text-slate-500">
               Warranty is mirrored to the corresponding product family when saved.
@@ -844,9 +980,15 @@ function ProductEditor() {
 
       {/* FREQUENTLY BOUGHT */}
 
-      {tab === "frequently" && (
-        isNew || !product.data?.id ? <Notice title="Save the product first" text="Related products can be selected after this family exists." /> : <RelatedProducts familyId={product.data.id} />
-      )}
+      {tab === "frequently" &&
+        (isNew || !product.data?.id ? (
+          <Notice
+            title="Save the product first"
+            text="Related products can be selected after this family exists."
+          />
+        ) : (
+          <RelatedProducts familyId={product.data.id} />
+        ))}
 
       {/* BOTTOM SAVE */}
 
@@ -902,36 +1044,104 @@ function RelatedProducts({ familyId }: { familyId: string }) {
   const q = useQuery({
     queryKey: ["admin-related-products", familyId, search],
     queryFn: async () => {
-      let productsQuery = (supabase as any).from("product_families").select("id,name,main_sku").neq("id", familyId).is("archived_at", null).order("name").limit(100);
-      if (search.trim()) productsQuery = productsQuery.or(`name.ilike.%${search.trim()}%,main_sku.ilike.%${search.trim()}%`);
+      let productsQuery = (supabase as any)
+        .from("product_families")
+        .select("id,name,main_sku")
+        .neq("id", familyId)
+        .is("archived_at", null)
+        .order("name")
+        .limit(100);
+      if (search.trim())
+        productsQuery = productsQuery.or(
+          `name.ilike.%${search.trim()}%,main_sku.ilike.%${search.trim()}%`,
+        );
       const [products, related] = await Promise.all([
         productsQuery,
-        (supabase as any).from("product_related_families").select("related_family_id").eq("family_id", familyId).order("sort_order"),
+        (supabase as any)
+          .from("product_related_families")
+          .select("related_family_id")
+          .eq("family_id", familyId)
+          .order("sort_order"),
       ]);
       if (products.error) throw products.error;
       if (related.error) throw related.error;
-      return { products: products.data ?? [], relatedIds: (related.data ?? []).map((row: any) => row.related_family_id as string) };
+      return {
+        products: products.data ?? [],
+        relatedIds: (related.data ?? []).map((row: any) => row.related_family_id as string),
+      };
     },
   });
   useEffect(() => {
-    if (q.data && !loaded.current) { setSelected(q.data.relatedIds); loaded.current = true; }
+    if (q.data && !loaded.current) {
+      setSelected(q.data.relatedIds);
+      loaded.current = true;
+    }
   }, [q.data]);
   const save = async () => {
     setSaving(true);
-    try { await adminSaveRelatedProductFamilies({ data: { familyId, relatedIds: selected } }); toast.success("Frequently bought products saved"); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "Could not save related products"); }
-    finally { setSaving(false); }
+    try {
+      await adminSaveRelatedProductFamilies({ data: { familyId, relatedIds: selected } });
+      toast.success("Frequently bought products saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save related products");
+    } finally {
+      setSaving(false);
+    }
   };
-  return <Section title="Frequently Bought Together">
-    <div className="flex flex-wrap items-center gap-2"><Input className="max-w-md" value={search} placeholder="Search product name or SKU…" onChange={(e) => setSearch(e.target.value)} /><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Selection"}</Button><span className="text-xs text-slate-500">{selected.length} selected · maximum 24</span></div>
-    <div className="max-h-[480px] divide-y overflow-y-auto rounded-lg border">
-      {(q.data?.products ?? []).map((item: any) => <label key={item.id} className="flex cursor-pointer items-center gap-3 p-3 hover:bg-slate-50"><input type="checkbox" checked={selected.includes(item.id)} onChange={(e) => setSelected((current) => e.target.checked ? [...current, item.id].slice(0, 24) : current.filter((id) => id !== item.id))} /><span className="flex-1"><span className="font-medium">{item.name}</span><span className="ml-2 font-mono text-xs text-slate-500">{item.main_sku}</span></span></label>)}
-      {q.isLoading && <div className="p-6 text-center text-sm text-slate-500">Loading products…</div>}
-    </div>
-  </Section>;
+  return (
+    <Section title="Frequently Bought Together">
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          className="max-w-md"
+          value={search}
+          placeholder="Search product name or SKU…"
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Button onClick={save} disabled={saving}>
+          {saving ? "Saving…" : "Save Selection"}
+        </Button>
+        <span className="text-xs text-slate-500">{selected.length} selected · maximum 24</span>
+      </div>
+      <div className="max-h-[480px] divide-y overflow-y-auto rounded-lg border">
+        {(q.data?.products ?? []).map((item: any) => (
+          <label
+            key={item.id}
+            className="flex cursor-pointer items-center gap-3 p-3 hover:bg-slate-50"
+          >
+            <input
+              type="checkbox"
+              checked={selected.includes(item.id)}
+              onChange={(e) =>
+                setSelected((current) =>
+                  e.target.checked
+                    ? [...current, item.id].slice(0, 24)
+                    : current.filter((id) => id !== item.id),
+                )
+              }
+            />
+            <span className="flex-1">
+              <span className="font-medium">{item.name}</span>
+              <span className="ml-2 font-mono text-xs text-slate-500">{item.main_sku}</span>
+            </span>
+          </label>
+        ))}
+        {q.isLoading && (
+          <div className="p-6 text-center text-sm text-slate-500">Loading products…</div>
+        )}
+      </div>
+    </Section>
+  );
 }
 
-function Section({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
+function Section({
+  title,
+  children,
+  className = "",
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`space-y-3 rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
       <div className="text-sm font-semibold uppercase tracking-wider text-slate-500">{title}</div>
@@ -951,7 +1161,15 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function Check({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
     <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
@@ -961,7 +1179,13 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
   );
 }
 
-function NullableNumber({ value, onChange }: { value: number | null; onChange: (value: number | null) => void }) {
+function NullableNumber({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (value: number | null) => void;
+}) {
   return (
     <Input
       type="number"

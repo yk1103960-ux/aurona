@@ -47,7 +47,8 @@ const translations: Record<string, string> = {
   "Go home": "होम पर जाएँ",
 
   "This page didn't load": "यह पेज लोड नहीं हुआ",
-  "Something went wrong. Try again or head back home.": "कुछ गलत हो गया। दोबारा प्रयास करें या होम पर जाएँ।",
+  "Something went wrong. Try again or head back home.":
+    "कुछ गलत हो गया। दोबारा प्रयास करें या होम पर जाएँ।",
   "Try again": "फिर प्रयास करें",
 
   Helpline: "हेल्पलाइन",
@@ -105,7 +106,16 @@ const translations: Record<string, string> = {
 /* ------------------------------------------------------------------ */
 
 const CACHE_KEY = "aurona-translation-cache-hi";
-const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "CODE", "PRE", "TEXTAREA", "SVG", "CANVAS"]);
+const SKIP_TAGS = new Set([
+  "SCRIPT",
+  "STYLE",
+  "NOSCRIPT",
+  "CODE",
+  "PRE",
+  "TEXTAREA",
+  "SVG",
+  "CANVAS",
+]);
 const DEVANAGARI = /[\u0900-\u097F]/;
 const HAS_LETTERS = /[A-Za-z]{2,}/;
 
@@ -178,9 +188,13 @@ function walk(root: Node) {
   // Text-node translation alone misses form placeholders, tooltips and
   // accessibility labels. Translate those too, while keeping unknown copy in
   // English until a safe translation is available.
-  const elements = root.nodeType === Node.ELEMENT_NODE
-    ? [root as Element, ...(root as Element).querySelectorAll("[placeholder],[title],[aria-label]")]
-    : [];
+  const elements =
+    root.nodeType === Node.ELEMENT_NODE
+      ? [
+          root as Element,
+          ...(root as Element).querySelectorAll("[placeholder],[title],[aria-label]"),
+        ]
+      : [];
   for (const element of elements) {
     for (const attribute of ["placeholder", "title", "aria-label"]) {
       const source = element.getAttribute(attribute)?.trim();
@@ -301,7 +315,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     () => ({
       language,
       setLanguage,
-      t: (english: string) => (language === "hi" ? (cache[english] ?? translations[english] ?? english) : english),
+      t: (english: string) =>
+        language === "hi" ? (cache[english] ?? translations[english] ?? english) : english,
     }),
     [language],
   );

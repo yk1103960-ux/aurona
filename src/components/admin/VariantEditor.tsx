@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Save, Plus, Trash2, Users, Store, Warehouse, Truck, SlidersHorizontal } from "lucide-react";
+import {
+  Save,
+  Plus,
+  Trash2,
+  Users,
+  Store,
+  Warehouse,
+  Truck,
+  SlidersHorizontal,
+} from "lucide-react";
 import { adminSaveVariantMatrix } from "@/lib/catalog-admin.functions";
 
 type Variant = {
@@ -87,7 +96,13 @@ const variantName = (row: Variant) => {
   return values.length ? values.join(" / ") : row.sku;
 };
 
-export function VariantEditor({ productSku, productId }: { productSku: string; productId: string }) {
+export function VariantEditor({
+  productSku,
+  productId,
+}: {
+  productSku: string;
+  productId: string;
+}) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>("options");
@@ -102,8 +117,13 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
 
     queryFn: async () => {
       let fam: { id: string; name: string } | null =
-        (await supabase.from("product_families").select("id, name").eq("main_sku", productSku).maybeSingle()).data ??
-        null;
+        (
+          await supabase
+            .from("product_families")
+            .select("id, name")
+            .eq("main_sku", productSku)
+            .maybeSingle()
+        ).data ?? null;
 
       if (!fam) {
         const { data: viaVariant } = await supabase
@@ -130,7 +150,11 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
       }
 
       const [{ data, error }, { data: axes, error: axesError }] = await Promise.all([
-        (supabase as any).from("product_variants").select(COLS).eq("family_id", fam.id).order("sort_order"),
+        (supabase as any)
+          .from("product_variants")
+          .select(COLS)
+          .eq("family_id", fam.id)
+          .order("sort_order"),
 
         supabase
           .from("product_variant_axes")
@@ -210,7 +234,8 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
   };
 
   const removeRow = (row: Variant) => {
-    if (!confirm(`Archive variant ${row.sku}? Existing orders will keep their SKU snapshot.`)) return;
+    if (!confirm(`Archive variant ${row.sku}? Existing orders will keep their SKU snapshot.`))
+      return;
     dirty.current = true;
     if (row.id.startsWith("new-")) {
       setRows((current) => current.filter((item) => item.id !== row.id));
@@ -270,10 +295,13 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
       <div className="border-b border-slate-200 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">Product Variations</div>
+            <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">
+              Product Variations
+            </div>
 
             <div className="mt-1 text-xs text-slate-500">
-              Manage options, customer pricing, partner pricing and shipping information for every SKU.
+              Manage options, customer pricing, partner pricing and shipping information for every
+              SKU.
             </div>
           </div>
 
@@ -283,7 +311,12 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
               Add Variant
             </Button>
 
-            <Button size="sm" type="button" onClick={saveAll} disabled={saving || rows.length === 0}>
+            <Button
+              size="sm"
+              type="button"
+              onClick={saveAll}
+              disabled={saving || rows.length === 0}
+            >
               <Save className="mr-1 h-4 w-4" />
               {saving ? "Saving…" : "Save Variants"}
             </Button>
@@ -408,7 +441,12 @@ function OptionsTab({
 
                 <label className="min-w-[180px] flex-1">
                   <FieldTitle>Barcode / GTIN</FieldTitle>
-                  <Input className="mt-1 font-mono" value={row.barcode ?? ""} placeholder="Optional unique barcode" onChange={(e) => updateRow(row.id, { barcode: e.target.value })} />
+                  <Input
+                    className="mt-1 font-mono"
+                    value={row.barcode ?? ""}
+                    placeholder="Optional unique barcode"
+                    onChange={(e) => updateRow(row.id, { barcode: e.target.value })}
+                  />
                 </label>
 
                 <label className="flex items-center gap-2 pb-2 text-sm">
@@ -508,7 +546,10 @@ function CustomerTab({
                 </Td>
 
                 <Td>
-                  <NumberInput value={row.mrp} onChange={(value) => updateRow(row.id, { mrp: value })} />
+                  <NumberInput
+                    value={row.mrp}
+                    onChange={(value) => updateRow(row.id, { mrp: value })}
+                  />
                 </Td>
 
                 <Td>
@@ -531,7 +572,10 @@ function CustomerTab({
                 </Td>
 
                 <Td>
-                  <NumberInput value={row.moq} onChange={(value) => updateRow(row.id, { moq: value })} />
+                  <NumberInput
+                    value={row.moq}
+                    onChange={(value) => updateRow(row.id, { moq: value })}
+                  />
                 </Td>
 
                 <Td>
@@ -563,7 +607,9 @@ function CustomerTab({
                 <Td>
                   <NumberInput
                     value={row.low_stock_threshold}
-                    onChange={(value) => updateRow(row.id, { low_stock_threshold: Math.max(0, Number(value ?? 0)) })}
+                    onChange={(value) =>
+                      updateRow(row.id, { low_stock_threshold: Math.max(0, Number(value ?? 0)) })
+                    }
                   />
                 </Td>
               </tr>
@@ -610,7 +656,8 @@ function RetailerTab({
 
             const percent = discountPercent(row.mrp, row.retailer_price);
 
-            const packTotal = Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
+            const packTotal =
+              Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
 
             return (
               <tr key={row.id} className="border-t border-slate-200">
@@ -667,9 +714,9 @@ function RetailerTab({
       </table>
 
       <div className="mt-3 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        The current database has retailer price and retailer MOQ, but does not have a separate retailer MRP or retailer
-        stock column. This tab therefore safely uses the existing product MRP and shared stock until those columns are
-        intentionally added.
+        The current database has retailer price and retailer MOQ, but does not have a separate
+        retailer MRP or retailer stock column. This tab therefore safely uses the existing product
+        MRP and shared stock until those columns are intentionally added.
       </div>
     </div>
   );
@@ -707,7 +754,8 @@ function DistributorTab({
             const percent = discountPercent(row.mrp, row.distributor_price);
 
             const packTotal =
-              Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
+              Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) *
+              Number(row.pack_size ?? 1);
 
             return (
               <tr key={row.id} className="border-t border-slate-200">
@@ -764,8 +812,9 @@ function DistributorTab({
       </table>
 
       <div className="mt-3 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        The current database has distributor price and distributor MOQ, but does not have separate distributor MRP or
-        distributor stock columns. Shared MRP/stock are kept for now so existing data remains safe.
+        The current database has distributor price and distributor MOQ, but does not have separate
+        distributor MRP or distributor stock columns. Shared MRP/stock are kept for now so existing
+        data remains safe.
       </div>
     </div>
   );
@@ -891,7 +940,15 @@ function ShippingTab({
   );
 }
 
-function AxisEditor({ familyId, variants, onSaved }: { familyId: string; variants: Variant[]; onSaved: () => void }) {
+function AxisEditor({
+  familyId,
+  variants,
+  onSaved,
+}: {
+  familyId: string;
+  variants: Variant[];
+  onSaved: () => void;
+}) {
   const [rows, setRows] = useState<Axis[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -935,7 +992,16 @@ function AxisEditor({ familyId, variants, onSaved }: { familyId: string; variant
 
     if (!key) return;
     dirty.current = true;
-    setRows((current) => [...current, { id: `new-${Date.now()}`, axis_key: key, label: key.replace(/_/g, " "), values: [], sort_order: current.length }]);
+    setRows((current) => [
+      ...current,
+      {
+        id: `new-${Date.now()}`,
+        axis_key: key,
+        label: key.replace(/_/g, " "),
+        values: [],
+        sort_order: current.length,
+      },
+    ]);
   };
 
   const removeAxis = (axis: Axis) => {
@@ -953,14 +1019,30 @@ function AxisEditor({ familyId, variants, onSaved }: { familyId: string; variant
       await adminSaveVariantMatrix({
         data: {
           familyId,
-          axes: rows.map((axis) => ({ axis_key: axis.axis_key.trim(), label: axis.label.trim(), values: axis.values.map((value) => value.trim()).filter(Boolean), sort_order: axis.sort_order })),
-          variants: variants.map((row) => ({ ...row, id: row.id.startsWith("new-") ? undefined : row.id, discount_pct: discountPercent(row.mrp, row.price), low_stock_threshold: row.low_stock_threshold ?? 10 })),
+          axes: rows.map((axis) => ({
+            axis_key: axis.axis_key.trim(),
+            label: axis.label.trim(),
+            values: axis.values.map((value) => value.trim()).filter(Boolean),
+            sort_order: axis.sort_order,
+          })),
+          variants: variants.map((row) => ({
+            ...row,
+            id: row.id.startsWith("new-") ? undefined : row.id,
+            discount_pct: discountPercent(row.mrp, row.price),
+            low_stock_threshold: row.low_stock_threshold ?? 10,
+          })),
         },
       });
 
       dirty.current = false;
 
-      for (const key of ["product", "family", "family-products", "products", "admin-product-variants"]) {
+      for (const key of [
+        "product",
+        "family",
+        "family-products",
+        "products",
+        "admin-product-variants",
+      ]) {
         qc.invalidateQueries({ queryKey: [key] });
       }
 
@@ -981,8 +1063,8 @@ function AxisEditor({ familyId, variants, onSaved }: { familyId: string; variant
           <div className="text-sm font-semibold">Product Options / Attributes</div>
 
           <div className="mt-1 text-xs text-slate-500">
-            Examples: Watts Available, Output Colour, Shape, Body Colour, Pack Size, Oscillation, Tank Capacity or
-            Reflector Colour.
+            Examples: Watts Available, Output Colour, Shape, Body Colour, Pack Size, Oscillation,
+            Tank Capacity or Reflector Colour.
           </div>
         </div>
 
@@ -1080,7 +1162,9 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
-        active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        active
+          ? "bg-slate-900 text-white"
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
       }`}
     >
       {icon}
@@ -1146,12 +1230,16 @@ function DimensionField({
 
 function Calculated({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-w-[90px] rounded-md bg-slate-50 px-3 py-2 text-right text-sm text-slate-700">{children}</div>
+    <div className="min-w-[90px] rounded-md bg-slate-50 px-3 py-2 text-right text-sm text-slate-700">
+      {children}
+    </div>
   );
 }
 
 function FieldTitle({ children }: { children: React.ReactNode }) {
-  return <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>;
+  return (
+    <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {

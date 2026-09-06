@@ -41,49 +41,78 @@ import { toast } from "sonner";
 type NavItem = { to: string; label: string; icon?: typeof Package; exact?: boolean };
 type NavGroup = { label: string; icon: typeof Package; items: NavItem[] };
 
-const DASHBOARD: NavItem = { to: "/aurona-console-9f2x7k", label: "Dashboard", icon: LayoutDashboard, exact: true };
+const DASHBOARD: NavItem = {
+  to: "/aurona-console-9f2x7k",
+  label: "Dashboard",
+  icon: LayoutDashboard,
+  exact: true,
+};
 const NAV_GROUPS: NavGroup[] = [
-  { label: "Products", icon: Package, items: [
-    { to: "/aurona-console-9f2x7k/products", label: "All Products", exact: true },
-    { to: "/aurona-console-9f2x7k/products/new", label: "Add New Product", icon: Plus },
-    { to: "/aurona-console-9f2x7k/products/bulk", label: "Bulk Import & Export", icon: FileUp },
-    { to: "/aurona-console-9f2x7k/inventory", label: "SKU Inventory", icon: Boxes },
-    { to: "/aurona-console-9f2x7k/categories", label: "Categories", icon: FolderTree },
-    { to: "/aurona-console-9f2x7k/products/options", label: "Brands & Attributes" },
-    { to: "/aurona-console-9f2x7k/media", label: "Variation Images", icon: ImageIcon },
-    { to: "/aurona-console-9f2x7k/reviews", label: "Product Reviews", icon: Star },
-  ] },
-  { label: "Sales", icon: ShoppingCart, items: [
-    { to: "/aurona-console-9f2x7k/orders", label: "Orders" },
-    { to: "/aurona-console-9f2x7k/returns", label: "Returns & Refunds", icon: RotateCcw },
-    { to: "/aurona-console-9f2x7k/carts", label: "Abandoned Carts", icon: ShoppingCart },
-    { to: "/aurona-console-9f2x7k/payments", label: "Payments", icon: CreditCard },
-  ] },
-  { label: "Customers & Partners", icon: Users, items: [
-    { to: "/aurona-console-9f2x7k/customers", label: "Customers" },
-    { to: "/aurona-console-9f2x7k/applications", label: "Partner Applications", icon: Handshake },
-    { to: "/aurona-console-9f2x7k/affiliates", label: "Affiliates", icon: Handshake },
-    { to: "/aurona-console-9f2x7k/careers", label: "Career Applications" },
-  ] },
-  { label: "Marketing", icon: Megaphone, items: [
-    { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
-    { to: "/aurona-console-9f2x7k/campaigns", label: "Campaigns" },
-    { to: "/aurona-console-9f2x7k/content", label: "Homepage & Alerts" },
-    { to: "/aurona-console-9f2x7k/editorial", label: "Blogs, Careers & FAQs", icon: ScrollText },
-  ] },
-  { label: "Operations", icon: Truck, items: [
-    { to: "/aurona-console-9f2x7k/support", label: "Support Inbox", icon: Inbox },
-    { to: "/aurona-console-9f2x7k/shipping", label: "Shipping" },
-    { to: "/aurona-console-9f2x7k/shipping-rules", label: "Shipping & Tax Rules" },
-    { to: "/aurona-console-9f2x7k/reports", label: "Reports", icon: BarChart3 },
-    { to: "/aurona-console-9f2x7k/audit", label: "Audit Logs", icon: ScrollText },
-  ] },
-  { label: "Configuration", icon: Settings, items: [
-    { to: "/aurona-console-9f2x7k/integrations", label: "Integrations", icon: Plug },
-    { to: "/aurona-console-9f2x7k/security", label: "Security & 2FA", icon: ShieldCheck },
-    { to: "/aurona-console-9f2x7k/roles", label: "Roles & Permissions", icon: LockKeyhole },
-    { to: "/aurona-console-9f2x7k/settings", label: "Settings" },
-  ] },
+  {
+    label: "Products",
+    icon: Package,
+    items: [
+      { to: "/aurona-console-9f2x7k/products", label: "All Products", exact: true },
+      { to: "/aurona-console-9f2x7k/products/new", label: "Add New Product", icon: Plus },
+      { to: "/aurona-console-9f2x7k/products/bulk", label: "Bulk Import & Export", icon: FileUp },
+      { to: "/aurona-console-9f2x7k/inventory", label: "SKU Inventory", icon: Boxes },
+      { to: "/aurona-console-9f2x7k/categories", label: "Categories", icon: FolderTree },
+      { to: "/aurona-console-9f2x7k/products/options", label: "Brands & Attributes" },
+      { to: "/aurona-console-9f2x7k/media", label: "Variation Images", icon: ImageIcon },
+      { to: "/aurona-console-9f2x7k/reviews", label: "Product Reviews", icon: Star },
+    ],
+  },
+  {
+    label: "Sales",
+    icon: ShoppingCart,
+    items: [
+      { to: "/aurona-console-9f2x7k/orders", label: "Orders" },
+      { to: "/aurona-console-9f2x7k/returns", label: "Returns & Refunds", icon: RotateCcw },
+      { to: "/aurona-console-9f2x7k/carts", label: "Abandoned Carts", icon: ShoppingCart },
+      { to: "/aurona-console-9f2x7k/payments", label: "Payments", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Customers & Partners",
+    icon: Users,
+    items: [
+      { to: "/aurona-console-9f2x7k/customers", label: "Customers" },
+      { to: "/aurona-console-9f2x7k/applications", label: "Partner Applications", icon: Handshake },
+      { to: "/aurona-console-9f2x7k/affiliates", label: "Affiliates", icon: Handshake },
+      { to: "/aurona-console-9f2x7k/careers", label: "Career Applications" },
+    ],
+  },
+  {
+    label: "Marketing",
+    icon: Megaphone,
+    items: [
+      { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
+      { to: "/aurona-console-9f2x7k/campaigns", label: "Campaigns" },
+      { to: "/aurona-console-9f2x7k/content", label: "Homepage & Alerts" },
+      { to: "/aurona-console-9f2x7k/editorial", label: "Blogs, Careers & FAQs", icon: ScrollText },
+    ],
+  },
+  {
+    label: "Operations",
+    icon: Truck,
+    items: [
+      { to: "/aurona-console-9f2x7k/support", label: "Support Inbox", icon: Inbox },
+      { to: "/aurona-console-9f2x7k/shipping", label: "Shipping" },
+      { to: "/aurona-console-9f2x7k/shipping-rules", label: "Shipping & Tax Rules" },
+      { to: "/aurona-console-9f2x7k/reports", label: "Reports", icon: BarChart3 },
+      { to: "/aurona-console-9f2x7k/audit", label: "Audit Logs", icon: ScrollText },
+    ],
+  },
+  {
+    label: "Configuration",
+    icon: Settings,
+    items: [
+      { to: "/aurona-console-9f2x7k/integrations", label: "Integrations", icon: Plug },
+      { to: "/aurona-console-9f2x7k/security", label: "Security & 2FA", icon: ShieldCheck },
+      { to: "/aurona-console-9f2x7k/roles", label: "Roles & Permissions", icon: LockKeyhole },
+      { to: "/aurona-console-9f2x7k/settings", label: "Settings" },
+    ],
+  },
 ];
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
@@ -95,10 +124,19 @@ function isNavActive(item: NavItem, pathname: string) {
 function AdminNavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isNavActive(item, pathname);
   const Icon = item.icon;
-  return <Link to={item.to} className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
-    {Icon ? <Icon className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />}
-    {item.label}
-  </Link>;
+  return (
+    <Link
+      to={item.to}
+      className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+    >
+      {Icon ? (
+        <Icon className="h-4 w-4" />
+      ) : (
+        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+      )}
+      {item.label}
+    </Link>
+  );
 }
 
 export function AdminShell() {
@@ -216,20 +254,36 @@ export function AdminShell() {
             const containsActive = group.items.some((item) => isNavActive(item, loc.pathname));
             const expanded = openGroups.has(group.label) || containsActive;
             const Icon = group.icon;
-            return <div key={group.label} className="space-y-1">
-              <button type="button" aria-expanded={expanded} onClick={() => setOpenGroups((current) => {
-                const next = new Set(current);
-                next.has(group.label) ? next.delete(group.label) : next.add(group.label);
-                return next;
-              })} className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition ${containsActive ? "text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
-                <Icon className="h-4 w-4" />
-                <span className="flex-1 text-left">{group.label}</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
-              </button>
-              {expanded && <div className="ml-3 space-y-1 border-l border-white/10 pl-2">
-                {group.items.map((item) => <AdminNavLink key={item.to} item={item} pathname={loc.pathname} />)}
-              </div>}
-            </div>;
+            return (
+              <div key={group.label} className="space-y-1">
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  onClick={() =>
+                    setOpenGroups((current) => {
+                      const next = new Set(current);
+                      if (next.has(group.label)) next.delete(group.label);
+                      else next.add(group.label);
+                      return next;
+                    })
+                  }
+                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition ${containsActive ? "text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="flex-1 text-left">{group.label}</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {expanded && (
+                  <div className="ml-3 space-y-1 border-l border-white/10 pl-2">
+                    {group.items.map((item) => (
+                      <AdminNavLink key={item.to} item={item} pathname={loc.pathname} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
           })}
         </nav>
         <div className="p-3 border-t border-white/10 space-y-2">
