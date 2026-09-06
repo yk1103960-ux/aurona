@@ -5,38 +5,70 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Printer, RefreshCw, Truck } from "lucide-react";
 import { pushOrderToShiprocket, syncOrderTracking } from "@/lib/admin.functions";
+import { adminTransitionOrder } from "@/lib/order-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/orders/$id")({
   component: OrderDetailAdmin,
 });
 
 const FLOW = ["placed", "confirmed", "packed", "shipped", "out_for_delivery", "delivered"] as const;
+const NEXT_STATUS: Record<string, string[]> = {
+  placed: ["confirmed", "cancelled"],
+  confirmed: ["packed", "cancelled"],
+  packed: ["shipped", "cancelled"],
+  shipped: ["out_for_delivery"],
+  out_for_delivery: ["delivered"],
+  delivered: [],
+  cancelled: [],
+};
 
 function OrderDetailAdmin() {
   const { id } = useParams({ from: "/aurona-console-9f2x7k/orders/$id" });
   const qc = useQueryClient();
   const pushShiprocket = useServerFn(pushOrderToShiprocket);
   const syncTracking = useServerFn(syncOrderTracking);
+  const transitionOrder = useServerFn(adminTransitionOrder);
   const [pushing, setPushing] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [transitioning, setTransitioning] = useState(false);
 
   const q = useQuery({
     queryKey: ["admin-order", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("orders").select("*, order_items(*)").eq("id", id).single();
       if (error) throw error;
-      return data;
+      const { data: history } = await (supabase as any).from("order_status_history").select("*").eq("order_id", id).order("created_at", { ascending: false });
+      return { ...data, status_history: history ?? [] };
     },
   });
 
-  const setStatus = async (s: string) => {
-    const { error } = await supabase.from("orders").update({ status: s }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success(`Status → ${s}`);
-    qc.invalidateQueries({ queryKey: ["admin-order", id] });
+  const setStatus = async () => {
+    if (!pendingStatus) return;
+    if (pendingStatus === "cancelled" && note.trim().length < 3) return toast.error("Add a cancellation reason");
+    setTransitioning(true);
+    try {
+      const result = await transitionOrder({ data: { orderId: id, status: pendingStatus as any, note } });
+      toast.success(result.restocked ? "Order cancelled and stock restored" : `Status → ${result.status}`);
+      setPendingStatus(null);
+      setNote("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-order", id] }),
+        qc.invalidateQueries({ queryKey: ["admin-orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin-inventory"] }),
+      ]);
+    } catch (e: any) {
+      toast.error(e?.message || "Status update failed");
+    } finally {
+      setTransitioning(false);
+    }
   };
 
   const doPush = async () => {
@@ -89,9 +121,9 @@ function OrderDetailAdmin() {
             </>
           )}
 
-          <select value={o.status} onChange={(e) => setStatus(e.target.value)} className="h-10 border rounded-md px-3 text-sm bg-white">
-            {FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
-            <option value="cancelled">cancelled</option>
+          <select value="" disabled={(NEXT_STATUS[o.status] ?? []).length === 0} onChange={(e) => setPendingStatus(e.target.value)} className="h-10 border rounded-md px-3 text-sm bg-white">
+            <option value="">{(NEXT_STATUS[o.status] ?? []).length ? "Advance status…" : `Status: ${o.status}`}</option>
+            {(NEXT_STATUS[o.status] ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
       </div>
@@ -101,15 +133,22 @@ function OrderDetailAdmin() {
           <div className="bg-white rounded-xl border border-slate-200">
             <div className="p-4 border-b border-slate-100 font-semibold">Items</div>
             <div className="divide-y">
-              {(o.order_items ?? []).map((it: { id: string; product_name: string; quantity: number; price: number }) => (
-                <div key={it.id} className="p-4 flex items-center justify-between">
+              {(o.order_items ?? []).map((it) => {
+                const attributes = it.variant_attributes && typeof it.variant_attributes === "object" && !Array.isArray(it.variant_attributes)
+                  ? Object.entries(it.variant_attributes).filter((entry): entry is [string, string] => typeof entry[1] === "string")
+                  : [];
+                return <div key={it.id} className="p-4 flex items-center justify-between">
                   <div>
                     <div className="font-medium text-sm">{it.product_name}</div>
+                    {it.sku && <div className="text-xs font-mono text-slate-600">SKU {it.sku}</div>}
+                    {attributes.length > 0 && (
+                      <div className="text-xs text-slate-500">{attributes.map(([key, value]) => `${key}: ${value}`).join(" · ")}</div>
+                    )}
                     <div className="text-xs text-slate-500">Qty {it.quantity} × {inr(Number(it.price))}</div>
                   </div>
                   <div className="font-semibold">{inr(Number(it.price) * it.quantity)}</div>
-                </div>
-              ))}
+                </div>;
+              })}
             </div>
             <div className="p-4 border-t border-slate-100 space-y-1 text-sm">
               <Row label="Subtotal" value={inr(Number(o.subtotal))} />
@@ -133,6 +172,17 @@ function OrderDetailAdmin() {
                 );
               })}
             </div>
+            {o.status === "cancelled" && <div className="mt-3 text-sm font-medium text-rose-600">Cancelled</div>}
+            {(o.status_history ?? []).length > 0 && (
+              <div className="mt-4 border-t pt-3 space-y-2">
+                {(o.status_history ?? []).map((entry: any) => (
+                  <div key={entry.id} className="text-xs">
+                    <div className="font-medium">{entry.from_status} → {entry.to_status}</div>
+                    <div className="text-slate-500">{new Date(entry.created_at).toLocaleString()}{entry.note ? ` · ${entry.note}` : ""}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -151,9 +201,25 @@ function OrderDetailAdmin() {
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="font-semibold mb-2">Payment</div>
             <div className="text-sm uppercase">{o.payment_method}</div>
+            <div className="text-xs text-slate-500 uppercase">{o.payment_status}</div>
           </div>
         </div>
       </div>
+
+      <Dialog open={!!pendingStatus} onOpenChange={(open) => !open && setPendingStatus(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{pendingStatus === "cancelled" ? "Cancel order" : `Move order to ${pendingStatus}`}</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="status-note">{pendingStatus === "cancelled" ? "Reason (required)" : "Internal note (optional)"}</Label>
+            <Textarea id="status-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={pendingStatus === "cancelled" ? "Why is this order being cancelled?" : "Add context for the audit trail"} />
+            {pendingStatus === "cancelled" && <p className="text-xs text-slate-500">Cancellation restores all SKU stock and reverses coupon usage atomically.</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingStatus(null)}>Back</Button>
+            <Button variant={pendingStatus === "cancelled" ? "destructive" : "default"} disabled={transitioning} onClick={setStatus}>{transitioning ? "Saving…" : "Confirm"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

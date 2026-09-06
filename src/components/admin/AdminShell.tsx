@@ -24,6 +24,8 @@ import {
   Menu,
   Handshake,
   X,
+  Boxes,
+  BarChart3,
 
 
 } from "lucide-react";
@@ -36,12 +38,14 @@ import { toast } from "sonner";
 const NAV = [
   { to: "/aurona-console-9f2x7k", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/aurona-console-9f2x7k/products", label: "Products", icon: Package },
+  { to: "/aurona-console-9f2x7k/inventory", label: "SKU Inventory", icon: Boxes },
   { to: "/aurona-console-9f2x7k/categories", label: "Categories", icon: FolderTree },
   { to: "/aurona-console-9f2x7k/orders", label: "Orders", icon: ShoppingCart },
   { to: "/aurona-console-9f2x7k/returns", label: "Returns & Refunds", icon: RotateCcw },
   { to: "/aurona-console-9f2x7k/customers", label: "Customers", icon: Users },
   { to: "/aurona-console-9f2x7k/media", label: "Media", icon: ImageIcon },
   { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
+  { to: "/aurona-console-9f2x7k/reports", label: "Reports", icon: BarChart3 },
   { to: "/aurona-console-9f2x7k/applications", label: "Partner Applications", icon: Handshake },
   { to: "/aurona-console-9f2x7k/affiliates", label: "Affiliates", icon: Handshake },
   { to: "/aurona-console-9f2x7k/content", label: "Content", icon: Megaphone },
@@ -56,6 +60,7 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/audit", label: "Audit Logs", icon: ScrollText },
 
   { to: "/aurona-console-9f2x7k/security", label: "Security & 2FA", icon: ShieldCheck },
+  { to: "/aurona-console-9f2x7k/roles", label: "Roles & Permissions", icon: LockKeyhole },
   { to: "/aurona-console-9f2x7k/settings", label: "Settings", icon: Settings },
 ];
 

@@ -1121,6 +1121,8 @@ export type Database = {
           discount_amount: number
           id: string
           order_id: string | null
+          reversed_at: string | null
+          reversed_by: string | null
           user_id: string
         }
         Insert: {
@@ -1129,6 +1131,8 @@ export type Database = {
           discount_amount: number
           id?: string
           order_id?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
           user_id: string
         }
         Update: {
@@ -1137,6 +1141,8 @@ export type Database = {
           discount_amount?: number
           id?: string
           order_id?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1159,6 +1165,7 @@ export type Database = {
       coupons: {
         Row: {
           active: boolean
+          archived_at: string | null
           code: string
           created_at: string
           created_by: string | null
@@ -1178,6 +1185,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          archived_at?: string | null
           code: string
           created_at?: string
           created_by?: string | null
@@ -1197,6 +1205,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          archived_at?: string | null
           code?: string
           created_at?: string
           created_by?: string | null
@@ -1456,6 +1465,10 @@ export type Database = {
           product_id: string | null
           product_name: string
           quantity: number
+          product_snapshot: Json
+          sku: string | null
+          variant_attributes: Json
+          variant_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1465,6 +1478,10 @@ export type Database = {
           product_id?: string | null
           product_name: string
           quantity: number
+          product_snapshot?: Json
+          sku?: string | null
+          variant_attributes?: Json
+          variant_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1474,6 +1491,10 @@ export type Database = {
           product_id?: string | null
           product_name?: string
           quantity?: number
+          product_snapshot?: Json
+          sku?: string | null
+          variant_attributes?: Json
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -1488,6 +1509,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -2001,6 +2029,8 @@ export type Database = {
           id: string
           image_seed: string | null
           is_active: boolean
+          archived_at: string | null
+          low_stock_threshold: number
           moq: number
           mrp: number
           pack_h: number | null
@@ -2014,6 +2044,8 @@ export type Database = {
           sku: string
           sort_order: number
           stock: number
+          reserved_stock: number
+          updated_at: string
           weight_g: number | null
         }
         Insert: {
@@ -2029,6 +2061,8 @@ export type Database = {
           id?: string
           image_seed?: string | null
           is_active?: boolean
+          archived_at?: string | null
+          low_stock_threshold?: number
           moq?: number
           mrp: number
           pack_h?: number | null
@@ -2042,6 +2076,8 @@ export type Database = {
           sku: string
           sort_order?: number
           stock?: number
+          reserved_stock?: number
+          updated_at?: string
           weight_g?: number | null
         }
         Update: {
@@ -2057,6 +2093,8 @@ export type Database = {
           id?: string
           image_seed?: string | null
           is_active?: boolean
+          archived_at?: string | null
+          low_stock_threshold?: number
           moq?: number
           mrp?: number
           pack_h?: number | null
@@ -2070,6 +2108,8 @@ export type Database = {
           sku?: string
           sort_order?: number
           stock?: number
+          reserved_stock?: number
+          updated_at?: string
           weight_g?: number | null
         }
         Relationships: [

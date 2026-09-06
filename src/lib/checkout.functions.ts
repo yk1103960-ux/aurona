@@ -259,86 +259,27 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     const total = Math.max(0, Number((subtotal - discount + shipping).toFixed(2)));
 
-    // 7) Create order.
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        full_name: data.address.full_name,
-        phone: data.address.phone,
-        email: data.address.email || user.email || null,
-        address: data.address.address,
-        city: data.address.city,
-        state: data.address.state,
-        pincode: data.address.pincode,
-        payment_method: data.payment_method,
-        subtotal,
-        shipping,
-        discount,
-        discount_code: couponCode,
-        total,
-      })
-      .select("id")
-      .single();
+    // 7) Commit the order, snapshots, coupon usage, stock movements and cart
+    // cleanup in one database transaction. This RPC is service-role only and
+    // cannot be invoked directly by a shopper.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: orderId, error: orderError } = await (supabaseAdmin as any).rpc("place_order_atomic", {
+      _user_id: user.id,
+      _address: { ...data.address, email: data.address.email || user.email || "" },
+      _payment_method: data.payment_method,
+      _shipping: shipping,
+      _items: pricedItems,
+      _coupon_id: couponId,
+      _coupon_code: couponCode,
+      _discount: discount,
+    });
 
-    if (orderError || !order) {
-      throw new Error(orderError?.message || "Could not create your order.");
+    if (orderError || !orderId) {
+      throw new Error(orderError?.message || "Could not safely create your order.");
     }
-
-    // 8) Snapshot order items at the exact prices used for this order.
-    const { error: itemError } = await supabase.from("order_items").insert(
-      pricedItems.map((item) => ({
-        order_id: order.id,
-        product_id: item.productId,
-        product_name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    );
-
-    if (itemError) {
-      // Best-effort cleanup. If RLS prevents deletion, the original error is
-      // still returned and the cart is NOT cleared.
-      await supabase.from("orders").delete().eq("id", order.id).eq("user_id", user.id);
-      throw new Error(itemError.message || "Could not save order items.");
-    }
-
-    // 9) Record redemption + increment coupon usage through the dedicated RPC.
-    // redeem_coupon does not contain the ambiguous coupon_id query.
-    if (couponId && discount > 0) {
-      const { error: redeemError } = await supabase.rpc("redeem_coupon", {
-        _coupon_id: couponId,
-        _order_id: order.id,
-        _amount: discount,
-      });
-
-      if (redeemError) {
-        throw new Error(redeemError.message || "Could not redeem coupon.");
-      }
-    }
-
-    // 10) Clear only the cart rows that were used for this order.
-    const cartIds = pricedItems.map((item) => item.cartId);
-
-    const { error: clearError } = await supabase.from("cart_items").delete().eq("user_id", user.id).in("id", cartIds);
-
-    if (clearError) {
-      console.error("Order created but cart cleanup failed:", clearError);
-    }
-
-    // Best-effort abandoned-cart recovery mark.
-    await supabase
-      .from("abandoned_carts")
-      .update({
-        status: "recovered",
-        recovered_at: new Date().toISOString(),
-        recovered_order_id: order.id,
-      })
-      .eq("user_id", user.id)
-      .neq("status", "recovered");
 
     return {
-      orderId: order.id,
+      orderId: String(orderId),
       subtotal,
       shipping,
       discount,

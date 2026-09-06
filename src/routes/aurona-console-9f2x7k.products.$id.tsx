@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
+import { adminSaveProductFamily } from "@/lib/catalog-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ProductEditor,
@@ -335,51 +336,14 @@ function ProductEditor() {
         affiliate_commission_kind: f.affiliate_commission_kind || "inherit",
       };
 
-      const result = isNew
-        ? await supabase.from("products").insert(payload).select("id").single()
-        : await supabase.from("products").update(payload).eq("id", id).select("id").single();
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      if (f.sku) {
-        const { error: familyError } = await supabase
-          .from("product_families")
-          .update({
-            name: f.name,
-
-            category_id: f.category_id,
-
-            brand: f.brand,
-
-            short_description: f.short_description || null,
-
-            description: f.description || null,
-
-            features,
-            specifications,
-
-            body_type: f.body_type || null,
-
-            material: f.material || null,
-
-            warranty: f.warranty || null,
-
-            is_featured: f.is_featured,
-
-            is_bestseller: f.is_bestseller,
-
-            is_new: f.is_new,
-
-            is_sale: f.is_sale,
-          })
-          .eq("main_sku", f.sku);
-
-        if (familyError) {
-          console.error("Family mirror failed:", familyError);
-        }
-      }
+      const result = await adminSaveProductFamily({
+        data: {
+          ...payload,
+          productId: isNew ? undefined : id,
+          slug: payload.slug,
+          affiliate_commission_kind: payload.affiliate_commission_kind as "inherit" | "percentage" | "fixed",
+        },
+      });
 
       dirty.current = false;
 
@@ -402,12 +366,12 @@ function ProductEditor() {
 
       toast.success(isNew ? "Product created" : "Product saved");
 
-      if (isNew && result.data) {
+      if (isNew && result?.product_id) {
         nav({
           to: "/aurona-console-9f2x7k/products/$id",
 
           params: {
-            id: result.data.id,
+            id: result.product_id,
           },
         });
       }

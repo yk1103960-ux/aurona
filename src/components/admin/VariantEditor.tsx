@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Save, Plus, Trash2, Users, Store, Warehouse, Truck, SlidersHorizontal } from "lucide-react";
+import { adminSaveVariantMatrix } from "@/lib/catalog-admin.functions";
 
 type Variant = {
   id: string;
@@ -40,6 +41,7 @@ type Variant = {
 
   is_active: boolean;
   sort_order: number;
+  low_stock_threshold: number;
 };
 
 type Axis = {
@@ -53,7 +55,7 @@ type Axis = {
 type Tab = "options" | "customer" | "retailer" | "distributor" | "shipping";
 
 const COLS =
-  "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order";
+  "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
 
 const toNumber = (value: string): number | null => (value === "" ? null : Number(value));
 
@@ -171,130 +173,68 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
 
-  const addRow = async () => {
-    const { data, error } = await supabase
-      .from("product_variants")
-      .insert({
+  const addRow = () => {
+    dirty.current = true;
+    setRows((current) => [
+      ...current,
+      {
+        id: `new-${Date.now()}`,
         family_id: family.id,
-        sku: `${productSku}-NEW-${Date.now().toString().slice(-5)}`,
+        sku: `${productSku}-NEW-${String(current.length + 1).padStart(2, "0")}`,
         attributes: {},
         mrp: 0,
         price: 0,
         discount_pct: 0,
+        retailer_price: null,
+        distributor_price: null,
         moq: 1,
+        retailer_moq: null,
+        distributor_moq: null,
         stock: 0,
-        sort_order: rows.length,
+        pack_size: null,
+        weight_g: null,
+        dim_l: null,
+        dim_w: null,
+        dim_h: null,
+        pack_weight_g: null,
+        pack_l: null,
+        pack_w: null,
+        pack_h: null,
         is_active: true,
-      })
-      .select(COLS)
-      .maybeSingle();
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    if (data) {
-      setRows((current) => [...current, data as Variant]);
-    }
-
-    toast.success("Variant added");
+        sort_order: current.length,
+        low_stock_threshold: 10,
+      },
+    ]);
   };
 
-  const removeRow = async (row: Variant) => {
-    if (!confirm(`Delete variant ${row.sku}?`)) return;
-
-    const { error } = await supabase.from("product_variants").delete().eq("id", row.id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
+  const removeRow = (row: Variant) => {
+    if (!confirm(`Archive variant ${row.sku}? Existing orders will keep their SKU snapshot.`)) return;
+    dirty.current = true;
+    if (row.id.startsWith("new-")) {
+      setRows((current) => current.filter((item) => item.id !== row.id));
+    } else {
+      updateRow(row.id, { is_active: false });
     }
-
-    setRows((current) => current.filter((item) => item.id !== row.id));
-
-    toast.success("Variant deleted");
+    toast.success("Variant marked inactive. Save variants to apply.");
   };
 
   const saveAll = async () => {
     setSaving(true);
 
     try {
-      for (const row of rows) {
-        const calculatedDiscount = discountPercent(row.mrp, row.price);
-
-        const { error } = await supabase
-          .from("product_variants")
-          .update({
+      await adminSaveVariantMatrix({
+        data: {
+          familyId: family.id,
+          axes,
+          variants: rows.map((row) => ({
+            ...row,
+            id: row.id.startsWith("new-") ? undefined : row.id,
             sku: row.sku.trim(),
-            attributes: row.attributes ?? {},
-
-            mrp: row.mrp ?? 0,
-            price: row.price ?? 0,
-            discount_pct: calculatedDiscount,
-
-            retailer_price: row.retailer_price,
-            distributor_price: row.distributor_price,
-
-            moq: row.moq ?? 1,
-            retailer_moq: row.retailer_moq,
-            distributor_moq: row.distributor_moq,
-
-            stock: row.stock ?? 0,
-            pack_size: row.pack_size,
-
-            weight_g: row.weight_g,
-            dim_l: row.dim_l,
-            dim_w: row.dim_w,
-            dim_h: row.dim_h,
-
-            pack_weight_g: row.pack_weight_g,
-            pack_l: row.pack_l,
-            pack_w: row.pack_w,
-            pack_h: row.pack_h,
-
-            is_active: row.is_active ?? true,
-          })
-          .eq("id", row.id);
-
-        if (error) {
-          throw new Error(`${row.sku}: ${error.message}`);
-        }
-      }
-
-      const live = rows.filter((row) => row.is_active !== false);
-
-      const prices = live.map((row) => Number(row.price ?? 0)).filter((value) => value > 0);
-
-      const mrps = live.map((row) => Number(row.mrp ?? 0)).filter((value) => value > 0);
-
-      const totalStock = live.reduce((sum, row) => sum + Number(row.stock ?? 0), 0);
-
-      const { error: familyError } = await supabase
-        .from("product_families")
-        .update({
-          min_price: prices.length ? Math.min(...prices) : null,
-          max_price: prices.length ? Math.max(...prices) : null,
-          min_mrp: mrps.length ? Math.min(...mrps) : null,
-          max_mrp: mrps.length ? Math.max(...mrps) : null,
-          total_stock: totalStock,
-        })
-        .eq("id", family.id);
-
-      if (familyError) throw familyError;
-
-      if (prices.length) {
-        const { error: productError } = await supabase
-          .from("products")
-          .update({
-            price: Math.min(...prices),
-            mrp: mrps.length ? Math.min(...mrps) : 0,
-            stock: totalStock,
-          })
-          .eq("id", productId);
-
-        if (productError) throw productError;
-      }
+            discount_pct: discountPercent(row.mrp, row.price),
+            low_stock_threshold: row.low_stock_threshold ?? 10,
+          })),
+        },
+      });
 
       dirty.current = false;
 
@@ -440,7 +380,7 @@ function OptionsTab({
 }) {
   return (
     <div className="space-y-5">
-      <AxisEditor familyId={familyId} onSaved={refresh} />
+      <AxisEditor familyId={familyId} variants={rows} onSaved={refresh} />
 
       {rows.length === 0 ? (
         <EmptyVariants />
@@ -541,6 +481,7 @@ function CustomerTab({
             <Th>PCs / Pack</Th>
             <Th>Pack Total</Th>
             <Th>Stock</Th>
+            <Th>Low-stock alert</Th>
           </tr>
         </thead>
 
@@ -608,6 +549,13 @@ function CustomerTab({
                         stock: value,
                       })
                     }
+                  />
+                </Td>
+
+                <Td>
+                  <NumberInput
+                    value={row.low_stock_threshold}
+                    onChange={(value) => updateRow(row.id, { low_stock_threshold: Math.max(0, Number(value ?? 0)) })}
                   />
                 </Td>
               </tr>
@@ -935,7 +883,7 @@ function ShippingTab({
   );
 }
 
-function AxisEditor({ familyId, onSaved }: { familyId: string; onSaved: () => void }) {
+function AxisEditor({ familyId, variants, onSaved }: { familyId: string; variants: Variant[]; onSaved: () => void }) {
   const [rows, setRows] = useState<Axis[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -974,75 +922,33 @@ function AxisEditor({ familyId, onSaved }: { familyId: string; onSaved: () => vo
     setRows((current) => current.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
   };
 
-  const addAxis = async () => {
+  const addAxis = () => {
     const key = prompt("Option key (example: watt_option)")?.trim();
 
     if (!key) return;
-
-    const { data, error } = await supabase
-      .from("product_variant_axes")
-      .insert({
-        family_id: familyId,
-        axis_key: key,
-        label: key.replace(/_/g, " "),
-        values: [],
-        sort_order: rows.length,
-      })
-      .select("id, axis_key, label, values, sort_order")
-      .maybeSingle();
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    if (data) {
-      setRows((current) => [
-        ...current,
-        {
-          ...(data as any),
-          values: [],
-        },
-      ]);
-    }
+    dirty.current = true;
+    setRows((current) => [...current, { id: `new-${Date.now()}`, axis_key: key, label: key.replace(/_/g, " "), values: [], sort_order: current.length }]);
   };
 
-  const removeAxis = async (axis: Axis) => {
-    if (!confirm(`Delete option "${axis.label}"?`)) {
+  const removeAxis = (axis: Axis) => {
+    if (!confirm(`Remove option "${axis.label}" from this family?`)) {
       return;
     }
-
-    const { error } = await supabase.from("product_variant_axes").delete().eq("id", axis.id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
+    dirty.current = true;
     setRows((current) => current.filter((item) => item.id !== axis.id));
-
-    toast.success("Option removed");
   };
 
   const saveAxes = async () => {
     setSaving(true);
 
     try {
-      for (const axis of rows) {
-        const { error } = await supabase
-          .from("product_variant_axes")
-          .update({
-            axis_key: axis.axis_key.trim(),
-            label: axis.label.trim(),
-            values: axis.values.map((value) => value.trim()).filter(Boolean),
-            sort_order: axis.sort_order,
-          })
-          .eq("id", axis.id);
-
-        if (error) {
-          throw new Error(`${axis.label}: ${error.message}`);
-        }
-      }
+      await adminSaveVariantMatrix({
+        data: {
+          familyId,
+          axes: rows.map((axis) => ({ axis_key: axis.axis_key.trim(), label: axis.label.trim(), values: axis.values.map((value) => value.trim()).filter(Boolean), sort_order: axis.sort_order })),
+          variants: variants.map((row) => ({ ...row, id: row.id.startsWith("new-") ? undefined : row.id, discount_pct: discountPercent(row.mrp, row.price), low_stock_threshold: row.low_stock_threshold ?? 10 })),
+        },
+      });
 
       dirty.current = false;
 

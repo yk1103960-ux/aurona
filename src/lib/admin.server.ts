@@ -7,6 +7,13 @@ export async function assertAdmin(context: { supabase: any; userId: string; clai
   return { userId: context.userId, email: (context.claims?.email as string) ?? null };
 }
 
+export async function assertAdminPermission(context: { supabase: any; userId: string; claims: any }, permission: string) {
+  const actor = await assertAdmin(context);
+  const { data, error } = await context.supabase.rpc("has_admin_permission", { _user_id: context.userId, _permission_key: permission });
+  if (error || !data) throw new Error("You do not have permission for this admin action");
+  return actor;
+}
+
 export async function writeAudit(params: {
   actorUserId: string;
   actorEmail: string | null;

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
+import { adminSetPrimaryProductImage } from "@/lib/catalog-admin.functions";
 
 
 type Row = {
@@ -84,6 +85,9 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
     setBusy(true);
     try {
       const base = q.data?.images.length ?? 0;
+      const scopeHasPrimary = (q.data?.images ?? []).some(
+        (image) => (image.variant_sku ?? "") === targetSku && image.is_primary,
+      );
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith("image/")) throw new Error(`${file.name} is not an image`);
@@ -103,7 +107,7 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
           image_url: `/api/public/product-image/${path}`,
           alt_text: null,
           sort_order: base + i,
-          is_primary: base + i === 0,
+          is_primary: !scopeHasPrimary && i === 0,
         });
         if (ins.error) throw new Error(ins.error.message);
       }
@@ -124,9 +128,13 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
   };
 
   const makePrimary = async (row: Row) => {
-    const others = (q.data?.images ?? []).filter((r) => r.id !== row.id && r.is_primary);
-    for (const o of others) await supabase.from("product_images").update({ is_primary: false }).eq("id", o.id);
-    await patch(row.id, { is_primary: true });
+    try {
+      await adminSetPrimaryProductImage({ data: { imageId: row.id } });
+      toast.success(row.variant_sku ? `Primary photo set for ${row.variant_sku}` : "Primary family photo set");
+      refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not set primary photo");
+    }
   };
 
   const remove = async (row: Row) => {
@@ -140,9 +148,11 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
     if (storagePath) await supabase.storage.from("media").remove([storagePath]);
 
     // Never leave the gallery without a primary photo.
-    const rest = (q.data?.images ?? []).filter((r) => r.id !== row.id);
+    const rest = (q.data?.images ?? []).filter(
+      (r) => r.id !== row.id && (r.variant_sku ?? null) === (row.variant_sku ?? null),
+    );
     if (row.is_primary && rest.length) {
-      await supabase.from("product_images").update({ is_primary: true }).eq("id", rest[0].id);
+      await adminSetPrimaryProductImage({ data: { imageId: rest[0].id } });
     }
     toast.success("Photo removed");
     refresh();

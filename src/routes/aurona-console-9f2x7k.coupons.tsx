@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Edit3, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { inr } from "@/lib/format";
+import { adminArchiveCoupon, adminSaveCoupon } from "@/lib/coupon-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/coupons")({
   component: CouponsAdmin,
@@ -52,11 +54,13 @@ type Coupon = {
 function CouponsAdmin() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<Coupon> | null>(null);
+  const saveCoupon = useServerFn(adminSaveCoupon);
+  const archiveCoupon = useServerFn(adminArchiveCoupon);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-coupons"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("coupons").select("*").order("created_at", { ascending: false });
+      const { data, error } = await (supabase as any).from("coupons").select("*").is("archived_at", null).order("created_at", { ascending: false });
       if (error) throw error;
       return data as Coupon[];
     },
@@ -66,6 +70,7 @@ function CouponsAdmin() {
     if (!editing?.code || !editing.type || !(Number(editing.value) > 0))
       return toast.error("Code, type and value required");
     const payload = {
+      id: editing.id,
       code: editing.code.trim().toUpperCase(),
       description: editing.description ?? null,
       type: editing.type,
@@ -79,22 +84,25 @@ function CouponsAdmin() {
       eligible_roles: editing.eligible_roles?.length ? editing.eligible_roles : ["customer", "retailer", "distributor"],
       active: editing.active ?? true,
     };
-    const q = editing.id
-      ? supabase.from("coupons").update(payload).eq("id", editing.id)
-      : supabase.from("coupons").insert(payload);
-    const { error } = await q;
-    if (error) return toast.error(error.message);
-    toast.success("Coupon saved");
-    setEditing(null);
-    qc.invalidateQueries({ queryKey: ["admin-coupons"] });
+    try {
+      await saveCoupon({ data: payload as any });
+      toast.success("Coupon saved");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["admin-coupons"] });
+    } catch (error: any) {
+      toast.error(error?.message || "Could not save coupon");
+    }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Delete this coupon?")) return;
-    const { error } = await supabase.from("coupons").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted");
-    qc.invalidateQueries({ queryKey: ["admin-coupons"] });
+    if (!confirm("Archive this coupon? It will stop working but its order history will be preserved.")) return;
+    try {
+      await archiveCoupon({ data: { id } });
+      toast.success("Coupon archived");
+      qc.invalidateQueries({ queryKey: ["admin-coupons"] });
+    } catch (error: any) {
+      toast.error(error?.message || "Could not archive coupon");
+    }
   };
 
   return (
@@ -179,6 +187,10 @@ function CouponDialog({ editing, setEditing, save }: { editing: Partial<Coupon> 
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Total usage cap</Label><Input type="number" value={editing.usage_limit ?? ""} onChange={(e) => set("usage_limit", e.target.value)} placeholder="Unlimited" /></div>
+          <div className="flex items-end pb-2 text-xs text-slate-500">Leave blank for unlimited total uses.</div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Starts at</Label><Input type="datetime-local" value={toLocalInput(editing.starts_at)} onChange={(e) => set("starts_at", e.target.value)} /></div>
           <div><Label>Expires at</Label><Input type="datetime-local" value={toLocalInput(editing.expires_at)} onChange={(e) => set("expires_at", e.target.value)} /></div>
         </div>
         <div><Label>Description</Label><Textarea value={editing.description ?? ""} onChange={(e) => set("description", e.target.value)} rows={2} /></div>
