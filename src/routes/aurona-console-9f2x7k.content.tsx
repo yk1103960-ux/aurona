@@ -311,7 +311,9 @@ function BlockDialog({
               onChange={(e) => {
                 try {
                   set("payload", JSON.parse(e.target.value));
-                } catch {}
+                } catch {
+                  // Keep the last valid payload while the administrator is still typing JSON.
+                }
               }}
             />
           </details>
