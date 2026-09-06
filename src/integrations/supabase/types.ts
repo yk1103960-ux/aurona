@@ -145,6 +145,88 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_import_batches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          row_count: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          row_count?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          row_count?: number
+          status?: string
+        }
+        Relationships: []
+      }
+      admin_import_items: {
+        Row: {
+          batch_id: string
+          created_at: string
+          family_id: string
+          id: string
+          product_id: string
+          sku: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          family_id: string
+          id?: string
+          product_id: string
+          sku: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          family_id?: string
+          id?: string
+          product_id?: string
+          sku?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_import_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "admin_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_import_items_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_import_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_permissions: {
         Row: {
           key: string
@@ -1176,6 +1258,7 @@ export type Database = {
       cms_blocks: {
         Row: {
           active: boolean
+          archived_at: string | null
           created_at: string
           ends_at: string | null
           id: string
@@ -1190,6 +1273,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          archived_at?: string | null
           created_at?: string
           ends_at?: string | null
           id?: string
@@ -1204,6 +1288,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          archived_at?: string | null
           created_at?: string
           ends_at?: string | null
           id?: string
@@ -1466,6 +1551,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marketing_campaigns: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          kind: string
+          name: string
+          payload: Json
+          starts_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          kind: string
+          name: string
+          payload?: Json
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          payload?: Json
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       media_assets: {
         Row: {
@@ -2244,6 +2374,75 @@ export type Database = {
           },
         ]
       }
+      product_reviews: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          family_id: string | null
+          id: string
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_note: string | null
+          product_id: string | null
+          rating: number
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string | null
+          verified_purchase: boolean
+        }
+        Insert: {
+          author_name: string
+          body: string
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_note?: string | null
+          product_id?: string | null
+          rating: number
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verified_purchase?: boolean
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_note?: string | null
+          product_id?: string | null
+          rating?: number
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verified_purchase?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variant_axes: {
         Row: {
           axis_key: string
@@ -2886,6 +3085,7 @@ export type Database = {
       shipping_zones: {
         Row: {
           active: boolean
+          archived_at: string | null
           cod_allowed: boolean
           created_at: string
           flat_rate: number
@@ -2897,9 +3097,11 @@ export type Database = {
           pincode_prefixes: string[]
           sort_order: number
           states: string[]
+          updated_at: string
         }
         Insert: {
           active?: boolean
+          archived_at?: string | null
           cod_allowed?: boolean
           created_at?: string
           flat_rate?: number
@@ -2911,9 +3113,11 @@ export type Database = {
           pincode_prefixes?: string[]
           sort_order?: number
           states?: string[]
+          updated_at?: string
         }
         Update: {
           active?: boolean
+          archived_at?: string | null
           cod_allowed?: boolean
           created_at?: string
           flat_rate?: number
@@ -2925,6 +3129,7 @@ export type Database = {
           pincode_prefixes?: string[]
           sort_order?: number
           states?: string[]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2945,6 +3150,41 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      support_ticket_replies: {
+        Row: {
+          author_user_id: string | null
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_user_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_user_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {
@@ -3012,29 +3252,35 @@ export type Database = {
         Row: {
           active: boolean
           applies_to: string
+          archived_at: string | null
           created_at: string
           gst_percent: number
           hsn_code: string | null
           id: string
           name: string
+          updated_at: string
         }
         Insert: {
           active?: boolean
           applies_to?: string
+          archived_at?: string | null
           created_at?: string
           gst_percent?: number
           hsn_code?: string | null
           id?: string
           name: string
+          updated_at?: string
         }
         Update: {
           active?: boolean
           applies_to?: string
+          archived_at?: string | null
           created_at?: string
           gst_percent?: number
           hsn_code?: string | null
           id?: string
           name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3354,9 +3600,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_decide_cancellation: {
+        Args: {
+          _actor_user_id: string
+          _decision: string
+          _note: string
+          _request_id: string
+        }
+        Returns: Json
+      }
+      admin_import_new_families: {
+        Args: { _actor_user_id: string; _rows: Json }
+        Returns: string
+      }
       admin_report_summary: {
         Args: { _from: string; _to: string }
         Returns: Json
+      }
+      admin_rollback_import_batch: {
+        Args: { _actor_user_id: string; _batch_id: string }
+        Returns: number
       }
       admin_save_variant_matrix: {
         Args: {
@@ -3379,6 +3642,17 @@ export type Database = {
           _to_status: string
         }
         Returns: Json
+      }
+      admin_update_return_request: {
+        Args: {
+          _actor_user_id: string
+          _note: string
+          _refund_amount: number
+          _refund_reference: string
+          _request_id: string
+          _status: Database["public"]["Enums"]["return_status"]
+        }
+        Returns: undefined
       }
       admin_upsert_product_family: { Args: { _payload: Json }; Returns: Json }
       affiliate_balance: {
@@ -3451,6 +3725,10 @@ export type Database = {
         Returns: undefined
       }
       refresh_product_family: {
+        Args: { _family_id: string }
+        Returns: undefined
+      }
+      refresh_product_review_summary: {
         Args: { _family_id: string }
         Returns: undefined
       }
