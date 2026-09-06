@@ -1165,6 +1165,7 @@ export type Database = {
       coupons: {
         Row: {
           active: boolean
+          archived_at: string | null
           code: string
           created_at: string
           created_by: string | null
@@ -1184,6 +1185,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          archived_at?: string | null
           code: string
           created_at?: string
           created_by?: string | null
@@ -1203,6 +1205,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          archived_at?: string | null
           code?: string
           created_at?: string
           created_by?: string | null
@@ -1577,6 +1580,44 @@ export type Database = {
             columns: ["variant_id"]
             isOneToOne: false
             referencedRelation: "public_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_history: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          note: string | null
+          order_id: string
+          to_status: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          order_id: string
+          to_status: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          order_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2893,6 +2934,21 @@ export type Database = {
         }
         Relationships: []
       }
+      tmp_stock_restore: {
+        Row: {
+          sku: string
+          stock: number
+        }
+        Insert: {
+          sku: string
+          stock: number
+        }
+        Update: {
+          sku?: string
+          stock?: number
+        }
+        Relationships: []
+      }
       user_mfa: {
         Row: {
           backup_codes_ciphertext: string | null
@@ -3201,6 +3257,10 @@ export type Database = {
         }
         Returns: number
       }
+      admin_report_summary: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
       admin_save_variant_matrix: {
         Args: {
           _actor_user_id: string
@@ -3213,6 +3273,15 @@ export type Database = {
       admin_set_primary_product_image: {
         Args: { _image_id: string }
         Returns: undefined
+      }
+      admin_transition_order: {
+        Args: {
+          _actor_user_id?: string
+          _note?: string
+          _order_id: string
+          _to_status: string
+        }
+        Returns: Json
       }
       admin_upsert_product_family: { Args: { _payload: Json }; Returns: Json }
       affiliate_balance: {
