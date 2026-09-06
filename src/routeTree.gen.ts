@@ -86,6 +86,7 @@ import { Route as AuronaConsole9f2x7kProductsIndexRouteImport } from './routes/a
 import { Route as AuronaConsole9f2x7kProductsIdRouteImport } from './routes/aurona-console-9f2x7k.products.$id'
 import { Route as AuronaConsole9f2x7kProductsBulkRouteImport } from './routes/aurona-console-9f2x7k.products.bulk'
 import { Route as AuronaConsole9f2x7kProductsNewRouteImport } from './routes/aurona-console-9f2x7k.products.new'
+import { Route as AuronaConsole9f2x7kProductsOptionsRouteImport } from './routes/aurona-console-9f2x7k.products.options'
 import { Route as ApiPublicProductImageSplatRouteImport } from './routes/api/public/product-image.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -507,6 +508,12 @@ const AuronaConsole9f2x7kProductsNewRoute =
     path: '/products/new',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kProductsOptionsRoute =
+  AuronaConsole9f2x7kProductsOptionsRouteImport.update({
+    id: '/products/options',
+    path: '/products/options',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const ApiPublicProductImageSplatRoute =
   ApiPublicProductImageSplatRouteImport.update({
     id: '/api/public/product-image/$',
@@ -591,6 +598,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
+  '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
   '/aurona-console-9f2x7k/products/': typeof AuronaConsole9f2x7kProductsIndexRoute
   '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
 }
@@ -668,6 +676,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
+  '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
   '/aurona-console-9f2x7k/products': typeof AuronaConsole9f2x7kProductsIndexRoute
   '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
 }
@@ -749,6 +758,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/products/$id': typeof AuronaConsole9f2x7kProductsIdRoute
   '/aurona-console-9f2x7k/products/bulk': typeof AuronaConsole9f2x7kProductsBulkRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
+  '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
   '/aurona-console-9f2x7k/products/': typeof AuronaConsole9f2x7kProductsIndexRoute
   '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
 }
@@ -831,6 +841,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
     | '/aurona-console-9f2x7k/products/new'
+    | '/aurona-console-9f2x7k/products/options'
     | '/aurona-console-9f2x7k/products/'
     | '/api/public/product-image/$'
   fileRoutesByTo: FileRoutesByTo
@@ -908,6 +919,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
     | '/aurona-console-9f2x7k/products/new'
+    | '/aurona-console-9f2x7k/products/options'
     | '/aurona-console-9f2x7k/products'
     | '/api/public/product-image/$'
   id:
@@ -988,6 +1000,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/$id'
     | '/aurona-console-9f2x7k/products/bulk'
     | '/aurona-console-9f2x7k/products/new'
+    | '/aurona-console-9f2x7k/products/options'
     | '/aurona-console-9f2x7k/products/'
     | '/api/public/product-image/$'
   fileRoutesById: FileRoutesById
@@ -1579,6 +1592,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kProductsNewRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/products/options': {
+      id: '/aurona-console-9f2x7k/products/options'
+      path: '/products/options'
+      fullPath: '/aurona-console-9f2x7k/products/options'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsOptionsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/api/public/product-image/$': {
       id: '/api/public/product-image/$'
       path: '/api/public/product-image/$'
@@ -1633,6 +1653,7 @@ interface AuronaConsole9f2x7kRouteChildren {
   AuronaConsole9f2x7kProductsIdRoute: typeof AuronaConsole9f2x7kProductsIdRoute
   AuronaConsole9f2x7kProductsBulkRoute: typeof AuronaConsole9f2x7kProductsBulkRoute
   AuronaConsole9f2x7kProductsNewRoute: typeof AuronaConsole9f2x7kProductsNewRoute
+  AuronaConsole9f2x7kProductsOptionsRoute: typeof AuronaConsole9f2x7kProductsOptionsRoute
   AuronaConsole9f2x7kProductsIndexRoute: typeof AuronaConsole9f2x7kProductsIndexRoute
 }
 
@@ -1666,6 +1687,8 @@ const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
   AuronaConsole9f2x7kProductsIdRoute: AuronaConsole9f2x7kProductsIdRoute,
   AuronaConsole9f2x7kProductsBulkRoute: AuronaConsole9f2x7kProductsBulkRoute,
   AuronaConsole9f2x7kProductsNewRoute: AuronaConsole9f2x7kProductsNewRoute,
+  AuronaConsole9f2x7kProductsOptionsRoute:
+    AuronaConsole9f2x7kProductsOptionsRoute,
   AuronaConsole9f2x7kProductsIndexRoute: AuronaConsole9f2x7kProductsIndexRoute,
 }
 

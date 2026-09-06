@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
-import { adminSaveProductFamily } from "@/lib/catalog-admin.functions";
+import { adminSaveProductFamily, adminSaveRelatedProductFamilies } from "@/lib/catalog-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ProductEditor,
@@ -84,6 +84,18 @@ type ProductForm = {
   dim_l: number | null;
   dim_w: number | null;
   dim_h: number | null;
+  meta_title: string;
+  meta_description: string;
+  meta_image_url: string;
+  video_provider: "" | "youtube" | "vimeo" | "dailymotion" | "other";
+  video_url: string;
+  specification_pdf_url: string;
+  shipping_type: "calculated" | "free" | "flat";
+  shipping_cost: number;
+  shipping_cost_per_quantity: boolean;
+  estimated_shipping_days: number | null;
+  refundable: boolean;
+  refund_note: string;
 };
 
 const EMPTY: ProductForm = {
@@ -130,6 +142,18 @@ const EMPTY: ProductForm = {
   dim_l: null,
   dim_w: null,
   dim_h: null,
+  meta_title: "",
+  meta_description: "",
+  meta_image_url: "",
+  video_provider: "",
+  video_url: "",
+  specification_pdf_url: "",
+  shipping_type: "calculated",
+  shipping_cost: 0,
+  shipping_cost_per_quantity: false,
+  estimated_shipping_days: null,
+  refundable: true,
+  refund_note: "",
 };
 
 const TABS: {
@@ -214,7 +238,7 @@ function ProductEditor() {
     refetchOnWindowFocus: false,
 
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
+      const { data, error } = await (supabase as any).from("product_families").select("*").eq("legacy_product_id", id).single();
 
       if (error) throw error;
 
@@ -222,7 +246,7 @@ function ProductEditor() {
     },
   });
 
-  useRealtime(["products"], () => {
+  useRealtime(["product_families", "products"], () => {
     if (!dirty.current) {
       product.refetch();
     }
@@ -236,7 +260,7 @@ function ProductEditor() {
     setF({
       name: data.name ?? "",
       slug: data.slug ?? "",
-      sku: data.sku ?? "",
+      sku: data.main_sku ?? "",
       brand: data.brand ?? "Aurona",
 
       category_id: data.category_id,
@@ -245,9 +269,9 @@ function ProductEditor() {
 
       description: data.description ?? "",
 
-      mrp: Number(data.mrp ?? 0),
-      price: Number(data.price ?? 0),
-      stock: Number(data.stock ?? 0),
+      mrp: Number(data.min_mrp ?? 0),
+      price: Number(data.min_price ?? 0),
+      stock: Number(data.total_stock ?? 0),
 
       unit: data.unit ?? "Pc",
 
@@ -295,6 +319,18 @@ function ProductEditor() {
       dim_w: data.dim_w != null ? Number(data.dim_w) : null,
 
       dim_h: data.dim_h != null ? Number(data.dim_h) : null,
+      meta_title: data.meta_title ?? "",
+      meta_description: data.meta_description ?? "",
+      meta_image_url: data.meta_image_url ?? "",
+      video_provider: data.video_provider ?? "",
+      video_url: data.video_url ?? "",
+      specification_pdf_url: data.specification_pdf_url ?? "",
+      shipping_type: data.shipping_type ?? "calculated",
+      shipping_cost: Number(data.shipping_cost ?? 0),
+      shipping_cost_per_quantity: !!data.shipping_cost_per_quantity,
+      estimated_shipping_days: data.estimated_shipping_days != null ? Number(data.estimated_shipping_days) : null,
+      refundable: data.refundable ?? true,
+      refund_note: data.refund_note ?? "",
     });
   }, [product.data]);
 
@@ -355,6 +391,7 @@ function ProductEditor() {
         "family-products",
         "browse-products",
         "admin-products",
+        "admin-product-families",
         "admin-product",
         "category-counts",
         "search-suggest",
@@ -629,7 +666,7 @@ function ProductEditor() {
       {/* MEDIA */}
 
       {tab === "media" && (
-        <>
+        <div className="space-y-4">
           {!isNew && f.sku ? (
             <ProductImageManager productSku={f.sku} productId={id} />
           ) : (
@@ -638,7 +675,14 @@ function ProductEditor() {
               text="Create the product first, then you can upload general and variation-specific photos."
             />
           )}
-        </>
+          <Section title="Video & Specification File">
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="Video Provider"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={f.video_provider} onChange={(e) => upd("video_provider", e.target.value as ProductForm["video_provider"])}><option value="">None</option><option value="youtube">YouTube</option><option value="vimeo">Vimeo</option><option value="dailymotion">Dailymotion</option><option value="other">Other</option></select></Field>
+              <Field label="Video URL"><Input type="url" value={f.video_url} placeholder="https://…" onChange={(e) => upd("video_url", e.target.value)} /></Field>
+              <Field label="Specification PDF URL"><Input type="url" value={f.specification_pdf_url} placeholder="https://…/specification.pdf" onChange={(e) => upd("specification_pdf_url", e.target.value)} /></Field>
+            </div>
+          </Section>
+        </div>
       )}
 
       {/* CUSTOMER */}
@@ -697,16 +741,14 @@ function ProductEditor() {
                 onChange={(e) => upd("short_description", e.target.value)}
               />
             </Field>
-
-            <div className="text-xs text-slate-500">
-              Dedicated SEO title and meta-description fields can be connected later if those database columns are
-              added.
-            </div>
+            <Field label="Meta Title"><Input value={f.meta_title} maxLength={240} onChange={(e) => upd("meta_title", e.target.value)} /></Field>
+            <Field label="Meta Description"><Textarea rows={4} value={f.meta_description} maxLength={600} onChange={(e) => upd("meta_description", e.target.value)} /></Field>
+            <Field label="Meta Image URL"><Input type="url" value={f.meta_image_url} placeholder="https://…" onChange={(e) => upd("meta_image_url", e.target.value)} /></Field>
           </Section>
 
           <Section title="Preview">
             <div className="rounded-lg border p-4">
-              <div className="truncate text-lg text-blue-700">{f.name || "Product Name"}</div>
+              <div className="truncate text-lg text-blue-700">{f.meta_title || f.name || "Product Name"}</div>
 
               <div className="mt-1 break-all text-sm text-emerald-700">
                 aurona.co.in/products/
@@ -714,7 +756,7 @@ function ProductEditor() {
               </div>
 
               <div className="mt-2 text-sm text-slate-600">
-                {f.short_description || "Add a short description to improve the product preview."}
+                {f.meta_description || f.short_description || "Add a meta description to improve the product preview."}
               </div>
             </div>
           </Section>
@@ -747,6 +789,15 @@ function ProductEditor() {
             <div className="text-xs text-slate-500">These are product-level default shipping dimensions.</div>
           </Section>
 
+          <Section title="Shipping Charge & Promise">
+            <div className="grid gap-3 md:grid-cols-3">
+              <Field label="Shipping Type"><select className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={f.shipping_type} onChange={(e) => upd("shipping_type", e.target.value as ProductForm["shipping_type"])}><option value="calculated">Calculated by shipping rules</option><option value="free">Free shipping</option><option value="flat">Flat charge</option></select></Field>
+              <Field label="Flat Shipping Cost ₹"><Input type="number" min="0" step="0.01" disabled={f.shipping_type !== "flat"} value={f.shipping_cost} onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))} /></Field>
+              <Field label="Estimated Delivery (days)"><NullableNumber value={f.estimated_shipping_days} onChange={(value) => upd("estimated_shipping_days", value)} /></Field>
+            </div>
+            <Check label="Multiply flat shipping cost by order quantity" checked={f.shipping_cost_per_quantity} onChange={(value) => upd("shipping_cost_per_quantity", value)} />
+          </Section>
+
           {!isNew && f.sku ? (
             <VariantEditor productSku={f.sku} productId={id} />
           ) : (
@@ -771,6 +822,9 @@ function ProductEditor() {
               />
             </Field>
 
+            <Check label="Refundable product" checked={f.refundable} onChange={(value) => upd("refundable", value)} />
+            <Field label="Refund / Return Note"><Textarea rows={4} value={f.refund_note} placeholder="Eligibility, exclusions and customer-facing instructions" onChange={(e) => upd("refund_note", e.target.value)} /></Field>
+
             <div className="text-xs text-slate-500">
               Warranty is mirrored to the corresponding product family when saved.
             </div>
@@ -791,10 +845,7 @@ function ProductEditor() {
       {/* FREQUENTLY BOUGHT */}
 
       {tab === "frequently" && (
-        <Notice
-          title="Frequently Bought Together"
-          text="This tab is ready. We will connect it to the real product relationship data instead of creating fake database fields."
-        />
+        isNew || !product.data?.id ? <Notice title="Save the product first" text="Related products can be selected after this family exists." /> : <RelatedProducts familyId={product.data.id} />
       )}
 
       {/* BOTTOM SAVE */}
@@ -841,6 +892,43 @@ function VariantArea({
       <VariantEditor productSku={sku} productId={id} />
     </div>
   );
+}
+
+function RelatedProducts({ familyId }: { familyId: string }) {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const loaded = useRef(false);
+  const q = useQuery({
+    queryKey: ["admin-related-products", familyId, search],
+    queryFn: async () => {
+      let productsQuery = (supabase as any).from("product_families").select("id,name,main_sku").neq("id", familyId).is("archived_at", null).order("name").limit(100);
+      if (search.trim()) productsQuery = productsQuery.or(`name.ilike.%${search.trim()}%,main_sku.ilike.%${search.trim()}%`);
+      const [products, related] = await Promise.all([
+        productsQuery,
+        (supabase as any).from("product_related_families").select("related_family_id").eq("family_id", familyId).order("sort_order"),
+      ]);
+      if (products.error) throw products.error;
+      if (related.error) throw related.error;
+      return { products: products.data ?? [], relatedIds: (related.data ?? []).map((row: any) => row.related_family_id as string) };
+    },
+  });
+  useEffect(() => {
+    if (q.data && !loaded.current) { setSelected(q.data.relatedIds); loaded.current = true; }
+  }, [q.data]);
+  const save = async () => {
+    setSaving(true);
+    try { await adminSaveRelatedProductFamilies({ data: { familyId, relatedIds: selected } }); toast.success("Frequently bought products saved"); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not save related products"); }
+    finally { setSaving(false); }
+  };
+  return <Section title="Frequently Bought Together">
+    <div className="flex flex-wrap items-center gap-2"><Input className="max-w-md" value={search} placeholder="Search product name or SKU…" onChange={(e) => setSearch(e.target.value)} /><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Selection"}</Button><span className="text-xs text-slate-500">{selected.length} selected · maximum 24</span></div>
+    <div className="max-h-[480px] divide-y overflow-y-auto rounded-lg border">
+      {(q.data?.products ?? []).map((item: any) => <label key={item.id} className="flex cursor-pointer items-center gap-3 p-3 hover:bg-slate-50"><input type="checkbox" checked={selected.includes(item.id)} onChange={(e) => setSelected((current) => e.target.checked ? [...current, item.id].slice(0, 24) : current.filter((id) => id !== item.id))} /><span className="flex-1"><span className="font-medium">{item.name}</span><span className="ml-2 font-mono text-xs text-slate-500">{item.main_sku}</span></span></label>)}
+      {q.isLoading && <div className="p-6 text-center text-sm text-slate-500">Loading products…</div>}
+    </div>
+  </Section>;
 }
 
 function Section({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {

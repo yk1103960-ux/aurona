@@ -13,6 +13,7 @@ type Variant = {
   id: string;
   family_id: string;
   sku: string;
+  barcode: string;
   attributes: Record<string, string>;
 
   mrp: number | null;
@@ -55,7 +56,7 @@ type Axis = {
 type Tab = "options" | "customer" | "retailer" | "distributor" | "shipping";
 
 const COLS =
-  "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
+  "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
 
 const toNumber = (value: string): number | null => (value === "" ? null : Number(value));
 
@@ -129,7 +130,7 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
       }
 
       const [{ data, error }, { data: axes, error: axesError }] = await Promise.all([
-        supabase.from("product_variants").select(COLS).eq("family_id", fam.id).order("sort_order"),
+        (supabase as any).from("product_variants").select(COLS).eq("family_id", fam.id).order("sort_order"),
 
         supabase
           .from("product_variant_axes")
@@ -181,6 +182,7 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
         id: `new-${Date.now()}`,
         family_id: family.id,
         sku: `${productSku}-NEW-${String(current.length + 1).padStart(2, "0")}`,
+        barcode: "",
         attributes: {},
         mrp: 0,
         price: 0,
@@ -246,6 +248,7 @@ export function VariantEditor({ productSku, productId }: { productSku: string; p
         "family-products",
         "browse-products",
         "admin-products",
+        "admin-product-families",
         "admin-product",
         "admin-product-variants",
         "search-suggest",
@@ -401,6 +404,11 @@ function OptionsTab({
                       })
                     }
                   />
+                </label>
+
+                <label className="min-w-[180px] flex-1">
+                  <FieldTitle>Barcode / GTIN</FieldTitle>
+                  <Input className="mt-1 font-mono" value={row.barcode ?? ""} placeholder="Optional unique barcode" onChange={(e) => updateRow(row.id, { barcode: e.target.value })} />
                 </label>
 
                 <label className="flex items-center gap-2 pb-2 text-sm">
