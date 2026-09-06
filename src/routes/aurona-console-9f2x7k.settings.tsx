@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { adminSaveSiteSettings } from "@/lib/operations-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/settings")({
   component: SettingsAdmin,
@@ -28,46 +30,71 @@ const KEYS = [
 
   { key: "gst_percentage", label: "GST %", default: "18" },
   { key: "free_shipping_threshold", label: "Free Shipping Above (₹)", default: "999" },
-  { key: "distributor_price_visible", label: "Show Distributor Prices ('true'/'false')", default: "true" },
+  {
+    key: "distributor_price_visible",
+    label: "Show Distributor Prices ('true'/'false')",
+    default: "true",
+  },
   { key: "maintenance_mode", label: "Maintenance Mode ('true'/'false')", default: "false" },
+  { key: "seo_default_title", label: "Default SEO title", default: "Aurona Lighting Industries" },
+  {
+    key: "seo_default_description",
+    label: "Default SEO description",
+    default: "Lighting and home appliances engineered for modern India.",
+  },
+  { key: "seo_canonical_origin", label: "Canonical website origin", default: "https://aurona.in" },
 
   // Mobile-OTP two-factor authentication (admin controlled — users cannot disable it)
   { key: "twofa_sms_enabled", label: "Mobile OTP 2FA enabled ('true'/'false')", default: "true" },
-  { key: "twofa_required_roles", label: "2FA required for roles (comma separated, or 'all')", default: "all" },
+  {
+    key: "twofa_required_roles",
+    label: "2FA required for roles (comma separated, or 'all')",
+    default: "all",
+  },
   { key: "otp_expiry_seconds", label: "OTP validity (seconds)", default: "300" },
   { key: "otp_resend_cooldown", label: "OTP resend cooldown (seconds)", default: "45" },
   { key: "otp_max_attempts", label: "Max OTP attempts per code", default: "5" },
 ];
 
-
 function SettingsAdmin() {
   const qc = useQueryClient();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const saveSettings = useServerFn(adminSaveSiteSettings);
 
   const q = useQuery({
     queryKey: ["admin-settings"],
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("key, value");
-      const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value])) as Record<string, string>;
+      const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value])) as Record<
+        string,
+        string
+      >;
       return map;
     },
   });
   useRealtime(["site_settings"], () => q.refetch());
 
-  const val = (k: string) => drafts[k] ?? q.data?.[k] ?? KEYS.find((x) => x.key === k)?.default ?? "";
+  const val = (k: string) =>
+    drafts[k] ?? q.data?.[k] ?? KEYS.find((x) => x.key === k)?.default ?? "";
 
   const saveAll = async () => {
     setSaving(true);
-    const rows = Object.entries(drafts).map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }));
-    if (!rows.length) { setSaving(false); return; }
-    const { error } = await supabase.from("site_settings").upsert(rows, { onConflict: "key" });
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Settings saved — live now");
-    setDrafts({});
-    qc.invalidateQueries({ queryKey: ["admin-settings"] });
-    qc.invalidateQueries({ queryKey: ["site_settings"] });
+    if (!Object.keys(drafts).length) {
+      setSaving(false);
+      return;
+    }
+    try {
+      await saveSettings({ data: { values: drafts } });
+      toast.success("Settings saved");
+      setDrafts({});
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["site_settings"] });
+    } catch (error: any) {
+      toast.error(error?.message || "Settings could not be saved");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -75,7 +102,9 @@ function SettingsAdmin() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Website Settings</h1>
-          <p className="text-sm text-slate-500">Changes go live immediately.</p>
+          <p className="text-sm text-slate-500">
+            Store identity, contact, SEO and operational defaults. Changes are audited.
+          </p>
         </div>
         <Button onClick={saveAll} disabled={saving || !Object.keys(drafts).length}>
           <Save className="w-4 h-4 mr-1" /> {saving ? "Saving…" : "Save Changes"}
@@ -86,14 +115,18 @@ function SettingsAdmin() {
         {KEYS.map((k) => (
           <label key={k.key} className="grid md:grid-cols-[240px_1fr] gap-3 p-4 items-center">
             <div className="text-sm font-medium">{k.label}</div>
-            <Input value={val(k.key)} onChange={(e) => setDrafts((d) => ({ ...d, [k.key]: e.target.value }))} />
+            <Input
+              value={val(k.key)}
+              onChange={(e) => setDrafts((d) => ({ ...d, [k.key]: e.target.value }))}
+            />
           </label>
         ))}
       </div>
 
       <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 text-sm text-sky-900">
         <div className="font-semibold mb-1">Provider settings moved</div>
-        Payment gateways live under <b>Payments</b>, shipping under <b>Shipping</b>, and 2FA under <b>Security & 2FA</b>. All actions are recorded in <b>Audit Logs</b>.
+        Payment gateways live under <b>Payments</b>, shipping under <b>Shipping</b>, and 2FA under{" "}
+        <b>Security & 2FA</b>. All actions are recorded in <b>Audit Logs</b>.
       </div>
     </div>
   );

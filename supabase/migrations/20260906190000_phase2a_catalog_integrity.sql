@@ -34,6 +34,9 @@ ALTER TABLE public.order_items
   ADD COLUMN IF NOT EXISTS product_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE public.product_images ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.coupon_redemptions
+  ADD COLUMN IF NOT EXISTS reversed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS reversed_by uuid;
 
 CREATE UNIQUE INDEX IF NOT EXISTS product_families_legacy_product_unique
   ON public.product_families(legacy_product_id) WHERE legacy_product_id IS NOT NULL;
@@ -501,7 +504,7 @@ BEGIN
       RAISE EXCEPTION 'coupon is no longer available';
     END IF;
     SELECT count(*)::integer INTO _used FROM public.coupon_redemptions
-    WHERE coupon_id = _coupon_id AND user_id = _user_id;
+    WHERE coupon_id = _coupon_id AND user_id = _user_id AND reversed_at IS NULL;
     IF _used >= coupon.per_user_limit THEN RAISE EXCEPTION 'coupon already used'; END IF;
   ELSIF _discount <> 0 THEN
     RAISE EXCEPTION 'discount requires a valid coupon';

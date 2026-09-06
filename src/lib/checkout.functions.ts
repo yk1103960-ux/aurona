@@ -133,7 +133,9 @@ export const placeOrder = createServerFn({ method: "POST" })
       throw new Error(priceError.message || "Could not calculate current product prices.");
     }
 
-    const priceBySku = new Map((visiblePrices ?? []).map((row) => [row.sku, Number(row.price ?? 0)]));
+    const priceBySku = new Map(
+      (visiblePrices ?? []).map((row) => [row.sku, Number(row.price ?? 0)]),
+    );
 
     const pricedItems = items.map((item) => {
       const price = priceBySku.get(item.sku);
@@ -148,7 +150,9 @@ export const placeOrder = createServerFn({ method: "POST" })
       };
     });
 
-    const subtotal = Number(pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+    const subtotal = Number(
+      pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2),
+    );
 
     if (!(subtotal > 0)) {
       throw new Error("Order subtotal is invalid.");
@@ -163,13 +167,19 @@ export const placeOrder = createServerFn({ method: "POST" })
     });
 
     if (!shippingQuote?.serviceable || !Array.isArray(shippingQuote.rates)) {
-      throw new Error(shippingQuote?.message || "Sorry, delivery is not available to this pincode.");
+      throw new Error(
+        shippingQuote?.message || "Sorry, delivery is not available to this pincode.",
+      );
     }
 
-    const selectedRate = shippingQuote.rates.find((rate) => String(rate.id) === data.shipping_rate_id);
+    const selectedRate = shippingQuote.rates.find(
+      (rate) => String(rate.id) === data.shipping_rate_id,
+    );
 
     if (!selectedRate) {
-      throw new Error("The selected delivery option is no longer available. Please choose delivery again.");
+      throw new Error(
+        "The selected delivery option is no longer available. Please choose delivery again.",
+      );
     }
 
     const shipping = Math.max(0, Number(selectedRate.price ?? 0));
@@ -214,7 +224,10 @@ export const placeOrder = createServerFn({ method: "POST" })
         throw new Error("Coupon expired.");
       }
 
-      if (coupon.usage_limit !== null && Number(coupon.times_used ?? 0) >= Number(coupon.usage_limit)) {
+      if (
+        coupon.usage_limit !== null &&
+        Number(coupon.times_used ?? 0) >= Number(coupon.usage_limit)
+      ) {
         throw new Error("Coupon usage limit reached.");
       }
 
@@ -232,7 +245,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         .from("coupon_redemptions")
         .select("id", { count: "exact", head: true })
         .eq("coupon_id", coupon.id)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .is("reversed_at", null);
 
       if (usageError) {
         throw new Error(usageError.message || "Could not verify coupon usage.");
@@ -263,16 +277,19 @@ export const placeOrder = createServerFn({ method: "POST" })
     // cleanup in one database transaction. This RPC is service-role only and
     // cannot be invoked directly by a shopper.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: orderId, error: orderError } = await (supabaseAdmin as any).rpc("place_order_atomic", {
-      _user_id: user.id,
-      _address: { ...data.address, email: data.address.email || user.email || "" },
-      _payment_method: data.payment_method,
-      _shipping: shipping,
-      _items: pricedItems,
-      _coupon_id: couponId,
-      _coupon_code: couponCode,
-      _discount: discount,
-    });
+    const { data: orderId, error: orderError } = await (supabaseAdmin as any).rpc(
+      "place_order_atomic",
+      {
+        _user_id: user.id,
+        _address: { ...data.address, email: data.address.email || user.email || "" },
+        _payment_method: data.payment_method,
+        _shipping: shipping,
+        _items: pricedItems,
+        _coupon_id: couponId,
+        _coupon_code: couponCode,
+        _discount: discount,
+      },
+    );
 
     if (orderError || !orderId) {
       throw new Error(orderError?.message || "Could not safely create your order.");

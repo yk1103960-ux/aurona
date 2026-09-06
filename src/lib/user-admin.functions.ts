@@ -40,13 +40,17 @@ async function fetchAuthUsers(): Promise<AuthUser[]> {
 
 export const adminListUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ search: z.string().max(120).optional() }).parse(input ?? {}))
+  .inputValidator((input: unknown) =>
+    z.object({ search: z.string().max(120).optional() }).parse(input ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [authUsers, profiles, security, roles] = await Promise.all([
       fetchAuthUsers(),
-      supabaseAdmin.from("profiles").select("id, full_name, phone, business_name, account_type, created_at"),
+      supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, phone, business_name, account_type, created_at"),
       supabaseAdmin.from("user_security").select("*"),
       supabaseAdmin.from("user_roles").select("user_id, role"),
     ]);
@@ -80,7 +84,10 @@ export const adminListUsers = createServerFn({ method: "POST" })
       })
       .filter(
         (r) =>
-          !term || [r.email, r.phone, r.fullName, r.businessName].some((v) => (v ?? "").toLowerCase().includes(term)),
+          !term ||
+          [r.email, r.phone, r.fullName, r.businessName].some((v) =>
+            (v ?? "").toLowerCase().includes(term),
+          ),
       )
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     return rows;
@@ -89,7 +96,13 @@ export const adminListUsers = createServerFn({ method: "POST" })
 export const adminSetUserBlocked = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), blocked: z.boolean(), reason: z.string().max(300).optional() }).parse(input),
+    z
+      .object({
+        userId: z.string().uuid(),
+        blocked: z.boolean(),
+        reason: z.string().max(300).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -129,7 +142,9 @@ export const adminResetVerification = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.auth.admin.updateUserById(data.userId, { email_confirm: false } as never).catch(() => null);
+    await supabaseAdmin.auth.admin
+      .updateUserById(data.userId, { email_confirm: false } as never)
+      .catch(() => null);
     await supabaseAdmin.from("user_security").upsert({
       user_id: data.userId,
       email_verified_at: null,
@@ -148,7 +163,10 @@ export const adminLoginActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
-      .object({ identifier: z.string().max(200).optional(), limit: z.number().min(1).max(200).default(50) })
+      .object({
+        identifier: z.string().max(200).optional(),
+        limit: z.number().min(1).max(200).default(50),
+      })
       .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -290,7 +308,10 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     if (data.email) authPatch["email"] = data.email;
     if (data.password) authPatch["password"] = data.password;
     if (Object.keys(authPatch).length) {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, authPatch as never);
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(
+        data.userId,
+        authPatch as never,
+      );
       if (error) throw new Error(error.message);
     }
 
@@ -310,7 +331,9 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     if (data.accountType) {
       await supabaseAdmin
         .from("user_roles")
-        .upsert({ user_id: data.userId, role: data.accountType } as never, { onConflict: "user_id,role" });
+        .upsert({ user_id: data.userId, role: data.accountType } as never, {
+          onConflict: "user_id,role",
+        });
     }
 
     await supabaseAdmin.from("audit_logs").insert({
@@ -318,18 +341,23 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       action: "user.update",
       entity_type: "user",
       entity_id: data.userId,
-      after: { ...profilePatch, emailChanged: !!data.email, passwordChanged: !!data.password } as any,
+      after: {
+        ...profilePatch,
+        emailChanged: !!data.email,
+        passwordChanged: !!data.password,
+      } as any,
     });
     return { ok: true };
   });
 
-/** Permanently delete an account (admins cannot be deleted from here). */
-export const adminDeleteUser = createServerFn({ method: "POST" })
+/** Reversibly archive an account. Historical orders and profile data are preserved. */
+export const adminArchiveUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    if (data.userId === context.userId) throw new Error("You cannot delete your own admin account");
+    if (data.userId === context.userId)
+      throw new Error("You cannot archive your own admin account");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: isTargetAdmin } = await supabaseAdmin
       .from("user_roles")
@@ -337,28 +365,35 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
       .eq("user_id", data.userId)
       .eq("role", "admin")
       .maybeSingle();
-    if (isTargetAdmin) throw new Error("Admin accounts cannot be deleted here");
+    if (isTargetAdmin) throw new Error("Admin accounts cannot be archived here");
 
-    // Revoke all app-level sessions first so the deleted user loses access
-    // as soon as the frontend/server performs its next session check.
     const now = new Date().toISOString();
-
+    const { error: securityError } = await supabaseAdmin.from("user_security").upsert({
+      user_id: data.userId,
+      blocked: true,
+      blocked_reason: "Archived by admin",
+      blocked_at: now,
+      updated_at: now,
+    });
+    if (securityError) throw new Error(securityError.message);
     await supabaseAdmin
       .from("user_sessions")
       .update({ revoked_at: now })
       .eq("user_id", data.userId)
       .is("revoked_at", null);
 
-    // Permanently remove the Supabase Auth user. This also prevents any
-    // future login with this account.
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (error) throw new Error(error.message);
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      ban_duration: "876000h",
+      user_metadata: { archived_at: now },
+    } as never);
+    if (authError) throw new Error(authError.message);
 
     await supabaseAdmin.from("audit_logs").insert({
       actor_user_id: context.userId,
-      action: "user.delete",
+      action: "user.archive",
       entity_type: "user",
       entity_id: data.userId,
+      after: { archivedAt: now } as any,
     });
     return { ok: true };
   });

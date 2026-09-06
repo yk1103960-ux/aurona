@@ -90,7 +90,8 @@ export const requestOrderCancellation = createServerFn({ method: "POST" })
       refund_amount: paid ? Number(order.total) : 0,
       refund_method: paid ? order.payment_method : null,
     });
-    if (insErr) throw new Error("We couldn’t submit your cancellation request. Please contact support.");
+    if (insErr)
+      throw new Error("We couldn’t submit your cancellation request. Please contact support.");
 
     return { ok: true as const, alreadyCancelled: false, pending: true };
   });
@@ -111,8 +112,8 @@ export const decideOrderCancellation = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertAdmin } = await import("./admin.server");
-    const admin = await assertAdmin(context as never);
+    const { assertAdminPermission, writeAudit } = await import("./admin.server");
+    const admin = await assertAdminPermission(context as never, "returns.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: req, error } = await supabaseAdmin
@@ -125,49 +126,27 @@ export const decideOrderCancellation = createServerFn({ method: "POST" })
     if (req.kind !== "cancellation") throw new Error("This request is not a cancellation.");
     if (req.status !== "requested") throw new Error("This request has already been decided.");
 
-    const now = new Date().toISOString();
-
-    if (data.decision === "reject") {
-      await supabaseAdmin
-        .from("return_requests")
-        .update({
-          status: "rejected",
-          admin_note: data.note ?? null,
-          reviewed_by: admin.userId,
-          reviewed_at: now,
-        })
-        .eq("id", req.id);
-      return { ok: true as const, cancelled: false };
-    }
-
-    const { data: order } = await supabaseAdmin
-      .from("orders")
-      .select("id, status, payment_status, payment_method, total, awb_code, shipment_status, user_id, order_number")
-      .eq("id", req.order_id)
-      .maybeSingle();
-    if (!order) throw new Error("The linked order no longer exists.");
-
-    const paid = order.payment_status === "paid";
-    const { data: updated, error: upErr } = await supabaseAdmin
-      .from("orders")
-      .update({
-        status: "cancelled",
-        payment_status: paid ? "refund_pending" : order.payment_status,
-      })
-      .eq("id", order.id)
-      .select("id");
-    if (upErr) throw new Error(upErr.message);
-    if (!updated || updated.length === 0) throw new Error("We couldn’t cancel this order. Please retry.");
-
-    await supabaseAdmin
-      .from("return_requests")
-      .update({
-        status: paid ? "refund_initiated" : "completed",
-        admin_note: data.note ?? null,
-        reviewed_by: admin.userId,
-        reviewed_at: now,
-      })
-      .eq("id", req.id);
-
-    return { ok: true as const, cancelled: true, refundPending: paid };
+    const { data: result, error: decisionError } = await (supabaseAdmin as any).rpc(
+      "admin_decide_cancellation",
+      {
+        _request_id: req.id,
+        _decision: data.decision,
+        _note: data.note ?? "",
+        _actor_user_id: admin.userId,
+      },
+    );
+    if (decisionError) throw new Error(decisionError.message);
+    await writeAudit({
+      actorUserId: admin.userId,
+      actorEmail: admin.email,
+      action: `return.cancellation_${data.decision}`,
+      entityType: "return_request",
+      entityId: req.id,
+      after: result,
+    });
+    return {
+      ok: true as const,
+      cancelled: Boolean(result?.cancelled),
+      refundPending: Boolean(result?.refund_pending),
+    };
   });

@@ -26,8 +26,8 @@ import {
   X,
   Boxes,
   BarChart3,
-
-
+  Star,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,9 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/customers", label: "Customers", icon: Users },
   { to: "/aurona-console-9f2x7k/media", label: "Media", icon: ImageIcon },
   { to: "/aurona-console-9f2x7k/coupons", label: "Coupons", icon: Ticket },
+  { to: "/aurona-console-9f2x7k/campaigns", label: "Campaigns", icon: Megaphone },
+  { to: "/aurona-console-9f2x7k/reviews", label: "Reviews", icon: Star },
+  { to: "/aurona-console-9f2x7k/support", label: "Support Inbox", icon: Inbox },
   { to: "/aurona-console-9f2x7k/reports", label: "Reports", icon: BarChart3 },
   { to: "/aurona-console-9f2x7k/applications", label: "Partner Applications", icon: Handshake },
   { to: "/aurona-console-9f2x7k/affiliates", label: "Affiliates", icon: Handshake },
@@ -53,9 +56,9 @@ const NAV = [
   { to: "/aurona-console-9f2x7k/careers", label: "Career Applications", icon: Users },
   { to: "/aurona-console-9f2x7k/carts", label: "Abandoned Carts", icon: ShoppingCart },
 
-
   { to: "/aurona-console-9f2x7k/payments", label: "Payments", icon: CreditCard },
   { to: "/aurona-console-9f2x7k/shipping", label: "Shipping", icon: Truck },
+  { to: "/aurona-console-9f2x7k/shipping-rules", label: "Shipping & Tax Rules", icon: Truck },
   { to: "/aurona-console-9f2x7k/integrations", label: "Integrations", icon: Plug },
   { to: "/aurona-console-9f2x7k/audit", label: "Audit Logs", icon: ScrollText },
 
@@ -77,10 +80,8 @@ export function AdminShell() {
     setMenuOpen(false);
   }, [loc.pathname]);
 
-
   // Non-admin visitors are NOT bounced to the storefront — they get the admin
   // login screen so they can sign in with an authorized account instead.
-
 
   // Admin idle-session timeout: any inactivity beyond 30 minutes signs the
   // admin out of the console. Keeps the audit trail tight and reduces the
@@ -96,7 +97,13 @@ export function AdminShell() {
         nav({ to: "/aurona-console-9f2x7k", replace: true });
       }, IDLE_TIMEOUT_MS);
     };
-    const events: Array<keyof WindowEventMap> = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    const events: Array<keyof WindowEventMap> = [
+      "mousemove",
+      "keydown",
+      "click",
+      "scroll",
+      "touchstart",
+    ];
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
     reset();
     return () => {
@@ -124,7 +131,12 @@ export function AdminShell() {
     <div className="admin-scope min-h-screen bg-slate-50 text-slate-900">
       {/* Mobile top bar */}
       <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
-        <Button size="icon" variant="ghost" onClick={() => setMenuOpen(true)} aria-label="Open admin menu">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open admin menu"
+        >
           <Menu className="w-5 h-5" />
         </Button>
         <div className="flex min-w-0 items-center gap-2">
@@ -167,16 +179,16 @@ export function AdminShell() {
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {NAV.map((item) => {
-            const active = item.exact
-              ? loc.pathname === item.to
-              : loc.pathname.startsWith(item.to);
+            const active = item.exact ? loc.pathname === item.to : loc.pathname.startsWith(item.to);
             const Icon = item.icon;
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ${
-                  active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"
+                  active
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -187,7 +199,12 @@ export function AdminShell() {
         </nav>
         <div className="p-3 border-t border-white/10 space-y-2">
           <div className="text-xs text-white/50 truncate px-2">{user.email}</div>
-          <Button size="sm" variant="ghost" onClick={signOut} className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={signOut}
+            className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+          >
             <LogOut className="w-4 h-4 mr-2" /> Sign out
           </Button>
           <Link to="/" className="block text-xs text-white/50 hover:text-white px-2">
@@ -214,7 +231,8 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
     event.preventDefault();
     setBusy(true);
 
-    const loginEmail = email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
+    const loginEmail =
+      email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
     // Drop any existing (non-admin) storefront session first so the console
     // never mixes a customer session with an admin sign-in attempt.
     if (signedInAs) await supabase.auth.signOut();
@@ -257,7 +275,8 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
               Aurona Admin Console
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">
-              A separate secure entry point for managing products, orders, customers, media and storefront settings.
+              A separate secure entry point for managing products, orders, customers, media and
+              storefront settings.
             </p>
           </div>
           <div className="grid max-w-xl grid-cols-3 gap-3 text-xs text-slate-300">
@@ -278,8 +297,8 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
 
           {signedInAs && (
             <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-100">
-              You are signed in as <span className="font-semibold">{signedInAs}</span>, which has no admin access.
-              Sign in below with an authorized admin account.
+              You are signed in as <span className="font-semibold">{signedInAs}</span>, which has no
+              admin access. Sign in below with an authorized admin account.
               <button
                 type="button"
                 onClick={async () => {
@@ -293,10 +312,11 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
             </div>
           )}
 
-
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <Label htmlFor="admin-email" className="text-xs text-slate-200">Username / Email</Label>
+              <Label htmlFor="admin-email" className="text-xs text-slate-200">
+                Username / Email
+              </Label>
               <div className="relative mt-1.5">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
@@ -312,7 +332,9 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
             </div>
 
             <div>
-              <Label htmlFor="admin-password" className="text-xs text-slate-200">Password</Label>
+              <Label htmlFor="admin-password" className="text-xs text-slate-200">
+                Password
+              </Label>
               <div className="relative mt-1.5">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
@@ -328,7 +350,11 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
               </div>
             </div>
 
-            <Button type="submit" disabled={busy} className="h-12 w-full rounded-xl bg-sky-400 font-semibold text-slate-950 hover:bg-sky-300">
+            <Button
+              type="submit"
+              disabled={busy}
+              className="h-12 w-full rounded-xl bg-sky-400 font-semibold text-slate-950 hover:bg-sky-300"
+            >
               {busy ? "Verifying…" : "Open Admin Panel"}
             </Button>
           </form>

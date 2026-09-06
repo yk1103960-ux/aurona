@@ -96,7 +96,10 @@ export const applyCoupon = createServerFn({ method: "POST" })
       };
     }
 
-    if (coupon.usage_limit !== null && Number(coupon.times_used ?? 0) >= Number(coupon.usage_limit)) {
+    if (
+      coupon.usage_limit !== null &&
+      Number(coupon.times_used ?? 0) >= Number(coupon.usage_limit)
+    ) {
       return {
         valid: false,
         couponId: null,
@@ -147,7 +150,8 @@ export const applyCoupon = createServerFn({ method: "POST" })
         head: true,
       })
       .eq("coupon_id", coupon.id)
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .is("reversed_at", null);
 
     if (redemptionError) {
       console.error("Coupon redemption lookup failed:", redemptionError);

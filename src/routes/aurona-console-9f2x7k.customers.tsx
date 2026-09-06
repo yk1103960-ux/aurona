@@ -4,10 +4,25 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Search, ShieldOff, ShieldCheck, RotateCcw, Save, Plus, Pencil, Trash2 } from "lucide-react";
+import {
+  Search,
+  ShieldOff,
+  ShieldCheck,
+  RotateCcw,
+  Save,
+  Plus,
+  Pencil,
+  Archive,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   adminListUsers,
   adminSetUserBlocked,
@@ -17,7 +32,7 @@ import {
   adminSaveSecuritySettings,
   adminCreateUser,
   adminUpdateUser,
-  adminDeleteUser,
+  adminArchiveUser,
 } from "@/lib/user-admin.functions";
 
 type EditDraft = {
@@ -49,11 +64,18 @@ const SETTINGS_FIELDS: { key: string; label: string; hint: string }[] = [
   { key: "otp_resend_cooldown", label: "Resend cooldown (seconds)", hint: "Default 60" },
   { key: "login_max_failures", label: "Failed logins before lock", hint: "Default 5" },
   { key: "login_lock_minutes", label: "Lock duration (minutes)", hint: "Default 15" },
-  { key: "block_fake_emails", label: "Block fake emails (true/false)", hint: "Fake/disposable email detection" },
+  {
+    key: "block_fake_emails",
+    label: "Block fake emails (true/false)",
+    hint: "Fake/disposable email detection",
+  },
 ];
 
 function UsersAdmin() {
   const [search, setSearch] = useState("");
+  const [accountTypeFilter, setAccountTypeFilter] = useState<
+    "all" | "customer" | "retailer" | "distributor"
+  >("all");
   const [tab, setTab] = useState<"users" | "activity" | "rules">("users");
   const qc = useQueryClient();
 
@@ -119,17 +141,18 @@ function UsersAdmin() {
     onError: (e: any) => toast.error(e?.message ?? "Could not update the account"),
   });
 
-  const removeUser = useMutation({
-    mutationFn: (userId: string) => adminDeleteUser({ data: { userId } }),
+  const archiveUser = useMutation({
+    mutationFn: (userId: string) => adminArchiveUser({ data: { userId } }),
     onSuccess: () => {
-      toast.success("Account deleted");
+      toast.success("Account archived and access revoked");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Could not delete the account"),
+    onError: (e: any) => toast.error(e?.message ?? "Could not archive the account"),
   });
 
   const block = useMutation({
-    mutationFn: (v: { userId: string; blocked: boolean; reason?: string }) => adminSetUserBlocked({ data: v }),
+    mutationFn: (v: { userId: string; blocked: boolean; reason?: string }) =>
+      adminSetUserBlocked({ data: v }),
     onSuccess: (_d, v) => {
       toast.success(v.blocked ? "User blocked" : "User unblocked");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
@@ -159,7 +182,12 @@ function UsersAdmin() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Users & Security</h1>
+      <div>
+        <h1 className="text-2xl font-semibold">Customers & Partners</h1>
+        <p className="text-sm text-slate-500">
+          Manage retail customers, retailers and distributors from one account directory.
+        </p>
+      </div>
 
       <div className="flex gap-2">
         {(["users", "activity", "rules"] as const).map((t) => (
@@ -180,11 +208,26 @@ function UsersAdmin() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input placeholder="Search name, email, phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              <Input
+                placeholder="Search name, email, phone…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
             </div>
             <Button className="gap-2 rounded-full" onClick={() => setEditing({ ...EMPTY_DRAFT })}>
               <Plus className="h-4 w-4" /> Add account
             </Button>
+            <select
+              className="h-10 rounded-md border bg-white px-3 text-sm"
+              value={accountTypeFilter}
+              onChange={(e) => setAccountTypeFilter(e.target.value as typeof accountTypeFilter)}
+            >
+              <option value="all">All account types</option>
+              <option value="customer">Customers</option>
+              <option value="retailer">Retailers</option>
+              <option value="distributor">Distributors</option>
+            </select>
           </div>
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full text-sm">
@@ -200,84 +243,139 @@ function UsersAdmin() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {(users.data ?? []).map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50">
-                    <td className="p-3">
-                      <div className="font-medium">{u.fullName || "—"}</div>
-                      {u.businessName && <div className="text-xs text-slate-500">{u.businessName}</div>}
-                    </td>
-                    <td className="p-3 text-xs">
-                      <div>{u.email || "—"}</div>
-                      <div className="text-slate-500">{u.phone || "—"}</div>
-                    </td>
-                    <td className="p-3">
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{u.accountType}</span>
-                      {u.roles.includes("admin") && <span className="ml-1 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">admin</span>}
-                    </td>
-                    <td className="p-3 text-xs">
-                      <span className={u.emailVerified ? "text-emerald-600" : "text-red-600"}>
-                        {u.emailVerified ? "Email ✓" : "Email ✗"}
-                      </span>
-                    </td>
-                    <td className="p-3 text-xs">
-                      {u.blocked ? (
-                        <span className="rounded bg-red-100 px-2 py-0.5 text-red-700">Blocked</span>
-                      ) : (
-                        <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-700">Active</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-xs text-slate-500">
-                      {u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleString() : "Never"}
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm" variant="outline" className="h-8 gap-1 text-xs"
-                          onClick={() => reset.mutate(u.id)}
-                        >
-                          <RotateCcw className="h-3 w-3" /> Reset OTP
-                        </Button>
-                        <Button
-                          size="sm" variant={u.blocked ? "outline" : "destructive"} className="h-8 gap-1 text-xs"
-                          onClick={() => block.mutate({ userId: u.id, blocked: !u.blocked, reason: "Suspended by admin" })}
-                        >
-                          {u.blocked ? <><ShieldCheck className="h-3 w-3" /> Unblock</> : <><ShieldOff className="h-3 w-3" /> Block</>}
-                        </Button>
-                        <Button
-                          size="sm" variant="outline" className="h-8 gap-1 text-xs"
-                          onClick={() =>
-                            setEditing({
-                              userId: u.id,
-                              email: u.email ?? "",
-                              password: "",
-                              fullName: u.fullName ?? "",
-                              phone: (u.phone ?? "").replace(/^\+?91/, ""),
-                              businessName: u.businessName ?? "",
-                              accountType: (["retailer", "distributor"].includes(u.accountType) ? u.accountType : "customer") as EditDraft["accountType"],
-                            })
-                          }
-                        >
-                          <Pencil className="h-3 w-3" /> Edit
-                        </Button>
-                        <Button
-                          size="sm" variant="destructive" className="h-8 gap-1 text-xs"
-                          disabled={u.roles.includes("admin")}
-                          onClick={() => {
-                            if (window.confirm(`Permanently delete ${u.email ?? u.fullName ?? "this account"}? This cannot be undone.`)) {
-                              removeUser.mutate(u.id);
+                {(users.data ?? [])
+                  .filter((u) => accountTypeFilter === "all" || u.accountType === accountTypeFilter)
+                  .map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50">
+                      <td className="p-3">
+                        <div className="font-medium">{u.fullName || "—"}</div>
+                        {u.businessName && (
+                          <div className="text-xs text-slate-500">{u.businessName}</div>
+                        )}
+                      </td>
+                      <td className="p-3 text-xs">
+                        <div>{u.email || "—"}</div>
+                        <div className="text-slate-500">{u.phone || "—"}</div>
+                      </td>
+                      <td className="p-3">
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
+                          {u.accountType}
+                        </span>
+                        {u.roles.includes("admin") && (
+                          <span className="ml-1 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                            admin
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-xs">
+                        <span className={u.emailVerified ? "text-emerald-600" : "text-red-600"}>
+                          {u.emailVerified ? "Email ✓" : "Email ✗"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-xs">
+                        {u.blocked ? (
+                          <span className="rounded bg-red-100 px-2 py-0.5 text-red-700">
+                            Blocked
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-700">
+                            Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-xs text-slate-500">
+                        {u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleString() : "Never"}
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1 text-xs"
+                            onClick={() => reset.mutate(u.id)}
+                          >
+                            <RotateCcw className="h-3 w-3" /> Reset OTP
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={u.blocked ? "outline" : "destructive"}
+                            className="h-8 gap-1 text-xs"
+                            onClick={() =>
+                              block.mutate({
+                                userId: u.id,
+                                blocked: !u.blocked,
+                                reason: "Suspended by admin",
+                              })
                             }
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" /> Delete
-                        </Button>
-                      </div>
+                          >
+                            {u.blocked ? (
+                              <>
+                                <ShieldCheck className="h-3 w-3" /> Unblock
+                              </>
+                            ) : (
+                              <>
+                                <ShieldOff className="h-3 w-3" /> Block
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1 text-xs"
+                            onClick={() =>
+                              setEditing({
+                                userId: u.id,
+                                email: u.email ?? "",
+                                password: "",
+                                fullName: u.fullName ?? "",
+                                phone: (u.phone ?? "").replace(/^\+?91/, ""),
+                                businessName: u.businessName ?? "",
+                                accountType: (["retailer", "distributor"].includes(u.accountType)
+                                  ? u.accountType
+                                  : "customer") as EditDraft["accountType"],
+                              })
+                            }
+                          >
+                            <Pencil className="h-3 w-3" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1 text-xs"
+                            disabled={u.roles.includes("admin")}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Archive ${u.email ?? u.fullName ?? "this account"}? Access will be revoked and can later be restored by unblocking the account.`,
+                                )
+                              ) {
+                                archiveUser.mutate(u.id);
+                              }
+                            }}
+                          >
+                            <Archive className="h-3 w-3" /> Archive
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                {users.isLoading && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                      Loading…
                     </td>
                   </tr>
-                ))}
-                {users.isLoading && <tr><td colSpan={7} className="p-8 text-center text-slate-500">Loading…</td></tr>}
-                {!users.isLoading && (users.data ?? []).length === 0 && (
-                  <tr><td colSpan={7} className="p-8 text-center text-slate-500">No users found.</td></tr>
                 )}
+                {!users.isLoading &&
+                  (users.data ?? []).filter(
+                    (u) => accountTypeFilter === "all" || u.accountType === accountTypeFilter,
+                  ).length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500">
+                        No users found.
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
           </div>
@@ -299,20 +397,40 @@ function UsersAdmin() {
             <tbody className="divide-y">
               {(activity.data ?? []).map((a: any) => (
                 <tr key={a.id} className="hover:bg-slate-50">
-                  <td className="p-3 text-xs text-slate-500">{new Date(a.created_at).toLocaleString()}</td>
+                  <td className="p-3 text-xs text-slate-500">
+                    {new Date(a.created_at).toLocaleString()}
+                  </td>
                   <td className="p-3 text-xs">{a.identifier}</td>
                   <td className="p-3 text-xs capitalize">{a.method}</td>
                   <td className="p-3 text-xs">
-                    {a.success
-                      ? <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-700">Success</span>
-                      : <span className="rounded bg-red-100 px-2 py-0.5 text-red-700">{a.reason || "Failed"}</span>}
+                    {a.success ? (
+                      <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-700">
+                        Success
+                      </span>
+                    ) : (
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-red-700">
+                        {a.reason || "Failed"}
+                      </span>
+                    )}
                   </td>
-                  <td className="max-w-[280px] truncate p-3 text-[11px] text-slate-500">{a.user_agent || "—"}</td>
+                  <td className="max-w-[280px] truncate p-3 text-[11px] text-slate-500">
+                    {a.user_agent || "—"}
+                  </td>
                 </tr>
               ))}
-              {activity.isLoading && <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading…</td></tr>}
+              {activity.isLoading && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500">
+                    Loading…
+                  </td>
+                </tr>
+              )}
               {!activity.isLoading && (activity.data ?? []).length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-slate-500">No login attempts recorded yet.</td></tr>
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-500">
+                    No login attempts recorded yet.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -347,24 +465,51 @@ function UsersAdmin() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>Full name</Label>
-                <Input value={editing.fullName} onChange={(e) => setEditing({ ...editing, fullName: e.target.value })} />
+                <Input
+                  value={editing.fullName}
+                  onChange={(e) => setEditing({ ...editing, fullName: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Email</Label>
-                <Input type="email" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
+                <Input
+                  type="email"
+                  value={editing.email}
+                  onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Mobile (+91)</Label>
-                <Input inputMode="numeric" maxLength={10} value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
+                <Input
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={editing.phone}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                    })
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Business name</Label>
-                <Input value={editing.businessName} onChange={(e) => setEditing({ ...editing, businessName: e.target.value })} />
+                <Input
+                  value={editing.businessName}
+                  onChange={(e) => setEditing({ ...editing, businessName: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Account type</Label>
-                <Select value={editing.accountType} onValueChange={(v) => setEditing({ ...editing, accountType: v as EditDraft["accountType"] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={editing.accountType}
+                  onValueChange={(v) =>
+                    setEditing({ ...editing, accountType: v as EditDraft["accountType"] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="customer">Customer</SelectItem>
                     <SelectItem value="retailer">Retailer</SelectItem>
@@ -374,12 +519,19 @@ function UsersAdmin() {
               </div>
               <div className="space-y-1.5">
                 <Label>{editing.userId ? "New password (optional)" : "Password"}</Label>
-                <Input type="text" value={editing.password} onChange={(e) => setEditing({ ...editing, password: e.target.value })} placeholder="Minimum 6 characters" />
+                <Input
+                  type="text"
+                  value={editing.password}
+                  onChange={(e) => setEditing({ ...editing, password: e.target.value })}
+                  placeholder="Minimum 6 characters"
+                />
               </div>
               <Button
                 className="w-full rounded-full"
                 disabled={createUser.isPending || updateUser.isPending}
-                onClick={() => (editing.userId ? updateUser.mutate(editing) : createUser.mutate(editing))}
+                onClick={() =>
+                  editing.userId ? updateUser.mutate(editing) : createUser.mutate(editing)
+                }
               >
                 {editing.userId ? "Save changes" : "Create account"}
               </Button>
