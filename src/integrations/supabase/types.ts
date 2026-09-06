@@ -3038,21 +3038,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tmp_stock_restore: {
-        Row: {
-          sku: string
-          stock: number
-        }
-        Insert: {
-          sku: string
-          stock: number
-        }
-        Update: {
-          sku?: string
-          stock?: number
-        }
-        Relationships: []
-      }
       user_mfa: {
         Row: {
           backup_codes_ciphertext: string | null
