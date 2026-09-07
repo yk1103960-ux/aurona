@@ -148,15 +148,20 @@ export async function loadProducts(url: URL, extra: Filters = {}) {
     db.from("categories").select("id, name, slug"),
   ]);
 
-  // Variant barcode lives on the writable table only; read it separately so the
-  // public view keeps hiding retailer/distributor pricing.
-  const { data: barcodes } = await db
-    .from("product_variants")
-    .select("sku, barcode")
-    .in("family_id", familyIds);
-  const barcodeBySku = new Map(
-    (barcodes ?? []).map((b: any) => [String(b.sku), (b.barcode as string | null) ?? null]),
-  );
+  // Variant barcode lives on the writable table only (and only once the product
+  // admin parity update is applied), so this read is best-effort.
+  const barcodeBySku = new Map<string, string | null>();
+  try {
+    const { data: barcodes } = await db
+      .from("product_variants")
+      .select("sku, barcode")
+      .in("family_id", familyIds);
+    for (const b of (barcodes ?? []) as any[]) {
+      barcodeBySku.set(String(b.sku), (b.barcode as string | null) ?? null);
+    }
+  } catch {
+    // barcode column not present yet — feed reports null.
+  }
 
   const catById = new Map((cats ?? []).map((c: any) => [c.id, c]));
   const variantsByFamily = groupBy(variants ?? [], (v: any) => v.family_id);
