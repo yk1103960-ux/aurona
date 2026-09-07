@@ -13,6 +13,7 @@ import {
   EyeOff,
   ExternalLink,
   FileUp,
+  Layers3,
   Pencil,
   Plus,
   RotateCcw,
@@ -417,6 +418,19 @@ function ProductsAdmin() {
                         params={{ id: row.legacy_product_id ?? row.id }}
                       >
                         <Pencil className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Manage variations and images"
+                    >
+                      <Link
+                        to="/aurona-console-9f2x7k/products/$id/variations"
+                        params={{ id: row.legacy_product_id ?? row.id }}
+                      >
+                        <Layers3 className="h-4 w-4" />
                       </Link>
                     </Button>
                     {!row.archived_at && (

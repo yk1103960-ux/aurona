@@ -13,6 +13,7 @@ import {
   Minus,
   PackageSearch,
   Pencil,
+  Layers3,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -1381,6 +1382,14 @@ function MasterCell({
               params={{ id: family.legacy_product_id ?? family.id }}
             >
               <Pencil className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button size="icon" variant="ghost" asChild aria-label="Manage variations and images">
+            <Link
+              to="/aurona-console-9f2x7k/products/$id/variations"
+              params={{ id: family.legacy_product_id ?? family.id }}
+            >
+              <Layers3 className="h-4 w-4" />
             </Link>
           </Button>
           <Button size="icon" variant="ghost" asChild aria-label="View storefront">

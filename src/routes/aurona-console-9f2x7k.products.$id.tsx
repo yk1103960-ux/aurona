@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   ShoppingBasket,
   RotateCcw,
+  Layers3,
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
@@ -605,6 +606,14 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             >
               <RotateCcw className="h-4 w-4" />
               Clear draft
+            </Button>
+          )}
+          {!isNew && f.sku && (
+            <Button type="button" variant="outline" asChild>
+              <Link to="/aurona-console-9f2x7k/products/$id/variations" params={{ id }}>
+                <Layers3 className="h-4 w-4" />
+                Manage Variations
+              </Link>
             </Button>
           )}
           <Button onClick={save} disabled={saving} size="lg">
