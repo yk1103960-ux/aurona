@@ -163,7 +163,9 @@ export async function loadProducts(url: URL, extra: Filters = {}) {
     // barcode column not present yet — feed reports null.
   }
 
-  const catById = new Map((cats ?? []).map((c: any) => [c.id, c]));
+  const catById = new Map<string, { name: string }>(
+    ((cats ?? []) as any[]).map((c) => [String(c.id), { name: String(c.name) }]),
+  );
   const variantsByFamily = groupBy(variants ?? [], (v: any) => v.family_id);
   const imagesByFamily = groupBy(images ?? [], (i: any) => i.family_id);
 
@@ -181,7 +183,7 @@ export async function loadProducts(url: URL, extra: Filters = {}) {
       title: String(f.name),
       description: String(f.description ?? f.short_description ?? ""),
       vendor: String(f.brand ?? "Aurona"),
-      product_type: (catById.get(f.category_id)?.name as string | undefined) ?? null,
+      product_type: catById.get(String(f.category_id))?.name ?? null,
       tags: [
         f.is_featured ? "featured" : null,
         f.is_bestseller ? "bestseller" : null,
