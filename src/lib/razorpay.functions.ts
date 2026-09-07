@@ -73,19 +73,33 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       razorpay_signature: z.string(),
     }).parse(input)
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { createHmac, timingSafeEqual } = await import("node:crypto");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("id, user_id, payment_provider_order_id, payment_status")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (orderError || !order) throw new Error("Order not found");
+    if (order.user_id !== context.userId) throw new Error("Forbidden");
+    if (order.payment_provider_order_id !== data.razorpay_order_id) {
+      throw new Error("Payment does not match this order");
+    }
+    if (order.payment_status === "paid") return { ok: true };
+
     const creds = await getRazorpayCreds();
     const body = `${data.razorpay_order_id}|${data.razorpay_payment_id}`;
     const expected = createHmac("sha256", creds.keySecret).update(body).digest("hex");
     const a = Buffer.from(expected), b = Buffer.from(data.razorpay_signature);
     if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("Invalid signature");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("orders").update({
       payment_status: "paid",
       payment_provider_payment_id: data.razorpay_payment_id,
       status: "confirmed",
-    }).eq("id", data.orderId);
+    }).eq("id", order.id);
     return { ok: true };
   });
+
