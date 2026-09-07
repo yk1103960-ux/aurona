@@ -31,6 +31,7 @@ import {
   ChevronDown,
   FileUp,
   Plus,
+  PackageSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,11 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Package,
     items: [
       { to: "/aurona-console-9f2x7k/products", label: "All Products", exact: true },
+      {
+        to: "/aurona-console-9f2x7k/products/master",
+        label: "Product Master",
+        icon: PackageSearch,
+      },
       { to: "/aurona-console-9f2x7k/products/new", label: "Add New Product", icon: Plus },
       { to: "/aurona-console-9f2x7k/products/bulk", label: "Bulk Import & Export", icon: FileUp },
       { to: "/aurona-console-9f2x7k/inventory", label: "SKU Inventory", icon: Boxes },
@@ -324,9 +330,7 @@ export function AdminShell() {
           <div className="flex items-center gap-2 text-sm">
             <span className="font-medium text-slate-400">Admin</span>
             <span className="text-slate-300">/</span>
-            <span className="font-semibold text-slate-700">
-              {currentAdminLabel(loc.pathname)}
-            </span>
+            <span className="font-semibold text-slate-700">{currentAdminLabel(loc.pathname)}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-xs font-bold text-sky-700">

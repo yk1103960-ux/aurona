@@ -118,6 +118,16 @@ const ProductListInput = z.object({
   pageSize: z.number().int().min(1).max(100).default(30),
 });
 
+const ProductMasterListInput = z.object({
+  search: z.string().trim().max(120).default(""),
+  categoryId: z.string().uuid().nullable().default(null),
+  publication: z.enum(["all", "published", "hidden", "archived"]).default("all"),
+  stock: z.enum(["all", "in_stock", "low_stock", "out_of_stock"]).default("all"),
+  sort: z.enum(["updated", "name", "sku", "stock_low", "stock_high"]).default("updated"),
+  page: z.number().int().min(0).default(0),
+  pageSize: z.number().int().min(5).max(50).default(20),
+});
+
 export const adminListProductFamilies = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ProductListInput.parse(input ?? {}))
@@ -224,6 +234,145 @@ export const adminGetProductForEdit = createServerFn({ method: "POST" })
       max_price: legacy.data.price,
       total_stock: legacy.data.stock,
       editor_source: "legacy" as const,
+    };
+  });
+
+export const adminListProductMaster = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => ProductMasterListInput.parse(input ?? {}))
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const search = data.search.trim();
+    const filterSearch = search.replace(/[(),]/g, " ");
+    let matchedIds: string[] | null = null;
+
+    if (search) {
+      const [families, variantResult] = await Promise.all([
+        (supabaseAdmin as any)
+          .from("product_families")
+          .select("id")
+          .or(
+            `name.ilike.%${filterSearch}%,main_sku.ilike.%${filterSearch}%,slug.ilike.%${filterSearch}%,brand.ilike.%${filterSearch}%,model.ilike.%${filterSearch}%`,
+          )
+          .limit(500),
+        (supabaseAdmin as any)
+          .from("product_variants")
+          .select("family_id,sku,barcode,attributes")
+          .is("archived_at", null)
+          .limit(2000),
+      ]);
+      if (families.error) throw new Error(families.error.message);
+      let variants = variantResult;
+      if (variants.error && /barcode|schema cache|does not exist/i.test(variants.error.message)) {
+        variants = await (supabaseAdmin as any)
+          .from("product_variants")
+          .select("family_id,sku,attributes")
+          .is("archived_at", null)
+          .limit(2000);
+      }
+      if (variants.error) throw new Error(variants.error.message);
+      const searchLower = search.toLocaleLowerCase();
+      const matchedVariants = (variants.data ?? []).filter((row: any) =>
+        [row.sku, row.barcode, ...Object.values(row.attributes ?? {})].some((value) =>
+          String(value ?? "")
+            .toLocaleLowerCase()
+            .includes(searchLower),
+        ),
+      );
+      matchedIds = [
+        ...new Set([
+          ...(families.data ?? []).map((row: { id: string }) => row.id),
+          ...matchedVariants.map((row: { family_id: string }) => row.family_id),
+        ]),
+      ];
+      if (!matchedIds.length) return { families: [], count: 0 };
+    }
+
+    let query = (supabaseAdmin as any)
+      .from("product_families")
+      .select(
+        "id, legacy_product_id, name, main_sku, slug, brand, category_id, model, wattage, color_temp, size, body_type, is_published, is_featured, is_bestseller, archived_at, updated_at, total_stock, categories(id,name)",
+        { count: "exact" },
+      );
+    if (matchedIds) query = query.in("id", matchedIds);
+    if (data.categoryId) query = query.eq("category_id", data.categoryId);
+    if (data.publication === "archived") query = query.not("archived_at", "is", null);
+    else {
+      query = query.is("archived_at", null);
+      if (data.publication === "published") query = query.eq("is_published", true);
+      if (data.publication === "hidden") query = query.eq("is_published", false);
+    }
+    if (data.stock === "out_of_stock") query = query.eq("total_stock", 0);
+    if (data.stock === "low_stock") query = query.gt("total_stock", 0).lte("total_stock", 10);
+    if (data.stock === "in_stock") query = query.gt("total_stock", 10);
+    const [sortColumn, ascending] = (
+      {
+        updated: ["updated_at", false],
+        name: ["name", true],
+        sku: ["main_sku", true],
+        stock_low: ["total_stock", true],
+        stock_high: ["total_stock", false],
+      } as const
+    )[data.sort];
+    const from = data.page * data.pageSize;
+    const {
+      data: familyRows,
+      error,
+      count,
+    } = await query
+      .order(sortColumn, { ascending, nullsFirst: false })
+      .range(from, from + data.pageSize - 1);
+    if (error) throw new Error(error.message);
+
+    const familyIds = (familyRows ?? []).map((row: { id: string }) => row.id);
+    if (!familyIds.length) return { families: [], count: count ?? 0 };
+
+    const variantColumns =
+      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, low_stock_threshold, sort_order, updated_at";
+    const legacyVariantColumns = variantColumns.replace("barcode, ", "");
+    let variants = await (supabaseAdmin as any)
+      .from("product_variants")
+      .select(variantColumns)
+      .in("family_id", familyIds)
+      .is("archived_at", null)
+      .order("sort_order");
+    if (variants.error && /barcode|schema cache|does not exist/i.test(variants.error.message)) {
+      variants = await (supabaseAdmin as any)
+        .from("product_variants")
+        .select(legacyVariantColumns)
+        .in("family_id", familyIds)
+        .is("archived_at", null)
+        .order("sort_order");
+    }
+    if (variants.error) throw new Error(variants.error.message);
+
+    const [axes, images] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("product_variant_axes")
+        .select("id,family_id,axis_key,label,values,sort_order")
+        .in("family_id", familyIds)
+        .order("sort_order"),
+      (supabaseAdmin as any)
+        .from("product_images")
+        .select("id,family_id,variant_sku,image_url,alt_text,is_primary,sort_order")
+        .in("family_id", familyIds)
+        .order("is_primary", { ascending: false })
+        .order("sort_order"),
+    ]);
+    if (axes.error) throw new Error(axes.error.message);
+    if (images.error) throw new Error(images.error.message);
+
+    return {
+      count: count ?? 0,
+      families: (familyRows ?? []).map((family: any) => ({
+        ...family,
+        variants: (variants.data ?? [])
+          .filter((variant: any) => variant.family_id === family.id)
+          .map((variant: any) => ({ ...variant, barcode: variant.barcode ?? "" })),
+        axes: (axes.data ?? []).filter((axis: any) => axis.family_id === family.id),
+        images: (images.data ?? []).filter((image: any) => image.family_id === family.id),
+      })),
     };
   });
 
@@ -514,6 +663,66 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
       compatibilityMode = !fallback.error;
     }
     if (error) throw new Error(error.message);
+    return { ok: true, compatibility_mode: compatibilityMode };
+  });
+
+export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        families: z
+          .array(
+            z.object({
+              familyId: z.string().uuid(),
+              variants: z.array(VariantInput).min(1).max(500),
+              axes: z.array(AxisInput).max(20),
+            }),
+          )
+          .min(1)
+          .max(50),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const actor = await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let compatibilityMode = false;
+
+    for (const family of data.families) {
+      let { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
+        _family_id: family.familyId,
+        _variants: family.variants,
+        _axes: family.axes,
+        _actor_user_id: context.userId,
+      });
+      if (
+        error &&
+        /admin_save_variant_matrix_v2|could not find the function|schema cache/i.test(error.message)
+      ) {
+        const fallback = await (supabaseAdmin as any).rpc("admin_save_variant_matrix", {
+          _family_id: family.familyId,
+          _variants: family.variants,
+          _axes: family.axes,
+          _actor_user_id: context.userId,
+        });
+        error = fallback.error;
+        compatibilityMode = compatibilityMode || !fallback.error;
+      }
+      if (error) throw new Error(error.message);
+    }
+
+    await writeAudit({
+      actorUserId: actor.userId,
+      actorEmail: actor.email,
+      action: "catalog.product_master_save",
+      entityType: "product_family",
+      after: {
+        familyIds: data.families.map((family) => family.familyId),
+        variantCount: data.families.reduce((sum, family) => sum + family.variants.length, 0),
+        compatibilityMode,
+      },
+    });
     return { ok: true, compatibility_mode: compatibilityMode };
   });
 
