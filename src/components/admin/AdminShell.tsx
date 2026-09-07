@@ -121,6 +121,16 @@ function isNavActive(item: NavItem, pathname: string) {
   return item.exact ? pathname === item.to : pathname.startsWith(item.to);
 }
 
+function currentAdminLabel(pathname: string) {
+  const direct = [DASHBOARD, ...NAV_GROUPS.flatMap((group) => group.items)].find((item) =>
+    isNavActive(item, pathname),
+  );
+  if (direct) return direct.label;
+  if (pathname.startsWith("/aurona-console-9f2x7k/products/")) return "Product Editor";
+  if (pathname.startsWith("/aurona-console-9f2x7k/orders/")) return "Order Details";
+  return "Console";
+}
+
 function AdminNavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isNavActive(item, pathname);
   const Icon = item.icon;
@@ -315,9 +325,7 @@ export function AdminShell() {
             <span className="font-medium text-slate-400">Admin</span>
             <span className="text-slate-300">/</span>
             <span className="font-semibold text-slate-700">
-              {[DASHBOARD, ...NAV_GROUPS.flatMap((group) => group.items)].find((item) =>
-                isNavActive(item, loc.pathname),
-              )?.label ?? "Console"}
+              {currentAdminLabel(loc.pathname)}
             </span>
           </div>
           <div className="flex items-center gap-3">

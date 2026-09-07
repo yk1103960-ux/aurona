@@ -261,11 +261,11 @@ function InventoryAdmin() {
                     <Badge className="bg-slate-100 text-slate-600">Hidden</Badge>
                   )}
                 </div>
-                {family.product?.legacy_product_id && (
+                {family.product && (
                   <Button variant="outline" size="sm" asChild>
                     <Link
                       to="/aurona-console-9f2x7k/products/$id"
-                      params={{ id: family.product.legacy_product_id }}
+                      params={{ id: family.product.legacy_product_id ?? family.id }}
                     >
                       <Pencil className="mr-2 h-3.5 w-3.5" /> Edit family
                     </Link>

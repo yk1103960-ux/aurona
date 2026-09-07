@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
@@ -9,7 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  AlertTriangle,
   Save,
+  RefreshCw,
   FileText,
   Images,
   Users,
@@ -19,10 +22,12 @@ import {
   Truck,
   ShieldCheck,
   ShoppingBasket,
+  RotateCcw,
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import {
+  adminGetProductForEdit,
   adminSaveProductFamily,
   adminSaveRelatedProductFamilies,
 } from "@/lib/catalog-admin.functions";
@@ -164,6 +169,33 @@ const EMPTY: ProductForm = {
   refund_note: "",
 };
 
+const NEW_PRODUCT_DRAFT_KEY = "aurona-admin-new-product-draft-v1";
+
+type NewProductDraft = {
+  version: 1;
+  form: Partial<ProductForm>;
+  tab?: MainTab;
+  savedAt: string;
+};
+
+function readNewProductDraft(): NewProductDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(NEW_PRODUCT_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<NewProductDraft>;
+    if (parsed.version !== 1 || !parsed.form || typeof parsed.form !== "object") return null;
+    return {
+      version: 1,
+      form: parsed.form,
+      tab: TABS.some((item) => item.key === parsed.tab) ? parsed.tab : "general",
+      savedAt: typeof parsed.savedAt === "string" ? parsed.savedAt : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 const TABS: {
   key: MainTab;
   label: string;
@@ -225,8 +257,11 @@ export function ProductEditor({ productId: id }: { productId: string }) {
   const [f, setF] = useState<ProductForm>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<MainTab>("general");
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
   const dirty = useRef(false);
+  const loadProduct = useServerFn(adminGetProductForEdit);
 
   const cats = useQuery({
     queryKey: ["admin-categories-list"],
@@ -242,17 +277,9 @@ export function ProductEditor({ productId: id }: { productId: string }) {
 
     refetchOnWindowFocus: false,
 
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("product_families")
-        .select("*")
-        .eq("legacy_product_id", id)
-        .single();
+    retry: false,
 
-      if (error) throw error;
-
-      return data;
-    },
+    queryFn: () => loadProduct({ data: { id } }),
   });
 
   useRealtime(["product_families", "products"], () => {
@@ -260,6 +287,40 @@ export function ProductEditor({ productId: id }: { productId: string }) {
       product.refetch();
     }
   });
+
+  useEffect(() => {
+    if (!isNew) return;
+    const draft = readNewProductDraft();
+    if (draft) {
+      setF({ ...EMPTY, ...draft.form });
+      setTab(draft.tab ?? "general");
+      setDraftSavedAt(draft.savedAt);
+      dirty.current = true;
+      toast.info("Your unsaved product draft was restored");
+    }
+    setDraftReady(true);
+  }, [isNew]);
+
+  useEffect(() => {
+    if (!isNew || !draftReady || !dirty.current) return;
+
+    const persist = (showTimestamp: boolean) => {
+      const savedAt = new Date().toISOString();
+      const draft: NewProductDraft = { version: 1, form: f, tab, savedAt };
+      try {
+        window.localStorage.setItem(NEW_PRODUCT_DRAFT_KEY, JSON.stringify(draft));
+        if (showTimestamp) setDraftSavedAt(savedAt);
+      } catch {
+        // Product saving still works if browser storage is unavailable.
+      }
+    };
+
+    const timer = window.setTimeout(() => persist(true), 400);
+    return () => {
+      window.clearTimeout(timer);
+      persist(false);
+    };
+  }, [draftReady, f, isNew, tab]);
 
   useEffect(() => {
     const data = product.data;
@@ -387,7 +448,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
       const result = await adminSaveProductFamily({
         data: {
           ...payload,
-          productId: isNew ? undefined : id,
+          productId: isNew ? undefined : (product.data?.legacy_product_id ?? undefined),
           slug: payload.slug,
           affiliate_commission_kind: payload.affiliate_commission_kind as
             "inherit" | "percentage" | "fixed",
@@ -414,9 +475,21 @@ export function ProductEditor({ productId: id }: { productId: string }) {
         });
       }
 
-      toast.success(isNew ? "Product created" : "Product saved");
+      if (result?.compatibility_mode) {
+        toast.warning(
+          "Core product saved. Apply the product-admin parity migration before saving SEO, shipping or refund fields.",
+        );
+      } else {
+        toast.success(isNew ? "Product created" : "Product saved");
+      }
 
       if (isNew && result?.product_id) {
+        try {
+          window.localStorage.removeItem(NEW_PRODUCT_DRAFT_KEY);
+        } catch {
+          // The product is already saved; unavailable browser storage is harmless.
+        }
+        setDraftSavedAt(null);
         nav({
           to: "/aurona-console-9f2x7k/products/$id",
 
@@ -437,9 +510,38 @@ export function ProductEditor({ productId: id }: { productId: string }) {
   }
 
   if (!isNew && product.isError) {
+    const message = product.error instanceof Error ? product.error.message : "";
+    const permissionError = /permission|forbidden/i.test(message);
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-        Could not load this product.
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">
+              {permissionError ? "Product access is not permitted" : "Could not load this product"}
+            </div>
+            <p className="mt-1 text-red-700">
+              {permissionError
+                ? "This admin account needs the catalog.manage permission."
+                : message === "Product not found"
+                  ? "The product or product family no longer exists. Return to the product list and choose another record."
+                  : "The product identifier could not be resolved. Retry the request or return to the product list."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => product.refetch()}
+                disabled={product.isFetching}
+              >
+                <RefreshCw className={`h-4 w-4 ${product.isFetching ? "animate-spin" : ""}`} />
+                Retry
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/aurona-console-9f2x7k/products">Back to products</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -470,11 +572,41 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           )}
         </div>
 
-        <Button onClick={save} disabled={saving} size="lg">
-          <Save className="mr-2 h-4 w-4" />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {isNew && draftSavedAt && (
+            <div className="mr-1 text-right text-xs text-slate-500">
+              Draft saved locally
+              <div>
+                {new Date(draftSavedAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            </div>
+          )}
+          {isNew && draftSavedAt && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (!window.confirm("Clear this unsaved product draft?")) return;
+                window.localStorage.removeItem(NEW_PRODUCT_DRAFT_KEY);
+                dirty.current = false;
+                setF(EMPTY);
+                setTab("general");
+                setDraftSavedAt(null);
+              }}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Clear draft
+            </Button>
+          )}
+          <Button onClick={save} disabled={saving} size="lg">
+            <Save className="mr-2 h-4 w-4" />
 
-          {saving ? "Saving…" : "Save Product"}
-        </Button>
+            {saving ? "Saving…" : "Save Product"}
+          </Button>
+        </div>
       </div>
 
       {/* ADMIN TABS - NO HORIZONTAL SLIDER */}

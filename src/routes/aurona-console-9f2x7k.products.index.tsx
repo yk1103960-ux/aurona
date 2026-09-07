@@ -42,7 +42,7 @@ type Sort =
   | "rating_desc";
 type FamilyRow = {
   id: string;
-  legacy_product_id: string;
+  legacy_product_id: string | null;
   name: string;
   main_sku: string;
   slug: string;
@@ -363,7 +363,7 @@ function ProductsAdmin() {
                 <td className="p-3">
                   <Link
                     to="/aurona-console-9f2x7k/products/$id"
-                    params={{ id: row.legacy_product_id }}
+                    params={{ id: row.legacy_product_id ?? row.id }}
                     className="font-medium hover:text-sky-700"
                   >
                     {row.name}
@@ -414,7 +414,7 @@ function ProductsAdmin() {
                     <Button asChild size="icon" variant="ghost" aria-label="Edit product family">
                       <Link
                         to="/aurona-console-9f2x7k/products/$id"
-                        params={{ id: row.legacy_product_id }}
+                        params={{ id: row.legacy_product_id ?? row.id }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Link>

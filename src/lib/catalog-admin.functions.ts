@@ -169,6 +169,64 @@ export const adminListProductFamilies = createServerFn({ method: "POST" })
     return { rows: rows ?? [], count: count ?? 0 };
   });
 
+export const adminGetProductForEdit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const families = (supabaseAdmin as any).from("product_families");
+
+    const byFamilyId = await families.select("*").eq("id", data.id).maybeSingle();
+    if (byFamilyId.error) throw new Error(byFamilyId.error.message);
+    if (byFamilyId.data) return { ...byFamilyId.data, editor_source: "family" as const };
+
+    const byLegacyId = await (supabaseAdmin as any)
+      .from("product_families")
+      .select("*")
+      .eq("legacy_product_id", data.id)
+      .maybeSingle();
+    if (byLegacyId.error && !/legacy_product_id|schema cache/i.test(byLegacyId.error.message)) {
+      throw new Error(byLegacyId.error.message);
+    }
+    if (byLegacyId.data) return { ...byLegacyId.data, editor_source: "family" as const };
+
+    const legacy = await (supabaseAdmin as any)
+      .from("products")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (legacy.error) throw new Error(legacy.error.message);
+    if (!legacy.data) throw new Error("Product not found");
+
+    const bySku = await (supabaseAdmin as any)
+      .from("product_families")
+      .select("*")
+      .eq("main_sku", legacy.data.sku)
+      .maybeSingle();
+    if (bySku.error) throw new Error(bySku.error.message);
+    if (bySku.data) {
+      return {
+        ...bySku.data,
+        legacy_product_id: bySku.data.legacy_product_id ?? legacy.data.id,
+        editor_source: "family" as const,
+      };
+    }
+
+    return {
+      ...legacy.data,
+      id: null,
+      legacy_product_id: legacy.data.id,
+      main_sku: legacy.data.sku,
+      min_mrp: legacy.data.mrp,
+      max_mrp: legacy.data.mrp,
+      min_price: legacy.data.price,
+      max_price: legacy.data.price,
+      total_stock: legacy.data.stock,
+      editor_source: "legacy" as const,
+    };
+  });
+
 export const adminBulkProductFamilyAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -195,15 +253,56 @@ export const adminBulkProductFamilyAction = createServerFn({ method: "POST" })
       _family_ids: data.familyIds,
       _action: data.action,
     });
-    if (error) throw new Error(error.message);
+    let compatibilityMode = false;
+
+    if (
+      error &&
+      /admin_set_product_family_state|could not find the function|schema cache/i.test(error.message)
+    ) {
+      compatibilityMode = true;
+      const statePatch: Record<string, boolean | string | null> = {};
+
+      if (data.action === "publish") statePatch.is_published = true;
+      if (data.action === "unpublish") statePatch.is_published = false;
+      if (data.action === "archive") {
+        statePatch.is_published = false;
+        statePatch.archived_at = new Date().toISOString();
+      }
+      if (data.action === "restore") statePatch.archived_at = null;
+      if (data.action === "feature") statePatch.is_featured = true;
+      if (data.action === "unfeature") statePatch.is_featured = false;
+      if (data.action === "deal") statePatch.is_bestseller = true;
+      if (data.action === "undeal") statePatch.is_bestseller = false;
+
+      const { data: updatedFamilies, error: updateError } = await (supabaseAdmin as any)
+        .from("product_families")
+        .update(statePatch)
+        .in("id", data.familyIds)
+        .select("id");
+      if (updateError) throw new Error(updateError.message);
+      if ((updatedFamilies?.length ?? 0) !== data.familyIds.length) {
+        throw new Error("One or more selected product families could not be updated");
+      }
+
+      // Phase 2A's existing refresh routine keeps the legacy products table in sync.
+      // The parity migration makes this whole operation atomic once it is applied.
+      for (const familyId of data.familyIds) {
+        const { error: refreshError } = await (supabaseAdmin as any).rpc("refresh_product_family", {
+          _family_id: familyId,
+        });
+        if (refreshError) throw new Error(refreshError.message);
+      }
+    } else if (error) {
+      throw new Error(error.message);
+    }
     await writeAudit({
       actorUserId: actor.userId,
       actorEmail: actor.email,
       action: `catalog.family_${data.action}`,
       entityType: "product_family",
-      after: { familyIds: data.familyIds },
+      after: { familyIds: data.familyIds, compatibilityMode },
     });
-    return { ok: true };
+    return { ok: true, compatibility_mode: compatibilityMode };
   });
 
 export const adminDuplicateProductFamily = createServerFn({ method: "POST" })
@@ -235,12 +334,24 @@ export const adminSaveProductFamily = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin as any).rpc(
+    let { data: result, error } = await (supabaseAdmin as any).rpc(
       "admin_upsert_product_family_v2",
       {
         _payload: { ...data, product_id: data.productId ?? null },
       },
     );
+    let compatibilityMode = false;
+    if (
+      error &&
+      /admin_upsert_product_family_v2|could not find the function|schema cache/i.test(error.message)
+    ) {
+      const fallback = await (supabaseAdmin as any).rpc("admin_upsert_product_family", {
+        _payload: { ...data, product_id: data.productId ?? null },
+      });
+      result = fallback.data;
+      error = fallback.error;
+      compatibilityMode = !fallback.error;
+    }
     if (error) throw new Error(error.message);
     await writeAudit({
       actorUserId: actor.userId,
@@ -250,7 +361,10 @@ export const adminSaveProductFamily = createServerFn({ method: "POST" })
       entityId: result?.family_id,
       after: { name: data.name, sku: data.sku, productId: result?.product_id },
     });
-    return result as { product_id: string; family_id: string };
+    return {
+      ...(result as { product_id: string; family_id: string }),
+      compatibility_mode: compatibilityMode,
+    };
   });
 
 export const adminSaveRelatedProductFamilies = createServerFn({ method: "POST" })
