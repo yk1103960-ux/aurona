@@ -493,14 +493,28 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
+    let { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
       _family_id: data.familyId,
       _variants: data.variants,
       _axes: data.axes,
       _actor_user_id: context.userId,
     });
+    let compatibilityMode = false;
+    if (
+      error &&
+      /admin_save_variant_matrix_v2|could not find the function|schema cache/i.test(error.message)
+    ) {
+      const fallback = await (supabaseAdmin as any).rpc("admin_save_variant_matrix", {
+        _family_id: data.familyId,
+        _variants: data.variants,
+        _axes: data.axes,
+        _actor_user_id: context.userId,
+      });
+      error = fallback.error;
+      compatibilityMode = !fallback.error;
+    }
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, compatibility_mode: compatibilityMode };
   });
 
 export const adminSetPrimaryProductImage = createServerFn({ method: "POST" })

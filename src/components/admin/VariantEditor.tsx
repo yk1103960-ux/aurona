@@ -66,6 +66,8 @@ type Tab = "options" | "customer" | "retailer" | "distributor" | "shipping";
 
 const COLS =
   "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
+const LEGACY_COLS =
+  "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
 
 const toNumber = (value: string): number | null => (value === "" ? null : Number(value));
 
@@ -99,13 +101,15 @@ const variantName = (row: Variant) => {
 export function VariantEditor({
   productSku,
   productId,
+  initialTab = "options",
 }: {
   productSku: string;
   productId: string;
+  initialTab?: Tab;
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>("options");
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   const dirty = useRef(false);
   const qc = useQueryClient();
@@ -149,12 +153,26 @@ export function VariantEditor({
         };
       }
 
-      const [{ data, error }, { data: axes, error: axesError }] = await Promise.all([
-        (supabase as any)
+      const loadVariants = async () => {
+        let result = await (supabase as any)
           .from("product_variants")
           .select(COLS)
           .eq("family_id", fam.id)
-          .order("sort_order"),
+          .order("sort_order");
+
+        if (result.error && /barcode|schema cache|does not exist/i.test(result.error.message)) {
+          result = await (supabase as any)
+            .from("product_variants")
+            .select(LEGACY_COLS)
+            .eq("family_id", fam.id)
+            .order("sort_order");
+        }
+
+        return result;
+      };
+
+      const [{ data, error }, { data: axes, error: axesError }] = await Promise.all([
+        loadVariants(),
 
         supabase
           .from("product_variant_axes")
@@ -168,7 +186,10 @@ export function VariantEditor({
 
       return {
         family: fam,
-        variants: (data ?? []) as Variant[],
+        variants: (data ?? []).map((row: Partial<Variant>) => ({
+          ...row,
+          barcode: row.barcode ?? "",
+        })) as Variant[],
         axes: (axes ?? []).map((axis: any) => ({
           ...axis,
           values: Array.isArray(axis.values) ? axis.values : [],
@@ -186,6 +207,10 @@ export function VariantEditor({
       setRows(q.data.variants);
     }
   }, [q.data]);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
 
   const family = q.data?.family;
   const axes = q.data?.axes ?? [];
@@ -249,7 +274,7 @@ export function VariantEditor({
     setSaving(true);
 
     try {
-      await adminSaveVariantMatrix({
+      const result = await adminSaveVariantMatrix({
         data: {
           familyId: family.id,
           axes,
@@ -281,7 +306,11 @@ export function VariantEditor({
         qc.invalidateQueries({ queryKey: [key] });
       }
 
-      toast.success("Variants saved");
+      if (result.compatibility_mode) {
+        toast.warning("Prices and variations saved. Apply the parity migration to save barcodes.");
+      } else {
+        toast.success("Variants saved");
+      }
       q.refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save variants");
@@ -1016,7 +1045,7 @@ function AxisEditor({
     setSaving(true);
 
     try {
-      await adminSaveVariantMatrix({
+      const result = await adminSaveVariantMatrix({
         data: {
           familyId,
           axes: rows.map((axis) => ({
@@ -1046,7 +1075,11 @@ function AxisEditor({
         qc.invalidateQueries({ queryKey: [key] });
       }
 
-      toast.success("Options saved");
+      if (result.compatibility_mode) {
+        toast.warning("Options and prices saved. Apply the parity migration to save barcodes.");
+      } else {
+        toast.success("Options saved");
+      }
       q.refetch();
       onSaved();
     } catch (error) {

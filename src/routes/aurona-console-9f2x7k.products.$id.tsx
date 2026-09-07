@@ -900,6 +900,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           isNew={isNew}
           sku={f.sku}
           id={id}
+          variantTab="customer"
           title="Customer Price & Stock"
           text="Customer MRP, price, discount, pack size, MOQ and stock are managed per SKU."
         />
@@ -912,6 +913,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           isNew={isNew}
           sku={f.sku}
           id={id}
+          variantTab="retailer"
           title="Retailer Price & Stock"
           text="Retailer pricing and retailer MOQ are managed per variation."
         />
@@ -924,6 +926,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           isNew={isNew}
           sku={f.sku}
           id={id}
+          variantTab="distributor"
           title="Distributor Price & Stock"
           text="Distributor pricing and distributor MOQ are managed per variation."
         />
@@ -1148,12 +1151,14 @@ function VariantArea({
   isNew,
   sku,
   id,
+  variantTab,
   title,
   text,
 }: {
   isNew: boolean;
   sku: string;
   id: string;
+  variantTab: "customer" | "retailer" | "distributor";
   title: string;
   text: string;
 }) {
@@ -1170,7 +1175,7 @@ function VariantArea({
     <div className="space-y-4">
       <Notice title={title} text={text} />
 
-      <VariantEditor productSku={sku} productId={id} />
+      <VariantEditor productSku={sku} productId={id} initialTab={variantTab} />
     </div>
   );
 }
