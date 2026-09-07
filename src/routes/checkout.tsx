@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Loader2, MapPin, Truck } from "lucide-react";
+import { ChevronLeft, Loader2, MapPin, Truck, Zap } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCheckoutSummary } from "@/hooks/useCheckoutSummary";
 import { FlowSteps } from "@/components/shop/FlowSteps";
@@ -11,6 +12,28 @@ import { inr } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageLoading } from "@/components/layout/PageLoading";
 
+const FASTRR_SELLER_ID = "6a9c33213cc84049ed79f2b2";
+
+declare global {
+  interface Window {
+    Fastrr?: {
+      init: (config: {
+        sellerId: string;
+        cart: {
+          items: Array<{
+            id: string;
+            name: string;
+            price: number;
+            quantity: number;
+            image: string;
+          }>;
+          totalPrice: number;
+        };
+      }) => void;
+    };
+  }
+}
+
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
@@ -21,7 +44,10 @@ export const Route = createFileRoute("/checkout")({
           "Review your Aurona order: delivery address, items, delivery charges and the final amount before payment.",
       },
       { property: "og:title", content: "Order Review — Aurona Lighting" },
-      { property: "og:description", content: "Review your Aurona order before payment." },
+      {
+        property: "og:description",
+        content: "Review your Aurona order before payment.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -34,6 +60,7 @@ function CheckoutPage() {
   const s = useCheckoutSummary();
 
   if (s.authLoading) return <PageLoading label="Loading checkout" />;
+
   if (!s.user)
     return (
       <EmptyState
@@ -45,6 +72,7 @@ function CheckoutPage() {
         secondary={{ label: "Continue browsing", to: "/products" }}
       />
     );
+
   if (!s.cart.loading && s.cart.items.length === 0)
     return (
       <EmptyState
@@ -55,6 +83,7 @@ function CheckoutPage() {
         primary={{ label: "Explore products", to: "/products" }}
       />
     );
+
   if (s.hydrated && !s.address && !s.addressesLoading)
     return (
       <EmptyState
@@ -70,15 +99,70 @@ function CheckoutPage() {
   const deliveryKnown = s.rates.length > 0;
   const canPay = Boolean(s.address) && deliveryKnown && s.cart.items.length > 0;
 
+  const handleFastrrCheckout = () => {
+    if (!canPay) {
+      toast.error("Please select a valid delivery option first.");
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+
+    if (!window.Fastrr) {
+      toast.error("Fastrr Checkout is still loading. Please try again.");
+      return;
+    }
+
+    try {
+      const items = s.cart.items.map((item) => {
+        const product = item.products;
+
+        if (!product.sku) {
+          throw new Error(`${product.name} does not have a valid SKU.`);
+        }
+
+        return {
+          /*
+           * Aurona's Fastrr catalog publishes the variant ID as the SKU,
+           * so checkout must send the same SKU value here.
+           */
+          id: String(product.sku),
+          name: String(product.name),
+          price: Number(product.price),
+          quantity: Number(item.quantity),
+          image: product.image_url ? String(product.image_url) : "",
+        };
+      });
+
+      if (items.length === 0) {
+        toast.error("Your cart is empty.");
+        return;
+      }
+
+      window.Fastrr.init({
+        sellerId: FASTRR_SELLER_ID,
+        cart: {
+          items,
+          totalPrice: Number(s.total),
+        },
+      });
+    } catch (error) {
+      console.error("[fastrr-checkout]", error);
+
+      toast.error(error instanceof Error ? error.message : "Unable to start Fastrr Checkout.");
+    }
+  };
+
   return (
-    <div className="pb-28 lg:pb-10">
+    <div className="pb-36 lg:pb-10">
       <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="container-x flex items-center gap-3 py-3">
           <Link to="/address" className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-surface">
             <ChevronLeft className="h-5 w-5" />
           </Link>
+
           <h1 className="min-w-0 flex-1 truncate text-lg font-bold">Order review</h1>
         </div>
+
         <div className="container-x pb-3">
           <FlowSteps current="checkout" />
         </div>
@@ -89,17 +173,18 @@ function CheckoutPage() {
           {/* Address */}
           <section className="rounded-2xl border border-border p-4">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                Delivery address
-              </h2>
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">Delivery address</h2>
+
               <Link to="/address" className="text-xs font-bold text-primary">
                 Change
               </Link>
             </div>
+
             {s.address ? (
               <p className="mt-3 text-sm leading-relaxed">
                 <span className="font-semibold">{s.address.full_name}</span>
                 <br />
+
                 <span className="text-muted-foreground">
                   {s.address.line1}
                   {s.address.line2 ? `, ${s.address.line2}` : ""}
@@ -120,6 +205,7 @@ function CheckoutPage() {
             <h2 className="border-b border-border p-4 text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
               {s.cart.count} item{s.cart.count === 1 ? "" : "s"}
             </h2>
+
             <ul className="divide-y divide-border">
               {s.cart.items.map((it) => (
                 <li key={it.id} className="flex gap-3 p-4">
@@ -128,13 +214,14 @@ function CheckoutPage() {
                     className="h-16 w-16 shrink-0 rounded-xl"
                     iconClassName="h-6 w-6"
                   />
+
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-2 text-sm font-semibold">{it.products.name}</p>
+
                     <p className="mt-0.5 text-xs text-muted-foreground">Qty {it.quantity}</p>
                   </div>
-                  <div className="shrink-0 text-sm font-bold">
-                    {inr(Number(it.products.price) * it.quantity)}
-                  </div>
+
+                  <div className="shrink-0 text-sm font-bold">{inr(Number(it.products.price) * it.quantity)}</div>
                 </li>
               ))}
             </ul>
@@ -142,19 +229,17 @@ function CheckoutPage() {
 
           {/* Delivery */}
           <section className="rounded-2xl border border-border p-4">
-            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              Delivery
-            </h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">Delivery</h2>
+
             {s.deliveryLoading ? (
               <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Calculating delivery for{" "}
-                {s.address?.pincode}…
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Calculating delivery for {s.address?.pincode}…
               </div>
             ) : s.rates.length === 0 ? (
               <div className="mt-3 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Sorry, delivery is not available to this pincode.
-                </p>
+                <p className="text-sm text-muted-foreground">Sorry, delivery is not available to this pincode.</p>
+
                 <Button asChild variant="outline" size="sm" className="rounded-full">
                   <Link to="/address">Change address</Link>
                 </Button>
@@ -177,11 +262,14 @@ function CheckoutPage() {
                         checked={s.rate?.id === r.id}
                         onChange={() => s.patchFlow({ rateId: r.id })}
                       />
+
                       <span className="min-w-0">
                         <span className="block font-semibold">{r.label}</span>
+
                         <span className="block text-xs text-muted-foreground">Arrives in {r.eta}</span>
                       </span>
                     </span>
+
                     <span className={cn("shrink-0 font-bold", r.price === 0 && "text-success")}>
                       {r.price === 0 ? "FREE" : inr(r.price)}
                     </span>
@@ -202,7 +290,8 @@ function CheckoutPage() {
           />
         </div>
 
-        <aside className="h-fit space-y-4 lg:sticky lg:top-24">
+        {/* Desktop summary */}
+        <aside className="h-fit space-y-3 lg:sticky lg:top-24">
           <PriceDetails
             count={s.cart.count}
             subtotal={s.subtotal}
@@ -213,33 +302,66 @@ function CheckoutPage() {
             deliveryKnown={deliveryKnown}
             total={s.total}
           />
+
           <Button
+            type="button"
+            className="hidden h-12 w-full rounded-full text-base lg:flex"
+            disabled={!canPay}
+            onClick={handleFastrrCheckout}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Buy with Fastrr
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
             className="hidden h-12 w-full rounded-full text-base lg:flex"
             disabled={!canPay}
             onClick={() => navigate({ to: "/payment" })}
           >
             Continue to payment
           </Button>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Fast checkout with Fastrr or continue with Aurona's existing payment flow.
+          </p>
+
           <p className="text-center text-xs text-muted-foreground">
             The final amount is confirmed by our servers before payment.
           </p>
         </aside>
       </div>
 
+      {/* Mobile checkout bar */}
       <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border bg-background px-4 py-3 lg:hidden">
-        <div className="flex items-center gap-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Total</div>
+
             <div className="text-lg font-bold leading-tight">{inr(s.total)}</div>
           </div>
+
           <Button
+            type="button"
             className="h-12 flex-1 rounded-full text-base"
             disabled={!canPay}
-            onClick={() => navigate({ to: "/payment" })}
+            onClick={handleFastrrCheckout}
           >
-            Continue to payment
+            <Zap className="mr-2 h-4 w-4" />
+            Buy with Fastrr
           </Button>
         </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 w-full rounded-full"
+          disabled={!canPay}
+          onClick={() => navigate({ to: "/payment" })}
+        >
+          Continue to payment
+        </Button>
       </div>
     </div>
   );
