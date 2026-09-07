@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Archive, Pencil, Plus } from "lucide-react";
+import { AlertTriangle, Archive, Pencil, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,27 @@ const KINDS: { key: Kind; label: string; help: string }[] = [
   },
 ];
 
+function optionLoadError(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (/catalog_options|schema cache|relation .* does not exist/i.test(message)) {
+    return {
+      title: "Catalog options database setup is required",
+      detail:
+        "Apply migration 20260907160000_product_admin_parity.sql, then reload this page. No production data should be changed until that migration is authorized.",
+    };
+  }
+  if (/permission|forbidden/i.test(message)) {
+    return {
+      title: "Catalog permission is missing",
+      detail: "This admin account needs the catalog.manage permission before it can manage options.",
+    };
+  }
+  return {
+    title: "Catalog options could not be loaded",
+    detail: "Check the database connection and retry. No changes have been made.",
+  };
+}
+
 function CatalogOptions() {
   const [kind, setKind] = useState<Kind>("brand");
   const [editing, setEditing] = useState<Row | null>(null);
@@ -52,6 +73,7 @@ function CatalogOptions() {
   const q = useQuery({
     queryKey: ["admin-catalog-options", kind],
     queryFn: () => adminListCatalogOptions({ data: { kind } }),
+    retry: false,
   });
   const reset = () => {
     setEditing(null);
@@ -102,6 +124,7 @@ function CatalogOptions() {
     }
   };
   const current = KINDS.find((x) => x.key === kind)!;
+  const loadError = q.isError ? optionLoadError(q.error) : null;
   return (
     <div className="space-y-4">
       <div>
@@ -124,6 +147,21 @@ function CatalogOptions() {
           </Button>
         ))}
       </div>
+      {loadError && (
+        <div role="alert" className="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 sm:flex-row sm:items-center">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{loadError.title}</p>
+            <p className="mt-0.5 text-sm text-amber-800">{loadError.detail}</p>
+          </div>
+          <Button variant="outline" onClick={() => q.refetch()} disabled={q.isFetching}>
+            <RefreshCw className={`h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} />
+            Retry
+          </Button>
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="overflow-hidden rounded-xl border bg-white">
           <div className="border-b p-4">
@@ -140,6 +178,13 @@ function CatalogOptions() {
               </tr>
             </thead>
             <tbody className="divide-y">
+              {q.isLoading && (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-500">
+                    Loading {current.label.toLowerCase()}…
+                  </td>
+                </tr>
+              )}
               {((q.data ?? []) as Row[]).map((row) => (
                 <tr key={row.id}>
                   <td className="p-3 font-medium">{row.name}</td>
@@ -167,7 +212,7 @@ function CatalogOptions() {
                   </td>
                 </tr>
               ))}
-              {!q.isLoading && !q.data?.length && (
+              {!q.isLoading && !q.isError && !q.data?.length && (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-slate-500">
                     No {current.label.toLowerCase()} yet.
@@ -181,38 +226,40 @@ function CatalogOptions() {
           <h2 className="font-semibold">
             {editing ? `Edit ${editing.name}` : `Add ${current.label.replace(/s$/, "")}`}
           </h2>
-          <label className="block text-xs font-medium text-slate-600">
-            Name
-            <Input className="mt-1" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="block text-xs font-medium text-slate-600">
-            {kind === "colour" ? "Hex code" : "Code (optional)"}
-            <Input
-              className="mt-1"
-              value={code}
-              placeholder={kind === "colour" ? "#ffffff" : "Optional"}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </label>
-          <label className="block text-xs font-medium text-slate-600">
-            Description / Details
-            <Input className="mt-1" value={details} onChange={(e) => setDetails(e.target.value)} />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-            Active
-          </label>
-          <div className="flex gap-2">
-            <Button onClick={save} disabled={busy}>
-              <Plus className="mr-1 h-4 w-4" />
-              {editing ? "Save Changes" : "Add Option"}
-            </Button>
-            {editing && (
-              <Button variant="outline" onClick={reset}>
-                Cancel
+          <fieldset disabled={q.isError || busy} className="space-y-3 disabled:opacity-60">
+            <label className="block text-xs font-medium text-slate-600">
+              Name
+              <Input className="mt-1" value={name} onChange={(e) => setName(e.target.value)} />
+            </label>
+            <label className="block text-xs font-medium text-slate-600">
+              {kind === "colour" ? "Hex code" : "Code (optional)"}
+              <Input
+                className="mt-1"
+                value={code}
+                placeholder={kind === "colour" ? "#ffffff" : "Optional"}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </label>
+            <label className="block text-xs font-medium text-slate-600">
+              Description / Details
+              <Input className="mt-1" value={details} onChange={(e) => setDetails(e.target.value)} />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+              Active
+            </label>
+            <div className="flex gap-2">
+              <Button onClick={save} disabled={busy || q.isError}>
+                <Plus className="mr-1 h-4 w-4" />
+                {editing ? "Save Changes" : "Add Option"}
               </Button>
-            )}
-          </div>
+              {editing && (
+                <Button variant="outline" onClick={reset}>
+                  Cancel
+                </Button>
+              )}
+            </div>
+          </fieldset>
         </div>
       </div>
     </div>
