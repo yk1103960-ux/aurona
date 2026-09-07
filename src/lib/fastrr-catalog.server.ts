@@ -252,7 +252,7 @@ export async function loadCollections(url: URL) {
     title: String(c.name),
     description: "",
     group: String(c.parent_group ?? ""),
-    image_url: absoluteOrNull(c.icon),
+    image_url: imageOrNull(c.icon),
     url: `${SITE_ORIGIN}/category/${c.slug}`,
     position: num(c.sort_order),
   }));
@@ -306,6 +306,13 @@ function absolute(value: unknown): string {
   const s = String(value ?? "");
   if (!s) return "";
   return s.startsWith("http") ? s : `${SITE_ORIGIN}${s.startsWith("/") ? "" : "/"}${s}`;
+}
+
+function imageOrNull(value: unknown): string | null {
+  // categories.icon holds an icon name, not always an image path.
+  const s = String(value ?? "");
+  if (!s || !(s.startsWith("http") || s.startsWith("/"))) return null;
+  return absolute(s);
 }
 
 function absoluteOrNull(value: unknown): string | null {
