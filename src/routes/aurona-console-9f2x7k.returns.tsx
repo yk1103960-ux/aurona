@@ -276,19 +276,19 @@ function Card({
         {r.status === "requested" &&
           (isCancellation ? (
             <>
-              <Button size="sm" disabled={busy} onClick={() => rule("approve")}>
+              <Button size="sm" variant="success" disabled={busy} onClick={() => rule("approve")}>
                 {busy ? "Working…" : "Approve & cancel order"}
               </Button>
-              <Button size="sm" variant="outline" disabled={busy} onClick={() => rule("reject")}>
+              <Button size="sm" variant="destructive" disabled={busy} onClick={() => rule("reject")}>
                 Reject request
               </Button>
             </>
           ) : (
             <>
-              <Button size="sm" onClick={() => decide("approved")}>
+              <Button size="sm" variant="success" onClick={() => decide("approved")}>
                 Approve
               </Button>
-              <Button size="sm" variant="outline" onClick={() => decide("rejected")}>
+              <Button size="sm" variant="destructive" onClick={() => decide("rejected")}>
                 Reject
               </Button>
             </>
@@ -309,10 +309,10 @@ function Card({
         )}
         {r.kind !== "replacement" && (
           <>
-            <Button size="sm" variant="outline" onClick={() => decide("refund_initiated")}>
+            <Button size="sm" variant="warning" onClick={() => decide("refund_initiated")}>
               Refund initiated
             </Button>
-            <Button size="sm" variant="outline" onClick={() => decide("refunded")}>
+            <Button size="sm" variant="success" onClick={() => decide("refunded")}>
               Mark refunded
             </Button>
           </>

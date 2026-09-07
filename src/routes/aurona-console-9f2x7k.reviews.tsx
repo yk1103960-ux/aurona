@@ -96,10 +96,10 @@ function Review({
             onChange={(e) => setNote(e.target.value)}
             placeholder="Moderation note (optional)"
           />
-          <Button size="sm" onClick={() => act(r.id, "published", note)}>
+          <Button size="sm" variant="success" onClick={() => act(r.id, "published", note)}>
             Publish
           </Button>
-          <Button size="sm" variant="outline" onClick={() => act(r.id, "rejected", note)}>
+          <Button size="sm" variant="destructive" onClick={() => act(r.id, "rejected", note)}>
             Reject
           </Button>
         </div>

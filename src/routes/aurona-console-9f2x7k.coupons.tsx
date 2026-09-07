@@ -147,8 +147,8 @@ function CouponsAdmin() {
                 <td className="px-4 py-3 text-xs">{c.eligible_roles.join(", ")}</td>
                 <td className="px-4 py-3">{c.active ? <span className="text-emerald-600">Active</span> : <span className="text-slate-400">Inactive</span>}</td>
                 <td className="px-4 py-3 text-right">
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(c)}><Edit3 className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="w-4 h-4 text-rose-500" /></Button>
+                  <Button size="icon" variant="ghost" aria-label={`Edit coupon ${c.code}`} onClick={() => setEditing(c)}><Edit3 className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="destructive" aria-label={`Archive coupon ${c.code}`} onClick={() => remove(c.id)}><Trash2 className="w-4 h-4" /></Button>
                 </td>
               </tr>
             ))}

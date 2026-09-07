@@ -68,8 +68,8 @@ function CategoriesAdmin() {
                       <div className="text-xs text-slate-500">{c.slug} • order {c.sort_order}</div>
                     </div>
                     <div className="flex gap-1">
-                      <button onClick={() => startEdit(c)} className="p-1.5 hover:bg-slate-100 rounded"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => remove(c.id)} className="p-1.5 hover:bg-rose-50 text-rose-600 rounded"><Trash2 className="w-4 h-4" /></button>
+                      <Button size="icon" variant="ghost" aria-label={`Edit ${c.name}`} onClick={() => startEdit(c)}><Pencil className="w-4 h-4" /></Button>
+                      <Button size="icon" variant="destructive" aria-label={`Delete ${c.name}`} onClick={() => remove(c.id)}><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 ))}

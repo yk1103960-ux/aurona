@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  FileUp,
   Pencil,
   Plus,
   RotateCcw,
@@ -176,6 +177,7 @@ function ProductsAdmin() {
             variant="outline"
             onClick={() => nav({ to: "/aurona-console-9f2x7k/products/bulk" })}
           >
+            <FileUp className="h-4 w-4" />
             Bulk Import / Export
           </Button>
           <Button onClick={() => nav({ to: "/aurona-console-9f2x7k/products/new" })}>
@@ -404,66 +406,66 @@ function ProductsAdmin() {
                 </td>
                 <td className="p-3">
                   <div className="flex justify-end gap-1">
-                    <Link
-                      to="/products/$slug"
-                      params={{ slug: row.slug }}
-                      target="_blank"
-                      className="rounded p-2 hover:bg-slate-100"
-                      title="View storefront"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Link>
-                    <Link
-                      to="/aurona-console-9f2x7k/products/$id"
-                      params={{ id: row.legacy_product_id }}
-                      className="rounded p-2 hover:bg-slate-100"
-                      title="Edit family"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Link>
+                    <Button asChild size="icon" variant="ghost" aria-label="View storefront">
+                      <Link to="/products/$slug" params={{ slug: row.slug }} target="_blank">
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button asChild size="icon" variant="ghost" aria-label="Edit product family">
+                      <Link
+                        to="/aurona-console-9f2x7k/products/$id"
+                        params={{ id: row.legacy_product_id }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                    </Button>
                     {!row.archived_at && (
                       <>
-                        <button
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={row.is_published ? "Hide product" : "Publish product"}
                           disabled={busy}
                           onClick={() =>
                             runAction(row.is_published ? "unpublish" : "publish", [row.id])
                           }
-                          className="rounded p-2 hover:bg-slate-100"
-                          title={row.is_published ? "Hide" : "Publish"}
                         >
                           {row.is_published ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
                           )}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Duplicate complete product family"
                           disabled={busy}
                           onClick={() => duplicate(row.id)}
-                          className="rounded p-2 hover:bg-slate-100"
-                          title="Duplicate complete family"
                         >
                           <Copy className="h-4 w-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          aria-label="Archive product family"
                           disabled={busy}
                           onClick={() => runAction("archive", [row.id])}
-                          className="rounded p-2 text-rose-600 hover:bg-rose-50"
-                          title="Archive"
                         >
                           <Archive className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </>
                     )}
                     {row.archived_at && (
-                      <button
+                      <Button
+                        size="icon"
+                        variant="success"
+                        aria-label="Restore product family"
                         disabled={busy}
                         onClick={() => runAction("restore", [row.id])}
-                        className="rounded p-2 text-emerald-700 hover:bg-emerald-50"
-                        title="Restore"
                       >
                         <RotateCcw className="h-4 w-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </td>

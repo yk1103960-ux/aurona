@@ -146,6 +146,14 @@ export function AdminShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(["Products"]));
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    document.body.dataset.adminConsole = "true";
+    return () => {
+      delete document.body.dataset.adminConsole;
+    };
+  }, [isAdmin]);
+
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setMenuOpen(false);
@@ -226,11 +234,11 @@ export function AdminShell() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 w-64 max-w-[82vw] bg-slate-950 text-slate-100 flex flex-col z-50 transition-transform duration-300 lg:w-60 lg:translate-x-0 ${
+        className={`admin-sidebar fixed inset-y-0 left-0 z-50 flex w-72 max-w-[86vw] flex-col bg-slate-950 text-slate-100 shadow-2xl transition-transform duration-300 lg:w-64 lg:translate-x-0 lg:shadow-none ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-5 py-5">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-amber-400" />
             <div>
@@ -248,7 +256,7 @@ export function AdminShell() {
             <X className="w-5 h-5" />
           </Button>
         </div>
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           <AdminNavLink item={DASHBOARD} pathname={loc.pathname} />
           {NAV_GROUPS.map((group) => {
             const containsActive = group.items.some((item) => isNavActive(item, loc.pathname));
@@ -301,8 +309,28 @@ export function AdminShell() {
           </Link>
         </div>
       </aside>
-      <main className="min-h-screen lg:pl-60">
-        <div className="p-4 sm:p-6 max-w-[1400px] min-w-0">
+      <main className="min-h-screen lg:pl-64">
+        <header className="admin-topbar sticky top-0 z-20 hidden h-16 items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 backdrop-blur lg:flex">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-medium text-slate-400">Admin</span>
+            <span className="text-slate-300">/</span>
+            <span className="font-semibold text-slate-700">
+              {[DASHBOARD, ...NAV_GROUPS.flatMap((group) => group.items)].find((item) =>
+                isNavActive(item, loc.pathname),
+              )?.label ?? "Console"}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-xs font-bold text-sky-700">
+              {(user.email?.[0] ?? "A").toUpperCase()}
+            </span>
+            <div className="text-right">
+              <div className="text-xs font-semibold text-slate-700">Administrator</div>
+              <div className="max-w-56 truncate text-[11px] text-slate-400">{user.email}</div>
+            </div>
+          </div>
+        </header>
+        <div className="mx-auto min-w-0 max-w-[1480px] p-4 sm:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>

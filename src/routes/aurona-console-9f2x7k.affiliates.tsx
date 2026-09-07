@@ -282,7 +282,7 @@ function AffiliatesTab({ data, refresh }: { data: Data; refresh: () => void }) {
               <td className="px-3 py-2">
                 <div className="flex flex-wrap gap-1">
                   {a.status !== "approved" && (
-                    <Button size="sm" variant="outline" disabled={busy === a.id} onClick={() => setStatus(a.id, "approved")}>
+                    <Button size="sm" variant="success" disabled={busy === a.id} onClick={() => setStatus(a.id, "approved")}>
                       Approve
                     </Button>
                   )}
@@ -292,7 +292,7 @@ function AffiliatesTab({ data, refresh }: { data: Data; refresh: () => void }) {
                     </Button>
                   )}
                   {a.status !== "rejected" && (
-                    <Button size="sm" variant="ghost" disabled={busy === a.id} onClick={() => setStatus(a.id, "rejected")}>
+                    <Button size="sm" variant="destructive" disabled={busy === a.id} onClick={() => setStatus(a.id, "rejected")}>
                       Reject
                     </Button>
                   )}

@@ -17,6 +17,10 @@ const buttonVariants = cva(
           "border border-primary/25 bg-background/60 text-foreground backdrop-blur-sm shadow-[0_1px_2px_rgba(10,132,209,0.06)] hover:border-primary/50 hover:bg-primary/5 hover:text-primary hover:-translate-y-0.5",
         secondary:
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+        success:
+          "bg-success text-success-foreground shadow-sm hover:bg-success/90",
+        warning:
+          "bg-amber-500 text-slate-950 shadow-sm hover:bg-amber-400",
         ghost: "hover:bg-primary/10 hover:text-primary",
         link: "text-primary underline-offset-4 hover:underline rounded-md",
       },
@@ -40,10 +44,18 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, title, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <Comp
+        data-slot="button"
+        data-variant={variant ?? "default"}
+        data-size={size ?? "default"}
+        className={cn(buttonVariants({ variant, size, className }))}
+        title={title ?? props["aria-label"]}
+        ref={ref}
+        {...props}
+      />
     );
   },
 );

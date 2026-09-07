@@ -53,14 +53,14 @@ function AdminDashboard() {
 
   const d = q.data;
   const cards = [
-    { label: "Total Revenue", value: d ? inr(d.totalRevenue) : "…", icon: IndianRupee, tone: "emerald" },
-    { label: "Total Orders", value: d?.totalOrders ?? "…", icon: ShoppingCart, tone: "sky" },
-    { label: "Products", value: d ? `${d.publishedProducts} / ${d.totalProducts}` : "…", icon: Package, tone: "violet" },
-    { label: "Categories", value: d?.totalCategories ?? "…", icon: FolderTree, tone: "amber" },
-    { label: "Customers", value: d?.totalCustomers ?? "…", icon: Users, tone: "rose" },
-    { label: "Pending", value: d?.pending ?? "…", icon: Clock, tone: "amber" },
-    { label: "Completed", value: d?.completed ?? "…", icon: CheckCircle2, tone: "emerald" },
-    { label: "Cancelled", value: d?.cancelled ?? "…", icon: XCircle, tone: "rose" },
+    { label: "Total Revenue", value: d ? inr(d.totalRevenue) : "…", icon: IndianRupee, tone: "bg-emerald-50 text-emerald-700" },
+    { label: "Total Orders", value: d?.totalOrders ?? "…", icon: ShoppingCart, tone: "bg-sky-50 text-sky-700" },
+    { label: "Products", value: d ? `${d.publishedProducts} / ${d.totalProducts}` : "…", icon: Package, tone: "bg-violet-50 text-violet-700" },
+    { label: "Categories", value: d?.totalCategories ?? "…", icon: FolderTree, tone: "bg-amber-50 text-amber-700" },
+    { label: "Customers", value: d?.totalCustomers ?? "…", icon: Users, tone: "bg-rose-50 text-rose-700" },
+    { label: "Pending", value: d?.pending ?? "…", icon: Clock, tone: "bg-amber-50 text-amber-700" },
+    { label: "Completed", value: d?.completed ?? "…", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-700" },
+    { label: "Cancelled", value: d?.cancelled ?? "…", icon: XCircle, tone: "bg-rose-50 text-rose-700" },
   ];
 
   return (
@@ -72,10 +72,12 @@ function AdminDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div key={c.label} className="admin-stat-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">{c.label}</div>
-              <c.icon className={`w-4 h-4 text-${c.tone}-500`} />
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{c.label}</div>
+              <span className={`grid h-9 w-9 place-items-center rounded-lg ${c.tone}`}>
+                <c.icon className="h-4 w-4" />
+              </span>
             </div>
             <div className="mt-2 text-2xl font-semibold">{c.value}</div>
           </div>

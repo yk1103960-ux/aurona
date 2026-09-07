@@ -99,8 +99,8 @@ function MediaTile({ m, onDelete, onCopy }: { m: { id: string; path: string; nam
       </div>
       <div className="p-2 text-xs truncate">{m.name}</div>
       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition flex gap-1">
-        <button onClick={onCopy} className="p-1.5 bg-white/95 hover:bg-white rounded shadow"><Copy className="w-3.5 h-3.5" /></button>
-        <button onClick={onDelete} className="p-1.5 bg-white/95 hover:bg-white text-rose-600 rounded shadow"><Trash2 className="w-3.5 h-3.5" /></button>
+        <Button size="icon" variant="secondary" aria-label={`Copy URL for ${m.name}`} onClick={onCopy}><Copy className="w-3.5 h-3.5" /></Button>
+        <Button size="icon" variant="destructive" aria-label={`Delete ${m.name}`} onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /></Button>
       </div>
     </div>
   );

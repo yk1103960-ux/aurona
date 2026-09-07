@@ -284,7 +284,7 @@ function ApplicationsPage() {
                     >
                       Mark under review
                     </Button>
-                    <Button disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
+                    <Button variant="success" disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
                       Verify & approve
                     </Button>
                     <Button
@@ -308,7 +308,7 @@ function ApplicationsPage() {
                 )}
 
                 {open.status === "disabled" && (
-                  <Button disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
+                  <Button variant="success" disabled={mut.isPending} onClick={() => mut.mutate({ id: open.id, decision: "approved" })}>
                     Re-enable access
                   </Button>
                 )}

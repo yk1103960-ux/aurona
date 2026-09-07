@@ -211,11 +211,11 @@ function ContentAdmin() {
                     <span className="text-slate-400">Draft</span>
                   )}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => setEditing(b)}>
+                <Button size="icon" variant="ghost" aria-label={`Edit ${b.title || b.key}`} onClick={() => setEditing(b)}>
                   <Edit3 className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(b.id)}>
-                  <Trash2 className="w-4 h-4 text-rose-500" />
+                <Button size="icon" variant="destructive" aria-label={`Delete ${b.title || b.key}`} onClick={() => remove(b.id)}>
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             ))}

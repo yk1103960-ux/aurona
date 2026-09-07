@@ -147,20 +147,22 @@ function CatalogOptions() {
                   <td className="p-3">{row.active ? "Active" : "Inactive"}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
-                      <button
-                        className="rounded p-2 hover:bg-slate-100"
-                        title="Edit"
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Edit ${row.name}`}
                         onClick={() => edit(row)}
                       >
                         <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="rounded p-2 text-rose-600 hover:bg-rose-50"
-                        title="Archive"
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        aria-label={`Archive ${row.name}`}
                         onClick={() => archive(row.id)}
                       >
                         <Archive className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
