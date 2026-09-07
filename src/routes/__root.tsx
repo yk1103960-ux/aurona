@@ -160,6 +160,9 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+
+        {/* Fastrr Checkout SDK */}
+        <script src="https://fastrr-cdn.pickrr.com/fastrr-loader.js"></script>
       </head>
 
       <body>
