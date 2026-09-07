@@ -88,6 +88,9 @@ import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/publi
 import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public/delivery-status'
 import { Route as ApiPublicCartRemindersRouteImport } from './routes/api/public/cart-reminders'
 import { Route as ApiPublicProductImageSplatRouteImport } from './routes/api/public/product-image.$'
+import { Route as ApiPublicFastrrProductsRouteImport } from './routes/api/public/fastrr/products'
+import { Route as ApiPublicFastrrCollectionsRouteImport } from './routes/api/public/fastrr/collections'
+import { Route as ApiPublicFastrrCollectionsIdProductsRouteImport } from './routes/api/public/fastrr/collections.$id.products'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -520,6 +523,23 @@ const ApiPublicProductImageSplatRoute =
     path: '/api/public/product-image/$',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFastrrProductsRoute = ApiPublicFastrrProductsRouteImport.update({
+  id: '/api/public/fastrr/products',
+  path: '/api/public/fastrr/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFastrrCollectionsRoute =
+  ApiPublicFastrrCollectionsRouteImport.update({
+    id: '/api/public/fastrr/collections',
+    path: '/api/public/fastrr/collections',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicFastrrCollectionsIdProductsRoute =
+  ApiPublicFastrrCollectionsIdProductsRouteImport.update({
+    id: '/$id/products',
+    path: '/$id/products',
+    getParentRoute: () => ApiPublicFastrrCollectionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -600,7 +620,10 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
   '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
   '/aurona-console-9f2x7k/products/': typeof AuronaConsole9f2x7kProductsIndexRoute
+  '/api/public/fastrr/collections': typeof ApiPublicFastrrCollectionsRouteWithChildren
+  '/api/public/fastrr/products': typeof ApiPublicFastrrProductsRoute
   '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
+  '/api/public/fastrr/collections/$id/products': typeof ApiPublicFastrrCollectionsIdProductsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -678,7 +701,10 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
   '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
   '/aurona-console-9f2x7k/products': typeof AuronaConsole9f2x7kProductsIndexRoute
+  '/api/public/fastrr/collections': typeof ApiPublicFastrrCollectionsRouteWithChildren
+  '/api/public/fastrr/products': typeof ApiPublicFastrrProductsRoute
   '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
+  '/api/public/fastrr/collections/$id/products': typeof ApiPublicFastrrCollectionsIdProductsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -760,7 +786,10 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
   '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
   '/aurona-console-9f2x7k/products/': typeof AuronaConsole9f2x7kProductsIndexRoute
+  '/api/public/fastrr/collections': typeof ApiPublicFastrrCollectionsRouteWithChildren
+  '/api/public/fastrr/products': typeof ApiPublicFastrrProductsRoute
   '/api/public/product-image/$': typeof ApiPublicProductImageSplatRoute
+  '/api/public/fastrr/collections/$id/products': typeof ApiPublicFastrrCollectionsIdProductsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -843,7 +872,10 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/new'
     | '/aurona-console-9f2x7k/products/options'
     | '/aurona-console-9f2x7k/products/'
+    | '/api/public/fastrr/collections'
+    | '/api/public/fastrr/products'
     | '/api/public/product-image/$'
+    | '/api/public/fastrr/collections/$id/products'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -921,7 +953,10 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/new'
     | '/aurona-console-9f2x7k/products/options'
     | '/aurona-console-9f2x7k/products'
+    | '/api/public/fastrr/collections'
+    | '/api/public/fastrr/products'
     | '/api/public/product-image/$'
+    | '/api/public/fastrr/collections/$id/products'
   id:
     | '__root__'
     | '/'
@@ -1002,7 +1037,10 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/new'
     | '/aurona-console-9f2x7k/products/options'
     | '/aurona-console-9f2x7k/products/'
+    | '/api/public/fastrr/collections'
+    | '/api/public/fastrr/products'
     | '/api/public/product-image/$'
+    | '/api/public/fastrr/collections/$id/products'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1048,6 +1086,8 @@ export interface RootRouteChildren {
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicShiprocketWebhookRoute: typeof ApiPublicShiprocketWebhookRoute
   ApiPublicSyncShipmentsRoute: typeof ApiPublicSyncShipmentsRoute
+  ApiPublicFastrrCollectionsRoute: typeof ApiPublicFastrrCollectionsRouteWithChildren
+  ApiPublicFastrrProductsRoute: typeof ApiPublicFastrrProductsRoute
   ApiPublicProductImageSplatRoute: typeof ApiPublicProductImageSplatRoute
 }
 
@@ -1606,6 +1646,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicProductImageSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/fastrr/products': {
+      id: '/api/public/fastrr/products'
+      path: '/api/public/fastrr/products'
+      fullPath: '/api/public/fastrr/products'
+      preLoaderRoute: typeof ApiPublicFastrrProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/fastrr/collections': {
+      id: '/api/public/fastrr/collections'
+      path: '/api/public/fastrr/collections'
+      fullPath: '/api/public/fastrr/collections'
+      preLoaderRoute: typeof ApiPublicFastrrCollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/fastrr/collections/$id/products': {
+      id: '/api/public/fastrr/collections/$id/products'
+      path: '/$id/products'
+      fullPath: '/api/public/fastrr/collections/$id/products'
+      preLoaderRoute: typeof ApiPublicFastrrCollectionsIdProductsRouteImport
+      parentRoute: typeof ApiPublicFastrrCollectionsRoute
+    }
   }
 }
 
@@ -1722,6 +1783,21 @@ const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
   ProductsRouteChildren,
 )
 
+interface ApiPublicFastrrCollectionsRouteChildren {
+  ApiPublicFastrrCollectionsIdProductsRoute: typeof ApiPublicFastrrCollectionsIdProductsRoute
+}
+
+const ApiPublicFastrrCollectionsRouteChildren: ApiPublicFastrrCollectionsRouteChildren =
+  {
+    ApiPublicFastrrCollectionsIdProductsRoute:
+      ApiPublicFastrrCollectionsIdProductsRoute,
+  }
+
+const ApiPublicFastrrCollectionsRouteWithChildren =
+  ApiPublicFastrrCollectionsRoute._addFileChildren(
+    ApiPublicFastrrCollectionsRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -1765,6 +1841,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicShiprocketWebhookRoute: ApiPublicShiprocketWebhookRoute,
   ApiPublicSyncShipmentsRoute: ApiPublicSyncShipmentsRoute,
+  ApiPublicFastrrCollectionsRoute: ApiPublicFastrrCollectionsRouteWithChildren,
+  ApiPublicFastrrProductsRoute: ApiPublicFastrrProductsRoute,
   ApiPublicProductImageSplatRoute: ApiPublicProductImageSplatRoute,
 }
 export const routeTree = rootRouteImport
