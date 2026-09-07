@@ -261,6 +261,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
   const dirty = useRef(false);
+  const draftCleared = useRef(false);
   const loadProduct = useServerFn(adminGetProductForEdit);
 
   const cats = useQuery({
@@ -292,6 +293,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
     if (!isNew) return;
     const draft = readNewProductDraft();
     if (draft) {
+      draftCleared.current = false;
       setF({ ...EMPTY, ...draft.form });
       setTab(draft.tab ?? "general");
       setDraftSavedAt(draft.savedAt);
@@ -305,6 +307,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
     if (!isNew || !draftReady || !dirty.current) return;
 
     const persist = (showTimestamp: boolean) => {
+      if (draftCleared.current || !dirty.current) return;
       const savedAt = new Date().toISOString();
       const draft: NewProductDraft = { version: 1, form: f, tab, savedAt };
       try {
@@ -408,6 +411,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
   }, [product.data]);
 
   const upd = <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => {
+    draftCleared.current = false;
     dirty.current = true;
 
     setF((previous) => ({
@@ -484,6 +488,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
       }
 
       if (isNew && result?.product_id) {
+        draftCleared.current = true;
         try {
           window.localStorage.removeItem(NEW_PRODUCT_DRAFT_KEY);
         } catch {
@@ -590,8 +595,9 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               variant="outline"
               onClick={() => {
                 if (!window.confirm("Clear this unsaved product draft?")) return;
-                window.localStorage.removeItem(NEW_PRODUCT_DRAFT_KEY);
+                draftCleared.current = true;
                 dirty.current = false;
+                window.localStorage.removeItem(NEW_PRODUCT_DRAFT_KEY);
                 setF(EMPTY);
                 setTab("general");
                 setDraftSavedAt(null);
