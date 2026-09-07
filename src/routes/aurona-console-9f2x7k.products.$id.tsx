@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,8 +28,13 @@ import {
 } from "@/lib/catalog-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
-  component: ProductEditor,
+  component: ExistingProductEditor,
 });
+
+function ExistingProductEditor() {
+  const { id } = Route.useParams();
+  return <ProductEditor productId={id} />;
+}
 
 type MainTab =
   | "general"
@@ -211,11 +216,7 @@ const TABS: {
   },
 ];
 
-function ProductEditor() {
-  const { id } = useParams({
-    from: "/aurona-console-9f2x7k/products/$id",
-  });
-
+export function ProductEditor({ productId: id }: { productId: string }) {
   const isNew = id === "new";
 
   const nav = useNavigate();

@@ -419,22 +419,40 @@ export const adminListInventory = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminPermission(context, "inventory.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let query = (supabaseAdmin as any)
+    const query = (supabaseAdmin as any)
       .from("product_variants")
       .select(
-        "id, family_id, sku, attributes, stock, reserved_stock, low_stock_threshold, is_active, updated_at, product_families(name, slug, is_published)",
+        "id, family_id, sku, attributes, stock, reserved_stock, low_stock_threshold, is_active, updated_at, product_families(id, legacy_product_id, name, main_sku, slug, is_published)",
       )
       .is("archived_at", null)
-      .order("stock", { ascending: true })
+      .order("sku", { ascending: true })
       .limit(500);
-    if (data.search.trim()) query = query.ilike("sku", `%${data.search.trim()}%`);
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
-    return (rows ?? []).filter(
-      (row: any) =>
-        !data.lowOnly ||
-        Number(row.stock) - Number(row.reserved_stock) <= Number(row.low_stock_threshold),
-    );
+    const search = data.search.trim().toLocaleLowerCase();
+    return (rows ?? []).filter((row: any) => {
+      const family = Array.isArray(row.product_families)
+        ? row.product_families[0]
+        : row.product_families;
+      const available = Number(row.stock) - Number(row.reserved_stock);
+      const matchesStock = !data.lowOnly || available <= Number(row.low_stock_threshold);
+      const optionText = Object.values(row.attributes ?? {})
+        .join(" ")
+        .toLocaleLowerCase();
+      const matchesSearch =
+        !search ||
+        String(row.sku ?? "")
+          .toLocaleLowerCase()
+          .includes(search) ||
+        String(family?.name ?? "")
+          .toLocaleLowerCase()
+          .includes(search) ||
+        String(family?.main_sku ?? "")
+          .toLocaleLowerCase()
+          .includes(search) ||
+        optionText.includes(search);
+      return matchesStock && matchesSearch;
+    });
   });
 
 export const adminAdjustInventory = createServerFn({ method: "POST" })

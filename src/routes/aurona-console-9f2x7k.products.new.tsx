@@ -1,9 +1,10 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { ProductEditor } from "./aurona-console-9f2x7k.products.$id";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/new")({
-  component: NewProductRedirect,
+  component: NewProduct,
 });
 
-function NewProductRedirect() {
-  return <Navigate to="/aurona-console-9f2x7k/products/$id" params={{ id: "new" }} replace />;
+function NewProduct() {
+  return <ProductEditor productId="new" />;
 }
