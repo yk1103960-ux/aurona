@@ -77,7 +77,8 @@ function PDPRoute() {
   const { slug } = Route.useParams();
   const { v } = Route.useSearch();
   const fam = useSuspenseQuery(familyQuery(slug)).data;
-  if (fam) return <FamilyPDP family={fam} initialSku={v} />;
+  if (fam && !fam.variants.length) return <div className="container-x py-16"><h1 className="text-2xl font-semibold">{fam.name}</h1><p className="mt-4">No variants are currently available for this product.</p><Button asChild className="mt-6"><Link to="/products">Browse products</Link></Button></div>;
+  if (fam) return <FamilyPDP key={fam.id} family={fam} initialSku={v} />;
   return <LegacyPDP slug={slug} />;
 }
 
@@ -116,7 +117,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const totalSaved = discountAmount * packSize * qty;
 
   const buyNow = async () => {
-    if (!productId) return;
+    if (!productId || !inStock) return;
     await cart.add.mutateAsync({ productId, quantity: qty });
     nav({ to: "/checkout" });
   };
@@ -330,7 +331,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 ["Category", cat?.name],
                 ["Main SKU", family.main_sku],
                 ["Selected SKU", variant.sku],
-                ...Object.entries(variant.attributes).map(([k, v]) => [k.replace(/_/g, " "), v] as const),
+                ...Object.entries(variant.attributes).filter(([k, v]) => k !== "variant_label" && Boolean(v)).map(([k, v]) => [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const),
                 ...Object.entries((family.specifications ?? {}) as Record<string, string>).map(([k, v]) => [k, v] as const),
                 ["Body type", family.body_type],
                 ["Warranty", family.warranty],

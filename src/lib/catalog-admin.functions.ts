@@ -74,6 +74,7 @@ const VariantInput = z.object({
   retailer_moq: z.number().int().positive().nullable(),
   distributor_moq: z.number().int().positive().nullable(),
   stock: z.number().int().min(0).nullable(),
+  expected_stock: z.number().int().min(0).optional(),
   pack_size: z.number().int().positive().nullable(),
   weight_g: nullableNumber,
   dim_l: nullableNumber,
@@ -664,33 +665,23 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
       if (match.archived_at) {
         throw new Error(`SKU ${variant.sku} is archived. Restore it before reusing this SKU.`);
       }
-      if (variant.id && variant.id !== match.id) {
+      if (!variant.id || variant.id !== match.id) {
         throw new Error(`SKU ${variant.sku} is already used by another variation in this family`);
       }
-      return { ...variant, id: match.id };
+      return variant;
     });
-    let { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
+    const { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v3", {
       _family_id: data.familyId,
       _variants: reconciledVariants,
       _axes: data.axes,
       _actor_user_id: context.userId,
     });
-    let compatibilityMode = false;
-    if (
-      error &&
-      /admin_save_variant_matrix_v2|could not find the function|schema cache/i.test(error.message)
-    ) {
-      const fallback = await (supabaseAdmin as any).rpc("admin_save_variant_matrix", {
-        _family_id: data.familyId,
-        _variants: reconciledVariants,
-        _axes: data.axes,
-        _actor_user_id: context.userId,
-      });
-      error = fallback.error;
-      compatibilityMode = !fallback.error;
-    }
+    if (error && /could not find the function|schema cache/i.test(error.message))
+      throw new Error(
+        "Variant save requires the unapplied 20260908130000_variant_save_safety.sql migration. No variant changes were saved. Authorize database setup before retrying.",
+      );
     if (error) throw new Error(error.message);
-    return { ok: true, compatibility_mode: compatibilityMode };
+    return { ok: true, compatibility_mode: false };
   });
 
 export const adminSaveProductMasterRows = createServerFn({ method: "POST" })

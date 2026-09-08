@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { actualAxes } from "@/lib/variant-options";
 
 export type Product = {
   id: string;
@@ -459,12 +460,13 @@ export const familyQuery = (slug: string) =>
           `*, categories(slug, name, icon), variants:public_product_variants(${VARIANT_COLS}), axes:product_variant_axes(axis_key, label, values, sort_order)`,
         )
         .eq("slug", slug)
+        .eq("variants.is_active", true)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
       const f = data as unknown as ProductFamily;
       f.variants = [...(f.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-      f.axes = [...(f.axes ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+      f.axes = actualAxes([...(f.axes ?? [])].sort((a, b) => a.sort_order - b.sort_order), f.variants);
       const [famImg, variantImgs] = await Promise.all([
         primaryImages("family_id", [f.id]),
         primaryImages("variant_sku", f.variants.map((v) => v.sku)),
@@ -661,4 +663,3 @@ export const searchSuggestQuery = (term: string) =>
     },
 
   });
-

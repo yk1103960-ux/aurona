@@ -26,6 +26,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { adminSaveVariantMatrix } from "@/lib/catalog-admin.functions";
+import { missingCombinations } from "@/lib/variant-options";
 
 type Variant = {
   id: string;
@@ -46,6 +47,7 @@ type Variant = {
   distributor_moq: number | null;
 
   stock: number | null;
+  expected_stock?: number;
   pack_size: number | null;
 
   weight_g: number | null;
@@ -103,6 +105,7 @@ const discountPercent = (mrp: number | null, price: number | null) => {
 };
 
 const variantName = (row: Variant) => {
+  if (row.attributes?.variant_label) return row.attributes.variant_label;
   const values = Object.values(row.attributes ?? {}).filter(Boolean);
   return values.length ? values.join(" / ") : row.sku;
 };
@@ -236,6 +239,7 @@ export function VariantEditor({
         variants: (data ?? []).map((row: Partial<Variant>) => ({
           ...row,
           barcode: row.barcode ?? "",
+          expected_stock: Number(row.stock ?? 0),
         })) as Variant[],
         axes: (axes ?? []).map((axis: any) => ({
           ...axis,
@@ -338,75 +342,29 @@ export function VariantEditor({
     ]);
   };
 
-  const generateCombinations = (sourceAxes: Axis[] = axes) => {
-    const usableAxes = sourceAxes.filter((axis) => axis.values.some((value) => value.trim()));
-    if (!usableAxes.length) {
-      toast.error("Add and save at least one option with values first");
-      return;
-    }
-
-    const combinations = usableAxes.reduce<Record<string, string>[]>(
-      (items, axis) =>
-        items.flatMap((item) =>
-          axis.values
-            .map((value) => value.trim())
-            .filter(Boolean)
-            .map((value) => ({ ...item, [axis.axis_key]: value })),
-        ),
-      [{}],
-    );
-    if (combinations.length > 200) {
-      toast.error(
-        `This creates ${combinations.length} combinations. Reduce option values to 200 or fewer.`,
-      );
-      return;
-    }
-
-    let added = 0;
-    let completed = 0;
-    dirty.current = true;
-    const next = rows.map((row) => ({ ...row, attributes: { ...(row.attributes ?? {}) } }));
-    const signature = (attributes: Record<string, string>) =>
-      usableAxes.map((axis) => `${axis.axis_key}:${attributes[axis.axis_key] ?? ""}`).join("|");
-    const existing = new Set(
-      next
-        .filter((row) => usableAxes.every((axis) => row.attributes?.[axis.axis_key]))
-        .map((row) => signature(row.attributes)),
-    );
-    const emptyRows = next.filter((row) =>
-      usableAxes.every((axis) => !row.attributes?.[axis.axis_key]),
-    );
-    const usedSkus = new Set(next.map((row) => row.sku.toUpperCase()));
-    const template = next[0];
-
-    for (const attributes of combinations) {
-      const key = signature(attributes);
-      if (existing.has(key)) continue;
-      const available = emptyRows.shift();
-      if (available) {
-        available.attributes = { ...available.attributes, ...attributes };
-        completed += 1;
-        existing.add(key);
-        continue;
-      }
-
-      const suffix = usableAxes
-        .map((axis) => optionToken(attributes[axis.axis_key]))
-        .filter(Boolean)
-        .join("-");
-      let sku = `${productSku}-${suffix}`.slice(0, 120);
-      let attempt = 2;
-      while (usedSkus.has(sku.toUpperCase())) {
-        const ending = `-${attempt++}`;
-        sku = `${productSku}-${suffix}`.slice(0, 120 - ending.length) + ending;
-      }
-      usedSkus.add(sku.toUpperCase());
-      next.push({
-        ...(template ?? {
+  const generateCombinations = (sourceAxes: Axis[] = axes, sourceRows: Variant[] = rows) => {
+    try {
+      const combinations = missingCombinations(sourceAxes, sourceRows);
+      if (!combinations.length) return toast.info("All selected combinations already exist");
+      const usedSkus = new Set(sourceRows.map((row) => row.sku.trim().toUpperCase()));
+      const added = combinations.map((attributes, index) => {
+        const suffix = sourceAxes.map((axis) => optionToken(attributes[axis.axis_key])).join("-");
+        const base = `${productSku}-${suffix}`;
+        let sku = base.slice(0, 120);
+        let attempt = 2;
+        while (usedSkus.has(sku.toUpperCase())) {
+          const ending = `-${attempt++}`;
+          sku = base.slice(0, 120 - ending.length) + ending;
+        }
+        usedSkus.add(sku.toUpperCase());
+        return {
+          id: `new-${crypto.randomUUID()}`,
           family_id: family.id,
+          sku,
           barcode: "",
-          mrp: 0,
-          price: 0,
+          attributes,
+          mrp: null,
+          price: null,
           discount_pct: 0,
           retailer_price: null,
           distributor_price: null,
@@ -423,25 +381,19 @@ export function VariantEditor({
           pack_l: null,
           pack_w: null,
           pack_h: null,
-          is_active: true,
+          is_active: false,
+          sort_order: sourceRows.length + index,
           low_stock_threshold: 10,
-        }),
-        id: `new-${Date.now()}-${next.length}`,
-        sku,
-        barcode: "",
-        attributes,
-        stock: 0,
-        sort_order: next.length,
-      } as Variant);
-      added += 1;
-      existing.add(key);
+        } satisfies Variant;
+      });
+      dirty.current = true;
+      setRows([...sourceRows, ...added]);
+      toast.success(
+        `${added.length} inactive drafts generated. Existing SKUs are unchanged. Enter prices and specifications before activating.`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not generate variations");
     }
-    setRows(next);
-    toast.success(
-      added || completed
-        ? `${completed} blank row(s) completed and ${added} variant(s) added. Review, then save variants.`
-        : "All option combinations already exist",
-    );
   };
 
   const removeRow = (row: Variant) => {
@@ -593,7 +545,14 @@ export function VariantEditor({
             rows={rows}
             updateRow={updateRow}
             removeRow={removeRow}
-            refresh={() => q.refetch()}
+            refresh={async () => {
+              const refreshed = await q.refetch();
+              if (refreshed.error) throw refreshed.error;
+              const saved = refreshed.data?.variants ?? [];
+              dirty.current = false;
+              setRows(saved);
+              return saved;
+            }}
             generateCombinations={generateCombinations}
             editRow={(row) => setEditingId(row.id)}
             manageImages={onManageImages}
@@ -648,8 +607,8 @@ function OptionsTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   removeRow: (row: Variant) => void;
-  refresh: () => void;
-  generateCombinations: () => void;
+  refresh: () => Promise<Variant[]>;
+  generateCombinations: (axes?: Axis[], rows?: Variant[]) => void;
   editRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
 }) {
@@ -662,6 +621,8 @@ function OptionsTab({
         generateCombinations={generateCombinations}
       />
 
+      <h3 className="text-lg font-semibold">All Variants · {rows.length}</h3>
+      <VariantBulkEditor rows={rows} updateRow={updateRow} />
       {rows.length === 0 ? (
         <EmptyVariants />
       ) : (
@@ -681,6 +642,137 @@ function OptionsTab({
         </div>
       )}
     </div>
+  );
+}
+
+function VariantBulkEditor({
+  rows,
+  updateRow,
+}: {
+  rows: Variant[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [field, setField] = useState("price");
+  const [value, setValue] = useState("");
+  const fields = {
+    price: "Customer price",
+    mrp: "MRP",
+    retailer_price: "Retailer price",
+    distributor_price: "Distributor price",
+    weight_g: "Weight (g)",
+    dim_l: "Length (cm)",
+    dim_w: "Width (cm)",
+    dim_h: "Height (cm)",
+    pack_weight_g: "Package weight (g)",
+    pack_l: "Package length (cm)",
+    pack_w: "Package width (cm)",
+    pack_h: "Package height (cm)",
+    pack_size: "Pack size",
+    low_stock_threshold: "Low-stock threshold",
+    is_active: "Active status",
+  };
+  const targets = rows.filter((row) => selected.includes(row.id));
+  const apply = () => {
+    const parsed = Number(value);
+    if (
+      value === "" ||
+      !Number.isFinite(parsed) ||
+      parsed < 0 ||
+      (field === "pack_size" && (!Number.isInteger(parsed) || parsed < 1)) ||
+      (field === "low_stock_threshold" && !Number.isInteger(parsed))
+    ) {
+      toast.error("Enter a valid non-negative value (pack size must be a positive integer)");
+      return;
+    }
+    if (
+      !confirm(
+        `Stage ${fields[field as keyof typeof fields]} for ${targets.length} selected variants? Save Variants applies these changes.`,
+      )
+    )
+      return;
+    targets.forEach((row) =>
+      updateRow(row.id, { [field]: field === "is_active" ? parsed === 1 : parsed }),
+    );
+    toast.success(`Updated ${targets.length} draft rows. Review and save variants.`);
+  };
+  return (
+    <details className="rounded-xl border border-slate-200 p-4">
+      <summary className="cursor-pointer font-semibold">Bulk edit selected variants</summary>
+      <p className="my-3 text-sm text-slate-500">
+        Changes are staged for selected SKUs only. Stock quantities use the dedicated inventory
+        workflow.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setSelected(targets.length === rows.length ? [] : rows.map((row) => row.id))}
+      >
+        Select / clear all
+      </Button>
+      <div className="my-3 grid max-h-48 gap-2 overflow-auto sm:grid-cols-2">
+        {rows.map((row) => (
+          <label key={row.id} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={selected.includes(row.id)}
+              onChange={(event) =>
+                setSelected((current) =>
+                  event.target.checked
+                    ? [...current, row.id]
+                    : current.filter((id) => id !== row.id),
+                )
+              }
+            />
+            {row.sku} · {variantName(row)}
+          </label>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="space-y-1 text-sm">
+          Field
+          <select
+            className="block h-10 rounded-md border px-3"
+            value={field}
+            onChange={(event) => {
+              setField(event.target.value);
+              setValue("");
+            }}
+          >
+            {Object.entries(fields).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-sm">
+          Value
+          {field === "is_active" ? (
+            <select
+              className="block h-10 rounded-md border px-3"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+            >
+              <option value="">Choose status</option>
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
+          ) : (
+            <Input
+              type="number"
+              min="0"
+              step="any"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+            />
+          )}
+        </label>
+        <Button type="button" disabled={!targets.length || value === ""} onClick={apply}>
+          Apply to {targets.length} selected
+        </Button>
+      </div>
+    </details>
   );
 }
 
@@ -730,10 +822,21 @@ function VariantFullCard({
             Available
           </label>
           <Button type="button" size="sm" onClick={() => editRow(row)}>
-            <Pencil className="h-4 w-4" /> Edit Variation
+            <Pencil className="h-4 w-4" /> Edit Variant
           </Button>
           {manageImages && (
-            <Button type="button" size="sm" variant="outline" onClick={() => manageImages(row.sku)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={row.id.startsWith("new-")}
+              title={
+                row.id.startsWith("new-")
+                  ? "Save this SKU before attaching images"
+                  : "Manage SKU images"
+              }
+              onClick={() => manageImages(row.sku)}
+            >
               <ImageIcon className="h-4 w-4" /> Images
             </Button>
           )}
@@ -894,6 +997,19 @@ function VariantEditDialog({
 
         <section className="space-y-3 rounded-xl border border-slate-200 p-4">
           <h3 className="font-semibold text-slate-900">Variation identity</h3>
+          <label className="block">
+            <FieldTitle>Variant label (optional)</FieldTitle>
+            <Input
+              value={row.attributes.variant_label ?? ""}
+              onChange={(event) =>
+                updateRow(row.id, {
+                  attributes: { ...row.attributes, variant_label: event.target.value },
+                })
+              }
+              placeholder="Defaults to the selected option values"
+            />
+          </label>
+          {numberField("sort_order", "Display order", { min: 0 })}
           {axes.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {axes.map((axis) => (
@@ -982,6 +1098,7 @@ function VariantEditDialog({
           </div>
         </section>
 
+        <VariantSpecifications row={row} axes={axes} updateRow={updateRow} />
         <DialogFooter>
           {manageImages && !row.id.startsWith("new-") && (
             <Button
@@ -996,14 +1113,75 @@ function VariantEditDialog({
             </Button>
           )}
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Close editor
           </Button>
           <Button type="button" disabled={saving} onClick={save}>
-            <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save Variation"}
+            <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save All Variant Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function VariantSpecifications({
+  row,
+  axes,
+  updateRow,
+}: {
+  row: Variant;
+  axes: Axis[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+}) {
+  const [key, setKey] = useState("");
+  const extra = Object.entries(row.attributes).filter(
+    ([name]) => name !== "variant_label" && !axes.some((axis) => axis.axis_key === name),
+  );
+  return (
+    <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+      <h3 className="font-semibold">SKU-specific specifications</h3>
+      <p className="text-sm text-slate-500">
+        Add only verified details for this SKU. These do not generate combinations. Common
+        specifications belong to the family.
+      </p>
+      {extra.map(([name, value]) => (
+        <label key={name} className="block text-sm">
+          {name}
+          <Input
+            value={value}
+            onChange={(event) =>
+              updateRow(row.id, { attributes: { ...row.attributes, [name]: event.target.value } })
+            }
+          />
+        </label>
+      ))}
+      <div className="flex gap-2">
+        <Input
+          aria-label="New specification name"
+          placeholder="Specification name"
+          value={key}
+          onChange={(event) => setKey(event.target.value)}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            const name = key.trim();
+            if (
+              !name ||
+              name === "variant_label" ||
+              Object.hasOwn(row.attributes, name) ||
+              axes.some((axis) => axis.axis_key === name)
+            )
+              return toast.error("Enter a new specification name");
+            updateRow(row.id, { attributes: { ...row.attributes, [name]: "" } });
+            setKey("");
+          }}
+        >
+          Add specification
+        </Button>
+      </div>
+    </section>
   );
 }
 
@@ -1451,11 +1629,12 @@ function AxisEditor({
 }: {
   familyId: string;
   variants: Variant[];
-  onSaved: () => Promise<unknown> | void;
-  generateCombinations: (axes?: Axis[]) => void;
+  onSaved: () => Promise<Variant[]>;
+  generateCombinations: (axes?: Axis[], rows?: Variant[]) => void;
 }) {
   const [rows, setRows] = useState<Axis[]>([]);
   const [saving, setSaving] = useState(false);
+  const [excluded, setExcluded] = useState<Record<string, string[]>>({});
 
   const dirty = useRef(false);
   const qc = useQueryClient();
@@ -1512,6 +1691,12 @@ function AxisEditor({
   };
 
   const removeAxis = (axis: Axis) => {
+    if (variants.some((variant) => variant.attributes[axis.axis_key])) {
+      toast.error(
+        "This option is used by existing SKUs. Clear or remap those values explicitly before removing it.",
+      );
+      return;
+    }
     if (!confirm(`Remove option "${axis.label}" from this family?`)) {
       return;
     }
@@ -1536,6 +1721,33 @@ function AxisEditor({
     if (new Set(cleaned.map((axis) => axis.axis_key)).size !== cleaned.length) {
       toast.error("Each option key must be unique");
       return;
+    }
+    for (const previous of q.data ?? []) {
+      const replacement = cleaned.find((axis) => axis.axis_key === previous.axis_key);
+      if (
+        variants.some(
+          (variant) =>
+            variant.attributes[previous.axis_key] &&
+            !replacement?.values.includes(variant.attributes[previous.axis_key]),
+        )
+      ) {
+        toast.error(
+          `Existing SKUs use ${previous.label} values that would be removed. Remap those SKUs first.`,
+        );
+        return;
+      }
+    }
+    const generationAxes = cleaned.map((axis) => ({
+      ...axis,
+      values: axis.values.filter((value) => !(excluded[axis.id] ?? []).includes(value)),
+    }));
+    if (generateAfterSave) {
+      try {
+        missingCombinations(generationAxes, variants);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Invalid options");
+        return;
+      }
     }
     setSaving(true);
 
@@ -1576,8 +1788,8 @@ function AxisEditor({
         toast.success("Options saved");
       }
       await q.refetch();
-      await onSaved();
-      if (generateAfterSave) generateCombinations(cleaned);
+      const savedVariants = await onSaved();
+      if (generateAfterSave) generateCombinations(generationAxes, savedVariants);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save options");
     } finally {
@@ -1632,9 +1844,9 @@ function AxisEditor({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {[
-              { key: "wattage", label: "Wattage", values: ["3W", "5W", "7W", "9W"] },
+              { key: "wattage", label: "Wattage" },
               { key: "size", label: "Size" },
-              { key: "colour", label: "Colour" },
+              { key: "body_colour", label: "Body / Housing Colour" },
               { key: "pack_size", label: "Pack Size" },
               { key: "output_colour", label: "Output Colour" },
             ].map((preset) => (
@@ -1667,6 +1879,7 @@ function AxisEditor({
                 <Input
                   className="mt-1 font-mono"
                   value={axis.axis_key}
+                  disabled={!axis.id.startsWith("new-")}
                   onChange={(e) =>
                     updateAxis(axis.id, {
                       axis_key: e.target.value,
@@ -1707,6 +1920,28 @@ function AxisEditor({
               <Button type="button" size="sm" variant="outline" onClick={() => removeAxis(axis)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
+              <div className="flex flex-wrap gap-3 md:col-span-4">
+                <span className="text-sm text-slate-500">Include in generation:</span>
+                {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
+                  (value) => (
+                    <label key={value} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={!(excluded[axis.id] ?? []).includes(value)}
+                        onChange={(event) =>
+                          setExcluded((current) => ({
+                            ...current,
+                            [axis.id]: event.target.checked
+                              ? (current[axis.id] ?? []).filter((item) => item !== value)
+                              : [...(current[axis.id] ?? []), value],
+                          }))
+                        }
+                      />
+                      {value}
+                    </label>
+                  ),
+                )}
+              </div>
             </div>
           ))}
         </div>

@@ -47,34 +47,38 @@ export function ProductImageManager({
   const q = useQuery({
     queryKey: ["admin-product-images", productSku, productId],
     queryFn: async () => {
-      const { data: fam } = await supabase
+      const { data: fam, error: familyError } = await supabase
         .from("product_families")
         .select("id")
         .eq("main_sku", productSku)
         .maybeSingle();
+      if (familyError) throw familyError;
 
-      const { data: variants } = fam
+      const { data: variants, error: variantsError } = fam
         ? await supabase
             .from("product_variants")
             .select("sku")
             .eq("family_id", fam.id)
             .order("sort_order")
-        : { data: [] as { sku: string }[] };
+        : { data: [] as { sku: string }[], error: null };
+      if (variantsError) throw variantsError;
 
       let images: Row[] = [];
       if (fam) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("product_images")
           .select("id, image_url, alt_text, variant_sku, sort_order, is_primary")
           .eq("family_id", fam.id)
           .order("sort_order");
+        if (error) throw error;
         images = (data ?? []) as Row[];
       } else {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("product_images")
           .select("id, image_url, alt_text, variant_sku, sort_order, is_primary")
           .eq("product_id", productId)
           .order("sort_order");
+        if (error) throw error;
         images = (data ?? []) as Row[];
       }
 
@@ -103,6 +107,8 @@ export function ProductImageManager({
 
   const onUpload = async (files: FileList | null) => {
     if (!files?.length) return;
+    if (!q.data || q.error || (targetSku && !q.data.skus.includes(targetSku)))
+      return toast.error("Save and reload this SKU before attaching photos");
     setBusy(true);
     try {
       const base = q.data?.images.length ?? 0;
@@ -161,14 +167,17 @@ export function ProductImageManager({
   };
 
   const remove = async (row: Row) => {
+    if (
+      !confirm(
+        `Remove this photo from ${row.variant_sku ?? "the family gallery"}? The stored file will be retained for safety.`,
+      )
+    )
+      return;
     const { error } = await supabase.from("product_images").delete().eq("id", row.id);
     if (error) return toast.error(error.message);
 
-    // Drop the underlying file too so the bucket does not fill with orphans.
-    const storagePath = row.image_url.startsWith("/api/public/product-image/")
-      ? row.image_url.replace("/api/public/product-image/", "")
-      : null;
-    if (storagePath) await supabase.storage.from("media").remove([storagePath]);
+    // A file may be shared by duplicated products. Removing an association must
+    // not delete media still referenced elsewhere. Storage cleanup is separate.
 
     // Never leave the gallery without a primary photo.
     const rest = (q.data?.images ?? []).filter(
@@ -190,6 +199,14 @@ export function ProductImageManager({
       className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 md:col-span-2 scroll-mt-6"
     >
       <div className="font-semibold text-sm uppercase tracking-wider text-slate-500">Photos</div>
+      {q.isError && (
+        <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+          Could not load photos.{" "}
+          <Button variant="outline" type="button" onClick={() => q.refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="block space-y-1">
@@ -215,7 +232,11 @@ export function ProductImageManager({
           className="hidden"
           onChange={(e) => onUpload(e.target.files)}
         />
-        <Button type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
+        <Button
+          type="button"
+          disabled={busy || q.isPending || q.isError}
+          onClick={() => fileRef.current?.click()}
+        >
           <Upload className="mr-2 h-4 w-4" /> {busy ? "Uploading…" : "Upload photos"}
         </Button>
       </div>
@@ -236,7 +257,9 @@ export function ProductImageManager({
               <select
                 className="h-9 w-full rounded-md border px-2 text-xs bg-white"
                 value={row.variant_sku ?? ""}
-                onChange={(e) => patch(row.id, { variant_sku: e.target.value || null })}
+                onChange={(e) =>
+                  patch(row.id, { variant_sku: e.target.value || null, is_primary: false })
+                }
               >
                 <option value="">All variations</option>
                 {skus.map((s) => (
@@ -270,7 +293,13 @@ export function ProductImageManager({
                 >
                   <Star className="mr-1 h-3.5 w-3.5" /> {row.is_primary ? "Primary" : "Set primary"}
                 </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => remove(row)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-label="Remove photo"
+                  onClick={() => remove(row)}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>

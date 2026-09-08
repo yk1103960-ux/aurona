@@ -1,0 +1,57 @@
+/** Pure, category-independent rules shared by variant administration and selection. */
+export type OptionAxis = { axis_key: string; values: string[] };
+
+export function combinationKey(axes: OptionAxis[], attributes: Record<string, string>) {
+  return JSON.stringify(axes.map((axis) => [axis.axis_key, attributes[axis.axis_key] ?? ""]));
+}
+
+export function buildCombinations(axes: OptionAxis[], limit = 200) {
+  if (!axes.length) throw new Error("Add at least one variation option first");
+  const keys = new Set<string>();
+  let count = 1;
+  const normalized = axes.map((axis) => {
+    if (!axis.axis_key || keys.has(axis.axis_key)) throw new Error("Option keys must be unique");
+    keys.add(axis.axis_key);
+    const values = [...new Set(axis.values.map((value) => value.trim()).filter(Boolean))];
+    if (!values.length) throw new Error("Select at least one value for every option");
+    count *= values.length;
+    if (count > limit)
+      throw new Error(
+        `Select fewer values: at most ${limit} combinations can be generated at once`,
+      );
+    return { ...axis, values };
+  });
+  return normalized.reduce<Record<string, string>[]>(
+    (items, axis) =>
+      items.flatMap((item) => axis.values.map((value) => ({ ...item, [axis.axis_key]: value }))),
+    [{}],
+  );
+}
+
+export function missingCombinations(
+  axes: OptionAxis[],
+  variants: { attributes: Record<string, string> }[],
+) {
+  const existing = new Set(variants.map((variant) => combinationKey(axes, variant.attributes)));
+  return buildCombinations(axes).filter(
+    (attributes) => !existing.has(combinationKey(axes, attributes)),
+  );
+}
+
+/** Never offer configured values that have no real SKU; retain source terminology. */
+export function actualAxes<T extends OptionAxis>(
+  axes: T[],
+  variants: { attributes: Record<string, string> }[],
+): T[] {
+  return axes
+    .map((axis) => {
+      const actual = new Set(
+        variants.map((variant) => variant.attributes[axis.axis_key]).filter(Boolean),
+      );
+      return {
+        ...axis,
+        values: [...new Set([...axis.values.filter((value) => actual.has(value)), ...actual])],
+      };
+    })
+    .filter((axis) => axis.values.length > 0);
+}

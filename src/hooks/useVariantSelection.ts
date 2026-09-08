@@ -7,7 +7,7 @@ function getInitialSelection(family: ProductFamily, initialSku?: string) {
     family.variants[0]?.attributes ||
     {};
   const sel: Record<string, string> = {};
-  for (const a of family.axes) sel[a.axis_key] = (seed[a.axis_key] as string) ?? a.values[0];
+  for (const a of family.axes) sel[a.axis_key] = (seed[a.axis_key] as string) ?? "";
   return sel;
 }
 
@@ -29,7 +29,10 @@ export function useVariantSelection(family: ProductFamily, initialSku?: string) 
   }, [family.id, initialSku]);
 
   const matchScore = (v: ProductVariant, sel: Record<string, string>) =>
-    family.axes.reduce((n, a) => n + ((v.attributes[a.axis_key] ?? "") === sel[a.axis_key] ? 1 : 0), 0);
+    family.axes.reduce(
+      (n, a) => n + ((v.attributes[a.axis_key] ?? "") === sel[a.axis_key] ? 1 : 0),
+      0,
+    );
 
   const variant: ProductVariant = useMemo(() => {
     if (family.axes.length === 0) return family.variants[0];
@@ -57,7 +60,7 @@ export function useVariantSelection(family: ProductFamily, initialSku?: string) 
     setSelection((s) => {
       const wanted = { ...s, [axisKey]: value };
       const candidates = family.variants.filter((v) => (v.attributes[axisKey] ?? "") === value);
-      if (candidates.length === 0) return wanted;
+      if (candidates.length === 0) return s;
       let best = candidates[0];
       let bestScore = -1;
       for (const v of candidates) {
@@ -68,10 +71,13 @@ export function useVariantSelection(family: ProductFamily, initialSku?: string) 
         }
       }
       const next: Record<string, string> = {};
-      for (const a of family.axes) next[a.axis_key] = (best.attributes[a.axis_key] as string) ?? wanted[a.axis_key];
+      for (const a of family.axes) next[a.axis_key] = (best.attributes[a.axis_key] as string) ?? "";
       next[axisKey] = value;
       return next;
     });
 
-  return { selection, setAxis, variant, isAvailable };
+  const resolvedSelection = Object.fromEntries(
+    family.axes.map((axis) => [axis.axis_key, variant?.attributes[axis.axis_key] ?? ""]),
+  );
+  return { selection: resolvedSelection, setAxis, variant, isAvailable };
 }
