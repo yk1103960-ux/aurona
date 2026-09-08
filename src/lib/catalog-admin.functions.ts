@@ -642,9 +642,36 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const normalizedSkus = data.variants.map((variant) => variant.sku.trim().toUpperCase());
+    const duplicateSku = normalizedSkus.find((sku, index) => normalizedSkus.indexOf(sku) !== index);
+    if (duplicateSku) throw new Error(`SKU ${duplicateSku} is repeated in this variation list`);
+
+    const existing = await (supabaseAdmin as any)
+      .from("product_variants")
+      .select("id,family_id,sku,archived_at")
+      .in("sku", normalizedSkus);
+    if (existing.error) throw new Error(existing.error.message);
+    const existingBySku = new Map(
+      (existing.data ?? []).map((row: any) => [String(row.sku).toUpperCase(), row]),
+    );
+    const reconciledVariants = data.variants.map((variant) => {
+      const match = existingBySku.get(variant.sku.trim().toUpperCase()) as
+        { id: string; family_id: string; archived_at: string | null } | undefined;
+      if (!match) return variant;
+      if (match.family_id !== data.familyId) {
+        throw new Error(`SKU ${variant.sku} already belongs to another product family`);
+      }
+      if (match.archived_at) {
+        throw new Error(`SKU ${variant.sku} is archived. Restore it before reusing this SKU.`);
+      }
+      if (variant.id && variant.id !== match.id) {
+        throw new Error(`SKU ${variant.sku} is already used by another variation in this family`);
+      }
+      return { ...variant, id: match.id };
+    });
     let { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
       _family_id: data.familyId,
-      _variants: data.variants,
+      _variants: reconciledVariants,
       _axes: data.axes,
       _actor_user_id: context.userId,
     });
@@ -655,7 +682,7 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
     ) {
       const fallback = await (supabaseAdmin as any).rpc("admin_save_variant_matrix", {
         _family_id: data.familyId,
-        _variants: data.variants,
+        _variants: reconciledVariants,
         _axes: data.axes,
         _actor_user_id: context.userId,
       });

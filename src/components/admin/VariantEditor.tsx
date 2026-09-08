@@ -338,8 +338,8 @@ export function VariantEditor({
     ]);
   };
 
-  const generateCombinations = () => {
-    const usableAxes = axes.filter((axis) => axis.values.some((value) => value.trim()));
+  const generateCombinations = (sourceAxes: Axis[] = axes) => {
+    const usableAxes = sourceAxes.filter((axis) => axis.values.some((value) => value.trim()));
     if (!usableAxes.length) {
       toast.error("Add and save at least one option with values first");
       return;
@@ -548,7 +548,7 @@ export function VariantEditor({
             onClick={() => setTab("options")}
             icon={<SlidersHorizontal className="h-4 w-4" />}
           >
-            Options & Variants
+            All Variation Details
           </TabButton>
 
           <TabButton
@@ -655,121 +655,195 @@ function OptionsTab({
 }) {
   return (
     <div className="space-y-5">
-      <AxisEditor familyId={familyId} variants={rows} onSaved={refresh} />
-
-      {axes.length > 0 && axes.some((axis) => axis.values.length > 0) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4">
-          <div>
-            <div className="text-sm font-semibold text-sky-950">
-              Build variants from your options
-            </div>
-            <p className="mt-1 text-xs text-sky-800">
-              Generates every saved Wattage, Size, Colour and Pack combination without deleting
-              existing SKUs.
-            </p>
-          </div>
-          <Button type="button" onClick={generateCombinations}>
-            <Plus className="h-4 w-4" /> Generate Variant Combinations
-          </Button>
-        </div>
-      )}
+      <AxisEditor
+        familyId={familyId}
+        variants={rows}
+        onSaved={refresh}
+        generateCombinations={generateCombinations}
+      />
 
       {rows.length === 0 ? (
         <EmptyVariants />
       ) : (
         <div className="space-y-3">
-          {rows.map((row) => (
-            <div key={row.id} className="rounded-lg border border-slate-200 p-3">
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="min-w-[220px] flex-1">
-                  <FieldTitle>SKU / Item Code</FieldTitle>
-
-                  <Input
-                    className="mt-1 font-mono"
-                    value={row.sku}
-                    onChange={(e) =>
-                      updateRow(row.id, {
-                        sku: e.target.value,
-                      })
-                    }
-                  />
-                </label>
-
-                <label className="min-w-[180px] flex-1">
-                  <FieldTitle>Barcode / GTIN</FieldTitle>
-                  <Input
-                    className="mt-1 font-mono"
-                    value={row.barcode ?? ""}
-                    placeholder="Optional unique barcode"
-                    onChange={(e) => updateRow(row.id, { barcode: e.target.value })}
-                  />
-                </label>
-
-                <label className="flex items-center gap-2 pb-2 text-sm">
-                  <Switch
-                    checked={row.is_active !== false}
-                    onCheckedChange={(value) =>
-                      updateRow(row.id, {
-                        is_active: value,
-                      })
-                    }
-                  />
-                  Available
-                </label>
-
-                <Button type="button" size="sm" variant="outline" onClick={() => removeRow(row)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <Button type="button" size="sm" onClick={() => editRow(row)}>
-                  <Pencil className="h-4 w-4" /> Edit Variation
-                </Button>
-                {manageImages && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => manageImages(row.sku)}
-                  >
-                    <ImageIcon className="h-4 w-4" /> Images
-                  </Button>
-                )}
-              </div>
-
-              {axes.length > 0 && (
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {axes.map((axis) => (
-                    <label key={axis.axis_key}>
-                      <FieldTitle>{axis.label}</FieldTitle>
-
-                      <select
-                        className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
-                        value={(row.attributes ?? {})[axis.axis_key] ?? ""}
-                        onChange={(e) =>
-                          updateRow(row.id, {
-                            attributes: {
-                              ...(row.attributes ?? {}),
-                              [axis.axis_key]: e.target.value,
-                            },
-                          })
-                        }
-                      >
-                        <option value="">— Select —</option>
-
-                        {axis.values.map((value) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+          {rows.map((row, index) => (
+            <VariantFullCard
+              key={row.id}
+              row={row}
+              number={index + 1}
+              axes={axes}
+              updateRow={updateRow}
+              removeRow={removeRow}
+              editRow={editRow}
+              manageImages={manageImages}
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function VariantFullCard({
+  row,
+  number,
+  axes,
+  updateRow,
+  removeRow,
+  editRow,
+  manageImages,
+}: {
+  row: Variant;
+  number: number;
+  axes: Axis[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+  removeRow: (row: Variant) => void;
+  editRow: (row: Variant) => void;
+  manageImages?: (sku: string) => void;
+}) {
+  const field = (key: keyof Variant, label: string, placeholder?: string) => (
+    <label>
+      <FieldTitle>{label}</FieldTitle>
+      <NumberInput
+        value={row[key] as number | null}
+        placeholder={placeholder}
+        onChange={(value) => updateRow(row.id, { [key]: value })}
+      />
+    </label>
+  );
+
+  return (
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">
+            Variation {number}
+          </div>
+          <div className="mt-0.5 font-semibold text-slate-950">{variantName(row)}</div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <Switch
+              checked={row.is_active !== false}
+              onCheckedChange={(value) => updateRow(row.id, { is_active: value })}
+            />
+            Available
+          </label>
+          <Button type="button" size="sm" onClick={() => editRow(row)}>
+            <Pencil className="h-4 w-4" /> Edit Variation
+          </Button>
+          {manageImages && (
+            <Button type="button" size="sm" variant="outline" onClick={() => manageImages(row.sku)}>
+              <ImageIcon className="h-4 w-4" /> Images
+            </Button>
+          )}
+          <Button
+            type="button"
+            size="icon"
+            variant="destructive"
+            aria-label={`Remove ${row.sku}`}
+            onClick={() => removeRow(row)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="space-y-5 p-4">
+        <VariantSection title="Name, options and SKU">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {axes.map((axis) => (
+              <label key={axis.axis_key}>
+                <FieldTitle>{axis.label}</FieldTitle>
+                <select
+                  className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                  value={row.attributes?.[axis.axis_key] ?? ""}
+                  onChange={(event) =>
+                    updateRow(row.id, {
+                      attributes: { ...row.attributes, [axis.axis_key]: event.target.value },
+                    })
+                  }
+                >
+                  <option value="">— Select —</option>
+                  {axis.values.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <label>
+              <FieldTitle>SKU / Item Code</FieldTitle>
+              <Input
+                className="mt-1 font-mono"
+                value={row.sku}
+                onChange={(event) => updateRow(row.id, { sku: event.target.value })}
+              />
+            </label>
+            <label>
+              <FieldTitle>Barcode / GTIN</FieldTitle>
+              <Input
+                className="mt-1 font-mono"
+                value={row.barcode ?? ""}
+                placeholder="Optional barcode"
+                onChange={(event) => updateRow(row.id, { barcode: event.target.value })}
+              />
+            </label>
+          </div>
+        </VariantSection>
+
+        <VariantSection title="Prices">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {field("mrp", "MRP ₹")}
+            {field("price", "Customer Price ₹")}
+            {field("retailer_price", "Retailer Price ₹", "Fallback")}
+            {field("distributor_price", "Distributor Price ₹", "Fallback")}
+          </div>
+        </VariantSection>
+
+        <VariantSection title="Order quantities and inventory">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            {field("moq", "Customer MOQ")}
+            {field("retailer_moq", "Retailer MOQ")}
+            {field("distributor_moq", "Distributor MOQ")}
+            {field("pack_size", "Pieces / Pack")}
+            {field("stock", "Stock")}
+            {field("low_stock_threshold", "Low-stock Alert")}
+          </div>
+        </VariantSection>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <VariantSection title="Single unit dimensions">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {field("weight_g", "Weight (g)")}
+              {field("dim_l", "Length (cm)")}
+              {field("dim_w", "Width (cm)")}
+              {field("dim_h", "Height (cm)")}
+            </div>
+          </VariantSection>
+          <VariantSection title="Package dimensions">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {field("pack_weight_g", "Weight (g)")}
+              {field("pack_l", "Length (cm)")}
+              {field("pack_w", "Width (cm)")}
+              {field("pack_h", "Height (cm)")}
+            </div>
+          </VariantSection>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function VariantSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {title}
+      </h4>
+      {children}
+    </section>
   );
 }
 
@@ -1373,10 +1447,12 @@ function AxisEditor({
   familyId,
   variants,
   onSaved,
+  generateCombinations,
 }: {
   familyId: string;
   variants: Variant[];
-  onSaved: () => void;
+  onSaved: () => Promise<unknown> | void;
+  generateCombinations: (axes?: Axis[]) => void;
 }) {
   const [rows, setRows] = useState<Axis[]>([]);
   const [saving, setSaving] = useState(false);
@@ -1443,7 +1519,7 @@ function AxisEditor({
     setRows((current) => current.filter((item) => item.id !== axis.id));
   };
 
-  const saveAxes = async () => {
+  const saveAxes = async (generateAfterSave = false) => {
     const cleaned = rows.map((axis) => ({
       ...axis,
       axis_key: axis.axis_key
@@ -1499,8 +1575,9 @@ function AxisEditor({
       } else {
         toast.success("Options saved");
       }
-      q.refetch();
-      onSaved();
+      await q.refetch();
+      await onSaved();
+      if (generateAfterSave) generateCombinations(cleaned);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save options");
     } finally {
@@ -1526,9 +1603,24 @@ function AxisEditor({
             Add Option
           </Button>
 
-          <Button type="button" size="sm" onClick={saveAxes} disabled={saving || rows.length === 0}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => saveAxes(false)}
+            disabled={saving || rows.length === 0}
+          >
             <Save className="mr-1 h-4 w-4" />
             {saving ? "Saving…" : "Save Options"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => saveAxes(true)}
+            disabled={saving || rows.length === 0}
+          >
+            <Plus className="h-4 w-4" />
+            {saving ? "Saving…" : "Save & Generate Variations"}
           </Button>
         </div>
       </div>
