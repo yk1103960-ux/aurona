@@ -320,8 +320,20 @@ export function ProductEditor({ productId: id }: { productId: string }) {
     };
 
     const timer = window.setTimeout(() => persist(true), 400);
+    // Flush before the browser suspends this tab; do not rely on a background
+    // debounce timer to protect the last keystrokes.
+    const flush = () => persist(true);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("blur", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener("blur", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       persist(false);
     };
   }, [draftReady, f, isNew, tab]);

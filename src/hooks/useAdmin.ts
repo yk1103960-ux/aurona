@@ -5,24 +5,33 @@ import { useAuth } from "./useAuth";
 
 export function useAdmin() {
   const { user, loading: authLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [access, setAccess] = useState<{ userId: string; allowed: boolean } | null>(null);
+  // Auth emits a fresh User object on session refresh/window focus. Keep the
+  // editor mounted while rechecking the same account, but never reuse another
+  // account's role decision (including the render before the effect runs).
+  const isAdmin = !user ? false : access?.userId === user.id ? access.allowed : null;
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      setIsAdmin(false);
+      setAccess(null);
       return;
     }
     let cancel = false;
-    setIsAdmin(null);
     (async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!cancel) setIsAdmin(!error && !!data);
+      try {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (!cancel) setAccess({ userId: user.id, allowed: !error && !!data });
+      } catch {
+        // Failed verification still denies access; it must not leave an initial
+        // login stuck on the loading gate or produce an unhandled rejection.
+        if (!cancel) setAccess({ userId: user.id, allowed: false });
+      }
     })();
     return () => {
       cancel = true;
