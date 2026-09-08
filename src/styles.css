@@ -870,6 +870,19 @@ body[data-admin-console="true"] [data-slot="sheet-close"] {
   border-radius: 0.625rem;
 }
 
+/* The navigation sheet is a sidebar, not the white record-editing sheet. */
+body[data-admin-console="true"] [data-slot="sheet-content"].admin-sidebar {
+  width: min(86vw, 18rem);
+  max-width: 18rem;
+  overflow: hidden;
+  background: #020617;
+  color: #f1f5f9;
+}
+
+body[data-admin-console="true"] .admin-sidebar > [data-slot="sheet-close"] {
+  display: none;
+}
+
 .admin-scope [data-slot="checkbox"] {
   width: 1.125rem;
   height: 1.125rem;

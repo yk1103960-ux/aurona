@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useBlocker } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
@@ -135,9 +136,22 @@ export function VariantEditor({
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>(initialTab);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [axesDirty, setAxesDirty] = useState(false);
+  const [axesSaving, setAxesSaving] = useState(false);
 
   const dirty = useRef(false);
   const qc = useQueryClient();
+  const busy = saving || axesSaving;
+  useBlocker({
+    shouldBlockFn: () =>
+      (dirty.current || axesDirty || busy) &&
+      !window.confirm(
+        busy
+          ? "A save is in progress. Leave this page anyway?"
+          : "Leave without saving your variation changes? Stay on this page to save them first.",
+      ),
+    enableBeforeUnload: () => dirty.current || axesDirty || busy,
+  });
 
   const q = useQuery({
     queryKey: ["admin-product-variants", familyId ?? null, productId, productSku],
@@ -168,10 +182,10 @@ export function VariantEditor({
       }
 
       if (!fam && productId && productId !== "new") {
-        const byProduct = await (supabase as any)
+        const byProduct = await supabase
           .from("product_families")
           .select("id, name")
-          .eq("legacy_product_id", productId)
+          .filter("legacy_product_id", "eq", productId)
           .maybeSingle();
         if (byProduct.error && !/legacy_product_id|schema cache/i.test(byProduct.error.message)) {
           throw byProduct.error;
@@ -180,11 +194,13 @@ export function VariantEditor({
       }
 
       if (!fam) {
-        const { data: viaVariant } = await supabase
+        const { data: viaVariant, error: variantError } = await supabase
           .from("product_variants")
           .select("family_id, product_families(id, name)")
           .eq("sku", productSku)
           .maybeSingle();
+
+        if (variantError) throw variantError;
 
         const rel = (
           viaVariant as {
@@ -204,18 +220,20 @@ export function VariantEditor({
       }
 
       const loadVariants = async () => {
-        let result = await (supabase as any)
+        let result = await supabase
           .from("product_variants")
           .select(COLS)
           .eq("family_id", fam.id)
-          .order("sort_order");
+          .order("sort_order")
+          .overrideTypes<Partial<Variant>[], { merge: false }>();
 
         if (result.error && /barcode|schema cache|does not exist/i.test(result.error.message)) {
-          result = await (supabase as any)
+          result = await supabase
             .from("product_variants")
             .select(LEGACY_COLS)
             .eq("family_id", fam.id)
-            .order("sort_order");
+            .order("sort_order")
+            .overrideTypes<Partial<Variant>[], { merge: false }>();
         }
 
         return result;
@@ -241,7 +259,7 @@ export function VariantEditor({
           barcode: row.barcode ?? "",
           expected_stock: Number(row.stock ?? 0),
         })) as Variant[],
-        axes: (axes ?? []).map((axis: any) => ({
+        axes: (axes ?? []).map((axis) => ({
           ...axis,
           values: Array.isArray(axis.values) ? axis.values : [],
         })) as Axis[],
@@ -250,7 +268,7 @@ export function VariantEditor({
   });
 
   useRealtime(["product_variants"], () => {
-    if (!dirty.current) q.refetch();
+    if (!dirty.current && !axesDirty && !busy) q.refetch();
   });
 
   useEffect(() => {
@@ -302,44 +320,53 @@ export function VariantEditor({
   }
 
   const updateRow = (id: string, patch: Partial<Variant>) => {
+    if (busy) return;
     dirty.current = true;
 
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
 
   const addRow = () => {
+    if (busy) return;
     dirty.current = true;
-    setRows((current) => [
-      ...current,
-      {
-        id: `new-${Date.now()}`,
-        family_id: family.id,
-        sku: `${productSku}-NEW-${String(current.length + 1).padStart(2, "0")}`,
-        barcode: "",
-        attributes: {},
-        mrp: 0,
-        price: 0,
-        discount_pct: 0,
-        retailer_price: null,
-        distributor_price: null,
-        moq: 1,
-        retailer_moq: null,
-        distributor_moq: null,
-        stock: 0,
-        pack_size: null,
-        weight_g: null,
-        dim_l: null,
-        dim_w: null,
-        dim_h: null,
-        pack_weight_g: null,
-        pack_l: null,
-        pack_w: null,
-        pack_h: null,
-        is_active: true,
-        sort_order: current.length,
-        low_stock_threshold: 10,
-      },
-    ]);
+    setRows((current) => {
+      const existing = new Set(current.map((row) => row.sku.trim().toUpperCase()));
+      let sequence = current.length + 1;
+      let sku = `${productSku}-NEW-${String(sequence).padStart(2, "0")}`;
+      while (existing.has(sku.toUpperCase()))
+        sku = `${productSku}-NEW-${String(++sequence).padStart(2, "0")}`;
+      return [
+        ...current,
+        {
+          id: `new-${crypto.randomUUID()}`,
+          family_id: family.id,
+          sku,
+          barcode: "",
+          attributes: {},
+          mrp: null,
+          price: null,
+          discount_pct: 0,
+          retailer_price: null,
+          distributor_price: null,
+          moq: 1,
+          retailer_moq: null,
+          distributor_moq: null,
+          stock: 0,
+          pack_size: null,
+          weight_g: null,
+          dim_l: null,
+          dim_w: null,
+          dim_h: null,
+          pack_weight_g: null,
+          pack_l: null,
+          pack_w: null,
+          pack_h: null,
+          is_active: false,
+          sort_order: current.length,
+          low_stock_threshold: 10,
+        },
+      ];
+    });
   };
 
   const generateCombinations = (sourceAxes: Axis[] = axes, sourceRows: Variant[] = rows) => {
@@ -409,6 +436,14 @@ export function VariantEditor({
   };
 
   const saveAll = async () => {
+    if (busy) return false;
+    if (axesDirty) {
+      setTab("options");
+      toast.info(
+        "Save your option changes first. Save Options also saves the current variation details.",
+      );
+      return false;
+    }
     setSaving(true);
 
     try {
@@ -449,7 +484,14 @@ export function VariantEditor({
       } else {
         toast.success("Variants saved");
       }
-      q.refetch();
+      const refreshed = await q.refetch();
+      if (refreshed.error) {
+        toast.warning(
+          "Saved, but the updated variations could not be loaded. Retry loading before editing or saving again.",
+        );
+        return false;
+      }
+      setRows(refreshed.data?.variants ?? []);
       return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save variants");
@@ -460,7 +502,10 @@ export function VariantEditor({
   };
 
   return (
-    <div className="md:col-span-2 overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <fieldset
+      disabled={busy}
+      className="md:col-span-2 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
+    >
       <div className="border-b border-slate-200 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -480,12 +525,7 @@ export function VariantEditor({
               Add Variant
             </Button>
 
-            <Button
-              size="sm"
-              type="button"
-              onClick={saveAll}
-              disabled={saving || rows.length === 0}
-            >
+            <Button size="sm" type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
               <Save className="mr-1 h-4 w-4" />
               {saving ? "Saving…" : "Save Variants"}
             </Button>
@@ -537,8 +577,21 @@ export function VariantEditor({
         </div>
       </div>
 
+      {(dirty.current || axesDirty) && (
+        <div
+          role="status"
+          className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          Unsaved changes.{" "}
+          {axesDirty
+            ? "Save Options to save option definitions and the current SKU details together."
+            : "Use Save Variants to apply your changes."}{" "}
+          Switching pricing tabs keeps your edits.
+        </div>
+      )}
+
       <div className="p-4">
-        {tab === "options" && (
+        <div hidden={tab !== "options"}>
           <OptionsTab
             familyId={family.id}
             axes={axes}
@@ -556,8 +609,10 @@ export function VariantEditor({
             generateCombinations={generateCombinations}
             editRow={(row) => setEditingId(row.id)}
             manageImages={onManageImages}
+            onAxesDirtyChange={setAxesDirty}
+            onAxesSavingChange={setAxesSaving}
           />
-        )}
+        </div>
 
         {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
 
@@ -569,7 +624,7 @@ export function VariantEditor({
       </div>
 
       <div className="flex justify-end border-t border-slate-200 bg-slate-50 p-4">
-        <Button type="button" onClick={saveAll} disabled={saving || rows.length === 0}>
+        <Button type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Saving…" : "Save All Variant Changes"}
         </Button>
@@ -579,7 +634,7 @@ export function VariantEditor({
         row={rows.find((row) => row.id === editingId) ?? null}
         axes={axes}
         open={Boolean(editingId)}
-        saving={saving}
+        saving={busy}
         onOpenChange={(open) => !open && setEditingId(null)}
         updateRow={updateRow}
         save={async () => {
@@ -587,7 +642,7 @@ export function VariantEditor({
         }}
         manageImages={onManageImages}
       />
-    </div>
+    </fieldset>
   );
 }
 
@@ -601,6 +656,8 @@ function OptionsTab({
   generateCombinations,
   editRow,
   manageImages,
+  onAxesDirtyChange,
+  onAxesSavingChange,
 }: {
   familyId: string;
   axes: Axis[];
@@ -611,6 +668,8 @@ function OptionsTab({
   generateCombinations: (axes?: Axis[], rows?: Variant[]) => void;
   editRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
+  onAxesDirtyChange: (dirty: boolean) => void;
+  onAxesSavingChange: (saving: boolean) => void;
 }) {
   return (
     <div className="space-y-5">
@@ -619,6 +678,8 @@ function OptionsTab({
         variants={rows}
         onSaved={refresh}
         generateCombinations={generateCombinations}
+        onDirtyChange={onAxesDirtyChange}
+        onSavingChange={onAxesSavingChange}
       />
 
       <h3 className="text-lg font-semibold">All Variants · {rows.length}</h3>
@@ -881,6 +942,12 @@ function VariantFullCard({
               <Input
                 className="mt-1 font-mono"
                 value={row.sku}
+                readOnly={!row.id.startsWith("new-")}
+                title={
+                  row.id.startsWith("new-")
+                    ? "Choose a unique SKU before saving"
+                    : "Saved SKU codes are fixed to preserve order and image references"
+                }
                 onChange={(event) => updateRow(row.id, { sku: event.target.value })}
               />
             </label>
@@ -995,110 +1062,118 @@ function VariantEditDialog({
           </p>
         </DialogHeader>
 
-        <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-          <h3 className="font-semibold text-slate-900">Variation identity</h3>
-          <label className="block">
-            <FieldTitle>Variant label (optional)</FieldTitle>
-            <Input
-              value={row.attributes.variant_label ?? ""}
-              onChange={(event) =>
-                updateRow(row.id, {
-                  attributes: { ...row.attributes, variant_label: event.target.value },
-                })
-              }
-              placeholder="Defaults to the selected option values"
-            />
-          </label>
-          {numberField("sort_order", "Display order", { min: 0 })}
-          {axes.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {axes.map((axis) => (
-                <label key={axis.axis_key}>
-                  <FieldTitle>{axis.label}</FieldTitle>
-                  <select
-                    className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
-                    value={row.attributes?.[axis.axis_key] ?? ""}
-                    onChange={(event) =>
-                      updateRow(row.id, {
-                        attributes: { ...row.attributes, [axis.axis_key]: event.target.value },
-                      })
-                    }
-                  >
-                    <option value="">— Select —</option>
-                    {axis.values.map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
+        <fieldset disabled={saving} className="min-w-0 space-y-4">
+          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">Variation identity</h3>
+            <label className="block">
+              <FieldTitle>Variant label (optional)</FieldTitle>
+              <Input
+                value={row.attributes.variant_label ?? ""}
+                onChange={(event) =>
+                  updateRow(row.id, {
+                    attributes: { ...row.attributes, variant_label: event.target.value },
+                  })
+                }
+                placeholder="Defaults to the selected option values"
+              />
+            </label>
+            {numberField("sort_order", "Display order", { min: 0 })}
+            {axes.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {axes.map((axis) => (
+                  <label key={axis.axis_key}>
+                    <FieldTitle>{axis.label}</FieldTitle>
+                    <select
+                      className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                      value={row.attributes?.[axis.axis_key] ?? ""}
+                      onChange={(event) =>
+                        updateRow(row.id, {
+                          attributes: { ...row.attributes, [axis.axis_key]: event.target.value },
+                        })
+                      }
+                    >
+                      <option value="">— Select —</option>
+                      {axis.values.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label>
+                <FieldTitle>SKU / Item Code</FieldTitle>
+                <Input
+                  className="mt-1 font-mono"
+                  value={row.sku}
+                  readOnly={!row.id.startsWith("new-")}
+                  title={
+                    row.id.startsWith("new-")
+                      ? "Choose a unique SKU before saving"
+                      : "Saved SKU codes are fixed to preserve order and image references"
+                  }
+                  onChange={(event) => updateRow(row.id, { sku: event.target.value })}
+                />
+              </label>
+              <label>
+                <FieldTitle>Barcode / GTIN</FieldTitle>
+                <Input
+                  className="mt-1 font-mono"
+                  value={row.barcode ?? ""}
+                  onChange={(event) => updateRow(row.id, { barcode: event.target.value })}
+                />
+              </label>
             </div>
-          )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label>
-              <FieldTitle>SKU / Item Code</FieldTitle>
-              <Input
-                className="mt-1 font-mono"
-                value={row.sku}
-                onChange={(event) => updateRow(row.id, { sku: event.target.value })}
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <Switch
+                checked={row.is_active}
+                onCheckedChange={(value) => updateRow(row.id, { is_active: value })}
               />
+              Available for sale
             </label>
-            <label>
-              <FieldTitle>Barcode / GTIN</FieldTitle>
-              <Input
-                className="mt-1 font-mono"
-                value={row.barcode ?? ""}
-                onChange={(event) => updateRow(row.id, { barcode: event.target.value })}
-              />
-            </label>
-          </div>
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <Switch
-              checked={row.is_active}
-              onCheckedChange={(value) => updateRow(row.id, { is_active: value })}
-            />
-            Available for sale
-          </label>
-        </section>
+          </section>
 
-        <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-          <h3 className="font-semibold text-slate-900">Prices and ordering</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {numberField("mrp", "MRP ₹", { min: 0 })}
-            {numberField("price", "Customer Price ₹", { min: 0 })}
-            {numberField("retailer_price", "Retailer Price ₹", { min: 0 })}
-            {numberField("distributor_price", "Distributor Price ₹", { min: 0 })}
-            {numberField("moq", "Customer MOQ", { min: 1 })}
-            {numberField("retailer_moq", "Retailer MOQ", { min: 1 })}
-            {numberField("distributor_moq", "Distributor MOQ", { min: 1 })}
-            {numberField("pack_size", "Pieces / Pack", { min: 1 })}
-            {numberField("stock", "Stock", { min: 0 })}
-            {numberField("low_stock_threshold", "Low-stock Alert", { min: 0 })}
-          </div>
-        </section>
+          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">Prices and ordering</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {numberField("mrp", "MRP ₹", { min: 0 })}
+              {numberField("price", "Customer Price ₹", { min: 0 })}
+              {numberField("retailer_price", "Retailer Price ₹", { min: 0 })}
+              {numberField("distributor_price", "Distributor Price ₹", { min: 0 })}
+              {numberField("moq", "Customer MOQ", { min: 1 })}
+              {numberField("retailer_moq", "Retailer MOQ", { min: 1 })}
+              {numberField("distributor_moq", "Distributor MOQ", { min: 1 })}
+              {numberField("pack_size", "Pieces / Pack", { min: 1 })}
+              {numberField("stock", "Stock", { min: 0 })}
+              {numberField("low_stock_threshold", "Low-stock Alert", { min: 0 })}
+            </div>
+          </section>
 
-        <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-          <h3 className="font-semibold text-slate-900">Unit weight and dimensions</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {numberField("weight_g", "Weight (g)", { min: 0 })}
-            {numberField("dim_l", "Length (cm)", { min: 0 })}
-            {numberField("dim_w", "Width (cm)", { min: 0 })}
-            {numberField("dim_h", "Height (cm)", { min: 0 })}
-          </div>
-        </section>
+          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">Unit weight and dimensions</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {numberField("weight_g", "Weight (g)", { min: 0 })}
+              {numberField("dim_l", "Length (cm)", { min: 0 })}
+              {numberField("dim_w", "Width (cm)", { min: 0 })}
+              {numberField("dim_h", "Height (cm)", { min: 0 })}
+            </div>
+          </section>
 
-        <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-          <h3 className="font-semibold text-slate-900">Package weight and dimensions</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {numberField("pack_weight_g", "Package Weight (g)", { min: 0 })}
-            {numberField("pack_l", "Package Length (cm)", { min: 0 })}
-            {numberField("pack_w", "Package Width (cm)", { min: 0 })}
-            {numberField("pack_h", "Package Height (cm)", { min: 0 })}
-          </div>
-        </section>
+          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">Package weight and dimensions</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {numberField("pack_weight_g", "Package Weight (g)", { min: 0 })}
+              {numberField("pack_l", "Package Length (cm)", { min: 0 })}
+              {numberField("pack_w", "Package Width (cm)", { min: 0 })}
+              {numberField("pack_h", "Package Height (cm)", { min: 0 })}
+            </div>
+          </section>
 
-        <VariantSpecifications row={row} axes={axes} updateRow={updateRow} />
+          <VariantSpecifications row={row} axes={axes} updateRow={updateRow} />
+        </fieldset>
         <DialogFooter>
           {manageImages && !row.id.startsWith("new-") && (
             <Button
@@ -1626,11 +1701,15 @@ function AxisEditor({
   variants,
   onSaved,
   generateCombinations,
+  onDirtyChange,
+  onSavingChange,
 }: {
   familyId: string;
   variants: Variant[];
   onSaved: () => Promise<Variant[]>;
   generateCombinations: (axes?: Axis[], rows?: Variant[]) => void;
+  onDirtyChange: (dirty: boolean) => void;
+  onSavingChange: (saving: boolean) => void;
 }) {
   const [rows, setRows] = useState<Axis[]>([]);
   const [saving, setSaving] = useState(false);
@@ -1652,7 +1731,7 @@ function AxisEditor({
 
       if (error) throw error;
 
-      return (data ?? []).map((axis: any) => ({
+      return (data ?? []).map((axis) => ({
         ...axis,
         values: Array.isArray(axis.values) ? axis.values : [],
       })) as Axis[];
@@ -1667,6 +1746,7 @@ function AxisEditor({
 
   const updateAxis = (id: string, patch: Partial<Axis>) => {
     dirty.current = true;
+    onDirtyChange(true);
 
     setRows((current) => current.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
   };
@@ -1678,6 +1758,7 @@ function AxisEditor({
       return;
     }
     dirty.current = true;
+    onDirtyChange(true);
     setRows((current) => [
       ...current,
       {
@@ -1701,6 +1782,7 @@ function AxisEditor({
       return;
     }
     dirty.current = true;
+    onDirtyChange(true);
     setRows((current) => current.filter((item) => item.id !== axis.id));
   };
 
@@ -1750,6 +1832,7 @@ function AxisEditor({
       }
     }
     setSaving(true);
+    onSavingChange(true);
 
     try {
       const result = await adminSaveVariantMatrix({
@@ -1771,6 +1854,7 @@ function AxisEditor({
       });
 
       dirty.current = false;
+      onDirtyChange(false);
 
       for (const key of [
         "product",
@@ -1787,15 +1871,44 @@ function AxisEditor({
       } else {
         toast.success("Options saved");
       }
-      await q.refetch();
+      // Refresh SKU IDs first: a committed new SKU must never be submitted as a draft again.
       const savedVariants = await onSaved();
+      const axesResult = await q.refetch();
+      if (axesResult.error) throw axesResult.error;
       if (generateAfterSave) generateCombinations(generationAxes, savedVariants);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save options");
     } finally {
       setSaving(false);
+      onSavingChange(false);
     }
   };
+
+  if (q.isLoading)
+    return (
+      <p role="status" className="p-4 text-sm text-slate-500">
+        Loading option definitions…
+      </p>
+    );
+  if (q.isError)
+    return (
+      <div
+        role="alert"
+        className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+      >
+        Option definitions could not be loaded. Your current edits are retained while this page
+        stays open.
+        <Button
+          type="button"
+          variant="outline"
+          className="ml-3"
+          onClick={() => q.refetch()}
+          disabled={q.isFetching}
+        >
+          Retry options
+        </Button>
+      </div>
+    );
 
   return (
     <div className="rounded-xl border border-slate-200 p-4">

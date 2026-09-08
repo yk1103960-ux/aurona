@@ -76,9 +76,12 @@ function InventoryAdmin() {
     queryFn: () => adminListInventory({ data: { search, lowOnly } }) as Promise<InventoryRow[]>,
   });
 
-  useRealtime(["product_variants", "product_families", "inventory_ledger"], () => {
-    void qc.invalidateQueries({ queryKey: ["admin-inventory"] });
-  });
+  const realtimeStatus = useRealtime(
+    ["product_variants", "product_families", "inventory_ledger"],
+    () => {
+      void qc.invalidateQueries({ queryKey: ["admin-inventory"] });
+    },
+  );
 
   const rows = useMemo(() => q.data ?? [], [q.data]);
   const families = useMemo<InventoryFamily[]>(() => {
@@ -107,7 +110,11 @@ function InventoryAdmin() {
   }, [rows]);
 
   useEffect(() => {
-    if (families.length && !families.some((family) => family.id === expandedFamily)) {
+    if (
+      families.length &&
+      expandedFamily !== null &&
+      !families.some((family) => family.id === expandedFamily)
+    ) {
       setExpandedFamily(families[0].id);
     }
     if (!families.length) setExpandedFamily(null);
@@ -135,6 +142,8 @@ function InventoryAdmin() {
         qc.invalidateQueries({ queryKey: ["admin-inventory"] }),
         qc.invalidateQueries({ queryKey: ["admin-products"] }),
         qc.invalidateQueries({ queryKey: ["admin-product-variants"] }),
+        qc.invalidateQueries({ queryKey: ["admin-product-master"] }),
+        qc.invalidateQueries({ queryKey: ["admin-dashboard"] }),
       ]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update inventory");
@@ -147,8 +156,18 @@ function InventoryAdmin() {
     <div className="mx-auto w-full max-w-[1500px] space-y-6 pb-12">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-            <CircleCheck className="h-3.5 w-3.5" /> Live updates enabled
+          <div
+            role="status"
+            className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${realtimeStatus === "live" ? "bg-emerald-500" : "bg-amber-500"}`}
+            />
+            {realtimeStatus === "live"
+              ? "Realtime connected"
+              : realtimeStatus === "connecting"
+                ? "Connecting live updates…"
+                : "Live updates unavailable — use Refresh"}
           </div>
           <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-slate-950">
             <Boxes className="h-7 w-7 text-sky-600" /> SKU Inventory
@@ -203,6 +222,7 @@ function InventoryAdmin() {
           <Input
             className="h-11 bg-slate-50 pl-9"
             placeholder="Search product, family SKU, variant SKU or option…"
+            aria-label="Search inventory"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />

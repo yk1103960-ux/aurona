@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { subscribeAdminChanges, type AdminRealtimeStatus } from "@/lib/admin-realtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -33,16 +34,22 @@ export function useAdmin() {
 
 /** Subscribe to realtime changes for one or more tables. */
 export function useRealtime(tables: string[], onChange: () => void) {
+  const ownerId = useId();
+  const latest = useRef(onChange);
+  const [status, setStatus] = useState<AdminRealtimeStatus>("connecting");
   useEffect(() => {
-    const channels = tables.map((t) =>
-      supabase
-        .channel(`admin-${t}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: t }, onChange)
-        .subscribe(),
+    latest.current = onChange;
+  }, [onChange]);
+  const tableKey = [...new Set(tables)].sort().join(",");
+  useEffect(() => {
+    if (!tableKey) return;
+    return subscribeAdminChanges(
+      supabase,
+      tableKey.split(","),
+      () => latest.current(),
+      setStatus,
+      ownerId,
     );
-    return () => {
-      channels.forEach((c) => supabase.removeChannel(c));
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tables.join(",")]);
+  }, [tableKey, ownerId]);
+  return status;
 }

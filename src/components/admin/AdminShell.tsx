@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -35,6 +35,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Search, RefreshCw, AlertTriangle } from "lucide-react";
+import { isAdminPathActive, isAdminQueryKey } from "@/lib/admin-navigation";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -124,10 +137,12 @@ const NAV_GROUPS: NavGroup[] = [
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 function isNavActive(item: NavItem, pathname: string) {
-  return item.exact ? pathname === item.to : pathname.startsWith(item.to);
+  return isAdminPathActive(pathname, item.to, item.exact);
 }
 
 function currentAdminLabel(pathname: string) {
+  if (/\/products\/[^/]+\/variations\/?$/.test(pathname)) return "Manage Variants";
+  if (/\/orders\/[^/]+\/?$/.test(pathname)) return "Order Details";
   const direct = [DASHBOARD, ...NAV_GROUPS.flatMap((group) => group.items)].find((item) =>
     isNavActive(item, pathname),
   );
@@ -143,7 +158,8 @@ function AdminNavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <Link
       to={item.to}
-      className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+      aria-current={active ? "page" : undefined}
+      className={`flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 ${active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
     >
       {Icon ? (
         <Icon className="h-4 w-4" />
@@ -161,6 +177,46 @@ export function AdminShell() {
   const loc = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(["Products"]));
+  const [searchOpen, setSearchOpen] = useState(false);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const searchReturnFocus = useRef<HTMLElement | null>(null);
+  const openPageSearch = useCallback(() => {
+    searchReturnFocus.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setMenuOpen(false);
+    setSearchOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        if (searchOpen) setSearchOpen(false);
+        else openPageSearch();
+      }
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  }, [isAdmin, searchOpen, openPageSearch]);
+
+  useEffect(() => {
+    const active = NAV_GROUPS.find(
+      (group) =>
+        group.items.some((item) => isNavActive(item, loc.pathname)) ||
+        (group.label === "Products" && loc.pathname.startsWith("/aurona-console-9f2x7k/products/")),
+    );
+    if (active) setOpenGroups((current) => new Set([...current, active.label]));
+  }, [loc.pathname]);
+
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setMenuOpen(false);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -222,14 +278,96 @@ export function AdminShell() {
     nav({ to: "/aurona-console-9f2x7k", replace: true });
   };
 
+  const sidebarContent = (
+    <>
+      <div className="flex items-center justify-between gap-2 border-b border-white/10 px-5 py-5">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-amber-400" />
+          <div>
+            <div className="text-xs uppercase tracking-widest text-white/60">Aurona</div>
+            <div className="text-sm font-semibold">Admin Console</div>
+          </div>
+        </div>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close admin menu"
+          className="lg:hidden text-white/70 hover:text-white hover:bg-white/10"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        <AdminNavLink item={DASHBOARD} pathname={loc.pathname} />
+        {NAV_GROUPS.map((group) => {
+          const containsActive = group.items.some((item) => isNavActive(item, loc.pathname));
+          const expanded = openGroups.has(group.label);
+          const Icon = group.icon;
+          return (
+            <div key={group.label} className="space-y-1">
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() =>
+                  setOpenGroups((current) => {
+                    const next = new Set(current);
+                    if (next.has(group.label)) next.delete(group.label);
+                    else next.add(group.label);
+                    return next;
+                  })
+                }
+                className={`flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 ${containsActive ? "text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="flex-1 text-left">{group.label}</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {expanded && (
+                <div className="ml-3 space-y-1 border-l border-white/10 pl-2">
+                  {group.items.map((item) => (
+                    <AdminNavLink key={item.to} item={item} pathname={loc.pathname} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+      <div className="p-3 border-t border-white/10 space-y-2">
+        <div className="text-xs text-white/50 truncate px-2">{user.email}</div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={signOut}
+          className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+        >
+          <LogOut className="w-4 h-4 mr-2" /> Sign out
+        </Button>
+        <Link to="/" className="block text-xs text-white/50 hover:text-white px-2">
+          ← Back to website
+        </Link>
+      </div>
+    </>
+  );
+
   return (
     <div className="admin-scope min-h-screen bg-slate-50 text-slate-900">
+      <a
+        href="#admin-page-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:p-3"
+      >
+        Skip to page content
+      </a>
       {/* Mobile top bar */}
       <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
         <Button
           size="icon"
           variant="ghost"
           onClick={() => setMenuOpen(true)}
+          ref={menuTrigger}
           aria-label="Open admin menu"
         >
           <Menu className="w-5 h-5" />
@@ -238,93 +376,37 @@ export function AdminShell() {
           <Shield className="w-4 h-4 shrink-0 text-amber-500" />
           <span className="truncate text-sm font-semibold">Aurona Admin</span>
         </div>
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="ml-auto"
+          onClick={openPageSearch}
+          aria-label="Find an admin page"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
       </div>
 
-      {menuOpen && (
-        <button
-          type="button"
-          aria-label="Close admin menu"
-          onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-950/60 lg:hidden"
-        />
-      )}
-
-      <aside
-        className={`admin-sidebar fixed inset-y-0 left-0 z-50 flex w-72 max-w-[86vw] flex-col bg-slate-950 text-slate-100 shadow-2xl transition-transform duration-300 lg:w-64 lg:translate-x-0 lg:shadow-none ${
-          menuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-5 py-5">
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-amber-400" />
-            <div>
-              <div className="text-xs uppercase tracking-widest text-white/60">Aurona</div>
-              <div className="text-sm font-semibold">Admin Console</div>
-            </div>
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close admin menu"
-            className="lg:hidden text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          <AdminNavLink item={DASHBOARD} pathname={loc.pathname} />
-          {NAV_GROUPS.map((group) => {
-            const containsActive = group.items.some((item) => isNavActive(item, loc.pathname));
-            const expanded = openGroups.has(group.label) || containsActive;
-            const Icon = group.icon;
-            return (
-              <div key={group.label} className="space-y-1">
-                <button
-                  type="button"
-                  aria-expanded={expanded}
-                  onClick={() =>
-                    setOpenGroups((current) => {
-                      const next = new Set(current);
-                      if (next.has(group.label)) next.delete(group.label);
-                      else next.add(group.label);
-                      return next;
-                    })
-                  }
-                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition ${containsActive ? "text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="flex-1 text-left">{group.label}</span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-                  />
-                </button>
-                {expanded && (
-                  <div className="ml-3 space-y-1 border-l border-white/10 pl-2">
-                    {group.items.map((item) => (
-                      <AdminNavLink key={item.to} item={item} pathname={loc.pathname} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-        <div className="p-3 border-t border-white/10 space-y-2">
-          <div className="text-xs text-white/50 truncate px-2">{user.email}</div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={signOut}
-            className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
-          >
-            <LogOut className="w-4 h-4 mr-2" /> Sign out
-          </Button>
-          <Link to="/" className="block text-xs text-white/50 hover:text-white px-2">
-            ← Back to website
-          </Link>
-        </div>
+      <aside className="admin-sidebar fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-slate-950 text-slate-100 lg:flex">
+        {sidebarContent}
       </aside>
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (!searchOpen) menuTrigger.current?.focus();
+          }}
+          side="left"
+          className="admin-sidebar flex w-72 max-w-[86vw] flex-col gap-0 border-0 bg-slate-950 p-0 text-slate-100 [&>button]:hidden"
+        >
+          <SheetTitle className="sr-only">Admin navigation</SheetTitle>
+          <SheetDescription className="sr-only">
+            Choose an admin page. Press Escape to close the menu.
+          </SheetDescription>
+          {sidebarContent}
+        </SheetContent>
+      </Sheet>
       <main className="min-h-screen lg:pl-64">
         <header className="admin-topbar sticky top-0 z-20 hidden h-16 items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 backdrop-blur lg:flex">
           <div className="flex items-center gap-2 text-sm">
@@ -333,6 +415,10 @@ export function AdminShell() {
             <span className="font-semibold text-slate-700">{currentAdminLabel(loc.pathname)}</span>
           </div>
           <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" onClick={openPageSearch}>
+              <Search className="h-4 w-4" /> Find a page{" "}
+              <kbd className="ml-2 text-xs text-slate-400">Ctrl / ⌘ K</kbd>
+            </Button>
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-xs font-bold text-sky-700">
               {(user.email?.[0] ?? "A").toUpperCase()}
             </span>
@@ -342,10 +428,127 @@ export function AdminShell() {
             </div>
           </div>
         </header>
-        <div className="mx-auto min-w-0 max-w-[1480px] p-4 sm:p-6 lg:p-8">
+        <div
+          id="admin-page-content"
+          tabIndex={-1}
+          className="mx-auto min-w-0 max-w-[1480px] p-4 sm:p-6 lg:p-8"
+        >
+          <AdminDataStatus />
           <Outlet />
         </div>
       </main>
+      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <DialogContent
+          className="overflow-hidden p-0"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const target = searchReturnFocus.current;
+            if (target?.isConnected && target.getClientRects().length) target.focus();
+            else document.getElementById("admin-page-content")?.focus();
+          }}
+        >
+          <DialogTitle className="sr-only">Find an admin page</DialogTitle>
+          <DialogDescription className="sr-only">
+            Search page names, then use arrow keys and Enter to open a page.
+          </DialogDescription>
+          <Command>
+            <CommandInput placeholder="Products, prices, stock, orders…" />
+            <CommandList className="max-h-[60vh]">
+              <CommandEmpty>No matching page. Try a shorter search.</CommandEmpty>
+              {[{ label: "Overview", items: [DASHBOARD] }, ...NAV_GROUPS].map((group) => (
+                <CommandGroup key={group.label} heading={group.label}>
+                  {group.items.map((item) => (
+                    <CommandItem
+                      key={item.to}
+                      value={`${group.label} ${item.label} ${item.to.includes("master") ? "prices variants SKU dimensions" : ""}`}
+                      onSelect={() => {
+                        setSearchOpen(false);
+                        void nav({ to: item.to });
+                      }}
+                    >
+                      {item.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function AdminDataStatus() {
+  const qc = useQueryClient();
+  const cache = qc.getQueryCache();
+  const failed = () =>
+    cache
+      .getAll()
+      .filter(
+        (query) =>
+          query.isActive() && query.state.status === "error" && isAdminQueryKey(query.queryKey),
+      );
+  const subscribe = useCallback((listener: () => void) => cache.subscribe(listener), [cache]);
+  const snapshot = useCallback(
+    () =>
+      JSON.stringify(
+        cache
+          .getAll()
+          .filter(
+            (query) =>
+              query.isActive() && query.state.status === "error" && isAdminQueryKey(query.queryKey),
+          )
+          .map((query) => [query.queryHash, query.state.fetchStatus]),
+      ),
+    [cache],
+  );
+  useSyncExternalStore(subscribe, snapshot, () => "[]");
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  const failures = failed();
+  if (online && !failures.length) return null;
+  return (
+    <div
+      role="alert"
+      className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
+    >
+      <div className="flex gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p className="font-semibold">
+            {online ? "Some page data could not be loaded" : "You are offline"}
+          </p>
+          <p className="mt-1">
+            {online
+              ? "An empty table may not mean there are no records. Retry the failed requests; database setup or access may need attention."
+              : "Displayed data may be out of date. Reconnect before saving changes."}
+          </p>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={!online || failures.some((query) => query.state.fetchStatus === "fetching")}
+        onClick={() => {
+          const hashes = new Set(failures.map((query) => query.queryHash));
+          void qc.refetchQueries({
+            type: "active",
+            predicate: (query) => hashes.has(query.queryHash),
+          });
+        }}
+      >
+        <RefreshCw className="h-4 w-4" /> Retry failed requests
+      </Button>
     </div>
   );
 }
