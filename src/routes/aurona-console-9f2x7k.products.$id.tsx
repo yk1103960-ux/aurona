@@ -249,6 +249,9 @@ const TABS: {
   },
 ];
 
+/** The everyday workflow: details, photos, then prices and variations. */
+const SIMPLE_TABS: MainTab[] = ["general", "media", "customer"];
+
 export function ProductEditor({ productId: id }: { productId: string }) {
   const isNew = id === "new";
 
@@ -258,6 +261,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
   const [f, setF] = useState<ProductForm>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<MainTab>("general");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
@@ -834,6 +838,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             </div>
           </Section>
 
+          {showAdvanced && (
           <Section title="Affiliate Commission" className="lg:col-span-2">
             <Check
               label="Affiliates can earn on this product"
@@ -878,6 +883,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               </Field>
             </div>
           </Section>
+          )}
         </div>
       )}
 
