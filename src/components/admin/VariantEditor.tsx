@@ -101,10 +101,12 @@ const variantName = (row: Variant) => {
 export function VariantEditor({
   productSku,
   productId,
+  familyId,
   initialTab = "options",
 }: {
   productSku: string;
   productId: string;
+  familyId?: string | null;
   initialTab?: Tab;
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
@@ -115,19 +117,44 @@ export function VariantEditor({
   const qc = useQueryClient();
 
   const q = useQuery({
-    queryKey: ["admin-product-variants", productSku],
-    enabled: !!productSku,
+    queryKey: ["admin-product-variants", familyId ?? null, productId, productSku],
+    enabled: !!productSku || !!familyId,
     refetchOnWindowFocus: false,
 
     queryFn: async () => {
-      let fam: { id: string; name: string } | null =
-        (
-          await supabase
-            .from("product_families")
-            .select("id, name")
-            .eq("main_sku", productSku)
-            .maybeSingle()
-        ).data ?? null;
+      let fam: { id: string; name: string } | null = null;
+
+      if (familyId) {
+        const byId = await supabase
+          .from("product_families")
+          .select("id, name")
+          .eq("id", familyId)
+          .maybeSingle();
+        if (byId.error) throw byId.error;
+        fam = byId.data;
+      }
+
+      if (!fam && productSku) {
+        const bySku = await supabase
+          .from("product_families")
+          .select("id, name")
+          .eq("main_sku", productSku)
+          .maybeSingle();
+        if (bySku.error) throw bySku.error;
+        fam = bySku.data;
+      }
+
+      if (!fam && productId && productId !== "new") {
+        const byProduct = await (supabase as any)
+          .from("product_families")
+          .select("id, name")
+          .eq("legacy_product_id", productId)
+          .maybeSingle();
+        if (byProduct.error && !/legacy_product_id|schema cache/i.test(byProduct.error.message)) {
+          throw byProduct.error;
+        }
+        fam = byProduct.data ?? null;
+      }
 
       if (!fam) {
         const { data: viaVariant } = await supabase
@@ -215,7 +242,40 @@ export function VariantEditor({
   const family = q.data?.family;
   const axes = q.data?.axes ?? [];
 
-  if (!family) return null;
+  if (q.isLoading) {
+    return (
+      <div className="md:col-span-2 rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+        Loading product variations…
+      </div>
+    );
+  }
+
+  if (q.isError) {
+    return (
+      <div className="md:col-span-2 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+        <div className="font-semibold">Could not load product variations</div>
+        <p className="mt-1">{q.error instanceof Error ? q.error.message : "Please retry."}</p>
+        <Button className="mt-3" type="button" variant="outline" onClick={() => q.refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (!family) {
+    return (
+      <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+        <div className="font-semibold">Variation family is not ready</div>
+        <p className="mt-1">
+          Save the main product first, then reopen Manage Variations. If it was already saved, apply
+          the product-admin parity migration and retry.
+        </p>
+        <Button className="mt-3" type="button" variant="outline" onClick={() => q.refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   const updateRow = (id: string, patch: Partial<Variant>) => {
     dirty.current = true;

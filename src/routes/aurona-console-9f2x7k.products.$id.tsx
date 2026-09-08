@@ -421,7 +421,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
     }));
   };
 
-  const save = async () => {
+  const save = async (afterSave: "edit" | "variations" = "edit") => {
     if (!f.name.trim() || !f.sku.trim()) {
       toast.error("Name and SKU are required");
       return;
@@ -496,13 +496,18 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           // The product is already saved; unavailable browser storage is harmless.
         }
         setDraftSavedAt(null);
-        nav({
-          to: "/aurona-console-9f2x7k/products/$id",
-
-          params: {
-            id: result.product_id,
-          },
-        });
+        const savedId = result.family_id ?? result.product_id;
+        nav(
+          afterSave === "variations"
+            ? {
+                to: "/aurona-console-9f2x7k/products/$id/variations",
+                params: { id: savedId },
+              }
+            : {
+                to: "/aurona-console-9f2x7k/products/$id",
+                params: { id: result.product_id },
+              },
+        );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save product");
@@ -616,7 +621,19 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               </Link>
             </Button>
           )}
-          <Button onClick={save} disabled={saving} size="lg">
+          {isNew && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={saving}
+              size="lg"
+              onClick={() => save("variations")}
+            >
+              <Layers3 className="h-4 w-4" />
+              {saving ? "Saving…" : "Save & Add Variations"}
+            </Button>
+          )}
+          <Button onClick={() => save()} disabled={saving} size="lg">
             <Save className="mr-2 h-4 w-4" />
 
             {saving ? "Saving…" : "Save Product"}
@@ -1145,7 +1162,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
 
       <div className="sticky bottom-3 z-20 flex justify-end">
         <div className="rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
-          <Button onClick={save} disabled={saving} size="lg">
+          <Button onClick={() => save()} disabled={saving} size="lg">
             <Save className="mr-2 h-4 w-4" />
 
             {saving ? "Saving…" : "Save Product"}

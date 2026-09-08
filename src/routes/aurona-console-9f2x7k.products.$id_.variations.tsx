@@ -104,7 +104,7 @@ function ProductVariationsPage() {
         />
       </div>
 
-      <VariantEditor productSku={data.main_sku} productId={editorId} />
+      <VariantEditor productSku={data.main_sku} productId={editorId} familyId={data.id} />
       <ProductImageManager productSku={data.main_sku} productId={editorId} />
     </div>
   );
