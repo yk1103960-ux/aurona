@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { ArrowLeft, Image as ImageIcon, Layers3, RefreshCw, Ruler, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id_/varia
 
 function ProductVariationsPage() {
   const { id } = Route.useParams();
+  const [photoSku, setPhotoSku] = useState("");
   const loadProduct = useServerFn(adminGetProductForEdit);
   const product = useQuery({
     queryKey: ["admin-product-variation-workspace", id],
@@ -104,8 +106,25 @@ function ProductVariationsPage() {
         />
       </div>
 
-      <VariantEditor productSku={data.main_sku} productId={editorId} familyId={data.id} />
-      <ProductImageManager productSku={data.main_sku} productId={editorId} />
+      <VariantEditor
+        productSku={data.main_sku}
+        productId={editorId}
+        familyId={data.id}
+        onManageImages={(sku) => {
+          setPhotoSku(sku);
+          window.setTimeout(
+            () =>
+              document.getElementById("variation-photos")?.scrollIntoView({ behavior: "smooth" }),
+            0,
+          );
+        }}
+      />
+      <ProductImageManager
+        productSku={data.main_sku}
+        productId={editorId}
+        initialVariantSku={photoSku}
+        sectionId="variation-photos"
+      />
     </div>
   );
 }

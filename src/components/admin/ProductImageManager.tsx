@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
 import { adminSetPrimaryProductImage } from "@/lib/catalog-admin.functions";
-
 
 type Row = {
   id: string;
@@ -25,11 +24,25 @@ type Row = {
  * that variant's photo when the shopper switches variation, falling back to the
  * untagged family photos.
  */
-export function ProductImageManager({ productSku, productId }: { productSku: string; productId: string }) {
+export function ProductImageManager({
+  productSku,
+  productId,
+  initialVariantSku = "",
+  sectionId,
+}: {
+  productSku: string;
+  productId: string;
+  initialVariantSku?: string;
+  sectionId?: string;
+}) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [targetSku, setTargetSku] = useState("");
+  const [targetSku, setTargetSku] = useState(initialVariantSku);
+
+  useEffect(() => {
+    setTargetSku(initialVariantSku);
+  }, [initialVariantSku]);
 
   const q = useQuery({
     queryKey: ["admin-product-images", productSku, productId],
@@ -72,7 +85,15 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-product-images"] });
     // Storefront views that render product photos.
-    for (const key of ["product-images", "product", "family", "family-products", "products", "families-page", "browse-products"]) {
+    for (const key of [
+      "product-images",
+      "product",
+      "family",
+      "family-products",
+      "products",
+      "families-page",
+      "browse-products",
+    ]) {
       qc.invalidateQueries({ queryKey: [key] });
     }
   };
@@ -130,7 +151,9 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
   const makePrimary = async (row: Row) => {
     try {
       await adminSetPrimaryProductImage({ data: { imageId: row.id } });
-      toast.success(row.variant_sku ? `Primary photo set for ${row.variant_sku}` : "Primary family photo set");
+      toast.success(
+        row.variant_sku ? `Primary photo set for ${row.variant_sku}` : "Primary family photo set",
+      );
       refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not set primary photo");
@@ -158,12 +181,14 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
     refresh();
   };
 
-
   const skus = q.data?.skus ?? [];
   const images = q.data?.images ?? [];
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 md:col-span-2">
+    <div
+      id={sectionId}
+      className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 md:col-span-2 scroll-mt-6"
+    >
       <div className="font-semibold text-sm uppercase tracking-wider text-slate-500">Photos</div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -196,7 +221,9 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
       </div>
 
       {images.length === 0 ? (
-        <div className="text-xs text-slate-500">No photos yet. Upload square images for best results.</div>
+        <div className="text-xs text-slate-500">
+          No photos yet. Upload square images for best results.
+        </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((row) => (
@@ -247,7 +274,6 @@ export function ProductImageManager({ productSku, productId }: { productSku: str
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
-
             </div>
           ))}
         </div>
