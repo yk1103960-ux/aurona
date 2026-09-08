@@ -25,54 +25,29 @@ import {
   SlidersHorizontal,
   Pencil,
   Image as ImageIcon,
+  Copy,
+  ArrowLeft,
+  ArrowRight,
+  Upload,
+  Star,
 } from "lucide-react";
-import { adminSaveVariantMatrix } from "@/lib/catalog-admin.functions";
+import { adminSaveVariantMatrix, adminSetPrimaryProductImage } from "@/lib/catalog-admin.functions";
+import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { missingCombinations } from "@/lib/variant-options";
 
-type Variant = {
-  id: string;
-  family_id: string;
-  sku: string;
-  barcode: string;
-  attributes: Record<string, string>;
-
-  mrp: number | null;
-  price: number | null;
-  discount_pct: number | null;
-
-  retailer_price: number | null;
-  distributor_price: number | null;
-
-  moq: number | null;
-  retailer_moq: number | null;
-  distributor_moq: number | null;
-
-  stock: number | null;
-  expected_stock?: number;
-  pack_size: number | null;
-
-  weight_g: number | null;
-  dim_l: number | null;
-  dim_w: number | null;
-  dim_h: number | null;
-
-  pack_weight_g: number | null;
-  pack_l: number | null;
-  pack_w: number | null;
-  pack_h: number | null;
-
-  is_active: boolean;
-  sort_order: number;
-  low_stock_threshold: number;
-};
-
-type Axis = {
-  id: string;
-  axis_key: string;
-  label: string;
-  values: string[];
-  sort_order: number;
-};
+import {
+  newVariation,
+  prepareVariationAxes,
+  variationIssues,
+  VARIATION_STEPS,
+  type Variant,
+  type Axis,
+} from "@/lib/variant-workflow";
+import {
+  persistVariationPhotos,
+  validateVariationPhoto,
+  type VariationPhotoDraft,
+} from "@/lib/variant-photo-drafts";
 
 type Tab = "options" | "customer" | "retailer" | "distributor" | "shipping";
 
@@ -137,20 +112,33 @@ export function VariantEditor({
   const [tab, setTab] = useState<Tab>(initialTab);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
-  const [axesSaving, setAxesSaving] = useState(false);
+  const [axisRows, setAxisRows] = useState<Axis[]>([]);
+  const [excluded, setExcluded] = useState<Record<string, string[]>>({});
+  const [wizardStep, setWizardStep] = useState(0);
+  const [copying, setCopying] = useState(false);
+  const [photoDrafts, setPhotoDrafts] = useState<Record<string, VariationPhotoDraft[]>>({});
+  const objectUrls = useRef(new Set<string>());
+  const committedRows = useRef<Variant[]>([]);
+  const photosPending = Object.values(photoDrafts).some((photos) => photos.length > 0);
+  useEffect(() => {
+    const urls = objectUrls.current;
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url);
+    };
+  }, []);
 
   const dirty = useRef(false);
   const qc = useQueryClient();
-  const busy = saving || axesSaving;
+  const busy = saving || copying;
   useBlocker({
     shouldBlockFn: () =>
-      (dirty.current || axesDirty || busy) &&
+      (dirty.current || axesDirty || photosPending || busy) &&
       !window.confirm(
         busy
           ? "A save is in progress. Leave this page anyway?"
           : "Leave without saving your variation changes? Stay on this page to save them first.",
       ),
-    enableBeforeUnload: () => dirty.current || axesDirty || busy,
+    enableBeforeUnload: () => dirty.current || axesDirty || photosPending || busy,
   });
 
   const q = useQuery({
@@ -268,21 +256,44 @@ export function VariantEditor({
   });
 
   useRealtime(["product_variants"], () => {
-    if (!dirty.current && !axesDirty && !busy) q.refetch();
+    if (!dirty.current && !axesDirty && !photosPending && !busy) q.refetch();
   });
 
+  const lastLoadedData = useRef<typeof q.data>(undefined);
   useEffect(() => {
+    if (!q.data || q.data === lastLoadedData.current) return;
+    lastLoadedData.current = q.data;
     if (q.data && !dirty.current) {
       setRows(q.data.variants);
+      if (committedRows.current.length) {
+        const mappings = committedRows.current.flatMap((old) => {
+          const saved = q.data.variants.find(
+            (row) => row.sku.trim().toUpperCase() === old.sku.trim().toUpperCase(),
+          );
+          return saved && old.id !== saved.id ? [[old.id, saved.id] as const] : [];
+        });
+        setPhotoDrafts((current) => {
+          const next = { ...current };
+          for (const [from, to] of mappings)
+            if (next[from]) {
+              next[to] = next[from];
+              delete next[from];
+            }
+          return next;
+        });
+        setEditingId((current) => mappings.find(([from]) => from === current)?.[1] ?? current);
+        committedRows.current = [];
+      }
     }
-  }, [q.data]);
+    if (q.data && !axesDirty) setAxisRows(q.data.axes);
+  }, [q.data, axesDirty]);
 
   useEffect(() => {
     setTab(initialTab);
   }, [initialTab]);
 
   const family = q.data?.family;
-  const axes = q.data?.axes ?? [];
+  const axes = axisRows;
 
   if (q.isLoading) {
     return (
@@ -328,45 +339,79 @@ export function VariantEditor({
 
   const addRow = () => {
     if (busy) return;
+    const draft = newVariation(family.id, productSku, rows);
     dirty.current = true;
-    setRows((current) => {
-      const existing = new Set(current.map((row) => row.sku.trim().toUpperCase()));
-      let sequence = current.length + 1;
-      let sku = `${productSku}-NEW-${String(sequence).padStart(2, "0")}`;
-      while (existing.has(sku.toUpperCase()))
-        sku = `${productSku}-NEW-${String(++sequence).padStart(2, "0")}`;
-      return [
-        ...current,
-        {
-          id: `new-${crypto.randomUUID()}`,
-          family_id: family.id,
-          sku,
-          barcode: "",
-          attributes: {},
-          mrp: null,
-          price: null,
-          discount_pct: 0,
-          retailer_price: null,
-          distributor_price: null,
-          moq: 1,
-          retailer_moq: null,
-          distributor_moq: null,
-          stock: 0,
-          pack_size: null,
-          weight_g: null,
-          dim_l: null,
-          dim_w: null,
-          dim_h: null,
-          pack_weight_g: null,
-          pack_l: null,
-          pack_w: null,
-          pack_h: null,
-          is_active: false,
-          sort_order: current.length,
-          low_stock_threshold: 10,
-        },
-      ];
-    });
+    setRows([...rows, draft]);
+    setWizardStep(0);
+    setEditingId(draft.id);
+  };
+
+  const duplicateRow = async (source: Variant) => {
+    if (busy) return;
+    setCopying(true);
+    try {
+      let photos: VariationPhotoDraft[] = (photoDrafts[source.id] ?? []).map((photo) => ({
+        id: crypto.randomUUID(),
+        previewUrl: photo.previewUrl,
+        file: photo.file,
+        imageUrl: photo.imageUrl,
+        altText: photo.altText,
+        primary: photo.primary,
+      }));
+      if (!source.id.startsWith("new-")) {
+        const result = await supabase
+          .from("product_images")
+          .select("image_url,alt_text,is_primary")
+          .eq("family_id", family.id)
+          .eq("variant_sku", source.sku)
+          .order("sort_order");
+        if (result.error) throw result.error;
+        const persisted = (result.data ?? []).map((photo) => ({
+          id: crypto.randomUUID(),
+          previewUrl: photo.image_url,
+          imageUrl: photo.image_url,
+          altText: photo.alt_text ?? "",
+          primary: photo.is_primary,
+        }));
+        photos = [
+          ...persisted,
+          ...photos.filter(
+            (photo) =>
+              !photoDrafts[source.id]?.find(
+                (original) => original.previewUrl === photo.previewUrl && original.attached,
+              ),
+          ),
+        ];
+      }
+      if (photos.length > 12)
+        throw new Error(
+          "This variation has more than 12 images. Manage its images before duplicating it.",
+        );
+      if (photos.length) {
+        const primary = Math.max(
+          0,
+          photos.findIndex((photo) => photo.primary),
+        );
+        photos = photos.map((photo, index) => ({ ...photo, primary: index === primary }));
+      }
+      const draft = newVariation(family.id, productSku, rows, source);
+      dirty.current = true;
+      setRows([...rows, draft]);
+      setPhotoDrafts((current) => ({ ...current, [draft.id]: photos }));
+      setWizardStep(0);
+      setEditingId(draft.id);
+      toast.info(
+        "Copy ready. Check its images, SKU, option values and prices. Stock is zero and the copy is inactive.",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not prepare a complete copy. No variation was created.",
+      );
+    } finally {
+      setCopying(false);
+    }
   };
 
   const generateCombinations = (sourceAxes: Axis[] = axes, sourceRows: Variant[] = rows) => {
@@ -429,29 +474,40 @@ export function VariantEditor({
     dirty.current = true;
     if (row.id.startsWith("new-")) {
       setRows((current) => current.filter((item) => item.id !== row.id));
+      setPhotoDrafts((current) => {
+        const next = { ...current };
+        delete next[row.id];
+        return next;
+      });
     } else {
       updateRow(row.id, { is_active: false });
     }
     toast.success("Variant marked inactive. Save variants to apply.");
   };
 
-  const saveAll = async () => {
-    if (busy) return false;
-    if (axesDirty) {
-      setTab("options");
-      toast.info(
-        "Save your option changes first. Save Options also saves the current variation details.",
-      );
-      return false;
-    }
-    setSaving(true);
-
+  const saveMatrix = async (): Promise<Variant[] | null> => {
+    if (busy) return null;
+    let cleaned: Axis[];
     try {
-      const result = await adminSaveVariantMatrix({
+      cleaned = prepareVariationAxes(axisRows, q.data?.axes ?? [], rows);
+      for (const row of rows) {
+        const issues = variationIssues(row, rows, cleaned);
+        if (issues.length) throw new Error(`${row.sku || "Variation"}: ${issues[0]}`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Review your variation details.");
+      return null;
+    }
+    const snapshot = rows;
+    const pending = photoDrafts;
+    setSaving(true);
+    let committed = false;
+    try {
+      await adminSaveVariantMatrix({
         data: {
           familyId: family.id,
-          axes,
-          variants: rows.map((row) => ({
+          axes: cleaned,
+          variants: snapshot.map((row) => ({
             ...row,
             id: row.id.startsWith("new-") ? undefined : row.id,
             sku: row.sku.trim(),
@@ -460,46 +516,180 @@ export function VariantEditor({
           })),
         },
       });
-
+      committed = true;
+      committedRows.current = snapshot;
       dirty.current = false;
-
+      setAxesDirty(false);
+      const refreshed = await q.refetch();
+      if (refreshed.error || !refreshed.data?.family)
+        throw new Error(
+          "The save succeeded, but the refreshed variations could not be loaded. Retry loading before saving again.",
+        );
+      const saved = refreshed.data.variants;
+      setRows(saved);
+      setAxisRows(refreshed.data.axes);
+      setExcluded((current) => {
+        const next: Record<string, string[]> = {};
+        for (const axis of cleaned) {
+          const updated = refreshed.data?.axes.find((item) => item.axis_key === axis.axis_key);
+          if (updated && current[axis.id]) next[updated.id] = current[axis.id];
+        }
+        return next;
+      });
+      for (const [draftId, photos] of Object.entries(pending)) {
+        if (!photos.length) continue;
+        const original = snapshot.find((row) => row.id === draftId);
+        const target = saved.find(
+          (row) =>
+            row.id === draftId ||
+            (original && row.sku.trim().toUpperCase() === original.sku.trim().toUpperCase()),
+        );
+        if (!target)
+          throw new Error(
+            "A saved SKU could not be matched to its pending photos. Reload before retrying.",
+          );
+        const existing = await supabase
+          .from("product_images")
+          .select("id")
+          .eq("family_id", family.id)
+          .eq("variant_sku", target.sku);
+        if (existing.error) throw existing.error;
+        photos.forEach((photo, index) => {
+          photo.sortOrder ??= (existing.data?.length ?? 0) + index;
+        });
+        await persistVariationPhotos(photos, {
+          upload: async (photo) => {
+            if (!photo.file) throw new Error("Choose this image again.");
+            validateVariationPhoto(photo.file);
+            const ext = (
+              {
+                "image/jpeg": "jpg",
+                "image/png": "png",
+                "image/webp": "webp",
+                "image/gif": "gif",
+                "image/avif": "avif",
+              } as Record<string, string>
+            )[photo.file.type];
+            const path = `products/${family.id}/${crypto.randomUUID()}.${ext}`;
+            const uploaded = await supabase.storage
+              .from("media")
+              .upload(path, photo.file, { cacheControl: "31536000", upsert: false });
+            if (uploaded.error) throw uploaded.error;
+            return `/api/public/product-image/${path}`;
+          },
+          attach: async (photo, url) => {
+            const result = await supabase.from("product_images").upsert(
+              {
+                id: photo.id,
+                family_id: family.id,
+                product_id: null,
+                variant_sku: target.sku,
+                image_url: url,
+                alt_text: photo.altText || null,
+                sort_order: photo.sortOrder ?? 0,
+                is_primary: false,
+              },
+              { onConflict: "id" },
+            );
+            if (result.error) throw result.error;
+          },
+          makePrimary: async (imageId) => {
+            await adminSetPrimaryProductImage({ data: { imageId } });
+          },
+        });
+        setPhotoDrafts((current) => {
+          const next = { ...current };
+          delete next[draftId];
+          delete next[target.id];
+          return next;
+        });
+      }
+      toast.success("Options, variations and selected images saved.");
+      return saved;
+    } catch (error) {
+      if (committed)
+        toast.error(
+          `Variation details saved; photo upload or refresh needs attention. ${error instanceof Error ? error.message : "Retry without creating another variation."}`,
+        );
+      else toast.error(error instanceof Error ? error.message : "Could not save variations.");
+      return null;
+    } finally {
       for (const key of [
+        "admin-product-variants",
+        "admin-product-images",
+        "admin-inventory",
+        "admin-product-master",
+        "admin-products",
+        "admin-product",
+        "admin-dashboard",
+        "product-images",
         "products",
         "families-page",
         "product",
         "family",
         "family-products",
         "browse-products",
-        "admin-products",
-        "admin-product-families",
-        "admin-product",
-        "admin-product-variants",
         "search-suggest",
-      ]) {
-        qc.invalidateQueries({ queryKey: [key] });
-      }
-
-      if (result.compatibility_mode) {
-        toast.warning("Prices and variations saved. Apply the parity migration to save barcodes.");
-      } else {
-        toast.success("Variants saved");
-      }
-      const refreshed = await q.refetch();
-      if (refreshed.error) {
-        toast.warning(
-          "Saved, but the updated variations could not be loaded. Retry loading before editing or saving again.",
-        );
-        return false;
-      }
-      setRows(refreshed.data?.variants ?? []);
-      return true;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save variants");
-      return false;
-    } finally {
+      ])
+        void qc.invalidateQueries({
+          queryKey: [key],
+          refetchType: key === "admin-product-variants" ? "none" : "active",
+        });
       setSaving(false);
+      setPhotoDrafts((current) => ({ ...current }));
     }
   };
+  const saveAll = async () => Boolean(await saveMatrix());
+  const saveAxes = async (generate: boolean) => {
+    let generationAxes: Axis[];
+    let cleaned: Axis[];
+    try {
+      cleaned = prepareVariationAxes(axisRows, q.data?.axes ?? [], rows);
+      generationAxes = cleaned.map((axis) => ({
+        ...axis,
+        values: axis.values.filter((value) => !(excluded[axis.id] ?? []).includes(value)),
+      }));
+      if (generate) missingCombinations(generationAxes, rows);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Review the options.");
+      return;
+    }
+    if (editingId) {
+      // Do not lock a new, auto-generated SKU before the client reaches its SKU step.
+      setAxisRows(cleaned);
+      setAxesDirty(true);
+      if (generate) {
+        generateCombinations(generationAxes, rows);
+        setEditingId(null);
+        setTab("options");
+      } else
+        toast.info(
+          "Options saved in this draft. Continue to SKU & values; Review & save writes the changes.",
+        );
+      return;
+    }
+    const saved = await saveMatrix();
+    if (saved && generate) {
+      generateCombinations(generationAxes, saved);
+      setEditingId(null);
+      setTab("options");
+    }
+  };
+  const optionsEditor = (
+    <AxisEditor
+      rows={axisRows}
+      variants={rows}
+      saving={busy}
+      saveAxes={saveAxes}
+      setRows={(next) => {
+        setAxisRows(next);
+        setAxesDirty(true);
+      }}
+      excluded={excluded}
+      setExcluded={setExcluded}
+      draftOnly={Boolean(editingId)}
+    />
+  );
 
   return (
     <fieldset
@@ -522,7 +712,7 @@ export function VariantEditor({
           <div className="flex gap-2">
             <Button size="sm" variant="outline" type="button" onClick={addRow}>
               <Plus className="mr-1 h-4 w-4" />
-              Add Variant
+              Add Variation · step by step
             </Button>
 
             <Button size="sm" type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
@@ -577,40 +767,30 @@ export function VariantEditor({
         </div>
       </div>
 
-      {(dirty.current || axesDirty) && (
+      {(dirty.current || axesDirty || photosPending) && (
         <div
           role="status"
           className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
         >
-          Unsaved changes.{" "}
-          {axesDirty
-            ? "Save Options to save option definitions and the current SKU details together."
-            : "Use Save Variants to apply your changes."}{" "}
-          Switching pricing tabs keeps your edits.
+          Unsaved changes. Save All Variant Changes saves shared options, SKU details and selected
+          images together. Switching pricing tabs keeps your edits.
         </div>
       )}
 
       <div className="p-4">
         <div hidden={tab !== "options"}>
           <OptionsTab
-            familyId={family.id}
             axes={axes}
             rows={rows}
             updateRow={updateRow}
             removeRow={removeRow}
-            refresh={async () => {
-              const refreshed = await q.refetch();
-              if (refreshed.error) throw refreshed.error;
-              const saved = refreshed.data?.variants ?? [];
-              dirty.current = false;
-              setRows(saved);
-              return saved;
+            editRow={(row) => {
+              setWizardStep(0);
+              setEditingId(row.id);
             }}
-            generateCombinations={generateCombinations}
-            editRow={(row) => setEditingId(row.id)}
+            duplicateRow={duplicateRow}
             manageImages={onManageImages}
-            onAxesDirtyChange={setAxesDirty}
-            onAxesSavingChange={setAxesSaving}
+            optionsEditor={editingId ? null : optionsEditor}
           />
         </div>
 
@@ -635,6 +815,22 @@ export function VariantEditor({
         axes={axes}
         open={Boolean(editingId)}
         saving={busy}
+        step={wizardStep}
+        setStep={setWizardStep}
+        rows={rows}
+        optionsEditor={editingId ? optionsEditor : null}
+        photos={editingId ? (photoDrafts[editingId] ?? []) : []}
+        setPhotos={(photos) => {
+          if (editingId) setPhotoDrafts((current) => ({ ...current, [editingId]: photos }));
+        }}
+        registerPreview={(file) => {
+          const url = URL.createObjectURL(file);
+          objectUrls.current.add(url);
+          return url;
+        }}
+        productSku={productSku}
+        productId={productId}
+        duplicateRow={duplicateRow}
         onOpenChange={(open) => !open && setEditingId(null)}
         updateRow={updateRow}
         save={async () => {
@@ -647,41 +843,27 @@ export function VariantEditor({
 }
 
 function OptionsTab({
-  familyId,
   axes,
   rows,
   updateRow,
   removeRow,
-  refresh,
-  generateCombinations,
   editRow,
+  duplicateRow,
   manageImages,
-  onAxesDirtyChange,
-  onAxesSavingChange,
+  optionsEditor,
 }: {
-  familyId: string;
   axes: Axis[];
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   removeRow: (row: Variant) => void;
-  refresh: () => Promise<Variant[]>;
-  generateCombinations: (axes?: Axis[], rows?: Variant[]) => void;
   editRow: (row: Variant) => void;
+  duplicateRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
-  onAxesDirtyChange: (dirty: boolean) => void;
-  onAxesSavingChange: (saving: boolean) => void;
+  optionsEditor: React.ReactNode;
 }) {
   return (
     <div className="space-y-5">
-      <AxisEditor
-        familyId={familyId}
-        variants={rows}
-        onSaved={refresh}
-        generateCombinations={generateCombinations}
-        onDirtyChange={onAxesDirtyChange}
-        onSavingChange={onAxesSavingChange}
-      />
-
+      {optionsEditor}
       <h3 className="text-lg font-semibold">All Variants · {rows.length}</h3>
       <VariantBulkEditor rows={rows} updateRow={updateRow} />
       {rows.length === 0 ? (
@@ -697,6 +879,7 @@ function OptionsTab({
               updateRow={updateRow}
               removeRow={removeRow}
               editRow={editRow}
+              duplicateRow={duplicateRow}
               manageImages={manageImages}
             />
           ))}
@@ -844,6 +1027,7 @@ function VariantFullCard({
   updateRow,
   removeRow,
   editRow,
+  duplicateRow,
   manageImages,
 }: {
   row: Variant;
@@ -852,6 +1036,7 @@ function VariantFullCard({
   updateRow: (id: string, patch: Partial<Variant>) => void;
   removeRow: (row: Variant) => void;
   editRow: (row: Variant) => void;
+  duplicateRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
 }) {
   const field = (key: keyof Variant, label: string, placeholder?: string) => (
@@ -884,6 +1069,9 @@ function VariantFullCard({
           </label>
           <Button type="button" size="sm" onClick={() => editRow(row)}>
             <Pencil className="h-4 w-4" /> Edit Variant
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => duplicateRow(row)}>
+            <Copy className="h-4 w-4" /> Duplicate Variation
           </Button>
           {manageImages && (
             <Button
@@ -1019,180 +1207,492 @@ function VariantSection({ title, children }: { title: string; children: React.Re
 
 function VariantEditDialog({
   row,
+  rows,
   axes,
   open,
   saving,
+  step,
+  setStep,
   onOpenChange,
   updateRow,
   save,
-  manageImages,
+  optionsEditor,
+  photos,
+  setPhotos,
+  registerPreview,
+  productSku,
+  productId,
+  duplicateRow,
 }: {
   row: Variant | null;
+  rows: Variant[];
   axes: Axis[];
   open: boolean;
   saving: boolean;
+  step: number;
+  setStep: (step: number) => void;
   onOpenChange: (open: boolean) => void;
   updateRow: (id: string, patch: Partial<Variant>) => void;
   save: () => Promise<void>;
+  optionsEditor: React.ReactNode;
+  photos: VariationPhotoDraft[];
+  setPhotos: (photos: VariationPhotoDraft[]) => void;
+  registerPreview: (file: File) => string;
+  productSku: string;
+  productId: string;
+  duplicateRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
 }) {
   if (!row) return null;
-  const numberField = (key: keyof Variant, label: string, options?: { min?: number }) => (
-    <label>
-      <FieldTitle>{label}</FieldTitle>
+  const isNew = row.id.startsWith("new-");
+  const issues = variationIssues(row, rows, axes);
+  const numberField = (key: keyof Variant, label: string, min = 0) => (
+    <label className="block space-y-1 text-sm font-medium text-slate-700">
+      {label}
       <Input
-        className="mt-1"
         type="number"
-        step="any"
-        min={options?.min}
+        min={min}
+        step={
+          [
+            "stock",
+            "low_stock_threshold",
+            "sort_order",
+            "moq",
+            "retailer_moq",
+            "distributor_moq",
+            "pack_size",
+          ].includes(key)
+            ? "1"
+            : "any"
+        }
         value={(row[key] as number | null) ?? ""}
         onChange={(event) => updateRow(row.id, { [key]: toNumber(event.target.value) })}
       />
     </label>
   );
-
+  const addPhotos = (files: FileList | null) => {
+    if (!files?.length) return;
+    try {
+      if (photos.length + files.length > 12) throw new Error("Choose at most 12 images at a time.");
+      const selected = Array.from(files);
+      selected.forEach(validateVariationPhoto);
+      setPhotos([
+        ...photos,
+        ...selected.map((file, index) => ({
+          id: crypto.randomUUID(),
+          file,
+          previewUrl: registerPreview(file),
+          altText: "",
+          primary: !photos.length && index === 0,
+        })),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not select images.");
+    }
+  };
+  const next = () => {
+    if (step === 1) {
+      try {
+        prepareVariationAxes(axes, [], rows);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Complete your options.");
+        return;
+      }
+    }
+    if (
+      step === 2 &&
+      (!row.sku.trim() ||
+        rows.some(
+          (other) =>
+            other.id !== row.id && other.sku.trim().toUpperCase() === row.sku.trim().toUpperCase(),
+        ))
+    ) {
+      toast.error("Choose a unique SKU before continuing.");
+      return;
+    }
+    setStep(Math.min(VARIATION_STEPS.length - 1, step + 1));
+  };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Variation — {variantName(row)}</DialogTitle>
-          <p className="text-sm text-slate-500">
-            Edit this SKU’s name/options, prices, quantities, availability and shipping
-            measurements.
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!saving) onOpenChange(value);
+      }}
+    >
+      <DialogContent
+        className="flex max-h-[94dvh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden p-0"
+        aria-describedby="variation-step-description"
+      >
+        <DialogHeader className="shrink-0 border-b border-slate-200 px-5 py-4 pr-14">
+          <DialogTitle>
+            {isNew ? "Add variation" : "Edit variation"} · {row.sku || "New SKU"}
+          </DialogTitle>
+          <p id="variation-step-description" className="text-sm text-slate-500">
+            Step {step + 1} of {VARIATION_STEPS.length} · {VARIATION_STEPS[step]}.{" "}
+            {row.is_active
+              ? "Available for sale after saving."
+              : "Inactive until you choose to activate it."}
           </p>
         </DialogHeader>
-
-        <fieldset disabled={saving} className="min-w-0 space-y-4">
-          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-900">Variation identity</h3>
-            <label className="block">
-              <FieldTitle>Variant label (optional)</FieldTitle>
-              <Input
-                value={row.attributes.variant_label ?? ""}
-                onChange={(event) =>
-                  updateRow(row.id, {
-                    attributes: { ...row.attributes, variant_label: event.target.value },
-                  })
-                }
-                placeholder="Defaults to the selected option values"
-              />
-            </label>
-            {numberField("sort_order", "Display order", { min: 0 })}
-            {axes.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <nav
+          aria-label="Variation setup steps"
+          className="shrink-0 border-b border-slate-200 bg-slate-50 p-3"
+        >
+          <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {VARIATION_STEPS.map((label, index) => (
+              <li key={label}>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => setStep(index)}
+                  aria-current={step === index ? "step" : undefined}
+                  className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-sky-600 ${step === index ? "bg-sky-700 text-white" : "bg-white text-slate-600 hover:bg-slate-100"}`}
+                >
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">
+                    {index + 1}
+                  </span>
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <fieldset disabled={saving} className="min-w-0 space-y-4">
+            <section hidden={step !== 0} className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold">Add this variation’s images</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Choose images now; they attach to this SKU after the variation is saved. You can
+                  skip this step and add them later.
+                </p>
+              </div>
+              <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-5 text-center focus-within:ring-2 focus-within:ring-sky-600">
+                <Upload className="h-6 w-6 text-sky-700" />
+                <span className="font-semibold">Choose images</span>
+                <span className="text-sm text-slate-500">
+                  JPG, PNG, WebP, GIF or AVIF · up to 8 MB each · 12 images per batch
+                </span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                  multiple
+                  className="max-w-full text-sm"
+                  aria-label="Choose images for this variation"
+                  onChange={(event) => {
+                    addPhotos(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {photos.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {photos.map((photo) => (
+                    <article
+                      key={photo.id}
+                      className="space-y-3 rounded-xl border border-slate-200 p-3"
+                    >
+                      <img
+                        src={photo.previewUrl}
+                        alt={photo.altText || "Selected variation image"}
+                        className="aspect-square max-h-48 w-full rounded-lg bg-slate-50 object-contain"
+                      />
+                      <label className="block space-y-1 text-sm">
+                        Image description
+                        <Input
+                          value={photo.altText}
+                          disabled={photo.attached}
+                          placeholder="Describe this image"
+                          onChange={(event) =>
+                            setPhotos(
+                              photos.map((item) =>
+                                item.id === photo.id
+                                  ? { ...item, altText: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={photo.primary ? "default" : "outline"}
+                          onClick={() =>
+                            setPhotos(
+                              photos.map((item) => ({
+                                ...item,
+                                primary: item.id === photo.id,
+                                primaryApplied: false,
+                              })),
+                            )
+                          }
+                        >
+                          <Star className="h-4 w-4" />{" "}
+                          {photo.primary ? "Primary image" : "Set primary"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          disabled={photo.attached}
+                          aria-label="Remove selected image"
+                          title={
+                            photo.attached
+                              ? "This image is saved. Remove it in Saved images below."
+                              : "Remove from this draft"
+                          }
+                          onClick={() => {
+                            const rest = photos.filter((item) => item.id !== photo.id);
+                            if (photo.primary && rest.length)
+                              rest[0] = { ...rest[0], primary: true, primaryApplied: false };
+                            setPhotos(rest);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {photo.attached
+                          ? "Association saved; retry completes any remaining primary-image step."
+                          : photo.file
+                            ? "Selected locally — not uploaded yet"
+                            : "Copied image — a separate association will be saved for this SKU"}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
+              {!isNew && (
+                <ProductImageManager
+                  productSku={productSku}
+                  productId={productId}
+                  initialVariantSku={row.sku}
+                  variantOnly
+                />
+              )}
+            </section>
+            <section hidden={step !== 1} className="space-y-4">
+              <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+                These options are shared by every variation in this product. Define them once here,
+                then choose this SKU’s values in Step 3.
+              </div>
+              {optionsEditor}
+            </section>
+            <section hidden={step !== 2} className="space-y-4">
+              <h3 className="text-lg font-semibold">Name, SKU and option values</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1 text-sm font-medium">
+                  SKU / item code
+                  <Input
+                    value={row.sku}
+                    readOnly={!isNew}
+                    maxLength={120}
+                    onChange={(event) => updateRow(row.id, { sku: event.target.value })}
+                    className="font-mono"
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium">
+                  Barcode / GTIN (optional)
+                  <Input
+                    value={row.barcode ?? ""}
+                    onChange={(event) => updateRow(row.id, { barcode: event.target.value })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium">
+                  Variation name (optional)
+                  <Input
+                    value={row.attributes.variant_label ?? ""}
+                    placeholder="Uses the selected values when left blank"
+                    onChange={(event) =>
+                      updateRow(row.id, {
+                        attributes: { ...row.attributes, variant_label: event.target.value },
+                      })
+                    }
+                  />
+                </label>
+                {numberField("sort_order", "Display order")}
+              </div>
+              {!isNew && (
+                <p className="text-sm text-slate-500">
+                  Saved SKU codes stay fixed to preserve orders and images. You can change the
+                  variation name and option values.
+                </p>
+              )}
+              {!axes.length && (
+                <p className="text-sm text-slate-500">
+                  No shared options yet. Go to Product options to add Wattage, Size, Colour or
+                  another attribute.
+                </p>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {axes.map((axis) => (
-                  <label key={axis.axis_key}>
-                    <FieldTitle>{axis.label}</FieldTitle>
+                  <label key={axis.id} className="space-y-1 text-sm font-medium">
+                    {axis.label}
                     <select
-                      className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
-                      value={row.attributes?.[axis.axis_key] ?? ""}
+                      className="block h-11 w-full rounded-lg border border-slate-200 bg-white px-3"
+                      value={row.attributes[axis.axis_key] ?? ""}
                       onChange={(event) =>
                         updateRow(row.id, {
                           attributes: { ...row.attributes, [axis.axis_key]: event.target.value },
                         })
                       }
                     >
-                      <option value="">— Select —</option>
-                      {axis.values.map((value) => (
-                        <option key={value} value={value}>
-                          {value}
-                        </option>
-                      ))}
+                      <option value="">Select a value</option>
+                      {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
+                        (value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </label>
                 ))}
               </div>
-            )}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label>
-                <FieldTitle>SKU / Item Code</FieldTitle>
-                <Input
-                  className="mt-1 font-mono"
-                  value={row.sku}
-                  readOnly={!row.id.startsWith("new-")}
-                  title={
-                    row.id.startsWith("new-")
-                      ? "Choose a unique SKU before saving"
-                      : "Saved SKU codes are fixed to preserve order and image references"
-                  }
-                  onChange={(event) => updateRow(row.id, { sku: event.target.value })}
+              <VariantSpecifications row={row} axes={axes} updateRow={updateRow} />
+            </section>
+            <section hidden={step !== 3} className="space-y-4">
+              <h3 className="text-lg font-semibold">Prices and minimum order quantities</h3>
+              <p className="text-sm text-slate-500">
+                Set customer, retailer and distributor prices for this SKU. Blank partner prices
+                keep the existing pricing fallback.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {numberField("mrp", "MRP ₹")}
+                {numberField("price", "Customer price ₹")}
+                {numberField("retailer_price", "Retailer price ₹")}
+                {numberField("distributor_price", "Distributor price ₹")}
+                {numberField("moq", "Customer MOQ", 1)}
+                {numberField("retailer_moq", "Retailer MOQ", 1)}
+                {numberField("distributor_moq", "Distributor MOQ", 1)}
+                {numberField("pack_size", "Pieces per pack", 1)}
+              </div>
+            </section>
+            <section hidden={step !== 4} className="space-y-5">
+              <h3 className="text-lg font-semibold">Stock, weight and dimensions</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {numberField("stock", "Stock quantity")}
+                {numberField("low_stock_threshold", "Low-stock alert threshold")}
+              </div>
+              <VariantSection title="Single unit">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {numberField("weight_g", "Weight (g)")}
+                  {numberField("dim_l", "Length (cm)")}
+                  {numberField("dim_w", "Width (cm)")}
+                  {numberField("dim_h", "Height (cm)")}
+                </div>
+              </VariantSection>
+              <VariantSection title="Shipping package">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {numberField("pack_weight_g", "Weight (g)")}
+                  {numberField("pack_l", "Length (cm)")}
+                  {numberField("pack_w", "Width (cm)")}
+                  {numberField("pack_h", "Height (cm)")}
+                </div>
+              </VariantSection>
+              <p className="text-sm text-slate-500">
+                New and duplicated variations start with zero stock. Enter the real quantity; stock
+                changes use the existing inventory safeguards.
+              </p>
+            </section>
+            <section hidden={step !== 5} className="space-y-4">
+              <h3 className="text-lg font-semibold">Review this variation</h3>
+              <dl className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+                {[
+                  ["Variation", variantName(row)],
+                  ["SKU", row.sku],
+                  ["Customer price", row.price === null ? "Not set" : money(row.price)],
+                  [
+                    "Retailer price",
+                    row.retailer_price === null ? "Existing fallback" : money(row.retailer_price),
+                  ],
+                  [
+                    "Distributor price",
+                    row.distributor_price === null
+                      ? "Existing fallback"
+                      : money(row.distributor_price),
+                  ],
+                  ["Stock", String(row.stock ?? 0)],
+                  ["Selected images", String(photos.length)],
+                  [
+                    "Options",
+                    axes
+                      .map(
+                        (axis) =>
+                          `${axis.label}: ${row.attributes[axis.axis_key] || "Not selected"}`,
+                      )
+                      .join(" · ") || "No options",
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-sm text-slate-500">{label}</dt>
+                    <dd className="mt-1 break-words text-sm font-semibold">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-4 text-sm font-medium">
+                <Switch
+                  checked={row.is_active}
+                  onCheckedChange={(value) => updateRow(row.id, { is_active: value })}
                 />
+                Available for sale after saving
               </label>
-              <label>
-                <FieldTitle>Barcode / GTIN</FieldTitle>
-                <Input
-                  className="mt-1 font-mono"
-                  value={row.barcode ?? ""}
-                  onChange={(event) => updateRow(row.id, { barcode: event.target.value })}
-                />
-              </label>
-            </div>
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-              <Switch
-                checked={row.is_active}
-                onCheckedChange={(value) => updateRow(row.id, { is_active: value })}
-              />
-              Available for sale
-            </label>
-          </section>
-
-          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-900">Prices and ordering</h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {numberField("mrp", "MRP ₹", { min: 0 })}
-              {numberField("price", "Customer Price ₹", { min: 0 })}
-              {numberField("retailer_price", "Retailer Price ₹", { min: 0 })}
-              {numberField("distributor_price", "Distributor Price ₹", { min: 0 })}
-              {numberField("moq", "Customer MOQ", { min: 1 })}
-              {numberField("retailer_moq", "Retailer MOQ", { min: 1 })}
-              {numberField("distributor_moq", "Distributor MOQ", { min: 1 })}
-              {numberField("pack_size", "Pieces / Pack", { min: 1 })}
-              {numberField("stock", "Stock", { min: 0 })}
-              {numberField("low_stock_threshold", "Low-stock Alert", { min: 0 })}
-            </div>
-          </section>
-
-          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-900">Unit weight and dimensions</h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {numberField("weight_g", "Weight (g)", { min: 0 })}
-              {numberField("dim_l", "Length (cm)", { min: 0 })}
-              {numberField("dim_w", "Width (cm)", { min: 0 })}
-              {numberField("dim_h", "Height (cm)", { min: 0 })}
-            </div>
-          </section>
-
-          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
-            <h3 className="font-semibold text-slate-900">Package weight and dimensions</h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {numberField("pack_weight_g", "Package Weight (g)", { min: 0 })}
-              {numberField("pack_l", "Package Length (cm)", { min: 0 })}
-              {numberField("pack_w", "Package Width (cm)", { min: 0 })}
-              {numberField("pack_h", "Package Height (cm)", { min: 0 })}
-            </div>
-          </section>
-
-          <VariantSpecifications row={row} axes={axes} updateRow={updateRow} />
-        </fieldset>
-        <DialogFooter>
-          {manageImages && !row.id.startsWith("new-") && (
+              {issues.length > 0 && (
+                <div role="alert" className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-semibold">Check these details</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {issues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="text-sm text-slate-500">
+                Saving includes the shared options and all unsaved variations in this family. Image
+                uploads follow the successful SKU save. If an image fails, the variation stays saved
+                and you can retry the pending image.
+              </p>
+            </section>
+          </fieldset>
+        </div>
+        <DialogFooter className="grid shrink-0 grid-cols-2 gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:flex sm:flex-wrap">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={saving}
+            onClick={() => onOpenChange(false)}
+          >
+            Close · keep edits
+          </Button>
+          {!isNew && (
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                manageImages(row.sku);
-                onOpenChange(false);
-              }}
+              disabled={saving}
+              onClick={() => duplicateRow(row)}
             >
-              <ImageIcon className="h-4 w-4" /> Manage Images
+              <Copy className="h-4 w-4" /> Duplicate variation
             </Button>
           )}
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Close editor
+          <Button
+            type="button"
+            variant="outline"
+            disabled={saving || step === 0}
+            onClick={() => setStep(Math.max(0, step - 1))}
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
           </Button>
-          <Button type="button" disabled={saving} onClick={save}>
-            <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save All Variant Changes"}
-          </Button>
+          {step < VARIATION_STEPS.length - 1 ? (
+            <Button type="button" disabled={saving} onClick={next}>
+              Next <ArrowRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button type="button" disabled={saving || issues.length > 0} onClick={save}>
+              <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save all variant changes"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1697,219 +2197,50 @@ function ShippingTab({
 }
 
 function AxisEditor({
-  familyId,
+  rows,
   variants,
-  onSaved,
-  generateCombinations,
-  onDirtyChange,
-  onSavingChange,
+  setRows,
+  saving,
+  saveAxes,
+  excluded,
+  setExcluded,
+  draftOnly,
 }: {
-  familyId: string;
+  rows: Axis[];
   variants: Variant[];
-  onSaved: () => Promise<Variant[]>;
-  generateCombinations: (axes?: Axis[], rows?: Variant[]) => void;
-  onDirtyChange: (dirty: boolean) => void;
-  onSavingChange: (saving: boolean) => void;
+  setRows: (rows: Axis[]) => void;
+  saving: boolean;
+  saveAxes: (generate: boolean) => Promise<void>;
+  excluded: Record<string, string[]>;
+  setExcluded: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
+  draftOnly: boolean;
 }) {
-  const [rows, setRows] = useState<Axis[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [excluded, setExcluded] = useState<Record<string, string[]>>({});
-
-  const dirty = useRef(false);
-  const qc = useQueryClient();
-
-  const q = useQuery({
-    queryKey: ["admin-variant-axes", familyId],
-    refetchOnWindowFocus: false,
-
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("product_variant_axes")
-        .select("id, axis_key, label, values, sort_order")
-        .eq("family_id", familyId)
-        .order("sort_order");
-
-      if (error) throw error;
-
-      return (data ?? []).map((axis) => ({
-        ...axis,
-        values: Array.isArray(axis.values) ? axis.values : [],
-      })) as Axis[];
-    },
-  });
-
-  useEffect(() => {
-    if (q.data && !dirty.current) {
-      setRows(q.data);
-    }
-  }, [q.data]);
-
-  const updateAxis = (id: string, patch: Partial<Axis>) => {
-    dirty.current = true;
-    onDirtyChange(true);
-
-    setRows((current) => current.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
-  };
-
+  const updateAxis = (id: string, patch: Partial<Axis>) =>
+    setRows(rows.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
   const addAxis = (preset?: { key: string; label: string; values?: string[] }) => {
-    const key = preset?.key ?? `option_${rows.length + 1}`;
-    if (rows.some((axis) => axis.axis_key === key)) {
-      toast.info(`${preset?.label ?? "This option"} already exists`);
-      return;
-    }
-    dirty.current = true;
-    onDirtyChange(true);
-    setRows((current) => [
-      ...current,
+    let sequence = rows.length + 1;
+    while (rows.some((axis) => axis.axis_key === `option_${sequence}`)) sequence++;
+    const key = preset?.key ?? `option_${sequence}`;
+    if (rows.some((axis) => axis.axis_key === key)) return;
+    setRows([
+      ...rows,
       {
-        id: `new-${Date.now()}`,
+        id: `new-${crypto.randomUUID()}`,
         axis_key: key,
         label: preset?.label ?? "New Option",
         values: preset?.values ?? [],
-        sort_order: current.length,
+        sort_order: rows.length,
       },
     ]);
   };
-
   const removeAxis = (axis: Axis) => {
-    if (variants.some((variant) => variant.attributes[axis.axis_key])) {
-      toast.error(
-        "This option is used by existing SKUs. Clear or remap those values explicitly before removing it.",
+    if (variants.some((row) => row.attributes[axis.axis_key]))
+      return toast.error(
+        "This option is used by existing SKUs. Remap their values before removing it.",
       );
-      return;
-    }
-    if (!confirm(`Remove option "${axis.label}" from this family?`)) {
-      return;
-    }
-    dirty.current = true;
-    onDirtyChange(true);
-    setRows((current) => current.filter((item) => item.id !== axis.id));
+    if (confirm(`Remove option "${axis.label}" from this family?`))
+      setRows(rows.filter((row) => row.id !== axis.id));
   };
-
-  const saveAxes = async (generateAfterSave = false) => {
-    const cleaned = rows.map((axis) => ({
-      ...axis,
-      axis_key: axis.axis_key
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_]+/g, "_"),
-      label: axis.label.trim(),
-      values: [...new Set(axis.values.map((value) => value.trim()).filter(Boolean))],
-    }));
-    if (cleaned.some((axis) => !axis.axis_key || !axis.label || axis.values.length === 0)) {
-      toast.error("Every option needs a key, display name and at least one value");
-      return;
-    }
-    if (new Set(cleaned.map((axis) => axis.axis_key)).size !== cleaned.length) {
-      toast.error("Each option key must be unique");
-      return;
-    }
-    for (const previous of q.data ?? []) {
-      const replacement = cleaned.find((axis) => axis.axis_key === previous.axis_key);
-      if (
-        variants.some(
-          (variant) =>
-            variant.attributes[previous.axis_key] &&
-            !replacement?.values.includes(variant.attributes[previous.axis_key]),
-        )
-      ) {
-        toast.error(
-          `Existing SKUs use ${previous.label} values that would be removed. Remap those SKUs first.`,
-        );
-        return;
-      }
-    }
-    const generationAxes = cleaned.map((axis) => ({
-      ...axis,
-      values: axis.values.filter((value) => !(excluded[axis.id] ?? []).includes(value)),
-    }));
-    if (generateAfterSave) {
-      try {
-        missingCombinations(generationAxes, variants);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Invalid options");
-        return;
-      }
-    }
-    setSaving(true);
-    onSavingChange(true);
-
-    try {
-      const result = await adminSaveVariantMatrix({
-        data: {
-          familyId,
-          axes: cleaned.map((axis) => ({
-            axis_key: axis.axis_key,
-            label: axis.label,
-            values: axis.values,
-            sort_order: axis.sort_order,
-          })),
-          variants: variants.map((row) => ({
-            ...row,
-            id: row.id.startsWith("new-") ? undefined : row.id,
-            discount_pct: discountPercent(row.mrp, row.price),
-            low_stock_threshold: row.low_stock_threshold ?? 10,
-          })),
-        },
-      });
-
-      dirty.current = false;
-      onDirtyChange(false);
-
-      for (const key of [
-        "product",
-        "family",
-        "family-products",
-        "products",
-        "admin-product-variants",
-      ]) {
-        qc.invalidateQueries({ queryKey: [key] });
-      }
-
-      if (result.compatibility_mode) {
-        toast.warning("Options and prices saved. Apply the parity migration to save barcodes.");
-      } else {
-        toast.success("Options saved");
-      }
-      // Refresh SKU IDs first: a committed new SKU must never be submitted as a draft again.
-      const savedVariants = await onSaved();
-      const axesResult = await q.refetch();
-      if (axesResult.error) throw axesResult.error;
-      if (generateAfterSave) generateCombinations(generationAxes, savedVariants);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save options");
-    } finally {
-      setSaving(false);
-      onSavingChange(false);
-    }
-  };
-
-  if (q.isLoading)
-    return (
-      <p role="status" className="p-4 text-sm text-slate-500">
-        Loading option definitions…
-      </p>
-    );
-  if (q.isError)
-    return (
-      <div
-        role="alert"
-        className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
-      >
-        Option definitions could not be loaded. Your current edits are retained while this page
-        stays open.
-        <Button
-          type="button"
-          variant="outline"
-          className="ml-3"
-          onClick={() => q.refetch()}
-          disabled={q.isFetching}
-        >
-          Retry options
-        </Button>
-      </div>
-    );
-
   return (
     <div className="rounded-xl border border-slate-200 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1922,7 +2253,7 @@ function AxisEditor({
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="outline" onClick={() => addAxis()}>
             <Plus className="mr-1 h-4 w-4" />
             Add Option
@@ -1933,7 +2264,7 @@ function AxisEditor({
             size="sm"
             variant="outline"
             onClick={() => saveAxes(false)}
-            disabled={saving || rows.length === 0}
+            disabled={saving}
           >
             <Save className="mr-1 h-4 w-4" />
             {saving ? "Saving…" : "Save Options"}
@@ -1950,7 +2281,7 @@ function AxisEditor({
         </div>
       </div>
 
-      {rows.length === 0 ? (
+      {
         <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
           <p className="text-sm font-medium text-slate-800">
             Choose the variation types for this product:
@@ -1968,6 +2299,7 @@ function AxisEditor({
                 type="button"
                 size="sm"
                 variant="outline"
+                disabled={rows.some((axis) => axis.axis_key === preset.key)}
                 onClick={() => addAxis(preset)}
               >
                 <Plus className="h-4 w-4" /> {preset.label}
@@ -1978,13 +2310,19 @@ function AxisEditor({
             Select a template or use Add Option for a custom attribute, enter comma-separated
             values, then save options.
           </p>
+          <p className="mt-2 text-sm text-slate-600">
+            {draftOnly
+              ? "These buttons prepare your draft. Nothing is written until Review & save. Generate adds missing combinations as inactive drafts for individual editing."
+              : "Save Options also saves current SKU edits and selected images. Save & Generate adds missing combinations as inactive drafts."}
+          </p>
         </div>
-      ) : (
+      }
+      {rows.length > 0 && (
         <div className="mt-4 space-y-3">
           {rows.map((axis) => (
             <div
               key={axis.id}
-              className="grid items-end gap-3 rounded-lg bg-slate-50 p-3 md:grid-cols-[180px_220px_1fr_auto]"
+              className="grid items-end gap-3 rounded-lg bg-slate-50 p-3 lg:grid-cols-[150px_180px_1fr_auto]"
             >
               <label>
                 <FieldTitle>Option Key</FieldTitle>
@@ -2021,7 +2359,7 @@ function AxisEditor({
                 <Input
                   className="mt-1"
                   value={axis.values.join(", ")}
-                  placeholder="3W, 5W, 7W, 9W"
+                  placeholder="Enter the actual values, separated by commas"
                   onChange={(e) =>
                     updateAxis(axis.id, {
                       values: e.target.value.split(",").map((value) => value.replace(/^\s+/, "")),
@@ -2030,10 +2368,16 @@ function AxisEditor({
                 />
               </label>
 
-              <Button type="button" size="sm" variant="outline" onClick={() => removeAxis(axis)}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label={`Remove ${axis.label}`}
+                onClick={() => removeAxis(axis)}
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <div className="flex flex-wrap gap-3 md:col-span-4">
+              <div className="flex flex-wrap gap-3 lg:col-span-4">
                 <span className="text-sm text-slate-500">Include in generation:</span>
                 {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
                   (value) => (

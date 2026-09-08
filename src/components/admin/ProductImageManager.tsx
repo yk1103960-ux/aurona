@@ -29,11 +29,13 @@ export function ProductImageManager({
   productId,
   initialVariantSku = "",
   sectionId,
+  variantOnly = false,
 }: {
   productSku: string;
   productId: string;
   initialVariantSku?: string;
   sectionId?: string;
+  variantOnly?: boolean;
 }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -191,14 +193,23 @@ export function ProductImageManager({
   };
 
   const skus = q.data?.skus ?? [];
-  const images = q.data?.images ?? [];
+  const images = (q.data?.images ?? []).filter(
+    (row) => !variantOnly || row.variant_sku === targetSku,
+  );
 
   return (
     <div
       id={sectionId}
       className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 md:col-span-2 scroll-mt-6"
     >
-      <div className="font-semibold text-sm uppercase tracking-wider text-slate-500">Photos</div>
+      <div className="font-semibold text-sm uppercase tracking-wider text-slate-500">
+        {variantOnly ? "Saved images for this SKU" : "Photos"}
+      </div>
+      {variantOnly && (
+        <p className="text-sm text-slate-500">
+          Changes to these saved images apply immediately to this SKU.
+        </p>
+      )}
       {q.isError && (
         <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">
           Could not load photos.{" "}
@@ -214,6 +225,7 @@ export function ProductImageManager({
           <select
             className="h-10 min-w-[220px] rounded-md border px-3 text-sm bg-white"
             value={targetSku}
+            disabled={variantOnly}
             onChange={(e) => setTargetSku(e.target.value)}
           >
             <option value="">All variations (family photo)</option>
@@ -257,6 +269,7 @@ export function ProductImageManager({
               <select
                 className="h-9 w-full rounded-md border px-2 text-xs bg-white"
                 value={row.variant_sku ?? ""}
+                disabled={variantOnly}
                 onChange={(e) =>
                   patch(row.id, { variant_sku: e.target.value || null, is_primary: false })
                 }

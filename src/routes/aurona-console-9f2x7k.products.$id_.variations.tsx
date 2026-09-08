@@ -91,18 +91,18 @@ function ProductVariationsPage() {
       <div className="grid gap-3 md:grid-cols-3">
         <GuideCard
           icon={<Tags className="h-4 w-4" />}
-          title="1. Name each variation"
-          text="Create option axes such as Wattage, Size, Colour or Pack, then choose the values for every SKU. These values become the variation name."
+          title="1. Start with images and options"
+          text="Choose Add Variation for the guided steps. Add images, then define shared Wattage, Size, Colour, Pack or custom options once for this product."
         />
         <GuideCard
           icon={<Ruler className="h-4 w-4" />}
-          title="2. Complete SKU details"
-          text="Edit item code, barcode, customer/retailer/distributor prices, MOQ, pack size, weight and unit/package dimensions."
+          title="2. Complete and save your SKU"
+          text="Choose its option values, enter customer/retailer/distributor prices, MOQ, stock, weight and dimensions, then review and save."
         />
         <GuideCard
           icon={<ImageIcon className="h-4 w-4" />}
-          title="3. Attach variation photos"
-          text="Upload images below, assign each one to its SKU and select one primary image for each variation."
+          title="3. Duplicate to add the next one"
+          text="Use Duplicate Variation, change the new SKU and its values, and review copied prices and images. Copies start inactive with zero stock and no barcode."
         />
       </div>
 
