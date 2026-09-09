@@ -826,9 +826,25 @@ function QuickVariantsTab({
   manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
+  const availableGroupAxes = axes.filter((axis) => rows.some((row) => Boolean(row.attributes[axis.axis_key])));
+  const defaultGroupAxisKey =
+    availableGroupAxes.find((axis) => axis.axis_key === "wattage")?.axis_key ?? availableGroupAxes[0]?.axis_key ?? "";
+  const [groupAxisKey, setGroupAxisKey] = useState(defaultGroupAxisKey);
+
+  useEffect(() => {
+    if (!availableGroupAxes.length) {
+      if (groupAxisKey) setGroupAxisKey("");
+      return;
+    }
+    if (!availableGroupAxes.some((axis) => axis.axis_key === groupAxisKey)) {
+      setGroupAxisKey(defaultGroupAxisKey);
+    }
+  }, [axes, rows, groupAxisKey, defaultGroupAxisKey]);
+
   const primaryAxis =
-    axes.find((axis) => axis.axis_key === "wattage") ??
-    axes.find((axis) => rows.some((row) => row.attributes[axis.axis_key])) ??
+    availableGroupAxes.find((axis) => axis.axis_key === groupAxisKey) ??
+    availableGroupAxes.find((axis) => axis.axis_key === "wattage") ??
+    availableGroupAxes[0] ??
     null;
 
   const groupValues = primaryAxis
@@ -891,12 +907,30 @@ function QuickVariantsTab({
 
       {rows.length > 0 && primaryAxis && groupValues.length > 0 && (
         <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <div className="mb-4">
-            <h4 className="font-semibold text-slate-950">Set prices by {primaryAxis.label}</h4>
-            <p className="mt-1 text-xs text-slate-500">
-              Enter a price once for each {primaryAxis.label.toLowerCase()}. It applies only to SKUs with that value.
-              Add another {primaryAxis.label.toLowerCase()} above and its row appears automatically.
-            </p>
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h4 className="font-semibold text-slate-950">Set prices by {primaryAxis.label}</h4>
+              <p className="mt-1 text-xs text-slate-500">
+                Apply one set of prices to every SKU sharing the same {primaryAxis.label.toLowerCase()}. If this product
+                has no Wattage, choose Size, Model, Colour, Pack Size or any other product option instead.
+              </p>
+            </div>
+            {availableGroupAxes.length > 1 && (
+              <label className="min-w-[220px] text-xs font-medium text-slate-600">
+                Group pricing by
+                <select
+                  className="mt-1 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-500"
+                  value={primaryAxis.axis_key}
+                  onChange={(event) => setGroupAxisKey(event.target.value)}
+                >
+                  {availableGroupAxes.map((axis) => (
+                    <option key={axis.axis_key} value={axis.axis_key}>
+                      {axis.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
 
           <div className="overflow-x-auto">
