@@ -3759,6 +3759,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_product_family_permanent: {
+        Args: { _family_id: string }
+        Returns: Json
+      }
       admin_duplicate_product_family: {
         Args: { _family_id: string }
         Returns: Json
