@@ -37,7 +37,12 @@ import {
   adminSetPrimaryProductImage,
 } from "@/lib/catalog-admin.functions";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
-import { missingCombinations } from "@/lib/variant-options";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  combinationSummary,
+  missingCombinations,
+  parsePastedValues,
+} from "@/lib/variant-options";
 
 import {
   newVariation,
@@ -721,6 +726,10 @@ export function VariantEditor({
             rows={rows}
             updateRow={updateRow}
             removeRow={removeRow}
+            editRow={(row) => {
+              setWizardStep(0);
+              setEditingId(row.id);
+            }}
             manageImages={onManageImages}
             optionsEditor={tab === "quick" && !editingId ? optionsEditor : null}
           />

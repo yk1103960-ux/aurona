@@ -45,6 +45,7 @@ function ExistingProductEditor() {
 type MainTab =
   | "general"
   | "media"
+  | "variations"
   | "customer"
   | "retailer"
   | "distributor"
@@ -213,6 +214,11 @@ const TABS: {
     icon: <Images className="h-4 w-4" />,
   },
   {
+    key: "variations",
+    label: "Variations",
+    icon: <Layers3 className="h-4 w-4" />,
+  },
+  {
     key: "customer",
     label: "Customer Price & Stock",
     icon: <Users className="h-4 w-4" />,
@@ -250,7 +256,7 @@ const TABS: {
 ];
 
 /** The everyday workflow: details, photos, then prices and variations. */
-const SIMPLE_TABS: MainTab[] = ["general", "media", "customer"];
+const SIMPLE_TABS: MainTab[] = ["general", "media", "variations", "customer"];
 
 export function ProductEditor({ productId: id }: { productId: string }) {
   const isNew = id === "new";
@@ -960,6 +966,17 @@ export function ProductEditor({ productId: id }: { productId: string }) {
 
       {/* CUSTOMER */}
 
+      {tab === "variations" && (
+        <VariantArea
+          isNew={isNew}
+          sku={f.sku}
+          id={id}
+          variantTab="options"
+          title="Variations"
+          text="Add the options this product needs, paste their values, press GENERATE VARIATIONS, then fill the table."
+        />
+      )}
+
       {tab === "customer" && (
         <VariantArea
           isNew={isNew}
@@ -1223,7 +1240,7 @@ function VariantArea({
   isNew: boolean;
   sku: string;
   id: string;
-  variantTab: "customer" | "retailer" | "distributor";
+  variantTab: "options" | "customer" | "retailer" | "distributor";
   title: string;
   text: string;
 }) {
