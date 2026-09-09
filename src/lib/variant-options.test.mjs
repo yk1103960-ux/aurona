@@ -4,7 +4,9 @@ import {
   actualAxes,
   buildCombinations,
   combinationKey,
+  combinationSummary,
   missingCombinations,
+  parsePastedValues,
 } from "./variant-options.ts";
 
 // Synthetic algorithm fixtures, NOT Aurona product specifications or seed data.
