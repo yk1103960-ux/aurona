@@ -3793,6 +3793,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_save_variant_matrix_v3: {
+        Args: {
+          _actor_user_id: string
+          _axes: Json
+          _family_id: string
+          _variants: Json
+        }
+        Returns: undefined
+      }
       admin_set_primary_product_image: {
         Args: { _image_id: string }
         Returns: undefined
