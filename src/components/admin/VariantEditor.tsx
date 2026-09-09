@@ -2307,15 +2307,42 @@ function AxisEditor({
     if (confirm(`Remove option "${axis.label}" from this family?`))
       setRows(rows.filter((row) => row.id !== axis.id));
   };
+  const activeAxes = rows.map((axis) => ({
+    ...axis,
+    values: axis.values
+      .map((value) => value.trim())
+      .filter((value) => Boolean(value) && !(excluded[axis.id] ?? []).includes(value)),
+  }));
+  let summary: { total: number; missing: number; existing: number } | null = null;
+  try {
+    summary = combinationSummary(activeAxes, variants);
+  } catch {
+    summary = null;
+  }
+  const generate = () => {
+    if (summary && summary.missing === 0) {
+      toast.info("Every combination from these values already exists.");
+      return;
+    }
+    if (
+      summary &&
+      !confirm(
+        `Generate ${summary.missing} new variation${summary.missing === 1 ? "" : "s"}?\n\n` +
+          `${summary.existing} existing SKU${summary.existing === 1 ? "" : "s"} will be kept exactly as they are. Nothing is deleted.`,
+      )
+    )
+      return;
+    void saveAxes(true);
+  };
   return (
     <div className="rounded-xl border border-slate-200 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold">Product Options / Attributes</div>
+          <div className="text-sm font-semibold">Variations / Options</div>
 
           <div className="mt-1 text-xs text-slate-500">
-            Examples: Watts Available, Output Colour, Shape, Body Colour, Pack Size, Oscillation,
-            Tank Capacity or Reflector Colour.
+            Add the options this product actually needs (for example Wattage and Output Colour),
+            paste their values, then generate the variations.
           </div>
         </div>
 
@@ -2335,14 +2362,9 @@ function AxisEditor({
             <Save className="mr-1 h-4 w-4" />
             {saving ? "Saving…" : "Save Options"}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => saveAxes(true)}
-            disabled={saving || rows.length === 0}
-          >
+          <Button type="button" size="sm" onClick={generate} disabled={saving || rows.length === 0}>
             <Plus className="h-4 w-4" />
-            {saving ? "Saving…" : "Save & Generate Variations"}
+            {saving ? "Saving…" : "GENERATE VARIATIONS"}
           </Button>
         </div>
       </div>
@@ -2355,10 +2377,11 @@ function AxisEditor({
           <div className="mt-3 flex flex-wrap gap-2">
             {[
               { key: "wattage", label: "Wattage" },
-              { key: "size", label: "Size" },
-              { key: "body_colour", label: "Body / Housing Colour" },
-              { key: "pack_size", label: "Pack Size" },
               { key: "output_colour", label: "Output Colour" },
+              { key: "body_colour", label: "Body / Housing Colour" },
+              { key: "model", label: "Model" },
+              { key: "size", label: "Size" },
+              { key: "pack_size", label: "Pack Size" },
             ].map((preset) => (
               <Button
                 key={preset.key}
@@ -2373,13 +2396,19 @@ function AxisEditor({
             ))}
           </div>
           <p className="mt-3 text-xs text-slate-500">
-            Select a template or use Add Option for a custom attribute, enter comma-separated
-            values, then save options.
+            Only add the options this product needs. Values can be pasted from a list — commas, new
+            lines or tabs all work.
           </p>
+          {summary && (
+            <p className="mt-2 text-sm text-slate-700">
+              {summary.total} combination{summary.total === 1 ? "" : "s"} from these values ·{" "}
+              <strong>{summary.missing} new</strong> · {summary.existing} already created.
+            </p>
+          )}
           <p className="mt-2 text-sm text-slate-600">
             {draftOnly
-              ? "These buttons prepare your draft. Nothing is written until Review & save. Generate adds missing combinations as inactive drafts for individual editing."
-              : "Save Options also saves current SKU edits and selected images. Save & Generate adds missing combinations as inactive drafts."}
+              ? "These buttons prepare your draft. Nothing is written until Review & save."
+              : "Generate adds only the missing combinations, as inactive drafts. Existing SKUs, prices and stock are never changed or deleted."}
           </p>
         </div>
       }
@@ -2388,47 +2417,45 @@ function AxisEditor({
           {rows.map((axis) => (
             <div
               key={axis.id}
-              className="grid items-end gap-3 rounded-lg bg-slate-50 p-3 lg:grid-cols-[150px_180px_1fr_auto]"
+              className="grid items-start gap-3 rounded-lg bg-slate-50 p-3 lg:grid-cols-[200px_1fr_auto]"
             >
               <label>
-                <FieldTitle>Option Key</FieldTitle>
-
-                <Input
-                  className="mt-1 font-mono"
-                  value={axis.axis_key}
-                  disabled={!axis.id.startsWith("new-")}
-                  onChange={(e) =>
-                    updateAxis(axis.id, {
-                      axis_key: e.target.value,
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                <FieldTitle>Display Name</FieldTitle>
+                <FieldTitle>Option Name</FieldTitle>
 
                 <Input
                   className="mt-1"
                   value={axis.label}
+                  placeholder="Wattage"
                   onChange={(e) =>
                     updateAxis(axis.id, {
                       label: e.target.value,
+                      ...(axis.id.startsWith("new-")
+                        ? {
+                            axis_key:
+                              e.target.value
+                                .trim()
+                                .toLowerCase()
+                                .replace(/[^a-z0-9_]+/g, "_") || axis.axis_key,
+                          }
+                        : {}),
                     })
                   }
                 />
+                <span className="mt-1 block font-mono text-[11px] text-slate-400">
+                  {axis.axis_key}
+                </span>
               </label>
 
               <label>
-                <FieldTitle>Available Values (comma separated)</FieldTitle>
+                <FieldTitle>Values — paste or type (comma or one per line)</FieldTitle>
 
-                <Input
-                  className="mt-1"
+                <Textarea
+                  className="mt-1 min-h-[76px]"
                   value={axis.values.join(", ")}
-                  placeholder="Enter the actual values, separated by commas"
+                  placeholder={"5W, 7W, 9W, 12W"}
                   onChange={(e) =>
                     updateAxis(axis.id, {
-                      values: e.target.value.split(",").map((value) => value.replace(/^\s+/, "")),
+                      values: parsePastedValues(e.target.value),
                     })
                   }
                 />
@@ -2443,28 +2470,30 @@ function AxisEditor({
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <div className="flex flex-wrap gap-3 lg:col-span-4">
-                <span className="text-sm text-slate-500">Include in generation:</span>
-                {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
-                  (value) => (
-                    <label key={value} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={!(excluded[axis.id] ?? []).includes(value)}
-                        onChange={(event) =>
-                          setExcluded((current) => ({
-                            ...current,
-                            [axis.id]: event.target.checked
-                              ? (current[axis.id] ?? []).filter((item) => item !== value)
-                              : [...(current[axis.id] ?? []), value],
-                          }))
-                        }
-                      />
-                      {value}
-                    </label>
-                  ),
-                )}
-              </div>
+              {axis.values.filter(Boolean).length > 0 && (
+                <div className="flex flex-wrap gap-3 lg:col-span-3">
+                  <span className="text-sm text-slate-500">Include in generation:</span>
+                  {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
+                    (value) => (
+                      <label key={value} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={!(excluded[axis.id] ?? []).includes(value)}
+                          onChange={(event) =>
+                            setExcluded((current) => ({
+                              ...current,
+                              [axis.id]: event.target.checked
+                                ? (current[axis.id] ?? []).filter((item) => item !== value)
+                                : [...(current[axis.id] ?? []), value],
+                            }))
+                          }
+                        />
+                        {value}
+                      </label>
+                    ),
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
