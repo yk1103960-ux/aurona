@@ -790,19 +790,49 @@ export function VariantEditor({
   );
 }
 
+type QuickField = "mrp" | "price" | "retailer_price" | "distributor_price" | "stock" | "pack_size";
+
+const QUICK_FIELDS: { key: QuickField; label: string }[] = [
+  { key: "mrp", label: "MRP" },
+  { key: "price", label: "Customer price" },
+  { key: "retailer_price", label: "Retailer price" },
+  { key: "distributor_price", label: "Distributor price" },
+  { key: "stock", label: "Stock" },
+  { key: "pack_size", label: "Pack size" },
+];
+
 function QuickVariantsTab({
   rows,
   updateRow,
   removeRow,
+  editRow,
   manageImages,
   optionsEditor,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   removeRow: (row: Variant) => void;
+  editRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
+  const [bulkField, setBulkField] = useState<QuickField>("price");
+  const [bulkValue, setBulkValue] = useState("");
+
+  const applyToAll = () => {
+    const value = bulkValue === "" ? null : Number(bulkValue);
+    if (value !== null && !Number.isFinite(value)) return toast.error("Enter a number first.");
+    for (const row of rows) updateRow(row.id, { [bulkField]: value } as Partial<Variant>);
+    toast.success(`Applied to all ${rows.length} variations. Save to keep the change.`);
+  };
+
+  const copyDown = (field: QuickField, index: number) => {
+    const value = rows[index][field];
+    for (const row of rows.slice(index + 1))
+      updateRow(row.id, { [field]: value } as Partial<Variant>);
+    toast.success("Copied to the rows below.");
+  };
+
   return (
     <div className="space-y-5">
       {optionsEditor}
@@ -810,30 +840,65 @@ function QuickVariantsTab({
       <div>
         <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
         <p className="text-xs text-slate-500">
-          Fill in code, prices and stock for each variation. Use “More options” above for partner
-          prices, weight and dimensions.
+          Enter SKU, prices and stock right here. “Edit” opens weight, dimensions, barcode, MOQ and
+          other advanced details.
         </p>
       </div>
+
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <label className="text-xs font-medium text-slate-600">
+            <span className="block">Fill every variation</span>
+            <select
+              className="mt-1 h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+              value={bulkField}
+              onChange={(event) => setBulkField(event.target.value as QuickField)}
+            >
+              {QUICK_FIELDS.map((field) => (
+                <option key={field.key} value={field.key}>
+                  {field.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Input
+            className="h-9 w-32"
+            inputMode="decimal"
+            placeholder="Value"
+            value={bulkValue}
+            onChange={(event) => setBulkValue(event.target.value)}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={applyToAll}>
+            Apply to all
+          </Button>
+          <span className="text-xs text-slate-500">
+            Nothing is saved until you use Save All Variant Changes.
+          </span>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <EmptyVariants />
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-[900px] w-full border-collapse text-sm">
+          <table className="min-w-[1180px] w-full border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
-                <Th>Product code</Th>
+                <Th>SKU</Th>
                 <Th>MRP</Th>
-                <Th>Selling price</Th>
+                <Th>Customer</Th>
+                <Th>Retailer</Th>
+                <Th>Distributor</Th>
                 <Th>Stock</Th>
+                <Th>Pack</Th>
                 <Th>Live</Th>
-                <Th>Photos</Th>
+                <Th>Actions</Th>
               </tr>
             </thead>
 
             <tbody>
-              {rows.map((row) => (
+              {rows.map((row, index) => (
                 <tr key={row.id} className="border-t border-slate-200">
                   <Td>
                     <VariantIdentity row={row} />
@@ -847,26 +912,29 @@ function QuickVariantsTab({
                     />
                   </Td>
 
-                  <Td>
-                    <NumberInput
-                      value={row.mrp}
-                      onChange={(value) => updateRow(row.id, { mrp: value })}
-                    />
-                  </Td>
-
-                  <Td>
-                    <NumberInput
-                      value={row.price}
-                      onChange={(value) => updateRow(row.id, { price: value })}
-                    />
-                  </Td>
-
-                  <Td>
-                    <NumberInput
-                      value={row.stock}
-                      onChange={(value) => updateRow(row.id, { stock: value })}
-                    />
-                  </Td>
+                  {QUICK_FIELDS.map((field) => (
+                    <Td key={field.key}>
+                      <div className="flex items-center gap-1">
+                        <NumberInput
+                          value={row[field.key] as number | null}
+                          onChange={(value) =>
+                            updateRow(row.id, { [field.key]: value } as Partial<Variant>)
+                          }
+                        />
+                        {index < rows.length - 1 && (
+                          <button
+                            type="button"
+                            title={`Copy ${field.label} to the rows below`}
+                            aria-label={`Copy ${field.label} to the rows below`}
+                            onClick={() => copyDown(field.key, index)}
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </Td>
+                  ))}
 
                   <Td>
                     <Switch
@@ -877,12 +945,23 @@ function QuickVariantsTab({
 
                   <Td>
                     <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => editRow(row)}
+                        title="Advanced details"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+
                       {manageImages && (
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={() => manageImages(row.sku)}
+                          title="Images for this SKU"
                         >
                           <ImageIcon className="h-4 w-4" />
                         </Button>
@@ -893,6 +972,7 @@ function QuickVariantsTab({
                         size="sm"
                         variant="ghost"
                         onClick={() => removeRow(row)}
+                        title="Remove this variation"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
