@@ -310,9 +310,19 @@ export function VariantEditor({
     }
   };
 
-  const generateCombinations = (sourceAxes: Axis[] = axes, sourceRows: Variant[] = rows) => {
+  const generateCombinations = (
+    sourceAxes: Axis[] = axes,
+    sourceRows: Variant[] = rows,
+    selectedCombinations?: Record<string, string>[],
+  ) => {
     try {
-      const combinations = missingCombinations(sourceAxes, sourceRows);
+      const allMissing = missingCombinations(sourceAxes, sourceRows);
+      const combinationKey = (attributes: Record<string, string>) =>
+        sourceAxes.map((axis) => `${axis.axis_key}=${attributes[axis.axis_key] ?? ""}`).join("||");
+      const selectedKeys = selectedCombinations ? new Set(selectedCombinations.map(combinationKey)) : null;
+      const combinations = selectedKeys
+        ? allMissing.filter((attributes) => selectedKeys.has(combinationKey(attributes)))
+        : allMissing;
       if (!combinations.length) return toast.info("All selected combinations already exist");
       const usedSkus = new Set(sourceRows.map((row) => row.sku.trim().toUpperCase()));
       const template =
@@ -535,7 +545,7 @@ export function VariantEditor({
     }
   };
   const saveAll = async () => Boolean(await saveMatrix());
-  const saveAxes = async (generate: boolean) => {
+  const saveAxes = async (generate: boolean, selectedCombinations?: Record<string, string>[]) => {
     let generationAxes: Axis[];
     let cleaned: Axis[];
     try {
@@ -570,7 +580,7 @@ export function VariantEditor({
           `${deactivated} old/base SKU${deactivated === 1 ? " was" : "s were"} kept but made inactive because it did not have values for the new options.`,
         );
       }
-      generateCombinations(generationAxes, safeRows);
+      generateCombinations(generationAxes, safeRows, selectedCombinations);
       setEditingId(null);
       setTab("quick");
       return;
@@ -2277,14 +2287,13 @@ function AxisEditor({
   variants: Variant[];
   setRows: (rows: Axis[]) => void;
   saving: boolean;
-  saveAxes: (generate: boolean) => Promise<void>;
+  saveAxes: (generate: boolean, selectedCombinations?: Record<string, string>[]) => Promise<void>;
   excluded: Record<string, string[]>;
   setExcluded: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   draftOnly: boolean;
 }) {
-  // Keep exactly what the admin types visible in the textarea. The parsed values are
-  // updated at the same time, so commas/new lines no longer disappear while typing.
   const [valueDrafts, setValueDrafts] = useState<Record<string, string>>({});
+  const [selectedCombinationKeys, setSelectedCombinationKeys] = useState<Set<string>>(new Set());
 
   const updateAxis = (id: string, patch: Partial<Axis>) =>
     setRows(rows.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
@@ -2312,24 +2321,45 @@ function AxisEditor({
     if (confirm(`Remove ${axis.label}?`)) setRows(rows.filter((row) => row.id !== axis.id));
   };
 
-  const activeAxes = rows.map((axis) => ({
-    ...axis,
-    values: axis.values.map((v) => v.trim()).filter((v) => v && !(excluded[axis.id] ?? []).includes(v)),
-  }));
-  let summary: { total: number; missing: number; existing: number } | null = null;
+  const activeAxes = rows
+    .map((axis) => ({
+      ...axis,
+      values: [...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].filter(
+        (value) => !(excluded[axis.id] ?? []).includes(value),
+      ),
+    }))
+    .filter((axis) => axis.values.length > 0);
+
+  const combinationKey = (attributes: Record<string, string>) =>
+    activeAxes.map((axis) => `${axis.axis_key}=${attributes[axis.axis_key] ?? ""}`).join("||");
+
+  let allCombinations: Record<string, string>[] = [];
+  let missing: Record<string, string>[] = [];
   try {
-    summary = combinationSummary(activeAxes, variants);
+    if (activeAxes.length === rows.length && activeAxes.length > 0) {
+      allCombinations = missingCombinations(activeAxes, []);
+      missing = missingCombinations(activeAxes, variants);
+    }
   } catch {
-    summary = null;
+    allCombinations = [];
+    missing = [];
   }
 
-  const generate = () => {
-    if (!rows.length) return toast.error("Add at least one option first.");
-    if (rows.some((axis) => !axis.label.trim() || !axis.values.length))
-      return toast.error("Give every option a name and at least one value.");
-    if (summary?.missing === 0) return toast.info("All combinations already exist.");
-    void saveAxes(true);
-  };
+  const missingKeys = new Set(missing.map(combinationKey));
+  const existingKeys = new Set(allCombinations.map(combinationKey).filter((key) => !missingKeys.has(key)));
+
+  // New valid combinations start selected automatically. Manual unticks are preserved.
+  const combinationSignature = missing.map(combinationKey).join("###");
+  useEffect(() => {
+    setSelectedCombinationKeys((current) => {
+      const valid = new Set(missing.map(combinationKey));
+      const next = new Set([...current].filter((key) => valid.has(key)));
+      if (current.size === 0) valid.forEach((key) => next.add(key));
+      return next;
+    });
+    // combinationSignature is intentionally the dependency: it changes only when combinations change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combinationSignature]);
 
   const presets = [
     ["wattage", "Wattage"],
@@ -2339,6 +2369,39 @@ function AxisEditor({
     ["size", "Size"],
     ["pack_size", "Pack Size"],
   ] as const;
+
+  const selectedMissing = missing.filter((attributes) => selectedCombinationKeys.has(combinationKey(attributes)));
+
+  const toggleCombination = (attributes: Record<string, string>) => {
+    const key = combinationKey(attributes);
+    if (existingKeys.has(key)) return;
+    setSelectedCombinationKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const setGroup = (groupValue: string, checked: boolean) => {
+    const first = activeAxes[0];
+    if (!first) return;
+    const groupKeys = missing.filter((attributes) => attributes[first.axis_key] === groupValue).map(combinationKey);
+    setSelectedCombinationKeys((current) => {
+      const next = new Set(current);
+      groupKeys.forEach((key) => (checked ? next.add(key) : next.delete(key)));
+      return next;
+    });
+  };
+
+  const generate = () => {
+    if (!rows.length) return toast.error("Add at least one option first.");
+    if (rows.some((axis) => !axis.label.trim() || !axis.values.length))
+      return toast.error("Give every option a name and at least one value.");
+    if (!missing.length) return toast.info("All selected combinations already exist.");
+    if (!selectedMissing.length) return toast.error("Select at least one SKU combination to generate.");
+    void saveAxes(true, selectedMissing);
+  };
 
   return (
     <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -2358,7 +2421,7 @@ function AxisEditor({
               type="button"
               size="sm"
               variant="outline"
-              disabled={rows.some((a) => a.axis_key === key)}
+              disabled={rows.some((axis) => axis.axis_key === key)}
               onClick={() => addAxis({ key, label })}
             >
               <Plus className="mr-1 h-4 w-4" /> {label}
@@ -2381,13 +2444,13 @@ function AxisEditor({
                   <Input
                     className="mt-1"
                     value={axis.label}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       updateAxis(axis.id, {
-                        label: e.target.value,
+                        label: event.target.value,
                         ...(axis.id.startsWith("new-")
                           ? {
                               axis_key:
-                                e.target.value
+                                event.target.value
                                   .trim()
                                   .toLowerCase()
                                   .replace(/[^a-z0-9_]+/g, "_") || axis.axis_key,
@@ -2397,16 +2460,21 @@ function AxisEditor({
                     }
                   />
                 </label>
+
                 <label>
                   <FieldTitle>Values</FieldTitle>
                   <Textarea
                     className="mt-1 min-h-[72px]"
                     value={valueDrafts[axis.id] ?? axis.values.join(", ")}
                     placeholder={
-                      axis.axis_key === "wattage" ? "5W, 7W, 9W, 12W" : "Type or paste values separated by commas"
+                      axis.axis_key === "wattage"
+                        ? "5W, 7W, 9W, 12W"
+                        : axis.axis_key === "output_colour"
+                          ? "Warm White, Natural White, Cool White"
+                          : "Type or paste values separated by commas"
                     }
-                    onChange={(e) => {
-                      const raw = e.target.value;
+                    onChange={(event) => {
+                      const raw = event.target.value;
                       setValueDrafts((current) => ({ ...current, [axis.id]: raw }));
                       updateAxis(axis.id, { values: parsePastedValues(raw) });
                     }}
@@ -2422,6 +2490,7 @@ function AxisEditor({
                     Paste comma-separated values or one value per line.
                   </span>
                 </label>
+
                 <Button
                   type="button"
                   size="icon"
@@ -2433,25 +2502,33 @@ function AxisEditor({
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
               </div>
+
               {axis.values.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {[...new Set(axis.values.map((v) => v.trim()).filter(Boolean))].map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() =>
-                        setExcluded((current) => ({
-                          ...current,
-                          [axis.id]: (current[axis.id] ?? []).includes(value)
-                            ? (current[axis.id] ?? []).filter((v) => v !== value)
-                            : [...(current[axis.id] ?? []), value],
-                        }))
-                      }
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${(excluded[axis.id] ?? []).includes(value) ? "border-slate-200 bg-slate-100 text-slate-400 line-through" : "border-sky-200 bg-sky-50 text-sky-800"}`}
-                    >
-                      {value}
-                    </button>
-                  ))}
+                  {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map((value) => {
+                    const disabled = (excluded[axis.id] ?? []).includes(value);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setExcluded((current) => ({
+                            ...current,
+                            [axis.id]: disabled
+                              ? (current[axis.id] ?? []).filter((item) => item !== value)
+                              : [...(current[axis.id] ?? []), value],
+                          }))
+                        }
+                        className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                          disabled
+                            ? "border-slate-200 bg-slate-100 text-slate-400 line-through"
+                            : "border-sky-200 bg-sky-50 text-sky-800"
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -2459,22 +2536,130 @@ function AxisEditor({
         </div>
       )}
 
+      {allCombinations.length > 0 && (
+        <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold text-slate-900">3. Choose the real SKU combinations</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Tick only combinations that this product actually has. Existing SKUs are protected.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedCombinationKeys(new Set(missing.map(combinationKey)))}
+              >
+                Select all new
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => setSelectedCombinationKeys(new Set())}>
+                Clear new
+              </Button>
+            </div>
+          </div>
+
+          {activeAxes[0] && (
+            <div className="space-y-4">
+              {activeAxes[0].values.map((groupValue) => {
+                const first = activeAxes[0];
+                const group = allCombinations.filter((attributes) => attributes[first.axis_key] === groupValue);
+                const groupMissing = group.filter((attributes) => missingKeys.has(combinationKey(attributes)));
+                const selectedCount = groupMissing.filter((attributes) =>
+                  selectedCombinationKeys.has(combinationKey(attributes)),
+                ).length;
+
+                return (
+                  <section key={groupValue} className="overflow-hidden rounded-xl border border-slate-200">
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-4 py-3">
+                      <div>
+                        <span className="text-sm text-slate-500">{first.label}</span>
+                        <strong className="ml-2 text-slate-950">{groupValue}</strong>
+                        <span className="ml-2 text-xs text-slate-500">
+                          {selectedCount}/{groupMissing.length} new selected
+                        </span>
+                      </div>
+                      {groupMissing.length > 0 && (
+                        <div className="flex gap-2">
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setGroup(groupValue, true)}>
+                            Select all
+                          </Button>
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setGroup(groupValue, false)}>
+                            Clear
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {group.map((attributes) => {
+                        const key = combinationKey(attributes);
+                        const exists = existingKeys.has(key);
+                        const checked = exists || selectedCombinationKeys.has(key);
+                        return (
+                          <label
+                            key={key}
+                            className={`flex min-w-0 items-start gap-3 rounded-lg border p-3 ${
+                              exists
+                                ? "border-emerald-200 bg-emerald-50"
+                                : checked
+                                  ? "border-sky-300 bg-sky-50"
+                                  : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-1 h-4 w-4"
+                              checked={checked}
+                              disabled={exists}
+                              onChange={() => toggleCombination(attributes)}
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block break-words text-sm font-semibold text-slate-900">
+                                {activeAxes
+                                  .map((axis) => attributes[axis.axis_key])
+                                  .filter(Boolean)
+                                  .join(" / ")}
+                              </span>
+                              <span className="mt-1 block break-words text-xs text-slate-500">
+                                {activeAxes.map((axis) => `${axis.label}: ${attributes[axis.axis_key]}`).join(" · ")}
+                              </span>
+                            </span>
+                            {exists && (
+                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+                                Existing
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="font-semibold text-sky-950">3. Generate variations</p>
+            <p className="font-semibold text-sky-950">4. Generate selected variations</p>
             <p className="mt-1 text-sm text-sky-800">
-              {summary
-                ? `${summary.total} combinations · ${summary.missing} new · ${summary.existing} already exist`
-                : "Enter your option values above."}
+              {allCombinations.length
+                ? `${allCombinations.length} possible · ${existingKeys.size} existing · ${selectedMissing.length} new selected`
+                : "Enter all option values above to build combinations."}
             </p>
             <p className="mt-1 text-xs text-sky-700">
-              Existing SKUs are kept. New combinations are created as drafts so you can edit price, stock, SKU and
-              images.
+              Only checked new combinations are generated. They start inactive with zero stock so you can safely edit
+              SKU, prices, images and stock before activation.
             </p>
           </div>
-          <Button type="button" size="lg" onClick={generate} disabled={saving || !rows.length}>
-            <Plus className="mr-2 h-4 w-4" /> {saving ? "Generating…" : "Generate Variations"}
+          <Button type="button" size="lg" onClick={generate} disabled={saving || !selectedMissing.length}>
+            <Plus className="mr-2 h-4 w-4" />
+            {saving ? "Generating…" : `Generate ${selectedMissing.length || ""} Variations`}
           </Button>
         </div>
       </div>
