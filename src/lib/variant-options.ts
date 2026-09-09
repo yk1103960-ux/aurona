@@ -55,3 +55,18 @@ export function actualAxes<T extends OptionAxis>(
     })
     .filter((axis) => axis.values.length > 0);
 }
+
+/** Accept copy/pasted values separated by commas, new lines, tabs or semicolons. */
+export function parsePastedValues(text: string): string[] {
+  return [...new Set(text.split(/[,\n\r\t;]+/).map((value) => value.trim()).filter(Boolean))];
+}
+
+/** What a Generate Variations click would do, so the admin can be warned first. */
+export function combinationSummary(
+  axes: OptionAxis[],
+  variants: { attributes: Record<string, string> }[],
+) {
+  const total = buildCombinations(axes).length;
+  const missing = missingCombinations(axes, variants).length;
+  return { total, missing, existing: total - missing };
+}

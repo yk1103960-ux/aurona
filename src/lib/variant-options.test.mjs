@@ -76,3 +76,17 @@ test("empty or duplicate axes are rejected", () => {
     ]),
   );
 });
+
+test("pasted values accept commas, new lines and tabs, and drop duplicates", () => {
+  assert.deepEqual(parsePastedValues("5W, 7W\n9W\t12W;5W"), ["5W", "7W", "9W", "12W"]);
+  assert.deepEqual(parsePastedValues("  \n , "), []);
+});
+
+test("generation summary counts new and existing combinations", () => {
+  const axes = [
+    { axis_key: "wattage", values: ["5W", "7W"] },
+    { axis_key: "output_colour", values: ["Warm", "Cool"] },
+  ];
+  const summary = combinationSummary(axes, [{ attributes: { wattage: "5W", output_colour: "Warm" } }]);
+  assert.deepEqual(summary, { total: 4, missing: 3, existing: 1 });
+});
