@@ -966,6 +966,17 @@ export function ProductEditor({ productId: id }: { productId: string }) {
 
       {/* CUSTOMER */}
 
+      {tab === "variations" && (
+        <VariantArea
+          isNew={isNew}
+          sku={f.sku}
+          id={id}
+          variantTab="options"
+          title="Variations"
+          text="Add the options this product needs, paste their values, press GENERATE VARIATIONS, then fill the table."
+        />
+      )}
+
       {tab === "customer" && (
         <VariantArea
           isNew={isNew}
@@ -1229,7 +1240,7 @@ function VariantArea({
   isNew: boolean;
   sku: string;
   id: string;
-  variantTab: "customer" | "retailer" | "distributor";
+  variantTab: "options" | "customer" | "retailer" | "distributor";
   title: string;
   text: string;
 }) {
