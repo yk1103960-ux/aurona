@@ -726,6 +726,10 @@ export function VariantEditor({
             rows={rows}
             updateRow={updateRow}
             removeRow={removeRow}
+            editRow={(row) => {
+              setWizardStep(0);
+              setEditingId(row.id);
+            }}
             manageImages={onManageImages}
             optionsEditor={tab === "quick" && !editingId ? optionsEditor : null}
           />
