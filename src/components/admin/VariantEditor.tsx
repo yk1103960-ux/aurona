@@ -49,7 +49,7 @@ import {
   type VariationPhotoDraft,
 } from "@/lib/variant-photo-drafts";
 
-type Tab = "options" | "customer" | "retailer" | "distributor" | "shipping";
+type Tab = "quick" | "options" | "customer" | "retailer" | "distributor" | "shipping";
 
 const COLS =
   "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
@@ -109,7 +109,8 @@ export function VariantEditor({
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [tab, setTab] = useState<Tab>(initialTab === "options" ? "quick" : initialTab);
+  const [showAllTabs, setShowAllTabs] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
   const [axisRows, setAxisRows] = useState<Axis[]>([]);
@@ -289,7 +290,7 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(initialTab);
+    setTab(initialTab === "options" ? "quick" : initialTab);
   }, [initialTab]);
 
   const family = q.data?.family;
@@ -726,12 +727,22 @@ export function VariantEditor({
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
           <TabButton
-            active={tab === "options"}
-            onClick={() => setTab("options")}
+            active={tab === "quick"}
+            onClick={() => setTab("quick")}
             icon={<SlidersHorizontal className="h-4 w-4" />}
           >
-            All Variation Details
+            Options & Variants
           </TabButton>
+
+          {showAllTabs && (
+            <TabButton
+              active={tab === "options"}
+              onClick={() => setTab("options")}
+              icon={<SlidersHorizontal className="h-4 w-4" />}
+            >
+              All Variation Details
+            </TabButton>
+          )}
 
           <TabButton
             active={tab === "customer"}
@@ -741,6 +752,7 @@ export function VariantEditor({
             Customer Price & Stock
           </TabButton>
 
+          {showAllTabs && (
           <TabButton
             active={tab === "retailer"}
             onClick={() => setTab("retailer")}
@@ -748,7 +760,9 @@ export function VariantEditor({
           >
             Retailer Price & Stock
           </TabButton>
+          )}
 
+          {showAllTabs && (
           <TabButton
             active={tab === "distributor"}
             onClick={() => setTab("distributor")}
@@ -756,7 +770,9 @@ export function VariantEditor({
           >
             Distributor Price & Stock
           </TabButton>
+          )}
 
+          {showAllTabs && (
           <TabButton
             active={tab === "shipping"}
             onClick={() => setTab("shipping")}
@@ -764,6 +780,18 @@ export function VariantEditor({
           >
             Weight & Dimensions
           </TabButton>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showAllTabs;
+              setShowAllTabs(next);
+              if (!next && tab !== "quick" && tab !== "customer") setTab("quick");
+            }}
+            className="ml-2 shrink-0 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
+          >
+            {showAllTabs ? "Hide extra options" : "More options"}
+          </button>
         </div>
       </div>
 
@@ -778,6 +806,16 @@ export function VariantEditor({
       )}
 
       <div className="p-4">
+        <div hidden={tab !== "quick"}>
+          <QuickVariantsTab
+            rows={rows}
+            updateRow={updateRow}
+            removeRow={removeRow}
+            manageImages={onManageImages}
+            optionsEditor={tab === "quick" && !editingId ? optionsEditor : null}
+          />
+        </div>
+
         <div hidden={tab !== "options"}>
           <OptionsTab
             axes={axes}
@@ -839,6 +877,124 @@ export function VariantEditor({
         manageImages={onManageImages}
       />
     </fieldset>
+  );
+}
+
+function QuickVariantsTab({
+  rows,
+  updateRow,
+  removeRow,
+  manageImages,
+  optionsEditor,
+}: {
+  rows: Variant[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+  removeRow: (row: Variant) => void;
+  manageImages?: (sku: string) => void;
+  optionsEditor: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-5">
+      {optionsEditor}
+
+      <div>
+        <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
+        <p className="text-xs text-slate-500">
+          Fill in code, prices and stock for each variation. Use “More options” above for partner
+          prices, weight and dimensions.
+        </p>
+      </div>
+
+      {rows.length === 0 ? (
+        <EmptyVariants />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-[900px] w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <Th>Variation</Th>
+                <Th>Product code</Th>
+                <Th>MRP</Th>
+                <Th>Selling price</Th>
+                <Th>Stock</Th>
+                <Th>Live</Th>
+                <Th>Photos</Th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id} className="border-t border-slate-200">
+                  <Td>
+                    <VariantIdentity row={row} />
+                  </Td>
+
+                  <Td>
+                    <Input
+                      value={row.sku ?? ""}
+                      onChange={(event) => updateRow(row.id, { sku: event.target.value })}
+                      className="h-9 w-40"
+                    />
+                  </Td>
+
+                  <Td>
+                    <NumberInput
+                      value={row.mrp}
+                      onChange={(value) => updateRow(row.id, { mrp: value })}
+                    />
+                  </Td>
+
+                  <Td>
+                    <NumberInput
+                      value={row.price}
+                      onChange={(value) => updateRow(row.id, { price: value })}
+                    />
+                  </Td>
+
+                  <Td>
+                    <NumberInput
+                      value={row.stock}
+                      onChange={(value) => updateRow(row.id, { stock: value })}
+                    />
+                  </Td>
+
+                  <Td>
+                    <Switch
+                      checked={Boolean(row.is_active)}
+                      onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
+                    />
+                  </Td>
+
+                  <Td>
+                    <div className="flex gap-1">
+                      {manageImages && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => manageImages(row.sku)}
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      )}
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeRow(row)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
