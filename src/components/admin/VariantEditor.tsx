@@ -315,6 +315,10 @@ export function VariantEditor({
       const combinations = missingCombinations(sourceAxes, sourceRows);
       if (!combinations.length) return toast.info("All selected combinations already exist");
       const usedSkus = new Set(sourceRows.map((row) => row.sku.trim().toUpperCase()));
+      const template =
+        sourceRows.find((row) => row.is_active) ??
+        sourceRows.find((row) => !row.id.startsWith("new-")) ??
+        sourceRows[0];
       const added = combinations.map((attributes, index) => {
         const suffix = sourceAxes.map((axis) => optionToken(attributes[axis.axis_key])).join("-");
         const base = `${productSku}-${suffix}`;
@@ -331,24 +335,24 @@ export function VariantEditor({
           sku,
           barcode: "",
           attributes,
-          mrp: null,
-          price: null,
-          discount_pct: 0,
-          retailer_price: null,
-          distributor_price: null,
-          moq: 1,
-          retailer_moq: null,
-          distributor_moq: null,
+          mrp: template?.mrp ?? null,
+          price: template?.price ?? null,
+          discount_pct: template?.discount_pct ?? 0,
+          retailer_price: template?.retailer_price ?? null,
+          distributor_price: template?.distributor_price ?? null,
+          moq: template?.moq ?? 1,
+          retailer_moq: template?.retailer_moq ?? null,
+          distributor_moq: template?.distributor_moq ?? null,
           stock: 0,
-          pack_size: null,
-          weight_g: null,
-          dim_l: null,
-          dim_w: null,
-          dim_h: null,
-          pack_weight_g: null,
-          pack_l: null,
-          pack_w: null,
-          pack_h: null,
+          pack_size: template?.pack_size ?? null,
+          weight_g: template?.weight_g ?? null,
+          dim_l: template?.dim_l ?? null,
+          dim_w: template?.dim_w ?? null,
+          dim_h: template?.dim_h ?? null,
+          pack_weight_g: template?.pack_weight_g ?? null,
+          pack_l: template?.pack_l ?? null,
+          pack_w: template?.pack_w ?? null,
+          pack_h: template?.pack_h ?? null,
           is_active: false,
           sort_order: sourceRows.length + index,
           low_stock_threshold: 10,
@@ -545,23 +549,41 @@ export function VariantEditor({
       toast.error(error instanceof Error ? error.message : "Review the options.");
       return;
     }
-    if (editingId) {
-      // Do not lock a new, auto-generated SKU before the client reaches its SKU step.
+    // Generating options must stay a local draft first. Saving the old matrix before
+    // generation can fail when a legacy/base SKU does not yet have values for newly
+    // added axes. Keep those legacy rows, but safely make incomplete ones inactive.
+    if (generate) {
+      const safeRows = rows.map((row) => {
+        const missingNewOption = generationAxes.some(
+          (axis) => !axis.values.includes(row.attributes?.[axis.axis_key] ?? ""),
+        );
+        return row.is_active && missingNewOption ? { ...row, is_active: false } : row;
+      });
+      const deactivated = safeRows.filter((row, index) => rows[index]?.is_active && !row.is_active).length;
+
       setAxisRows(cleaned);
       setAxesDirty(true);
-      if (generate) {
-        generateCombinations(generationAxes, rows);
-        setEditingId(null);
-        setTab("options");
-      } else toast.info("Options saved in this draft. Continue to SKU & values; Review & save writes the changes.");
+      if (deactivated) {
+        dirty.current = true;
+        setRows(safeRows);
+        toast.info(
+          `${deactivated} old/base SKU${deactivated === 1 ? " was" : "s were"} kept but made inactive because it did not have values for the new options.`,
+        );
+      }
+      generateCombinations(generationAxes, safeRows);
+      setEditingId(null);
+      setTab("quick");
       return;
     }
-    const saved = await saveMatrix();
-    if (saved && generate) {
-      generateCombinations(generationAxes, saved);
-      setEditingId(null);
-      setTab("options");
+
+    if (editingId) {
+      setAxisRows(cleaned);
+      setAxesDirty(true);
+      toast.info("Options saved in this draft. Continue editing; Review & save writes the changes.");
+      return;
     }
+
+    await saveMatrix();
   };
   const optionsEditor = (
     <AxisEditor
@@ -2260,6 +2282,10 @@ function AxisEditor({
   setExcluded: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   draftOnly: boolean;
 }) {
+  // Keep exactly what the admin types visible in the textarea. The parsed values are
+  // updated at the same time, so commas/new lines no longer disappear while typing.
+  const [valueDrafts, setValueDrafts] = useState<Record<string, string>>({});
+
   const updateAxis = (id: string, patch: Partial<Axis>) =>
     setRows(rows.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
 
@@ -2375,11 +2401,22 @@ function AxisEditor({
                   <FieldTitle>Values</FieldTitle>
                   <Textarea
                     className="mt-1 min-h-[72px]"
-                    value={axis.values.join(", ")}
+                    value={valueDrafts[axis.id] ?? axis.values.join(", ")}
                     placeholder={
                       axis.axis_key === "wattage" ? "5W, 7W, 9W, 12W" : "Type or paste values separated by commas"
                     }
-                    onChange={(e) => updateAxis(axis.id, { values: parsePastedValues(e.target.value) })}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setValueDrafts((current) => ({ ...current, [axis.id]: raw }));
+                      updateAxis(axis.id, { values: parsePastedValues(raw) });
+                    }}
+                    onBlur={() =>
+                      setValueDrafts((current) => {
+                        const next = { ...current };
+                        delete next[axis.id];
+                        return next;
+                      })
+                    }
                   />
                   <span className="mt-1 block text-xs text-slate-500">
                     Paste comma-separated values or one value per line.
