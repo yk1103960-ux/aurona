@@ -31,7 +31,11 @@ import {
   Upload,
   Star,
 } from "lucide-react";
-import { adminSaveVariantMatrix, adminSetPrimaryProductImage } from "@/lib/catalog-admin.functions";
+import {
+  adminLoadVariantMatrix,
+  adminSaveVariantMatrix,
+  adminSetPrimaryProductImage,
+} from "@/lib/catalog-admin.functions";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { missingCombinations } from "@/lib/variant-options";
 
@@ -148,107 +152,18 @@ export function VariantEditor({
     refetchOnWindowFocus: false,
 
     queryFn: async () => {
-      let fam: { id: string; name: string } | null = null;
-
-      if (familyId) {
-        const byId = await supabase
-          .from("product_families")
-          .select("id, name")
-          .eq("id", familyId)
-          .maybeSingle();
-        if (byId.error) throw byId.error;
-        fam = byId.data;
-      }
-
-      if (!fam && productSku) {
-        const bySku = await supabase
-          .from("product_families")
-          .select("id, name")
-          .eq("main_sku", productSku)
-          .maybeSingle();
-        if (bySku.error) throw bySku.error;
-        fam = bySku.data;
-      }
-
-      if (!fam && productId && productId !== "new") {
-        const byProduct = await supabase
-          .from("product_families")
-          .select("id, name")
-          .filter("legacy_product_id", "eq", productId)
-          .maybeSingle();
-        if (byProduct.error && !/legacy_product_id|schema cache/i.test(byProduct.error.message)) {
-          throw byProduct.error;
-        }
-        fam = byProduct.data ?? null;
-      }
-
-      if (!fam) {
-        const { data: viaVariant, error: variantError } = await supabase
-          .from("product_variants")
-          .select("family_id, product_families(id, name)")
-          .eq("sku", productSku)
-          .maybeSingle();
-
-        if (variantError) throw variantError;
-
-        const rel = (
-          viaVariant as {
-            product_families?: { id: string; name: string };
-          } | null
-        )?.product_families;
-
-        if (rel) fam = rel;
-      }
-
-      if (!fam) {
-        return {
-          family: null,
-          variants: [] as Variant[],
-          axes: [] as Axis[],
-        };
-      }
-
-      const loadVariants = async () => {
-        let result = await supabase
-          .from("product_variants")
-          .select(COLS)
-          .eq("family_id", fam.id)
-          .order("sort_order")
-          .overrideTypes<Partial<Variant>[], { merge: false }>();
-
-        if (result.error && /barcode|schema cache|does not exist/i.test(result.error.message)) {
-          result = await supabase
-            .from("product_variants")
-            .select(LEGACY_COLS)
-            .eq("family_id", fam.id)
-            .order("sort_order")
-            .overrideTypes<Partial<Variant>[], { merge: false }>();
-        }
-
-        return result;
-      };
-
-      const [{ data, error }, { data: axes, error: axesError }] = await Promise.all([
-        loadVariants(),
-
-        supabase
-          .from("product_variant_axes")
-          .select("id, axis_key, label, values, sort_order")
-          .eq("family_id", fam.id)
-          .order("sort_order"),
-      ]);
-
-      if (error) throw error;
-      if (axesError) throw axesError;
+      const result = await adminLoadVariantMatrix({
+        data: { familyId: familyId ?? null, productId, productSku },
+      });
 
       return {
-        family: fam,
-        variants: (data ?? []).map((row: Partial<Variant>) => ({
+        family: result.family,
+        variants: (result.variants ?? []).map((row: Partial<Variant>) => ({
           ...row,
           barcode: row.barcode ?? "",
           expected_stock: Number(row.stock ?? 0),
         })) as Variant[],
-        axes: (axes ?? []).map((axis) => ({
+        axes: (result.axes ?? []).map((axis: Axis) => ({
           ...axis,
           values: Array.isArray(axis.values) ? axis.values : [],
         })) as Axis[],
