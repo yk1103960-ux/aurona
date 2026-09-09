@@ -55,11 +55,6 @@ import {
 
 type Tab = "quick" | "options" | "customer" | "retailer" | "distributor" | "shipping";
 
-const COLS =
-  "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
-const LEGACY_COLS =
-  "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, sort_order, low_stock_threshold";
-
 const toNumber = (value: string): number | null => (value === "" ? null : Number(value));
 
 const money = (value: number) =>
