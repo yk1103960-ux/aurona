@@ -846,3 +846,67 @@ export const adminAdjustInventory = createServerFn({ method: "POST" })
     });
     return { quantity: Number(quantity) };
   });
+
+export const adminLoadVariantMatrix = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        familyId: z.string().uuid().nullable().optional(),
+        productId: z.string().max(80).optional(),
+        productSku: z.string().max(120).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+
+    const pick = async (column: string, value: string) => {
+      const res = await db
+        .from("product_families")
+        .select("id, name")
+        .eq(column, value)
+        .maybeSingle();
+      if (res.error && !/legacy_product_id|schema cache/i.test(res.error.message)) {
+        throw new Error(res.error.message);
+      }
+      return (res.data as { id: string; name: string } | null) ?? null;
+    };
+
+    let family: { id: string; name: string } | null = null;
+    if (data.familyId) family = await pick("id", data.familyId);
+    if (!family && data.productSku) family = await pick("main_sku", data.productSku);
+    if (!family && data.productId && data.productId !== "new") {
+      family = await pick("legacy_product_id", data.productId);
+    }
+    if (!family && data.productSku) {
+      const viaVariant = await db
+        .from("product_variants")
+        .select("family_id, product_families(id, name)")
+        .eq("sku", data.productSku)
+        .maybeSingle();
+      if (viaVariant.error) throw new Error(viaVariant.error.message);
+      family = viaVariant.data?.product_families ?? null;
+    }
+
+    if (!family) return { family: null, variants: [], axes: [] };
+
+    const [variants, axes] = await Promise.all([
+      db.from("product_variants").select("*").eq("family_id", family.id).order("sort_order"),
+      db
+        .from("product_variant_axes")
+        .select("id, axis_key, label, values, sort_order")
+        .eq("family_id", family.id)
+        .order("sort_order"),
+    ]);
+    if (variants.error) throw new Error(variants.error.message);
+    if (axes.error) throw new Error(axes.error.message);
+
+    return {
+      family,
+      variants: (variants.data ?? []) as any[],
+      axes: (axes.data ?? []) as any[],
+    };
+  });
