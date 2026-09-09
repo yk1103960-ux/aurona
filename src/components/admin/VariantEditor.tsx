@@ -722,6 +722,7 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={rows}
+            axes={axes}
             updateRow={updateRow}
             removeRow={removeRow}
             editRow={(row) => {
@@ -810,6 +811,7 @@ const QUICK_FIELDS: { key: QuickField; label: string }[] = [
 
 function QuickVariantsTab({
   rows,
+  axes,
   updateRow,
   removeRow,
   editRow,
@@ -817,20 +819,56 @@ function QuickVariantsTab({
   optionsEditor,
 }: {
   rows: Variant[];
+  axes: Axis[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   removeRow: (row: Variant) => void;
   editRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
-  const [bulkField, setBulkField] = useState<QuickField>("price");
-  const [bulkValue, setBulkValue] = useState("");
+  const primaryAxis =
+    axes.find((axis) => axis.axis_key === "wattage") ??
+    axes.find((axis) => rows.some((row) => row.attributes[axis.axis_key])) ??
+    null;
 
-  const applyToAll = () => {
-    const value = bulkValue === "" ? null : Number(bulkValue);
-    if (value !== null && !Number.isFinite(value)) return toast.error("Enter a number first.");
-    for (const row of rows) updateRow(row.id, { [bulkField]: value } as Partial<Variant>);
-    toast.success(`Applied to all ${rows.length} variations. Save to keep the change.`);
+  const groupValues = primaryAxis
+    ? [...new Set(rows.map((row) => row.attributes[primaryAxis.axis_key]).filter(Boolean))]
+    : [];
+
+  const [groupDrafts, setGroupDrafts] = useState<Record<string, Partial<Record<QuickField, string>>>>({});
+
+  const setGroupDraft = (group: string, field: QuickField, value: string) =>
+    setGroupDrafts((current) => ({
+      ...current,
+      [group]: { ...current[group], [field]: value },
+    }));
+
+  const applyGroup = (group: string) => {
+    if (!primaryAxis) return;
+    const draft = groupDrafts[group] ?? {};
+    const patch: Partial<Variant> = {};
+    let changed = 0;
+
+    for (const field of QUICK_FIELDS) {
+      const raw = draft[field.key];
+      if (raw === undefined || raw.trim() === "") continue;
+      const value = Number(raw);
+      if (!Number.isFinite(value)) {
+        toast.error(`Enter a valid ${field.label.toLowerCase()} for ${group}.`);
+        return;
+      }
+      (patch as Record<string, unknown>)[field.key] = value;
+      changed++;
+    }
+
+    if (!changed) {
+      toast.error(`Enter at least one value for ${group}.`);
+      return;
+    }
+
+    const matching = rows.filter((row) => row.attributes[primaryAxis.axis_key] === group);
+    for (const row of matching) updateRow(row.id, patch);
+    toast.success(`Applied ${group} pricing/details to ${matching.length} SKU${matching.length === 1 ? "" : "s"}.`);
   };
 
   const copyDown = (field: QuickField, index: number) => {
@@ -851,34 +889,68 @@ function QuickVariantsTab({
         </p>
       </div>
 
-      {rows.length > 0 && (
-        <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <label className="text-xs font-medium text-slate-600">
-            <span className="block">Fill every variation</span>
-            <select
-              className="mt-1 h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
-              value={bulkField}
-              onChange={(event) => setBulkField(event.target.value as QuickField)}
-            >
-              {QUICK_FIELDS.map((field) => (
-                <option key={field.key} value={field.key}>
-                  {field.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Input
-            className="h-9 w-32"
-            inputMode="decimal"
-            placeholder="Value"
-            value={bulkValue}
-            onChange={(event) => setBulkValue(event.target.value)}
-          />
-          <Button type="button" size="sm" variant="outline" onClick={applyToAll}>
-            Apply to all
-          </Button>
-          <span className="text-xs text-slate-500">Nothing is saved until you use Save All Variant Changes.</span>
-        </div>
+      {rows.length > 0 && primaryAxis && groupValues.length > 0 && (
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-4">
+            <h4 className="font-semibold text-slate-950">Set prices by {primaryAxis.label}</h4>
+            <p className="mt-1 text-xs text-slate-500">
+              Enter a price once for each {primaryAxis.label.toLowerCase()}. It applies only to SKUs with that value.
+              Add another {primaryAxis.label.toLowerCase()} above and its row appears automatically.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-[1050px] w-full border-collapse text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                  <Th>{primaryAxis.label}</Th>
+                  <Th>MRP</Th>
+                  <Th>Customer</Th>
+                  <Th>Retailer</Th>
+                  <Th>Distributor</Th>
+                  <Th>Stock</Th>
+                  <Th>Pack</Th>
+                  <Th>Apply</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupValues.map((group) => {
+                  const count = rows.filter((row) => row.attributes[primaryAxis.axis_key] === group).length;
+                  return (
+                    <tr key={group} className="border-t border-slate-200 bg-white">
+                      <Td>
+                        <div className="font-semibold text-slate-950">{group}</div>
+                        <div className="text-xs text-slate-500">
+                          {count} SKU{count === 1 ? "" : "s"}
+                        </div>
+                      </Td>
+                      {QUICK_FIELDS.map((field) => (
+                        <Td key={field.key}>
+                          <Input
+                            className="h-9 min-w-[105px]"
+                            inputMode="decimal"
+                            placeholder={field.label}
+                            value={groupDrafts[group]?.[field.key] ?? ""}
+                            onChange={(event) => setGroupDraft(group, field.key, event.target.value)}
+                          />
+                        </Td>
+                      ))}
+                      <Td>
+                        <Button type="button" size="sm" onClick={() => applyGroup(group)}>
+                          Apply to {group}
+                        </Button>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            These are quick-fill controls only. Individual SKU rows below remain editable, and nothing is saved until
+            Save All Variant Changes.
+          </p>
+        </section>
       )}
 
       {rows.length === 0 ? (
