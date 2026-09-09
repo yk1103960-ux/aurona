@@ -1225,6 +1225,45 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_options: {
+        Row: {
+          active: boolean
+          archived_at: string | null
+          code: string | null
+          created_at: string
+          details: Json
+          id: string
+          kind: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          archived_at?: string | null
+          code?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          kind: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          archived_at?: string | null
+          code?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          kind?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -2183,6 +2222,7 @@ export type Database = {
           dim_h: number | null
           dim_l: number | null
           dim_w: number | null
+          estimated_shipping_days: number | null
           features: Json
           id: string
           image_seed: string | null
@@ -2196,19 +2236,30 @@ export type Database = {
           material: string | null
           max_mrp: number | null
           max_price: number | null
+          meta_description: string | null
+          meta_image_url: string | null
+          meta_title: string | null
           min_mrp: number | null
           min_price: number | null
           model: string | null
           name: string
           rating: number
+          refund_note: string | null
+          refundable: boolean
           review_count: number
+          shipping_cost: number
+          shipping_cost_per_quantity: boolean
+          shipping_type: string
           short_description: string | null
           size: string | null
           slug: string
+          specification_pdf_url: string | null
           specifications: Json
           total_stock: number
           unit: string
           updated_at: string
+          video_provider: string | null
+          video_url: string | null
           warranty: string | null
           wattage: string | null
           weight_g: number | null
@@ -2228,6 +2279,7 @@ export type Database = {
           dim_h?: number | null
           dim_l?: number | null
           dim_w?: number | null
+          estimated_shipping_days?: number | null
           features?: Json
           id?: string
           image_seed?: string | null
@@ -2241,19 +2293,30 @@ export type Database = {
           material?: string | null
           max_mrp?: number | null
           max_price?: number | null
+          meta_description?: string | null
+          meta_image_url?: string | null
+          meta_title?: string | null
           min_mrp?: number | null
           min_price?: number | null
           model?: string | null
           name: string
           rating?: number
+          refund_note?: string | null
+          refundable?: boolean
           review_count?: number
+          shipping_cost?: number
+          shipping_cost_per_quantity?: boolean
+          shipping_type?: string
           short_description?: string | null
           size?: string | null
           slug: string
+          specification_pdf_url?: string | null
           specifications?: Json
           total_stock?: number
           unit?: string
           updated_at?: string
+          video_provider?: string | null
+          video_url?: string | null
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -2273,6 +2336,7 @@ export type Database = {
           dim_h?: number | null
           dim_l?: number | null
           dim_w?: number | null
+          estimated_shipping_days?: number | null
           features?: Json
           id?: string
           image_seed?: string | null
@@ -2286,19 +2350,30 @@ export type Database = {
           material?: string | null
           max_mrp?: number | null
           max_price?: number | null
+          meta_description?: string | null
+          meta_image_url?: string | null
+          meta_title?: string | null
           min_mrp?: number | null
           min_price?: number | null
           model?: string | null
           name?: string
           rating?: number
+          refund_note?: string | null
+          refundable?: boolean
           review_count?: number
+          shipping_cost?: number
+          shipping_cost_per_quantity?: boolean
+          shipping_type?: string
           short_description?: string | null
           size?: string | null
           slug?: string
+          specification_pdf_url?: string | null
           specifications?: Json
           total_stock?: number
           unit?: string
           updated_at?: string
+          video_provider?: string | null
+          video_url?: string | null
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -2370,6 +2445,42 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_related_families: {
+        Row: {
+          created_at: string
+          family_id: string
+          related_family_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          family_id: string
+          related_family_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          family_id?: string
+          related_family_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_related_families_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_related_families_related_family_id_fkey"
+            columns: ["related_family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
             referencedColumns: ["id"]
           },
         ]
@@ -2482,6 +2593,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           attributes: Json
+          barcode: string | null
           created_at: string
           dim_h: number | null
           dim_l: number | null
@@ -2514,6 +2626,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           attributes?: Json
+          barcode?: string | null
           created_at?: string
           dim_h?: number | null
           dim_l?: number | null
@@ -2546,6 +2659,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           attributes?: Json
+          barcode?: string | null
           created_at?: string
           dim_h?: number | null
           dim_l?: number | null
@@ -2603,6 +2717,7 @@ export type Database = {
           dim_h: number | null
           dim_l: number | null
           dim_w: number | null
+          estimated_shipping_days: number | null
           features: Json
           id: string
           image_seed: string | null
@@ -2612,21 +2727,32 @@ export type Database = {
           is_published: boolean
           is_sale: boolean
           material: string | null
+          meta_description: string | null
+          meta_image_url: string | null
+          meta_title: string | null
           model: string | null
           mrp: number
           name: string
           pack_size: number | null
           price: number
           rating: number
+          refund_note: string | null
+          refundable: boolean
           review_count: number
+          shipping_cost: number
+          shipping_cost_per_quantity: boolean
+          shipping_type: string
           short_description: string | null
           size: string | null
           sku: string
           slug: string
+          specification_pdf_url: string | null
           specifications: Json
           stock: number
           unit: string
           variations: Json | null
+          video_provider: string | null
+          video_url: string | null
           warranty: string | null
           wattage: string | null
           weight_g: number | null
@@ -2648,6 +2774,7 @@ export type Database = {
           dim_h?: number | null
           dim_l?: number | null
           dim_w?: number | null
+          estimated_shipping_days?: number | null
           features?: Json
           id?: string
           image_seed?: string | null
@@ -2657,21 +2784,32 @@ export type Database = {
           is_published?: boolean
           is_sale?: boolean
           material?: string | null
+          meta_description?: string | null
+          meta_image_url?: string | null
+          meta_title?: string | null
           model?: string | null
           mrp: number
           name: string
           pack_size?: number | null
           price: number
           rating?: number
+          refund_note?: string | null
+          refundable?: boolean
           review_count?: number
+          shipping_cost?: number
+          shipping_cost_per_quantity?: boolean
+          shipping_type?: string
           short_description?: string | null
           size?: string | null
           sku: string
           slug: string
+          specification_pdf_url?: string | null
           specifications?: Json
           stock?: number
           unit?: string
           variations?: Json | null
+          video_provider?: string | null
+          video_url?: string | null
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -2693,6 +2831,7 @@ export type Database = {
           dim_h?: number | null
           dim_l?: number | null
           dim_w?: number | null
+          estimated_shipping_days?: number | null
           features?: Json
           id?: string
           image_seed?: string | null
@@ -2702,21 +2841,32 @@ export type Database = {
           is_published?: boolean
           is_sale?: boolean
           material?: string | null
+          meta_description?: string | null
+          meta_image_url?: string | null
+          meta_title?: string | null
           model?: string | null
           mrp?: number
           name?: string
           pack_size?: number | null
           price?: number
           rating?: number
+          refund_note?: string | null
+          refundable?: boolean
           review_count?: number
+          shipping_cost?: number
+          shipping_cost_per_quantity?: boolean
+          shipping_type?: string
           short_description?: string | null
           size?: string | null
           sku?: string
           slug?: string
+          specification_pdf_url?: string | null
           specifications?: Json
           stock?: number
           unit?: string
           variations?: Json | null
+          video_provider?: string | null
+          video_url?: string | null
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -3609,6 +3759,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_duplicate_product_family: {
+        Args: { _family_id: string }
+        Returns: Json
+      }
       admin_import_new_families: {
         Args: { _actor_user_id: string; _rows: Json }
         Returns: string
@@ -3630,8 +3784,25 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_save_variant_matrix_v2: {
+        Args: {
+          _actor_user_id: string
+          _axes: Json
+          _family_id: string
+          _variants: Json
+        }
+        Returns: undefined
+      }
       admin_set_primary_product_image: {
         Args: { _image_id: string }
+        Returns: undefined
+      }
+      admin_set_product_family_state: {
+        Args: { _action: string; _family_ids: string[] }
+        Returns: undefined
+      }
+      admin_set_related_product_families: {
+        Args: { _family_id: string; _related_ids: string[] }
         Returns: undefined
       }
       admin_transition_order: {
@@ -3655,6 +3826,10 @@ export type Database = {
         Returns: undefined
       }
       admin_upsert_product_family: { Args: { _payload: Json }; Returns: Json }
+      admin_upsert_product_family_v2: {
+        Args: { _payload: Json }
+        Returns: Json
+      }
       affiliate_balance: {
         Args: { _affiliate_id: string }
         Returns: {
