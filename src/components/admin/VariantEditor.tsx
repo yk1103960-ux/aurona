@@ -6,13 +6,7 @@ import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Save,
@@ -38,11 +32,7 @@ import {
 } from "@/lib/catalog-admin.functions";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  combinationSummary,
-  missingCombinations,
-  parsePastedValues,
-} from "@/lib/variant-options";
+import { combinationSummary, missingCombinations, parsePastedValues } from "@/lib/variant-options";
 
 import {
   newVariation,
@@ -52,11 +42,7 @@ import {
   type Variant,
   type Axis,
 } from "@/lib/variant-workflow";
-import {
-  persistVariationPhotos,
-  validateVariationPhoto,
-  type VariationPhotoDraft,
-} from "@/lib/variant-photo-drafts";
+import { persistVariationPhotos, validateVariationPhoto, type VariationPhotoDraft } from "@/lib/variant-photo-drafts";
 
 type Tab = "quick" | "options" | "customer" | "retailer" | "distributor" | "shipping";
 
@@ -183,9 +169,7 @@ export function VariantEditor({
       setRows(q.data.variants);
       if (committedRows.current.length) {
         const mappings = committedRows.current.flatMap((old) => {
-          const saved = q.data.variants.find(
-            (row) => row.sku.trim().toUpperCase() === old.sku.trim().toUpperCase(),
-          );
+          const saved = q.data.variants.find((row) => row.sku.trim().toUpperCase() === old.sku.trim().toUpperCase());
           return saved && old.id !== saved.id ? [[old.id, saved.id] as const] : [];
         });
         setPhotoDrafts((current) => {
@@ -236,8 +220,8 @@ export function VariantEditor({
       <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
         <div className="font-semibold">Variation family is not ready</div>
         <p className="mt-1">
-          Save the main product first, then reopen Manage Variations. If it was already saved, apply
-          the product-admin parity migration and retry.
+          Save the main product first, then reopen Manage Variations. If it was already saved, apply the product-admin
+          parity migration and retry.
         </p>
         <Button className="mt-3" type="button" variant="outline" onClick={() => q.refetch()}>
           Retry
@@ -300,9 +284,7 @@ export function VariantEditor({
         ];
       }
       if (photos.length > 12)
-        throw new Error(
-          "This variation has more than 12 images. Manage its images before duplicating it.",
-        );
+        throw new Error("This variation has more than 12 images. Manage its images before duplicating it.");
       if (photos.length) {
         const primary = Math.max(
           0,
@@ -321,9 +303,7 @@ export function VariantEditor({
       );
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Could not prepare a complete copy. No variation was created.",
+        error instanceof Error ? error.message : "Could not prepare a complete copy. No variation was created.",
       );
     } finally {
       setCopying(false);
@@ -385,8 +365,7 @@ export function VariantEditor({
   };
 
   const removeRow = (row: Variant) => {
-    if (!confirm(`Archive variant ${row.sku}? Existing orders will keep their SKU snapshot.`))
-      return;
+    if (!confirm(`Archive variant ${row.sku}? Existing orders will keep their SKU snapshot.`)) return;
     dirty.current = true;
     if (row.id.startsWith("new-")) {
       setRows((current) => current.filter((item) => item.id !== row.id));
@@ -457,13 +436,9 @@ export function VariantEditor({
         const original = snapshot.find((row) => row.id === draftId);
         const target = saved.find(
           (row) =>
-            row.id === draftId ||
-            (original && row.sku.trim().toUpperCase() === original.sku.trim().toUpperCase()),
+            row.id === draftId || (original && row.sku.trim().toUpperCase() === original.sku.trim().toUpperCase()),
         );
-        if (!target)
-          throw new Error(
-            "A saved SKU could not be matched to its pending photos. Reload before retrying.",
-          );
+        if (!target) throw new Error("A saved SKU could not be matched to its pending photos. Reload before retrying.");
         const existing = await supabase
           .from("product_images")
           .select("id")
@@ -578,10 +553,7 @@ export function VariantEditor({
         generateCombinations(generationAxes, rows);
         setEditingId(null);
         setTab("options");
-      } else
-        toast.info(
-          "Options saved in this draft. Continue to SKU & values; Review & save writes the changes.",
-        );
+      } else toast.info("Options saved in this draft. Continue to SKU & values; Review & save writes the changes.");
       return;
     }
     const saved = await saveMatrix();
@@ -615,13 +587,10 @@ export function VariantEditor({
       <div className="border-b border-slate-200 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">
-              Product Variations
-            </div>
+            <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">Product Variations</div>
 
             <div className="mt-1 text-xs text-slate-500">
-              Manage options, customer pricing, partner pricing and shipping information for every
-              SKU.
+              Manage options, customer pricing, partner pricing and shipping information for every SKU.
             </div>
           </div>
 
@@ -668,33 +637,33 @@ export function VariantEditor({
           </TabButton>
 
           {showAllTabs && (
-          <TabButton
-            active={tab === "retailer"}
-            onClick={() => setTab("retailer")}
-            icon={<Store className="h-4 w-4" />}
-          >
-            Retailer Price & Stock
-          </TabButton>
+            <TabButton
+              active={tab === "retailer"}
+              onClick={() => setTab("retailer")}
+              icon={<Store className="h-4 w-4" />}
+            >
+              Retailer Price & Stock
+            </TabButton>
           )}
 
           {showAllTabs && (
-          <TabButton
-            active={tab === "distributor"}
-            onClick={() => setTab("distributor")}
-            icon={<Warehouse className="h-4 w-4" />}
-          >
-            Distributor Price & Stock
-          </TabButton>
+            <TabButton
+              active={tab === "distributor"}
+              onClick={() => setTab("distributor")}
+              icon={<Warehouse className="h-4 w-4" />}
+            >
+              Distributor Price & Stock
+            </TabButton>
           )}
 
           {showAllTabs && (
-          <TabButton
-            active={tab === "shipping"}
-            onClick={() => setTab("shipping")}
-            icon={<Truck className="h-4 w-4" />}
-          >
-            Weight & Dimensions
-          </TabButton>
+            <TabButton
+              active={tab === "shipping"}
+              onClick={() => setTab("shipping")}
+              icon={<Truck className="h-4 w-4" />}
+            >
+              Weight & Dimensions
+            </TabButton>
           )}
           <button
             type="button"
@@ -711,12 +680,9 @@ export function VariantEditor({
       </div>
 
       {(dirty.current || axesDirty || photosPending) && (
-        <div
-          role="status"
-          className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-        >
-          Unsaved changes. Save All Variant Changes saves shared options, SKU details and selected
-          images together. Switching pricing tabs keeps your edits.
+        <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Unsaved changes. Save All Variant Changes saves shared options, SKU details and selected images together.
+          Switching pricing tabs keeps your edits.
         </div>
       )}
 
@@ -837,8 +803,7 @@ function QuickVariantsTab({
 
   const copyDown = (field: QuickField, index: number) => {
     const value = rows[index][field];
-    for (const row of rows.slice(index + 1))
-      updateRow(row.id, { [field]: value } as Partial<Variant>);
+    for (const row of rows.slice(index + 1)) updateRow(row.id, { [field]: value } as Partial<Variant>);
     toast.success("Copied to the rows below.");
   };
 
@@ -849,8 +814,8 @@ function QuickVariantsTab({
       <div>
         <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
         <p className="text-xs text-slate-500">
-          Enter SKU, prices and stock right here. “Edit” opens weight, dimensions, barcode, MOQ and
-          other advanced details.
+          Enter SKU, prices and stock right here. “Edit” opens weight, dimensions, barcode, MOQ and other advanced
+          details.
         </p>
       </div>
 
@@ -880,9 +845,7 @@ function QuickVariantsTab({
           <Button type="button" size="sm" variant="outline" onClick={applyToAll}>
             Apply to all
           </Button>
-          <span className="text-xs text-slate-500">
-            Nothing is saved until you use Save All Variant Changes.
-          </span>
+          <span className="text-xs text-slate-500">Nothing is saved until you use Save All Variant Changes.</span>
         </div>
       )}
 
@@ -926,9 +889,7 @@ function QuickVariantsTab({
                       <div className="flex items-center gap-1">
                         <NumberInput
                           value={row[field.key] as number | null}
-                          onChange={(value) =>
-                            updateRow(row.id, { [field.key]: value } as Partial<Variant>)
-                          }
+                          onChange={(value) => updateRow(row.id, { [field.key]: value } as Partial<Variant>)}
                         />
                         {index < rows.length - 1 && (
                           <button
@@ -1090,17 +1051,14 @@ function VariantBulkEditor({
       )
     )
       return;
-    targets.forEach((row) =>
-      updateRow(row.id, { [field]: field === "is_active" ? parsed === 1 : parsed }),
-    );
+    targets.forEach((row) => updateRow(row.id, { [field]: field === "is_active" ? parsed === 1 : parsed }));
     toast.success(`Updated ${targets.length} draft rows. Review and save variants.`);
   };
   return (
     <details className="rounded-xl border border-slate-200 p-4">
       <summary className="cursor-pointer font-semibold">Bulk edit selected variants</summary>
       <p className="my-3 text-sm text-slate-500">
-        Changes are staged for selected SKUs only. Stock quantities use the dedicated inventory
-        workflow.
+        Changes are staged for selected SKUs only. Stock quantities use the dedicated inventory workflow.
       </p>
       <Button
         type="button"
@@ -1117,9 +1075,7 @@ function VariantBulkEditor({
               checked={selected.includes(row.id)}
               onChange={(event) =>
                 setSelected((current) =>
-                  event.target.checked
-                    ? [...current, row.id]
-                    : current.filter((id) => id !== row.id),
+                  event.target.checked ? [...current, row.id] : current.filter((id) => id !== row.id),
                 )
               }
             />
@@ -1158,13 +1114,7 @@ function VariantBulkEditor({
               <option value="0">Inactive</option>
             </select>
           ) : (
-            <Input
-              type="number"
-              min="0"
-              step="any"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-            />
+            <Input type="number" min="0" step="any" value={value} onChange={(event) => setValue(event.target.value)} />
           )}
         </label>
         <Button type="button" disabled={!targets.length || value === ""} onClick={apply}>
@@ -1209,9 +1159,7 @@ function VariantFullCard({
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">
-            Variation {number}
-          </div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">Variation {number}</div>
           <div className="mt-0.5 font-semibold text-slate-950">{variantName(row)}</div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1234,11 +1182,7 @@ function VariantFullCard({
               size="sm"
               variant="outline"
               disabled={row.id.startsWith("new-")}
-              title={
-                row.id.startsWith("new-")
-                  ? "Save this SKU before attaching images"
-                  : "Manage SKU images"
-              }
+              title={row.id.startsWith("new-") ? "Save this SKU before attaching images" : "Manage SKU images"}
               onClick={() => manageImages(row.sku)}
             >
               <ImageIcon className="h-4 w-4" /> Images
@@ -1352,9 +1296,7 @@ function VariantFullCard({
 function VariantSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-        {title}
-      </h4>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</h4>
       {children}
     </section>
   );
@@ -1457,10 +1399,7 @@ function VariantEditDialog({
     if (
       step === 2 &&
       (!row.sku.trim() ||
-        rows.some(
-          (other) =>
-            other.id !== row.id && other.sku.trim().toUpperCase() === row.sku.trim().toUpperCase(),
-        ))
+        rows.some((other) => other.id !== row.id && other.sku.trim().toUpperCase() === row.sku.trim().toUpperCase()))
     ) {
       toast.error("Choose a unique SKU before continuing.");
       return;
@@ -1484,15 +1423,10 @@ function VariantEditDialog({
           </DialogTitle>
           <p id="variation-step-description" className="text-sm text-slate-500">
             Step {step + 1} of {VARIATION_STEPS.length} · {VARIATION_STEPS[step]}.{" "}
-            {row.is_active
-              ? "Available for sale after saving."
-              : "Inactive until you choose to activate it."}
+            {row.is_active ? "Available for sale after saving." : "Inactive until you choose to activate it."}
           </p>
         </DialogHeader>
-        <nav
-          aria-label="Variation setup steps"
-          className="shrink-0 border-b border-slate-200 bg-slate-50 p-3"
-        >
+        <nav aria-label="Variation setup steps" className="shrink-0 border-b border-slate-200 bg-slate-50 p-3">
           <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {VARIATION_STEPS.map((label, index) => (
               <li key={label}>
@@ -1518,8 +1452,8 @@ function VariantEditDialog({
               <div>
                 <h3 className="text-lg font-semibold">Add this variation’s images</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Choose images now; they attach to this SKU after the variation is saved. You can
-                  skip this step and add them later.
+                  Choose images now; they attach to this SKU after the variation is saved. You can skip this step and
+                  add them later.
                 </p>
               </div>
               <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-5 text-center focus-within:ring-2 focus-within:ring-sky-600">
@@ -1543,10 +1477,7 @@ function VariantEditDialog({
               {photos.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {photos.map((photo) => (
-                    <article
-                      key={photo.id}
-                      className="space-y-3 rounded-xl border border-slate-200 p-3"
-                    >
+                    <article key={photo.id} className="space-y-3 rounded-xl border border-slate-200 p-3">
                       <img
                         src={photo.previewUrl}
                         alt={photo.altText || "Selected variation image"}
@@ -1561,9 +1492,7 @@ function VariantEditDialog({
                           onChange={(event) =>
                             setPhotos(
                               photos.map((item) =>
-                                item.id === photo.id
-                                  ? { ...item, altText: event.target.value }
-                                  : item,
+                                item.id === photo.id ? { ...item, altText: event.target.value } : item,
                               ),
                             )
                           }
@@ -1584,8 +1513,7 @@ function VariantEditDialog({
                             )
                           }
                         >
-                          <Star className="h-4 w-4" />{" "}
-                          {photo.primary ? "Primary image" : "Set primary"}
+                          <Star className="h-4 w-4" /> {photo.primary ? "Primary image" : "Set primary"}
                         </Button>
                         <Button
                           type="button"
@@ -1630,8 +1558,8 @@ function VariantEditDialog({
             </section>
             <section hidden={step !== 1} className="space-y-4">
               <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
-                These options are shared by every variation in this product. Define them once here,
-                then choose this SKU’s values in Step 3.
+                These options are shared by every variation in this product. Define them once here, then choose this
+                SKU’s values in Step 3.
               </div>
               {optionsEditor}
             </section>
@@ -1671,14 +1599,13 @@ function VariantEditDialog({
               </div>
               {!isNew && (
                 <p className="text-sm text-slate-500">
-                  Saved SKU codes stay fixed to preserve orders and images. You can change the
-                  variation name and option values.
+                  Saved SKU codes stay fixed to preserve orders and images. You can change the variation name and option
+                  values.
                 </p>
               )}
               {!axes.length && (
                 <p className="text-sm text-slate-500">
-                  No shared options yet. Go to Product options to add Wattage, Size, Colour or
-                  another attribute.
+                  No shared options yet. Go to Product options to add Wattage, Size, Colour or another attribute.
                 </p>
               )}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1695,13 +1622,11 @@ function VariantEditDialog({
                       }
                     >
                       <option value="">Select a value</option>
-                      {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
-                        (value) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ),
-                      )}
+                      {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 ))}
@@ -1711,8 +1636,8 @@ function VariantEditDialog({
             <section hidden={step !== 3} className="space-y-4">
               <h3 className="text-lg font-semibold">Prices and minimum order quantities</h3>
               <p className="text-sm text-slate-500">
-                Set customer, retailer and distributor prices for this SKU. Blank partner prices
-                keep the existing pricing fallback.
+                Set customer, retailer and distributor prices for this SKU. Blank partner prices keep the existing
+                pricing fallback.
               </p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {numberField("mrp", "MRP ₹")}
@@ -1748,8 +1673,8 @@ function VariantEditDialog({
                 </div>
               </VariantSection>
               <p className="text-sm text-slate-500">
-                New and duplicated variations start with zero stock. Enter the real quantity; stock
-                changes use the existing inventory safeguards.
+                New and duplicated variations start with zero stock. Enter the real quantity; stock changes use the
+                existing inventory safeguards.
               </p>
             </section>
             <section hidden={step !== 5} className="space-y-4">
@@ -1759,25 +1684,17 @@ function VariantEditDialog({
                   ["Variation", variantName(row)],
                   ["SKU", row.sku],
                   ["Customer price", row.price === null ? "Not set" : money(row.price)],
-                  [
-                    "Retailer price",
-                    row.retailer_price === null ? "Existing fallback" : money(row.retailer_price),
-                  ],
+                  ["Retailer price", row.retailer_price === null ? "Existing fallback" : money(row.retailer_price)],
                   [
                     "Distributor price",
-                    row.distributor_price === null
-                      ? "Existing fallback"
-                      : money(row.distributor_price),
+                    row.distributor_price === null ? "Existing fallback" : money(row.distributor_price),
                   ],
                   ["Stock", String(row.stock ?? 0)],
                   ["Selected images", String(photos.length)],
                   [
                     "Options",
                     axes
-                      .map(
-                        (axis) =>
-                          `${axis.label}: ${row.attributes[axis.axis_key] || "Not selected"}`,
-                      )
+                      .map((axis) => `${axis.label}: ${row.attributes[axis.axis_key] || "Not selected"}`)
                       .join(" · ") || "No options",
                   ],
                 ].map(([label, value]) => (
@@ -1788,10 +1705,7 @@ function VariantEditDialog({
                 ))}
               </dl>
               <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-4 text-sm font-medium">
-                <Switch
-                  checked={row.is_active}
-                  onCheckedChange={(value) => updateRow(row.id, { is_active: value })}
-                />
+                <Switch checked={row.is_active} onCheckedChange={(value) => updateRow(row.id, { is_active: value })} />
                 Available for sale after saving
               </label>
               {issues.length > 0 && (
@@ -1805,29 +1719,18 @@ function VariantEditDialog({
                 </div>
               )}
               <p className="text-sm text-slate-500">
-                Saving includes the shared options and all unsaved variations in this family. Image
-                uploads follow the successful SKU save. If an image fails, the variation stays saved
-                and you can retry the pending image.
+                Saving includes the shared options and all unsaved variations in this family. Image uploads follow the
+                successful SKU save. If an image fails, the variation stays saved and you can retry the pending image.
               </p>
             </section>
           </fieldset>
         </div>
         <DialogFooter className="grid shrink-0 grid-cols-2 gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:flex sm:flex-wrap">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={saving}
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" variant="ghost" disabled={saving} onClick={() => onOpenChange(false)}>
             Close · keep edits
           </Button>
           {!isNew && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              onClick={() => duplicateRow(row)}
-            >
+            <Button type="button" variant="outline" disabled={saving} onClick={() => duplicateRow(row)}>
               <Copy className="h-4 w-4" /> Duplicate variation
             </Button>
           )}
@@ -1871,17 +1774,15 @@ function VariantSpecifications({
     <section className="space-y-3 rounded-xl border border-slate-200 p-4">
       <h3 className="font-semibold">SKU-specific specifications</h3>
       <p className="text-sm text-slate-500">
-        Add only verified details for this SKU. These do not generate combinations. Common
-        specifications belong to the family.
+        Add only verified details for this SKU. These do not generate combinations. Common specifications belong to the
+        family.
       </p>
       {extra.map(([name, value]) => (
         <label key={name} className="block text-sm">
           {name}
           <Input
             value={value}
-            onChange={(event) =>
-              updateRow(row.id, { attributes: { ...row.attributes, [name]: event.target.value } })
-            }
+            onChange={(event) => updateRow(row.id, { attributes: { ...row.attributes, [name]: event.target.value } })}
           />
         </label>
       ))}
@@ -1957,10 +1858,7 @@ function CustomerTab({
                 </Td>
 
                 <Td>
-                  <NumberInput
-                    value={row.mrp}
-                    onChange={(value) => updateRow(row.id, { mrp: value })}
-                  />
+                  <NumberInput value={row.mrp} onChange={(value) => updateRow(row.id, { mrp: value })} />
                 </Td>
 
                 <Td>
@@ -1983,10 +1881,7 @@ function CustomerTab({
                 </Td>
 
                 <Td>
-                  <NumberInput
-                    value={row.moq}
-                    onChange={(value) => updateRow(row.id, { moq: value })}
-                  />
+                  <NumberInput value={row.moq} onChange={(value) => updateRow(row.id, { moq: value })} />
                 </Td>
 
                 <Td>
@@ -2018,9 +1913,7 @@ function CustomerTab({
                 <Td>
                   <NumberInput
                     value={row.low_stock_threshold}
-                    onChange={(value) =>
-                      updateRow(row.id, { low_stock_threshold: Math.max(0, Number(value ?? 0)) })
-                    }
+                    onChange={(value) => updateRow(row.id, { low_stock_threshold: Math.max(0, Number(value ?? 0)) })}
                   />
                 </Td>
               </tr>
@@ -2067,8 +1960,7 @@ function RetailerTab({
 
             const percent = discountPercent(row.mrp, row.retailer_price);
 
-            const packTotal =
-              Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
+            const packTotal = Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
 
             return (
               <tr key={row.id} className="border-t border-slate-200">
@@ -2125,9 +2017,9 @@ function RetailerTab({
       </table>
 
       <div className="mt-3 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        The current database has retailer price and retailer MOQ, but does not have a separate
-        retailer MRP or retailer stock column. This tab therefore safely uses the existing product
-        MRP and shared stock until those columns are intentionally added.
+        The current database has retailer price and retailer MOQ, but does not have a separate retailer MRP or retailer
+        stock column. This tab therefore safely uses the existing product MRP and shared stock until those columns are
+        intentionally added.
       </div>
     </div>
   );
@@ -2165,8 +2057,7 @@ function DistributorTab({
             const percent = discountPercent(row.mrp, row.distributor_price);
 
             const packTotal =
-              Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) *
-              Number(row.pack_size ?? 1);
+              Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
 
             return (
               <tr key={row.id} className="border-t border-slate-200">
@@ -2223,9 +2114,8 @@ function DistributorTab({
       </table>
 
       <div className="mt-3 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        The current database has distributor price and distributor MOQ, but does not have separate
-        distributor MRP or distributor stock columns. Shared MRP/stock are kept for now so existing
-        data remains safe.
+        The current database has distributor price and distributor MOQ, but does not have separate distributor MRP or
+        distributor stock columns. Shared MRP/stock are kept for now so existing data remains safe.
       </div>
     </div>
   );
@@ -2372,7 +2262,8 @@ function AxisEditor({
 }) {
   const updateAxis = (id: string, patch: Partial<Axis>) =>
     setRows(rows.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
-  const addAxis = (preset?: { key: string; label: string; values?: string[] }) => {
+
+  const addAxis = (preset?: { key: string; label: string }) => {
     let sequence = rows.length + 1;
     while (rows.some((axis) => axis.axis_key === `option_${sequence}`)) sequence++;
     const key = preset?.key ?? `option_${sequence}`;
@@ -2382,25 +2273,22 @@ function AxisEditor({
       {
         id: `new-${crypto.randomUUID()}`,
         axis_key: key,
-        label: preset?.label ?? "New Option",
-        values: preset?.values ?? [],
+        label: preset?.label ?? "Option",
+        values: [],
         sort_order: rows.length,
       },
     ]);
   };
+
   const removeAxis = (axis: Axis) => {
     if (variants.some((row) => row.attributes[axis.axis_key]))
-      return toast.error(
-        "This option is used by existing SKUs. Remap their values before removing it.",
-      );
-    if (confirm(`Remove option "${axis.label}" from this family?`))
-      setRows(rows.filter((row) => row.id !== axis.id));
+      return toast.error("This option is already used by an existing SKU.");
+    if (confirm(`Remove ${axis.label}?`)) setRows(rows.filter((row) => row.id !== axis.id));
   };
+
   const activeAxes = rows.map((axis) => ({
     ...axis,
-    values: axis.values
-      .map((value) => value.trim())
-      .filter((value) => Boolean(value) && !(excluded[axis.id] ?? []).includes(value)),
+    values: axis.values.map((v) => v.trim()).filter((v) => v && !(excluded[axis.id] ?? []).includes(v)),
   }));
   let summary: { total: number; missing: number; existing: number } | null = null;
   try {
@@ -2408,184 +2296,154 @@ function AxisEditor({
   } catch {
     summary = null;
   }
+
   const generate = () => {
-    if (summary && summary.missing === 0) {
-      toast.info("Every combination from these values already exists.");
-      return;
-    }
-    if (
-      summary &&
-      !confirm(
-        `Generate ${summary.missing} new variation${summary.missing === 1 ? "" : "s"}?\n\n` +
-          `${summary.existing} existing SKU${summary.existing === 1 ? "" : "s"} will be kept exactly as they are. Nothing is deleted.`,
-      )
-    )
-      return;
+    if (!rows.length) return toast.error("Add at least one option first.");
+    if (rows.some((axis) => !axis.label.trim() || !axis.values.length))
+      return toast.error("Give every option a name and at least one value.");
+    if (summary?.missing === 0) return toast.info("All combinations already exist.");
     void saveAxes(true);
   };
+
+  const presets = [
+    ["wattage", "Wattage"],
+    ["output_colour", "Output Colour"],
+    ["body_colour", "Body Colour"],
+    ["model", "Model"],
+    ["size", "Size"],
+    ["pack_size", "Pack Size"],
+  ] as const;
+
   return (
-    <div className="rounded-xl border border-slate-200 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold">Variations / Options</div>
+    <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div>
+        <h3 className="text-lg font-semibold text-slate-950">Create product variations</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          One product, all its wattages, colours, sizes and models. Add only what this product needs.
+        </p>
+      </div>
 
-          <div className="mt-1 text-xs text-slate-500">
-            Add the options this product actually needs (for example Wattage and Output Colour),
-            paste their values, then generate the variations.
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm font-semibold text-slate-800">1. Choose options</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {presets.map(([key, label]) => (
+            <Button
+              key={key}
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={rows.some((a) => a.axis_key === key)}
+              onClick={() => addAxis({ key, label })}
+            >
+              <Plus className="mr-1 h-4 w-4" /> {label}
+            </Button>
+          ))}
           <Button type="button" size="sm" variant="outline" onClick={() => addAxis()}>
-            <Plus className="mr-1 h-4 w-4" />
-            Add Option
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => saveAxes(false)}
-            disabled={saving}
-          >
-            <Save className="mr-1 h-4 w-4" />
-            {saving ? "Saving…" : "Save Options"}
-          </Button>
-          <Button type="button" size="sm" onClick={generate} disabled={saving || rows.length === 0}>
-            <Plus className="h-4 w-4" />
-            {saving ? "Saving…" : "GENERATE VARIATIONS"}
+            <Plus className="mr-1 h-4 w-4" /> Other option
           </Button>
         </div>
       </div>
 
-      {
-        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-800">
-            Choose the variation types for this product:
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {[
-              { key: "wattage", label: "Wattage" },
-              { key: "output_colour", label: "Output Colour" },
-              { key: "body_colour", label: "Body / Housing Colour" },
-              { key: "model", label: "Model" },
-              { key: "size", label: "Size" },
-              { key: "pack_size", label: "Pack Size" },
-            ].map((preset) => (
-              <Button
-                key={preset.key}
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={rows.some((axis) => axis.axis_key === preset.key)}
-                onClick={() => addAxis(preset)}
-              >
-                <Plus className="h-4 w-4" /> {preset.label}
-              </Button>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-500">
-            Only add the options this product needs. Values can be pasted from a list — commas, new
-            lines or tabs all work.
-          </p>
-          {summary && (
-            <p className="mt-2 text-sm text-slate-700">
-              {summary.total} combination{summary.total === 1 ? "" : "s"} from these values ·{" "}
-              <strong>{summary.missing} new</strong> · {summary.existing} already created.
-            </p>
-          )}
-          <p className="mt-2 text-sm text-slate-600">
-            {draftOnly
-              ? "These buttons prepare your draft. Nothing is written until Review & save."
-              : "Generate adds only the missing combinations, as inactive drafts. Existing SKUs, prices and stock are never changed or deleted."}
-          </p>
-        </div>
-      }
       {rows.length > 0 && (
-        <div className="mt-4 space-y-3">
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-slate-800">2. Enter values</p>
           {rows.map((axis) => (
-            <div
-              key={axis.id}
-              className="grid items-start gap-3 rounded-lg bg-slate-50 p-3 lg:grid-cols-[200px_1fr_auto]"
-            >
-              <label>
-                <FieldTitle>Option Name</FieldTitle>
-
-                <Input
-                  className="mt-1"
-                  value={axis.label}
-                  placeholder="Wattage"
-                  onChange={(e) =>
-                    updateAxis(axis.id, {
-                      label: e.target.value,
-                      ...(axis.id.startsWith("new-")
-                        ? {
-                            axis_key:
-                              e.target.value
-                                .trim()
-                                .toLowerCase()
-                                .replace(/[^a-z0-9_]+/g, "_") || axis.axis_key,
-                          }
-                        : {}),
-                    })
-                  }
-                />
-                <span className="mt-1 block font-mono text-[11px] text-slate-400">
-                  {axis.axis_key}
-                </span>
-              </label>
-
-              <label>
-                <FieldTitle>Values — paste or type (comma or one per line)</FieldTitle>
-
-                <Textarea
-                  className="mt-1 min-h-[76px]"
-                  value={axis.values.join(", ")}
-                  placeholder={"5W, 7W, 9W, 12W"}
-                  onChange={(e) =>
-                    updateAxis(axis.id, {
-                      values: parsePastedValues(e.target.value),
-                    })
-                  }
-                />
-              </label>
-
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                aria-label={`Remove ${axis.label}`}
-                onClick={() => removeAxis(axis)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-              {axis.values.filter(Boolean).length > 0 && (
-                <div className="flex flex-wrap gap-3 lg:col-span-3">
-                  <span className="text-sm text-slate-500">Include in generation:</span>
-                  {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map(
-                    (value) => (
-                      <label key={value} className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={!(excluded[axis.id] ?? []).includes(value)}
-                          onChange={(event) =>
-                            setExcluded((current) => ({
-                              ...current,
-                              [axis.id]: event.target.checked
-                                ? (current[axis.id] ?? []).filter((item) => item !== value)
-                                : [...(current[axis.id] ?? []), value],
-                            }))
-                          }
-                        />
-                        {value}
-                      </label>
-                    ),
-                  )}
+            <div key={axis.id} className="rounded-xl border border-slate-200 p-3 sm:p-4">
+              <div className="grid gap-3 md:grid-cols-[180px_1fr_auto] md:items-start">
+                <label>
+                  <FieldTitle>Option</FieldTitle>
+                  <Input
+                    className="mt-1"
+                    value={axis.label}
+                    onChange={(e) =>
+                      updateAxis(axis.id, {
+                        label: e.target.value,
+                        ...(axis.id.startsWith("new-")
+                          ? {
+                              axis_key:
+                                e.target.value
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9_]+/g, "_") || axis.axis_key,
+                            }
+                          : {}),
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  <FieldTitle>Values</FieldTitle>
+                  <Textarea
+                    className="mt-1 min-h-[72px]"
+                    value={axis.values.join(", ")}
+                    placeholder={
+                      axis.axis_key === "wattage" ? "5W, 7W, 9W, 12W" : "Type or paste values separated by commas"
+                    }
+                    onChange={(e) => updateAxis(axis.id, { values: parsePastedValues(e.target.value) })}
+                  />
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Paste comma-separated values or one value per line.
+                  </span>
+                </label>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="mt-5"
+                  onClick={() => removeAxis(axis)}
+                  aria-label={`Remove ${axis.label}`}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+              {axis.values.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[...new Set(axis.values.map((v) => v.trim()).filter(Boolean))].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        setExcluded((current) => ({
+                          ...current,
+                          [axis.id]: (current[axis.id] ?? []).includes(value)
+                            ? (current[axis.id] ?? []).filter((v) => v !== value)
+                            : [...(current[axis.id] ?? []), value],
+                        }))
+                      }
+                      className={`rounded-full border px-3 py-1 text-xs font-medium ${(excluded[axis.id] ?? []).includes(value) ? "border-slate-200 bg-slate-100 text-slate-400 line-through" : "border-sky-200 bg-sky-50 text-sky-800"}`}
+                    >
+                      {value}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           ))}
         </div>
+      )}
+
+      <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-semibold text-sky-950">3. Generate variations</p>
+            <p className="mt-1 text-sm text-sky-800">
+              {summary
+                ? `${summary.total} combinations · ${summary.missing} new · ${summary.existing} already exist`
+                : "Enter your option values above."}
+            </p>
+            <p className="mt-1 text-xs text-sky-700">
+              Existing SKUs are kept. New combinations are created as drafts so you can edit price, stock, SKU and
+              images.
+            </p>
+          </div>
+          <Button type="button" size="lg" onClick={generate} disabled={saving || !rows.length}>
+            <Plus className="mr-2 h-4 w-4" /> {saving ? "Generating…" : "Generate Variations"}
+          </Button>
+        </div>
+      </div>
+
+      {draftOnly && (
+        <p className="text-xs text-slate-500">These changes stay as a draft until you save the variation.</p>
       )}
     </div>
   );
@@ -2607,9 +2465,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
-        active
-          ? "bg-slate-900 text-white"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
       }`}
     >
       {icon}
@@ -2675,16 +2531,12 @@ function DimensionField({
 
 function Calculated({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-w-[90px] rounded-md bg-slate-50 px-3 py-2 text-right text-sm text-slate-700">
-      {children}
-    </div>
+    <div className="min-w-[90px] rounded-md bg-slate-50 px-3 py-2 text-right text-sm text-slate-700">{children}</div>
   );
 }
 
 function FieldTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>
-  );
+  return <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>;
 }
 
 function Th({ children }: { children: React.ReactNode }) {
