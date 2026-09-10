@@ -2593,6 +2593,9 @@ export type Database = {
         Row: {
           archived_at: string | null
           attributes: Json
+          available_customer: boolean
+          available_distributor: boolean
+          available_retailer: boolean
           barcode: string | null
           created_at: string
           dim_h: number | null
@@ -2626,6 +2629,9 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           attributes?: Json
+          available_customer?: boolean
+          available_distributor?: boolean
+          available_retailer?: boolean
           barcode?: string | null
           created_at?: string
           dim_h?: number | null
@@ -2659,6 +2665,9 @@ export type Database = {
         Update: {
           archived_at?: string | null
           attributes?: Json
+          available_customer?: boolean
+          available_distributor?: boolean
+          available_retailer?: boolean
           barcode?: string | null
           created_at?: string
           dim_h?: number | null
@@ -3651,6 +3660,9 @@ export type Database = {
       public_product_variants: {
         Row: {
           attributes: Json | null
+          available_customer: boolean | null
+          available_distributor: boolean | null
+          available_retailer: boolean | null
           created_at: string | null
           dim_h: number | null
           dim_l: number | null
@@ -3675,6 +3687,9 @@ export type Database = {
         }
         Insert: {
           attributes?: Json | null
+          available_customer?: boolean | null
+          available_distributor?: boolean | null
+          available_retailer?: boolean | null
           created_at?: string | null
           dim_h?: number | null
           dim_l?: number | null
@@ -3699,6 +3714,9 @@ export type Database = {
         }
         Update: {
           attributes?: Json | null
+          available_customer?: boolean | null
+          available_distributor?: boolean | null
+          available_retailer?: boolean | null
           created_at?: string | null
           dim_h?: number | null
           dim_l?: number | null
@@ -3816,6 +3834,10 @@ export type Database = {
       }
       admin_set_related_product_families: {
         Args: { _family_id: string; _related_ids: string[] }
+        Returns: undefined
+      }
+      admin_set_variant_segments: {
+        Args: { _family_id: string; _segments: Json }
         Returns: undefined
       }
       admin_transition_order: {
