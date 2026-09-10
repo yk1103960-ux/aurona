@@ -623,7 +623,7 @@ export function VariantEditor({
             <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">Product Variations</div>
 
             <div className="mt-1 text-xs text-slate-500">
-              Manage options, customer pricing, stock, pack size and weight & dimensions for every SKU.
+              Manage options, customer pricing, tax, stock, pack size and weight & dimensions for every SKU.
             </div>
           </div>
 
@@ -873,7 +873,8 @@ function QuickVariantsTab({
       <div>
         <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
         <p className="text-xs text-slate-500">
-          Enter SKU, MRP, customer price, stock and pack size here. “Edit” opens the remaining variation details.
+          Enter SKU, prices and stock right here. “Edit” opens weight, dimensions, barcode, MOQ and other advanced
+          details.
         </p>
       </div>
 
@@ -906,7 +907,7 @@ function QuickVariantsTab({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-[760px] w-full border-collapse text-sm">
+            <table className="min-w-[1050px] w-full border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
                   <Th>{primaryAxis.label}</Th>
@@ -961,13 +962,14 @@ function QuickVariantsTab({
         <EmptyVariants />
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-[900px] w-full border-collapse text-sm">
+          <table className="min-w-[980px] w-full border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
                 <Th>SKU</Th>
                 <Th>MRP</Th>
                 <Th>Customer</Th>
+                <Th>Tax %</Th>
                 <Th>Stock</Th>
                 <Th>Pack</Th>
                 <Th>Live</Th>
@@ -991,25 +993,45 @@ function QuickVariantsTab({
                   </Td>
 
                   {QUICK_FIELDS.map((field) => (
-                    <Td key={field.key}>
-                      <div className="flex items-center gap-1">
-                        <NumberInput
-                          value={row[field.key] as number | null}
-                          onChange={(value) => updateRow(row.id, { [field.key]: value } as Partial<Variant>)}
-                        />
-                        {index < rows.length - 1 && (
-                          <button
-                            type="button"
-                            title={`Copy ${field.label} to the rows below`}
-                            aria-label={`Copy ${field.label} to the rows below`}
-                            onClick={() => copyDown(field.key, index)}
-                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </Td>
+                    <React.Fragment key={field.key}>
+                      <Td>
+                        <div className="flex items-center gap-1">
+                          <NumberInput
+                            value={row[field.key] as number | null}
+                            onChange={(value) => updateRow(row.id, { [field.key]: value } as Partial<Variant>)}
+                          />
+                          {index < rows.length - 1 && (
+                            <button
+                              type="button"
+                              title={`Copy ${field.label} to the rows below`}
+                              aria-label={`Copy ${field.label} to the rows below`}
+                              onClick={() => copyDown(field.key, index)}
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </Td>
+                      {field.key === "price" && (
+                        <Td>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="h-9 min-w-[90px]"
+                            value={row.attributes?.__tax_pct ?? ""}
+                            placeholder="e.g. 18"
+                            onChange={(event) =>
+                              updateRow(row.id, {
+                                attributes: { ...row.attributes, __tax_pct: event.target.value },
+                              })
+                            }
+                          />
+                        </Td>
+                      )}
+                    </React.Fragment>
                   ))}
 
                   <Td>
@@ -1358,6 +1380,23 @@ function VariantFullCard({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {field("mrp", "MRP ₹")}
             {field("price", "Customer Price ₹")}
+            <label>
+              <FieldTitle>Tax / GST %</FieldTitle>
+              <Input
+                className="mt-1"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={row.attributes?.__tax_pct ?? ""}
+                placeholder="e.g. 18"
+                onChange={(event) =>
+                  updateRow(row.id, {
+                    attributes: { ...row.attributes, __tax_pct: event.target.value },
+                  })
+                }
+              />
+            </label>
           </div>
         </VariantSection>
 
@@ -1742,7 +1781,11 @@ function VariantEditDialog({
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {numberField("mrp", "MRP ₹")}
                 {numberField("price", "Customer price ₹")}
+                {numberField("retailer_price", "Retailer price ₹")}
+                {numberField("distributor_price", "Distributor price ₹")}
                 {numberField("moq", "Customer MOQ", 1)}
+                {numberField("retailer_moq", "Retailer MOQ", 1)}
+                {numberField("distributor_moq", "Distributor MOQ", 1)}
                 {numberField("pack_size", "Pieces per pack", 1)}
               </div>
             </section>
@@ -1780,6 +1823,11 @@ function VariantEditDialog({
                   ["Variation", variantName(row)],
                   ["SKU", row.sku],
                   ["Customer price", row.price === null ? "Not set" : money(row.price)],
+                  ["Retailer price", row.retailer_price === null ? "Existing fallback" : money(row.retailer_price)],
+                  [
+                    "Distributor price",
+                    row.distributor_price === null ? "Existing fallback" : money(row.distributor_price),
+                  ],
                   ["Stock", String(row.stock ?? 0)],
                   ["Selected images", String(photos.length)],
                   [
