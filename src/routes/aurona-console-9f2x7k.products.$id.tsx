@@ -45,7 +45,6 @@ function ExistingProductEditor() {
 type MainTab =
   | "general"
   | "media"
-  | "variations"
   | "customer"
   | "retailer"
   | "distributor"
@@ -220,23 +219,18 @@ const TABS: {
     icon: <Images className="h-4 w-4" />,
   },
   {
-    key: "variations",
-    label: "Variations",
-    icon: <Layers3 className="h-4 w-4" />,
-  },
-  {
     key: "customer",
-    label: "Product Price & Stock",
+    label: "Price & Stock for Customers",
     icon: <Users className="h-4 w-4" />,
   },
   {
     key: "retailer",
-    label: "Retailer Price & Stock",
+    label: "Price & Stock for Retailers",
     icon: <Store className="h-4 w-4" />,
   },
   {
     key: "distributor",
-    label: "Distributor Price & Stock",
+    label: "Price & Stock for Distributors",
     icon: <Warehouse className="h-4 w-4" />,
   },
   {
@@ -261,9 +255,6 @@ const TABS: {
   },
 ];
 
-/** The everyday workflow: details, photos, then prices and variations. */
-const SIMPLE_TABS: MainTab[] = ["general", "media", "variations", "customer"];
-
 export function ProductEditor({ productId: id }: { productId: string }) {
   const isNew = id === "new";
 
@@ -273,7 +264,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
   const [f, setF] = useState<ProductForm>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<MainTab>("general");
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
@@ -656,427 +646,509 @@ export function ProductEditor({ productId: id }: { productId: string }) {
         </div>
       </div>
 
-      {/* ADMIN TABS - NO HORIZONTAL SLIDER */}
-
-      <div className="sticky top-0 z-20 space-y-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {(showAdvanced ? TABS : TABS.filter((item) => SIMPLE_TABS.includes(item.key))).map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setTab(item.key)}
-              className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-center text-sm font-medium transition ${
-                tab === item.key
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <span className="shrink-0">{item.icon}</span>
-
-              <span className="leading-tight">{item.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center justify-between gap-3 px-1 text-xs text-slate-500">
-          <span>
-            {showAdvanced
-              ? "All sections shown, including SEO, shipping, warranty and partner pricing."
-              : "Simple mode: product details, photos, then prices and variations."}
-          </span>
-          <button
-            type="button"
-            className="rounded-md border border-slate-200 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
-            onClick={() => {
-              const next = !showAdvanced;
-              setShowAdvanced(next);
-              if (!next && !SIMPLE_TABS.includes(tab)) setTab("general");
-            }}
-          >
-            {showAdvanced ? "Hide extra options" : "More options"}
-          </button>
-        </div>
-      </div>
-
-      {/* GENERAL */}
-
-      {tab === "general" && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Section title="Product Information">
-            <Field label="Product Name *">
-              <Input value={f.name} onChange={(e) => upd("name", e.target.value)} />
-            </Field>
-
-            <Field label="Main SKU *">
-              <Input value={f.sku} onChange={(e) => upd("sku", e.target.value)} />
-            </Field>
-
-            <Field label="Brand">
-              <Input value={f.brand} onChange={(e) => upd("brand", e.target.value)} />
-            </Field>
-
-            <Field label="Category">
-              <select
-                className="h-10 w-full rounded-md border bg-white px-3 text-sm"
-                value={f.category_id ?? ""}
-                onChange={(e) => upd("category_id", e.target.value || null)}
+      {/* OLD ADMIN STYLE PRODUCT EDITOR LAYOUT */}
+      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-4">
+          <nav className="overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+            {TABS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setTab(item.key)}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition ${
+                  tab === item.key ? "bg-sky-50 text-sky-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                }`}
               >
-                <option value="">— None —</option>
+                <span className="shrink-0">{item.icon}</span>
+                <span className="leading-tight">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-                {(cats.data ?? []).map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+        <main className="min-w-0 space-y-4">
+          {/* GENERAL */}
+          {tab === "general" && (
+            <div className="space-y-4">
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.8fr)]">
+                <Section title="Product Information">
+                  <div className="space-y-4">
+                    <Field label="Product Name *">
+                      <Input value={f.name} placeholder="Product Name" onChange={(e) => upd("name", e.target.value)} />
+                    </Field>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Unit">
-                <Input value={f.unit} onChange={(e) => upd("unit", e.target.value)} />
-              </Field>
+                    <Field label="Main SKU *">
+                      <Input value={f.sku} placeholder="Main SKU" onChange={(e) => upd("sku", e.target.value)} />
+                    </Field>
 
-              <Field label="Model">
-                <Input
-                  value={f.model}
-                  placeholder="Lens / Glass / COB"
-                  onChange={(e) => upd("model", e.target.value)}
-                />
-              </Field>
-            </div>
-          </Section>
+                    <Field label="Brand">
+                      <select
+                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                        value={f.brand}
+                        onChange={(e) => upd("brand", e.target.value)}
+                      >
+                        <option value="Aurona">AURONA</option>
+                        {f.brand && f.brand.toLowerCase() !== "aurona" && <option value={f.brand}>{f.brand}</option>}
+                      </select>
+                      <div className="mt-1 text-xs text-slate-500">
+                        You can choose a brand if you'd like to display your product by brand.
+                      </div>
+                    </Field>
 
-          <Section title="Status">
-            <Check label="Published" checked={f.is_published} onChange={(value) => upd("is_published", value)} />
+                    <Field label="Unit *">
+                      <Input value={f.unit} placeholder="Pc" onChange={(e) => upd("unit", e.target.value)} />
+                    </Field>
 
-            <Check label="Featured" checked={f.is_featured} onChange={(value) => upd("is_featured", value)} />
+                    <Field label="Weight (In Kg)">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={f.weight_g == null ? "" : f.weight_g / 1000}
+                        placeholder="0"
+                        onChange={(e) => upd("weight_g", e.target.value === "" ? null : Number(e.target.value) * 1000)}
+                      />
+                    </Field>
 
-            <Check
-              label="Today's Deal / Bestseller"
-              checked={f.is_bestseller}
-              onChange={(value) => upd("is_bestseller", value)}
-            />
+                    <Field label="Dimensions">
+                      <div className="grid grid-cols-3 gap-3">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={f.dim_l ?? ""}
+                          placeholder="Length"
+                          onChange={(e) => upd("dim_l", e.target.value === "" ? null : Number(e.target.value))}
+                        />
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={f.dim_w ?? ""}
+                          placeholder="Width"
+                          onChange={(e) => upd("dim_w", e.target.value === "" ? null : Number(e.target.value))}
+                        />
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={f.dim_h ?? ""}
+                          placeholder="Height"
+                          onChange={(e) => upd("dim_h", e.target.value === "" ? null : Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">Length × Width × Height in centimetres.</div>
+                    </Field>
 
-            <Check label="New Arrival" checked={f.is_new} onChange={(value) => upd("is_new", value)} />
+                    <Field label="Minimum Purchase Qty *">
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={f.pack_size ?? 1}
+                        onChange={(e) => upd("pack_size", Math.max(1, Math.trunc(Number(e.target.value || 1))))}
+                      />
+                      <div className="mt-1 text-xs text-slate-500">
+                        The minimum quantity that needs to be purchased by your customer.
+                      </div>
+                    </Field>
 
-            <Check label="On Sale" checked={f.is_sale} onChange={(value) => upd("is_sale", value)} />
+                    <Field label="Model">
+                      <Input
+                        value={f.model}
+                        placeholder="Lens / Glass / COB"
+                        onChange={(e) => upd("model", e.target.value)}
+                      />
+                    </Field>
 
-            <div className="border-t pt-3">
-              <Field label="Image Seed">
-                <Input
-                  value={f.image_seed}
-                  placeholder="led-bulb"
-                  onChange={(e) => upd("image_seed", e.target.value)}
-                />
-              </Field>
-            </div>
-          </Section>
+                    <Field label="Barcode">
+                      <Input
+                        value={f.image_seed}
+                        placeholder="Barcode / search seed"
+                        onChange={(e) => upd("image_seed", e.target.value)}
+                      />
+                      <div className="mt-1 text-xs text-amber-600">
+                        Current product schema does not expose a family-level barcode field. Variant barcodes are
+                        managed in variations.
+                      </div>
+                    </Field>
+                  </div>
+                </Section>
 
-          <Section title="Description" className="lg:col-span-2">
-            <Field label="Short Description">
-              <Textarea
-                rows={3}
-                value={f.short_description}
-                onChange={(e) => upd("short_description", e.target.value)}
-              />
-            </Field>
-
-            <Field label="Full Description">
-              <Textarea rows={8} value={f.description} onChange={(e) => upd("description", e.target.value)} />
-            </Field>
-          </Section>
-
-          <Section title="Features & Specification Table">
-            <Field label="Key Features — one per line">
-              <Textarea
-                rows={6}
-                value={f.features}
-                placeholder={"High lumen output\nFlicker free driver"}
-                onChange={(e) => upd("features", e.target.value)}
-              />
-            </Field>
-
-            <Field label="Specifications — Label: Value">
-              <Textarea
-                rows={8}
-                value={f.specifications}
-                placeholder={"Cutout: 75mm\nIP Rating: IP55\nMounting Type: Ceiling Mounted"}
-                onChange={(e) => upd("specifications", e.target.value)}
-              />
-            </Field>
-
-            <div className="text-xs text-slate-500">Add different specifications for different product categories.</div>
-          </Section>
-        </div>
-      )}
-
-      {/* MEDIA */}
-
-      {tab === "media" && (
-        <div className="space-y-4">
-          {!isNew && f.sku ? (
-            <ProductImageManager productSku={f.sku} productId={id} />
-          ) : (
-            <Notice
-              title="Save the product first"
-              text="Create the product first, then you can upload general and variation-specific photos."
-            />
-          )}
-          <Section title="Video & Specification File">
-            <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Video Provider">
-                <select
-                  className="h-10 w-full rounded-md border bg-white px-3 text-sm"
-                  value={f.video_provider}
-                  onChange={(e) => upd("video_provider", e.target.value as ProductForm["video_provider"])}
-                >
-                  <option value="">None</option>
-                  <option value="youtube">YouTube</option>
-                  <option value="vimeo">Vimeo</option>
-                  <option value="dailymotion">Dailymotion</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Video URL">
-                <Input
-                  type="url"
-                  value={f.video_url}
-                  placeholder="https://…"
-                  onChange={(e) => upd("video_url", e.target.value)}
-                />
-              </Field>
-              <Field label="Specification PDF URL">
-                <Input
-                  type="url"
-                  value={f.specification_pdf_url}
-                  placeholder="https://…/specification.pdf"
-                  onChange={(e) => upd("specification_pdf_url", e.target.value)}
-                />
-              </Field>
-            </div>
-          </Section>
-        </div>
-      )}
-
-      {/* CUSTOMER */}
-
-      {tab === "variations" && (
-        <VariantArea
-          isNew={isNew}
-          sku={f.sku}
-          id={id}
-          variantTab="options"
-          title="Variations"
-          text="Add the options this product needs, paste their values, press GENERATE VARIATIONS, then fill the table."
-        />
-      )}
-
-      {tab === "customer" && (
-        <VariantArea
-          isNew={isNew}
-          sku={f.sku}
-          id={id}
-          variantTab="customer"
-          title="Product Price & Stock"
-          text="MRP, customer price, retailer price, distributor price, stock and pack size are managed per generated SKU."
-        />
-      )}
-
-      {/* RETAILER */}
-
-      {tab === "retailer" && (
-        <VariantArea
-          isNew={isNew}
-          sku={f.sku}
-          id={id}
-          variantTab="retailer"
-          title="Retailer Price & Stock"
-          text="Retailer pricing and retailer MOQ are managed per variation."
-        />
-      )}
-
-      {/* DISTRIBUTOR */}
-
-      {tab === "distributor" && (
-        <VariantArea
-          isNew={isNew}
-          sku={f.sku}
-          id={id}
-          variantTab="distributor"
-          title="Distributor Price & Stock"
-          text="Distributor pricing and distributor MOQ are managed per variation."
-        />
-      )}
-
-      {/* SEO */}
-
-      {tab === "seo" && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Section title="Search Engine Information">
-            <Field label="URL Slug">
-              <Input
-                value={f.slug}
-                placeholder="Auto-generated from product name"
-                onChange={(e) => upd("slug", e.target.value)}
-              />
-            </Field>
-
-            <Field label="Search / Short Description">
-              <Textarea
-                rows={5}
-                value={f.short_description}
-                onChange={(e) => upd("short_description", e.target.value)}
-              />
-            </Field>
-            <Field label="Meta Title">
-              <Input value={f.meta_title} maxLength={240} onChange={(e) => upd("meta_title", e.target.value)} />
-            </Field>
-            <Field label="Meta Description">
-              <Textarea
-                rows={4}
-                value={f.meta_description}
-                maxLength={600}
-                onChange={(e) => upd("meta_description", e.target.value)}
-              />
-            </Field>
-            <Field label="Meta Image URL">
-              <Input
-                type="url"
-                value={f.meta_image_url}
-                placeholder="https://…"
-                onChange={(e) => upd("meta_image_url", e.target.value)}
-              />
-            </Field>
-          </Section>
-
-          <Section title="Preview">
-            <div className="rounded-lg border p-4">
-              <div className="truncate text-lg text-blue-700">{f.meta_title || f.name || "Product Name"}</div>
-
-              <div className="mt-1 break-all text-sm text-emerald-700">
-                aurona.co.in/products/
-                {f.slug || slugify(f.name) || "product"}
+                <Section title="Product category *">
+                  <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+                    <span>Select Main</span>
+                    <span>{f.category_id ? "1 selected" : "None selected"}</span>
+                  </div>
+                  <div className="max-h-[460px] space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2">
+                    {(cats.data ?? []).map((category) => {
+                      const selected = f.category_id === category.id;
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => upd("category_id", selected ? null : category.id)}
+                          className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition ${
+                            selected ? "bg-sky-50 font-medium text-sky-700" : "hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded border ${
+                                selected ? "border-sky-500 bg-sky-500 text-white" : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              {selected ? "✓" : ""}
+                            </span>
+                            {category.name}
+                          </span>
+                          <span
+                            className={`h-4 w-4 rounded-full border ${
+                              selected ? "border-[5px] border-sky-500" : "border-slate-400"
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
+                    {cats.isLoading && (
+                      <div className="p-4 text-center text-sm text-slate-500">Loading categories…</div>
+                    )}
+                  </div>
+                </Section>
               </div>
 
-              <div className="mt-2 text-sm text-slate-600">
-                {f.meta_description || f.short_description || "Add a meta description to improve the product preview."}
+              <Section title="Description">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Field label="Short Description">
+                    <Textarea
+                      rows={5}
+                      value={f.short_description}
+                      onChange={(e) => upd("short_description", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Full Description">
+                    <Textarea rows={8} value={f.description} onChange={(e) => upd("description", e.target.value)} />
+                  </Field>
+                </div>
+              </Section>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Section title="Refund">
+                  <Check label="Refundable?" checked={f.refundable} onChange={(value) => upd("refundable", value)} />
+                  <Field label="Note">
+                    <Textarea
+                      rows={4}
+                      value={f.refund_note}
+                      placeholder="Refund / return conditions"
+                      onChange={(e) => upd("refund_note", e.target.value)}
+                    />
+                  </Field>
+                </Section>
+
+                <Section title="Status">
+                  <Check label="Published" checked={f.is_published} onChange={(value) => upd("is_published", value)} />
+                  <Check label="Featured" checked={f.is_featured} onChange={(value) => upd("is_featured", value)} />
+                  <Check
+                    label="Today's Deal"
+                    checked={f.is_bestseller}
+                    onChange={(value) => upd("is_bestseller", value)}
+                  />
+                  <Check label="New Arrival" checked={f.is_new} onChange={(value) => upd("is_new", value)} />
+                  <Check label="On Sale" checked={f.is_sale} onChange={(value) => upd("is_sale", value)} />
+                </Section>
               </div>
+
+              <Section title="Features & Specification Table">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Field label="Key Features — one per line">
+                    <Textarea
+                      rows={6}
+                      value={f.features}
+                      placeholder={"High lumen output\nFlicker free driver"}
+                      onChange={(e) => upd("features", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Specifications — Label: Value">
+                    <Textarea
+                      rows={8}
+                      value={f.specifications}
+                      placeholder={"Cutout: 75mm\nIP Rating: IP55\nMounting Type: Ceiling Mounted"}
+                      onChange={(e) => upd("specifications", e.target.value)}
+                    />
+                  </Field>
+                </div>
+              </Section>
             </div>
-          </Section>
-        </div>
-      )}
+          )}
 
-      {/* SHIPPING */}
+          {/* MEDIA */}
 
-      {tab === "shipping" && (
-        <div className="space-y-4">
-          <Section title="Product Default Shipping Dimensions">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Weight (g)">
-                <NullableNumber value={f.weight_g} onChange={(value) => upd("weight_g", value)} />
-              </Field>
-
-              <Field label="Length (cm)">
-                <NullableNumber value={f.dim_l} onChange={(value) => upd("dim_l", value)} />
-              </Field>
-
-              <Field label="Width (cm)">
-                <NullableNumber value={f.dim_w} onChange={(value) => upd("dim_w", value)} />
-              </Field>
-
-              <Field label="Height (cm)">
-                <NullableNumber value={f.dim_h} onChange={(value) => upd("dim_h", value)} />
-              </Field>
-            </div>
-
-            <div className="text-xs text-slate-500">These are product-level default shipping dimensions.</div>
-          </Section>
-
-          <Section title="Shipping Charge & Promise">
-            <div className="grid gap-3 md:grid-cols-3">
-              <Field label="Shipping Type">
-                <select
-                  className="h-10 w-full rounded-md border bg-white px-3 text-sm"
-                  value={f.shipping_type}
-                  onChange={(e) => upd("shipping_type", e.target.value as ProductForm["shipping_type"])}
-                >
-                  <option value="calculated">Calculated by shipping rules</option>
-                  <option value="free">Free shipping</option>
-                  <option value="flat">Flat charge</option>
-                </select>
-              </Field>
-              <Field label="Flat Shipping Cost ₹">
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  disabled={f.shipping_type !== "flat"}
-                  value={f.shipping_cost}
-                  onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))}
+          {tab === "media" && (
+            <div className="space-y-4">
+              {!isNew && f.sku ? (
+                <ProductImageManager productSku={f.sku} productId={id} />
+              ) : (
+                <Notice
+                  title="Save the product first"
+                  text="Create the product first, then you can upload general and variation-specific photos."
                 />
-              </Field>
-              <Field label="Estimated Delivery (days)">
-                <NullableNumber
-                  value={f.estimated_shipping_days}
-                  onChange={(value) => upd("estimated_shipping_days", value)}
-                />
-              </Field>
+              )}
+              <Section title="Video & Specification File">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Field label="Video Provider">
+                    <select
+                      className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+                      value={f.video_provider}
+                      onChange={(e) => upd("video_provider", e.target.value as ProductForm["video_provider"])}
+                    >
+                      <option value="">None</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="vimeo">Vimeo</option>
+                      <option value="dailymotion">Dailymotion</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </Field>
+                  <Field label="Video URL">
+                    <Input
+                      type="url"
+                      value={f.video_url}
+                      placeholder="https://…"
+                      onChange={(e) => upd("video_url", e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Specification PDF URL">
+                    <Input
+                      type="url"
+                      value={f.specification_pdf_url}
+                      placeholder="https://…/specification.pdf"
+                      onChange={(e) => upd("specification_pdf_url", e.target.value)}
+                    />
+                  </Field>
+                </div>
+              </Section>
             </div>
-            <Check
-              label="Multiply flat shipping cost by order quantity"
-              checked={f.shipping_cost_per_quantity}
-              onChange={(value) => upd("shipping_cost_per_quantity", value)}
-            />
-          </Section>
+          )}
 
-          {!isNew && f.sku ? (
-            <VariantEditor productSku={f.sku} productId={id} />
-          ) : (
-            <Notice
-              title="Variant shipping becomes available after save"
-              text="Save this product first to configure single-unit and package dimensions for each SKU."
+          {/* CUSTOMER */}
+
+          {tab === "customer" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              variantTab="customer"
+              title="Price & Stock for Customers"
+              text="MRP, customer price, retailer price, distributor price, stock and pack size are managed per generated SKU."
             />
           )}
-        </div>
-      )}
 
-      {/* WARRANTY */}
+          {/* RETAILER */}
 
-      {tab === "warranty" && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Section title="Warranty">
-            <Field label="Warranty">
-              <Input
-                value={f.warranty}
-                placeholder="Example: 2 Years (T&C Apply)"
-                onChange={(e) => upd("warranty", e.target.value)}
-              />
-            </Field>
+          {tab === "retailer" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              variantTab="retailer"
+              title="Retailer Price & Stock"
+              text="Retailer pricing and retailer MOQ are managed per variation."
+            />
+          )}
 
-            <Check label="Refundable product" checked={f.refundable} onChange={(value) => upd("refundable", value)} />
-            <Field label="Refund / Return Note">
-              <Textarea
-                rows={4}
-                value={f.refund_note}
-                placeholder="Eligibility, exclusions and customer-facing instructions"
-                onChange={(e) => upd("refund_note", e.target.value)}
-              />
-            </Field>
+          {/* DISTRIBUTOR */}
 
-            <div className="text-xs text-slate-500">
-              Warranty is mirrored to the corresponding product family when saved.
+          {tab === "distributor" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              variantTab="distributor"
+              title="Distributor Price & Stock"
+              text="Distributor pricing and distributor MOQ are managed per variation."
+            />
+          )}
+
+          {/* SEO */}
+
+          {tab === "seo" && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Section title="Search Engine Information">
+                <Field label="URL Slug">
+                  <Input
+                    value={f.slug}
+                    placeholder="Auto-generated from product name"
+                    onChange={(e) => upd("slug", e.target.value)}
+                  />
+                </Field>
+
+                <Field label="Search / Short Description">
+                  <Textarea
+                    rows={5}
+                    value={f.short_description}
+                    onChange={(e) => upd("short_description", e.target.value)}
+                  />
+                </Field>
+                <Field label="Meta Title">
+                  <Input value={f.meta_title} maxLength={240} onChange={(e) => upd("meta_title", e.target.value)} />
+                </Field>
+                <Field label="Meta Description">
+                  <Textarea
+                    rows={4}
+                    value={f.meta_description}
+                    maxLength={600}
+                    onChange={(e) => upd("meta_description", e.target.value)}
+                  />
+                </Field>
+                <Field label="Meta Image URL">
+                  <Input
+                    type="url"
+                    value={f.meta_image_url}
+                    placeholder="https://…"
+                    onChange={(e) => upd("meta_image_url", e.target.value)}
+                  />
+                </Field>
+              </Section>
+
+              <Section title="Preview">
+                <div className="rounded-lg border p-4">
+                  <div className="truncate text-lg text-blue-700">{f.meta_title || f.name || "Product Name"}</div>
+
+                  <div className="mt-1 break-all text-sm text-emerald-700">
+                    aurona.co.in/products/
+                    {f.slug || slugify(f.name) || "product"}
+                  </div>
+
+                  <div className="mt-2 text-sm text-slate-600">
+                    {f.meta_description ||
+                      f.short_description ||
+                      "Add a meta description to improve the product preview."}
+                  </div>
+                </div>
+              </Section>
             </div>
-          </Section>
-        </div>
-      )}
+          )}
 
-      {/* FREQUENTLY BOUGHT */}
+          {/* SHIPPING */}
 
-      {tab === "frequently" &&
-        (isNew || !product.data?.id ? (
-          <Notice title="Save the product first" text="Related products can be selected after this family exists." />
-        ) : (
-          <RelatedProducts familyId={product.data.id} />
-        ))}
+          {tab === "shipping" && (
+            <div className="space-y-4">
+              <Section title="Product Default Shipping Dimensions">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Field label="Weight (g)">
+                    <NullableNumber value={f.weight_g} onChange={(value) => upd("weight_g", value)} />
+                  </Field>
+
+                  <Field label="Length (cm)">
+                    <NullableNumber value={f.dim_l} onChange={(value) => upd("dim_l", value)} />
+                  </Field>
+
+                  <Field label="Width (cm)">
+                    <NullableNumber value={f.dim_w} onChange={(value) => upd("dim_w", value)} />
+                  </Field>
+
+                  <Field label="Height (cm)">
+                    <NullableNumber value={f.dim_h} onChange={(value) => upd("dim_h", value)} />
+                  </Field>
+                </div>
+
+                <div className="text-xs text-slate-500">These are product-level default shipping dimensions.</div>
+              </Section>
+
+              <Section title="Shipping Charge & Promise">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <Field label="Shipping Type">
+                    <select
+                      className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+                      value={f.shipping_type}
+                      onChange={(e) => upd("shipping_type", e.target.value as ProductForm["shipping_type"])}
+                    >
+                      <option value="calculated">Calculated by shipping rules</option>
+                      <option value="free">Free shipping</option>
+                      <option value="flat">Flat charge</option>
+                    </select>
+                  </Field>
+                  <Field label="Flat Shipping Cost ₹">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      disabled={f.shipping_type !== "flat"}
+                      value={f.shipping_cost}
+                      onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))}
+                    />
+                  </Field>
+                  <Field label="Estimated Delivery (days)">
+                    <NullableNumber
+                      value={f.estimated_shipping_days}
+                      onChange={(value) => upd("estimated_shipping_days", value)}
+                    />
+                  </Field>
+                </div>
+                <Check
+                  label="Multiply flat shipping cost by order quantity"
+                  checked={f.shipping_cost_per_quantity}
+                  onChange={(value) => upd("shipping_cost_per_quantity", value)}
+                />
+              </Section>
+
+              {!isNew && f.sku ? (
+                <VariantEditor productSku={f.sku} productId={id} />
+              ) : (
+                <Notice
+                  title="Variant shipping becomes available after save"
+                  text="Save this product first to configure single-unit and package dimensions for each SKU."
+                />
+              )}
+            </div>
+          )}
+
+          {/* WARRANTY */}
+
+          {tab === "warranty" && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Section title="Warranty">
+                <Field label="Warranty">
+                  <Input
+                    value={f.warranty}
+                    placeholder="Example: 2 Years (T&C Apply)"
+                    onChange={(e) => upd("warranty", e.target.value)}
+                  />
+                </Field>
+
+                <Check
+                  label="Refundable product"
+                  checked={f.refundable}
+                  onChange={(value) => upd("refundable", value)}
+                />
+                <Field label="Refund / Return Note">
+                  <Textarea
+                    rows={4}
+                    value={f.refund_note}
+                    placeholder="Eligibility, exclusions and customer-facing instructions"
+                    onChange={(e) => upd("refund_note", e.target.value)}
+                  />
+                </Field>
+
+                <div className="text-xs text-slate-500">
+                  Warranty is mirrored to the corresponding product family when saved.
+                </div>
+              </Section>
+            </div>
+          )}
+
+          {/* FREQUENTLY BOUGHT */}
+
+          {tab === "frequently" &&
+            (isNew || !product.data?.id ? (
+              <Notice
+                title="Save the product first"
+                text="Related products can be selected after this family exists."
+              />
+            ) : (
+              <RelatedProducts familyId={product.data.id} />
+            ))}
+        </main>
+      </div>
 
       {/* BOTTOM SAVE */}
 
