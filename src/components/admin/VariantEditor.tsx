@@ -2038,6 +2038,7 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
 }
 
 function CustomerTab({
+  function CustomerTab({
   rows,
   updateRow,
   optionsEditor,
@@ -2046,800 +2047,580 @@ function CustomerTab({
   updateRow: (id: string, patch: Partial<Variant>) => void;
   optionsEditor: React.ReactNode;
 }) {
-  type PriceField = "mrp" | "price" | "stock" | "pack_size";
-  const fields: { key: PriceField; label: string; integer?: boolean; min?: number }[] = [
-    { key: "mrp", label: "MRP ₹", min: 0 },
-    { key: "price", label: "Customer Price ₹", min: 0 },
-    { key: "stock", label: "Stock", integer: true, min: 0 },
-    { key: "pack_size", label: "Pack Size", integer: true, min: 1 },
-  ];
+  const copyNumericDown = (
+    field: "mrp" | "price" | "discount_pct" | "pack_size",
+    index: number,
+  ) => {
+    const value = rows[index]?.[field];
 
-  const copyDown = (field: PriceField, index: number) => {
-    const value = rows[index]?.[field] as number | null;
-    for (const row of rows.slice(index + 1)) updateRow(row.id, { [field]: value } as Partial<Variant>);
-    toast.success(`${fields.find((item) => item.key === field)?.label ?? "Value"} copied to rows below.`);
+    for (const row of rows.slice(index + 1)) {
+      updateRow(row.id, {
+        [field]: value,
+      } as Partial<Variant>);
+    }
+
+    toast.success("Copied to all variations below.");
   };
+
+  const copyAffiliateDown = (index: number) => {
+    const value =
+      rows[index]?.attributes?.__affiliate_commission ?? "";
+
+    for (const row of rows.slice(index + 1)) {
+      updateRow(row.id, {
+        attributes: {
+          ...row.attributes,
+          __affiliate_commission: value,
+        },
+      });
+    }
+
+    toast.success(
+      "Affiliate commission copied to all variations below.",
+    );
+  };
+
+  const changeMrp = (row: Variant, raw: string) => {
+    if (raw === "") {
+      updateRow(row.id, {
+        mrp: null,
+      });
+
+      return;
+    }
+
+    const mrp = Number(raw);
+
+    if (!Number.isFinite(mrp) || mrp < 0) return;
+
+    const discount = Number(row.discount_pct ?? 0);
+
+    const patch: Partial<Variant> = {
+      mrp,
+    };
+
+    if (discount > 0) {
+      patch.price = Number(
+        (
+          mrp -
+          (mrp * Math.min(100, Math.max(0, discount))) / 100
+        ).toFixed(2),
+      );
+    }
+
+    updateRow(row.id, patch);
+  };
+
+  const changeDiscount = (row: Variant, raw: string) => {
+    if (raw === "") {
+      updateRow(row.id, {
+        discount_pct: 0,
+      });
+
+      return;
+    }
+
+    const entered = Number(raw);
+
+    if (!Number.isFinite(entered)) return;
+
+    const discount = Math.min(100, Math.max(0, entered));
+    const mrp = Number(row.mrp ?? 0);
+
+    const patch: Partial<Variant> = {
+      discount_pct: discount,
+    };
+
+    if (mrp > 0) {
+      patch.price = Number(
+        (mrp - (mrp * discount) / 100).toFixed(2),
+      );
+    }
+
+    updateRow(row.id, patch);
+  };
+
+  const changePrice = (row: Variant, raw: string) => {
+    if (raw === "") {
+      updateRow(row.id, {
+        price: null,
+      });
+
+      return;
+    }
+
+    const price = Number(raw);
+
+    if (!Number.isFinite(price) || price < 0) return;
+
+    const mrp = Number(row.mrp ?? 0);
+
+    const patch: Partial<Variant> = {
+      price,
+    };
+
+    if (mrp > 0) {
+      const discount =
+        ((mrp - price) / mrp) * 100;
+
+      patch.discount_pct = Number(
+        Math.min(100, Math.max(0, discount)).toFixed(2),
+      );
+    }
+
+    updateRow(row.id, patch);
+  };
+
+  const changePack = (row: Variant, raw: string) => {
+    if (raw === "") {
+      updateRow(row.id, {
+        pack_size: null,
+      });
+
+      return;
+    }
+
+    const value = Number(raw);
+
+    if (!Number.isFinite(value) || value < 1) return;
+
+    updateRow(row.id, {
+      pack_size: Math.trunc(value),
+    });
+  };
+
+  const changeAffiliate = (
+    row: Variant,
+    raw: string,
+  ) => {
+    updateRow(row.id, {
+      attributes: {
+        ...row.attributes,
+        __affiliate_commission: raw,
+      },
+    });
+  };
+
+  const CopyDownButton = ({
+    title,
+    onClick,
+    visible,
+  }: {
+    title: string;
+    onClick: () => void;
+    visible: boolean;
+  }) => {
+    if (!visible) return null;
+
+    return (
+      <button
+        type="button"
+        title={title}
+        aria-label={title}
+        onClick={onClick}
+        className="
+          shrink-0
+          rounded-md
+          p-1.5
+          text-slate-400
+          transition
+          hover:bg-slate-100
+          hover:text-slate-800
+          focus:outline-none
+          focus:ring-2
+          focus:ring-slate-300
+        "
+      >
+        <Copy className="h-3.5 w-3.5" />
+      </button>
+    );
+  };
+
+  if (!rows.length) {
+    return (
+      <div className="space-y-5">
+        <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-950">
+              Product Price & Stock
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-500">
+              Create product variations first. Generated
+              variations will automatically appear in the
+              customer pricing table.
+            </p>
+          </div>
+
+          {optionsEditor}
+        </section>
+
+        <EmptyVariants />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
+      {/* =====================================================
+          PRODUCT OPTIONS
+         ===================================================== */}
+
       <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">Product price + stock</h2>
+          <h2 className="text-base font-semibold text-slate-950">
+            Product Price & Stock
+          </h2>
+
           <p className="mt-1 text-xs text-slate-500">
-            Choose the attributes of this product and then input values of each attribute.
+            Choose the required product attributes and generate
+            variations. Customer pricing can then be entered
+            separately for every generated SKU.
           </p>
         </div>
 
         {optionsEditor}
-
-        {rows.length > 0 && (
-          <>
-            <LowestStartingPrice rows={rows} field="price" label="Variant lowest starting price" />
-
-            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
-              <div className="text-sm text-slate-700">External link</div>
-              <Input disabled placeholder="Not stored in current Aurona product schema" />
-            </div>
-            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
-              <div className="text-sm text-slate-700">External link button text</div>
-              <Input disabled placeholder="Not stored in current Aurona product schema" />
-            </div>
-
-            <LowStockEditor
-              rows={rows}
-              updateRow={updateRow}
-              title="Low Stock Quantity Warning"
-              quantityLabel="Quantity"
-            />
-            <StockVisibilityReference />
-          </>
-        )}
       </section>
 
-      {rows.length ? (
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <h3 className="text-sm font-semibold text-slate-900">Generated Customer Variations</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-sm">
-              <thead>
-                <tr className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <Th>Variation</Th>
-                  <Th>SKU</Th>
-                  {fields.map((field) => (
-                    <Th key={field.key}>{field.label}</Th>
-                  ))}
-                  <Th>Live</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => (
-                  <tr key={row.id} className="border-t border-slate-200 hover:bg-slate-50/70">
-                    <Td>
-                      <VariantIdentity row={row} />
-                    </Td>
-                    <Td>
-                      <div className="max-w-[220px] break-all font-mono text-xs">{row.sku}</div>
-                    </Td>
-                    {fields.map((field) => (
-                      <Td key={field.key}>
-                        <div className="flex min-w-[130px] items-center gap-1">
-                          <Input
-                            type="number"
-                            min={field.min ?? 0}
-                            step={field.integer ? "1" : "any"}
-                            value={(row[field.key] as number | null) ?? ""}
-                            onChange={(event) => {
-                              const raw = event.target.value;
-                              const value = raw === "" ? null : field.integer ? Math.trunc(Number(raw)) : Number(raw);
-                              updateRow(row.id, { [field.key]: value } as Partial<Variant>);
-                            }}
-                          />
-                          {index < rows.length - 1 && (
-                            <button
-                              type="button"
-                              title={`Copy ${field.label} down`}
-                              onClick={() => copyDown(field.key, index)}
-                              className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-800"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </Td>
-                    ))}
-                    <Td>
-                      <Switch
-                        checked={Boolean(row.is_active)}
-                        onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
-                      />
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : (
-        <EmptyVariants />
-      )}
-    </div>
-  );
-}
+      {/* =====================================================
+          CUSTOMER VARIATION PRICE TABLE
+         ===================================================== */}
 
-function ShippingTab({
-  rows,
-  updateRow,
-}: {
-  rows: Variant[];
-  updateRow: (id: string, patch: Partial<Variant>) => void;
-}) {
-  type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | "pack_weight_g" | "pack_l" | "pack_w" | "pack_h";
-
-  const unitFields: { key: DimensionKey; label: string; placeholder: string }[] = [
-    { key: "weight_g", label: "Weight (In Gms)", placeholder: "Weight" },
-    { key: "dim_l", label: "Length (In cms)", placeholder: "Length" },
-    { key: "dim_w", label: "Width (In cms)", placeholder: "Width" },
-    { key: "dim_h", label: "Height (In cms)", placeholder: "Height" },
-  ];
-
-  const packageFields: { key: DimensionKey; label: string; placeholder: string }[] = [
-    { key: "pack_weight_g", label: "Weight (In Gms)", placeholder: "Pkg Weight" },
-    { key: "pack_l", label: "Length (In cms)", placeholder: "Pkg Length" },
-    { key: "pack_w", label: "Width (In cms)", placeholder: "Pkg Width" },
-    { key: "pack_h", label: "Height (In cms)", placeholder: "Pkg Height" },
-  ];
-
-  const copyDown = (field: DimensionKey, index: number) => {
-    const value = rows[index]?.[field] as number | null;
-    for (const row of rows.slice(index + 1)) {
-      updateRow(row.id, { [field]: value } as Partial<Variant>);
-    }
-    toast.success("Dimension copied to every row below.");
-  };
-
-  if (!rows.length) return <EmptyVariants />;
-
-  const renderCell = (
-    row: Variant,
-    index: number,
-    field: { key: DimensionKey; label: string; placeholder: string },
-  ) => (
-    <Td key={field.key}>
-      <div className="flex min-w-[135px] items-center gap-1">
-        <Input
-          type="number"
-          min="0"
-          step="any"
-          placeholder={field.placeholder}
-          value={(row[field.key] as number | null) ?? ""}
-          onChange={(event) =>
-            updateRow(row.id, {
-              [field.key]: event.target.value === "" ? null : Number(event.target.value),
-            } as Partial<Variant>)
-          }
-          className="h-9 min-w-[105px]"
-        />
-        {index < rows.length - 1 && (
-          <button
-            type="button"
-            title={`Copy ${field.label} to all rows below`}
-            aria-label={`Copy ${field.label} to all rows below`}
-            onClick={() => copyDown(field.key, index)}
-            className="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-    </Td>
-  );
-
-  return (
-    <div className="space-y-4">
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
-          <h3 className="text-base font-semibold text-slate-950">Weight & Dimensions</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            All fields are editable per variation. Enter a value and use the copy button beside it to insert the same
-            value in that column for every variation listed below.
-          </p>
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-950">
+                Customer Product Variations
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Enter MRP, discount, customer price, pack size
+                and affiliate commission for each SKU.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+              {rows.length} Variation
+              {rows.length === 1 ? "" : "s"}
+            </div>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1450px] border-collapse text-sm">
+          <table className="w-full min-w-[1320px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-white text-center text-xs font-semibold text-slate-700">
-                <Th rowSpan={2}>Variant</Th>
-                <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
-                  For Single Unit/Pc of product
-                </th>
-                <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
-                  For Package
-                </th>
-              </tr>
-              <tr className="bg-slate-50 text-left text-[11px] font-semibold text-slate-500">
-                {unitFields.map((field) => (
-                  <Th key={field.key}>{field.label}</Th>
-                ))}
-                {packageFields.map((field) => (
-                  <Th key={field.key}>{field.label}</Th>
-                ))}
+              <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {/* 1 */}
+                <Th>Variation</Th>
+
+                {/* 2 */}
+                <Th>SKU</Th>
+
+                {/* 3 */}
+                <Th>MRP</Th>
+
+                {/* 4 */}
+                <Th>Discount %</Th>
+
+                {/* 5 */}
+                <Th>Price</Th>
+
+                {/* 6 */}
+                <Th>Pack Of</Th>
+
+                {/* 7 */}
+                <Th>Affiliate Commission</Th>
               </tr>
             </thead>
 
             <tbody>
-              {rows.map((row, index) => (
-                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
-                  <Td>
-                    <div className="min-w-[210px]">
-                      <div className="break-words font-semibold text-slate-950">{variantName(row)}</div>
-                      <div className="mt-1 break-all font-mono text-[11px] text-slate-500">{row.sku}</div>
-                    </div>
-                  </Td>
-                  {unitFields.map((field) => renderCell(row, index, field))}
-                  {packageFields.map((field) => renderCell(row, index, field))}
-                </tr>
-              ))}
+              {rows.map((row, index) => {
+                const hasRowsBelow =
+                  index < rows.length - 1;
+
+                return (
+                  <tr
+                    key={row.id}
+                    className="
+                      border-t
+                      border-slate-200
+                      align-middle
+                      transition-colors
+                      hover:bg-slate-50/70
+                    "
+                  >
+                    {/* =========================================
+                        1. VARIATION
+                       ========================================= */}
+
+                    <Td>
+                      <div className="min-w-[210px] max-w-[280px]">
+                        <VariantIdentity row={row} />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        2. SKU
+                       ========================================= */}
+
+                    <Td>
+                      <div className="min-w-[190px] max-w-[250px] break-all font-mono text-xs font-medium text-slate-700">
+                        {row.sku}
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        3. MRP
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[155px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={row.mrp ?? ""}
+                          placeholder="MRP"
+                          onChange={(event) =>
+                            changeMrp(
+                              row,
+                              event.target.value,
+                            )
+                          }
+                          className="h-9 min-w-[110px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy MRP to all rows below"
+                          onClick={() =>
+                            copyNumericDown(
+                              "mrp",
+                              index,
+                            )
+                          }
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        4. DISCOUNT %
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[165px] items-center gap-1">
+                        <div className="relative min-w-[115px]">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            inputMode="decimal"
+                            value={
+                              row.discount_pct ?? 0
+                            }
+                            placeholder="0.00"
+                            onChange={(event) =>
+                              changeDiscount(
+                                row,
+                                event.target.value,
+                              )
+                            }
+                            className="h-9 pr-8"
+                          />
+
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                            %
+                          </span>
+                        </div>
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy discount to all rows below"
+                          onClick={() =>
+                            copyNumericDown(
+                              "discount_pct",
+                              index,
+                            )
+                          }
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        5. CUSTOMER PRICE
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[155px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={row.price ?? ""}
+                          placeholder="Price"
+                          onChange={(event) =>
+                            changePrice(
+                              row,
+                              event.target.value,
+                            )
+                          }
+                          className="h-9 min-w-[110px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy price to all rows below"
+                          onClick={() =>
+                            copyNumericDown(
+                              "price",
+                              index,
+                            )
+                          }
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        6. PACK OF
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[135px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          inputMode="numeric"
+                          value={row.pack_size ?? ""}
+                          placeholder="1"
+                          onChange={(event) =>
+                            changePack(
+                              row,
+                              event.target.value,
+                            )
+                          }
+                          className="h-9 min-w-[90px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy Pack Of to all rows below"
+                          onClick={() =>
+                            copyNumericDown(
+                              "pack_size",
+                              index,
+                            )
+                          }
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        7. AFFILIATE COMMISSION
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[205px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={
+                            row.attributes
+                              ?.__affiliate_commission ??
+                            ""
+                          }
+                          placeholder="Commission"
+                          onChange={(event) =>
+                            changeAffiliate(
+                              row,
+                              event.target.value,
+                            )
+                          }
+                          className="h-9 min-w-[155px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy affiliate commission to all rows below"
+                          onClick={() =>
+                            copyAffiliateDown(index)
+                          }
+                        />
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
+
+        {/* =====================================================
+            TABLE INFORMATION
+           ===================================================== */}
+
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <span>
+              Discount supports decimal values such as
+              11.11%.
+            </span>
+
+            <span>
+              Use the copy icon to apply a value to all
+              variations below.
+            </span>
+          </div>
+        </div>
       </section>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        Copy-down only changes the current draft. Every copied cell can still be edited individually before saving.
-      </div>
-    </div>
-  );
-}
+      {/* =====================================================
+          IMPORTANT PRICE BEHAVIOUR
+         ===================================================== */}
 
-function AxisEditor({
-  rows,
-  variants,
-  setRows,
-  saving,
-  saveAxes,
-  excluded,
-  setExcluded,
-  draftOnly,
-}: {
-  rows: Axis[];
-  variants: Variant[];
-  setRows: (rows: Axis[]) => void;
-  saving: boolean;
-  saveAxes: (generate: boolean, selectedCombinations?: Record<string, string>[]) => Promise<void>;
-  excluded: Record<string, string[]>;
-  setExcluded: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
-  draftOnly: boolean;
-}) {
-  const [valueDrafts, setValueDrafts] = useState<Record<string, string>>({});
-  const [selectedCombinationKeys, setSelectedCombinationKeys] = useState<Set<string>>(new Set());
-
-  const updateAxis = (id: string, patch: Partial<Axis>) =>
-    setRows(rows.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
-
-  const addAxis = (preset?: { key: string; label: string }) => {
-    let sequence = rows.length + 1;
-    while (rows.some((axis) => axis.axis_key === `option_${sequence}`)) sequence++;
-    const key = preset?.key ?? `option_${sequence}`;
-    if (rows.some((axis) => axis.axis_key === key)) return;
-    setRows([
-      ...rows,
-      {
-        id: `new-${crypto.randomUUID()}`,
-        axis_key: key,
-        label: preset?.label ?? "Option",
-        values: [],
-        sort_order: rows.length,
-      },
-    ]);
-  };
-
-  const removeAxis = (axis: Axis) => {
-    if (variants.some((row) => row.attributes[axis.axis_key]))
-      return toast.error("This option is already used by an existing SKU.");
-    if (confirm(`Remove ${axis.label}?`)) setRows(rows.filter((row) => row.id !== axis.id));
-  };
-
-  const activeAxes = rows
-    .map((axis) => ({
-      ...axis,
-      values: [...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].filter(
-        (value) => !(excluded[axis.id] ?? []).includes(value),
-      ),
-    }))
-    .filter((axis) => axis.values.length > 0);
-
-  const combinationKey = (attributes: Record<string, string>) =>
-    activeAxes.map((axis) => `${axis.axis_key}=${attributes[axis.axis_key] ?? ""}`).join("||");
-
-  let allCombinations: Record<string, string>[] = [];
-  let missing: Record<string, string>[] = [];
-  try {
-    if (activeAxes.length === rows.length && activeAxes.length > 0) {
-      allCombinations = missingCombinations(activeAxes, []);
-      missing = missingCombinations(activeAxes, variants);
-    }
-  } catch {
-    allCombinations = [];
-    missing = [];
-  }
-
-  const missingKeys = new Set(missing.map(combinationKey));
-  const existingKeys = new Set(allCombinations.map(combinationKey).filter((key) => !missingKeys.has(key)));
-
-  // New valid combinations start selected automatically. Manual unticks are preserved.
-  const combinationSignature = missing.map(combinationKey).join("###");
-  useEffect(() => {
-    setSelectedCombinationKeys((current) => {
-      const valid = new Set(missing.map(combinationKey));
-      const next = new Set([...current].filter((key) => valid.has(key)));
-      if (current.size === 0) valid.forEach((key) => next.add(key));
-      return next;
-    });
-    // combinationSignature is intentionally the dependency: it changes only when combinations change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [combinationSignature]);
-
-  const presets = [
-    ["wattage", "Watts Available"],
-    ["output_colour", "Output Colour Option/s"],
-    ["shape", "Shape"],
-    ["body_colour", "Body Colour/s"],
-    ["pack_size", "Pack Size"],
-    ["oscillation", "Oscillation"],
-    ["tank_capacity", "Tank Capacities"],
-    ["size", "Size Option/s"],
-    ["reflector_colour", "Reflector Colour"],
-  ] as const;
-
-  const selectedMissing = missing.filter((attributes) => selectedCombinationKeys.has(combinationKey(attributes)));
-
-  const toggleCombination = (attributes: Record<string, string>) => {
-    const key = combinationKey(attributes);
-    if (existingKeys.has(key)) return;
-    setSelectedCombinationKeys((current) => {
-      const next = new Set(current);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const setGroup = (groupValue: string, checked: boolean) => {
-    const first = activeAxes[0];
-    if (!first) return;
-    const groupKeys = missing.filter((attributes) => attributes[first.axis_key] === groupValue).map(combinationKey);
-    setSelectedCombinationKeys((current) => {
-      const next = new Set(current);
-      groupKeys.forEach((key) => (checked ? next.add(key) : next.delete(key)));
-      return next;
-    });
-  };
-
-  const generate = () => {
-    if (!rows.length) return toast.error("Add at least one option first.");
-    if (rows.some((axis) => !axis.label.trim() || !axis.values.length))
-      return toast.error("Give every option a name and at least one value.");
-    if (!missing.length) return toast.info("All selected combinations already exist.");
-    if (!selectedMissing.length) return toast.error("Select at least one SKU combination to generate.");
-    void saveAxes(true, selectedMissing);
-  };
-
-  return (
-    <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-950">Create product variations</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          One product, all its wattages, colours, sizes and models. Add only what this product needs.
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm font-semibold text-slate-800">1. Choose options</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {presets.map(([key, label]) => (
-            <Button
-              key={key}
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={rows.some((axis) => axis.axis_key === key)}
-              onClick={() => addAxis({ key, label })}
-            >
-              <Plus className="mr-1 h-4 w-4" /> {label}
-            </Button>
-          ))}
-          <Button type="button" size="sm" variant="outline" onClick={() => addAxis()}>
-            <Plus className="mr-1 h-4 w-4" /> Other option
-          </Button>
-        </div>
-      </div>
-
-      {rows.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-slate-800">2. Enter values</p>
-          {rows.map((axis) => (
-            <div key={axis.id} className="rounded-xl border border-slate-200 p-3 sm:p-4">
-              <div className="grid gap-3 md:grid-cols-[180px_1fr_auto] md:items-start">
-                <label>
-                  <FieldTitle>Option</FieldTitle>
-                  <Input
-                    className="mt-1"
-                    value={axis.label}
-                    onChange={(event) =>
-                      updateAxis(axis.id, {
-                        label: event.target.value,
-                        ...(axis.id.startsWith("new-")
-                          ? {
-                              axis_key:
-                                event.target.value
-                                  .trim()
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9_]+/g, "_") || axis.axis_key,
-                            }
-                          : {}),
-                      })
-                    }
-                  />
-                </label>
-
-                <label>
-                  <FieldTitle>Values</FieldTitle>
-                  <Textarea
-                    className="mt-1 min-h-[72px]"
-                    value={valueDrafts[axis.id] ?? axis.values.join(", ")}
-                    placeholder={
-                      axis.axis_key === "wattage"
-                        ? "5W, 7W, 9W, 12W"
-                        : axis.axis_key === "output_colour"
-                          ? "Warm White, Natural White, Cool White"
-                          : "Type or paste values separated by commas"
-                    }
-                    onChange={(event) => {
-                      const raw = event.target.value;
-                      setValueDrafts((current) => ({ ...current, [axis.id]: raw }));
-                      updateAxis(axis.id, { values: parsePastedValues(raw) });
-                    }}
-                    onBlur={() =>
-                      setValueDrafts((current) => {
-                        const next = { ...current };
-                        delete next[axis.id];
-                        return next;
-                      })
-                    }
-                  />
-                  <span className="mt-1 block text-xs text-slate-500">
-                    Paste comma-separated values or one value per line.
-                  </span>
-                </label>
-
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="mt-5"
-                  onClick={() => removeAxis(axis)}
-                  aria-label={`Remove ${axis.label}`}
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-
-              {axis.values.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map((value) => {
-                    const disabled = (excluded[axis.id] ?? []).includes(value);
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() =>
-                          setExcluded((current) => ({
-                            ...current,
-                            [axis.id]: disabled
-                              ? (current[axis.id] ?? []).filter((item) => item !== value)
-                              : [...(current[axis.id] ?? []), value],
-                          }))
-                        }
-                        className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                          disabled
-                            ? "border-slate-200 bg-slate-100 text-slate-400 line-through"
-                            : "border-sky-200 bg-sky-50 text-sky-800"
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {allCombinations.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-slate-200 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-slate-900">3. Choose the real SKU combinations</p>
-              <p className="mt-1 text-sm text-slate-500">
-                Tick only combinations that this product actually has. Existing SKUs are protected.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setSelectedCombinationKeys(new Set(missing.map(combinationKey)))}
-              >
-                Select all new
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => setSelectedCombinationKeys(new Set())}>
-                Clear new
-              </Button>
-            </div>
-          </div>
-
-          {activeAxes[0] && (
-            <div className="space-y-4">
-              {activeAxes[0].values.map((groupValue) => {
-                const first = activeAxes[0];
-                const group = allCombinations.filter((attributes) => attributes[first.axis_key] === groupValue);
-                const groupMissing = group.filter((attributes) => missingKeys.has(combinationKey(attributes)));
-                const selectedCount = groupMissing.filter((attributes) =>
-                  selectedCombinationKeys.has(combinationKey(attributes)),
-                ).length;
-
-                return (
-                  <section key={groupValue} className="overflow-hidden rounded-xl border border-slate-200">
-                    <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-4 py-3">
-                      <div>
-                        <span className="text-sm text-slate-500">{first.label}</span>
-                        <strong className="ml-2 text-slate-950">{groupValue}</strong>
-                        <span className="ml-2 text-xs text-slate-500">
-                          {selectedCount}/{groupMissing.length} new selected
-                        </span>
-                      </div>
-                      {groupMissing.length > 0 && (
-                        <div className="flex gap-2">
-                          <Button type="button" size="sm" variant="ghost" onClick={() => setGroup(groupValue, true)}>
-                            Select all
-                          </Button>
-                          <Button type="button" size="sm" variant="ghost" onClick={() => setGroup(groupValue, false)}>
-                            Clear
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
-                      {group.map((attributes) => {
-                        const key = combinationKey(attributes);
-                        const exists = existingKeys.has(key);
-                        const checked = exists || selectedCombinationKeys.has(key);
-                        return (
-                          <label
-                            key={key}
-                            className={`flex min-w-0 items-start gap-3 rounded-lg border p-3 ${
-                              exists
-                                ? "border-emerald-200 bg-emerald-50"
-                                : checked
-                                  ? "border-sky-300 bg-sky-50"
-                                  : "border-slate-200 bg-white"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="mt-1 h-4 w-4"
-                              checked={checked}
-                              disabled={exists}
-                              onChange={() => toggleCombination(attributes)}
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="block break-words text-sm font-semibold text-slate-900">
-                                {activeAxes
-                                  .map((axis) => attributes[axis.axis_key])
-                                  .filter(Boolean)
-                                  .join(" / ")}
-                              </span>
-                              <span className="mt-1 block break-words text-xs text-slate-500">
-                                {activeAxes.map((axis) => `${axis.label}: ${attributes[axis.axis_key]}`).join(" · ")}
-                              </span>
-                            </span>
-                            {exists && (
-                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
-                                Existing
-                              </span>
-                            )}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <div className="grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
           <div>
-            <p className="font-semibold text-sky-950">4. Generate selected variations</p>
-            <p className="mt-1 text-sm text-sky-800">
-              {allCombinations.length
-                ? `${allCombinations.length} possible · ${existingKeys.size} existing · ${selectedMissing.length} new selected`
-                : "Enter all option values above to build combinations."}
-            </p>
-            <p className="mt-1 text-xs text-sky-700">
-              Only checked new combinations are generated. They start inactive with zero stock so you can safely edit
-              SKU, prices, images and stock before activation.
-            </p>
+            <div className="font-semibold text-slate-900">
+              MRP
+            </div>
+
+            <div className="mt-1">
+              Enter the maximum retail price for the
+              variation.
+            </div>
           </div>
-          <Button type="button" size="lg" onClick={generate} disabled={saving || !selectedMissing.length}>
-            <Plus className="mr-2 h-4 w-4" />
-            {saving ? "Generating…" : `Generate ${selectedMissing.length || ""} Variations`}
-          </Button>
+
+          <div>
+            <div className="font-semibold text-slate-900">
+              Discount %
+            </div>
+
+            <div className="mt-1">
+              Decimal discounts are supported. Example:
+              11.11%.
+            </div>
+          </div>
+
+          <div>
+            <div className="font-semibold text-slate-900">
+              Price
+            </div>
+
+            <div className="mt-1">
+              Price automatically follows MRP + Discount.
+              Manual price changes recalculate the
+              discount.
+            </div>
+          </div>
         </div>
-      </div>
-
-      {draftOnly && (
-        <p className="text-xs text-slate-500">These changes stay as a draft until you save the variation.</p>
-      )}
-    </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
-        active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-      }`}
-    >
-      {icon}
-      {children}
-    </button>
-  );
-}
-
-function VariantIdentity({ row }: { row: Variant }) {
-  return (
-    <div className="min-w-[170px]">
-      <div className="font-medium text-slate-900">{variantName(row)}</div>
-
-      <div className="mt-0.5 font-mono text-xs text-slate-500">{row.sku}</div>
-    </div>
-  );
-}
-
-function NumberInput({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: number | null;
-  onChange: (value: number | null) => void;
-  placeholder?: string;
-}) {
-  return (
-    <Input
-      type="number"
-      step="any"
-      className="min-w-[100px] text-right"
-      value={value ?? ""}
-      placeholder={placeholder}
-      onChange={(e) => onChange(toNumber(e.target.value))}
-    />
-  );
-}
-
-function DimensionField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number | null;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <label>
-      <FieldTitle>{label}</FieldTitle>
-
-      <Input
-        type="number"
-        step="any"
-        className="mt-1"
-        value={value ?? ""}
-        onChange={(e) => onChange(toNumber(e.target.value))}
-      />
-    </label>
-  );
-}
-
-function Calculated({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-w-[90px] rounded-md bg-slate-50 px-3 py-2 text-right text-sm text-slate-700">{children}</div>
-  );
-}
-
-function FieldTitle({ children }: { children: React.ReactNode }) {
-  return <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>;
-}
-
-function Th({ children, className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <th className={`whitespace-nowrap px-3 py-3 font-semibold ${className ?? ""}`} {...props}>
-      {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="align-top px-3 py-3">{children}</td>;
-}
-
-function EmptyVariants() {
-  return (
-    <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-      No variants yet. Click <strong>Add Variant</strong> first.
-    </div>
-  );
-}
-
-const SEGMENT_FIELDS = [
-  { key: "available_customer", label: "C", title: "Visible to Customers" },
-  { key: "available_retailer", label: "R", title: "Visible to Retailers" },
-  { key: "available_distributor", label: "D", title: "Visible to Distributors" },
-] as const;
-
-/** Simple per-variation availability switches for each buyer type. */
-function SegmentToggles({
-  row,
-  updateRow,
-}: {
-  row: Variant;
-  updateRow: (id: string, patch: Partial<Variant>) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      {SEGMENT_FIELDS.map((segment) => {
-        const on = row[segment.key] !== false;
-        return (
-          <button
-            key={segment.key}
-            type="button"
-            title={segment.title}
-            aria-label={segment.title}
-            aria-pressed={on}
-            onClick={() => updateRow(row.id, { [segment.key]: !on } as Partial<Variant>)}
-            className={
-              "h-7 w-7 rounded-full border text-xs font-semibold transition " +
-              (on ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-200 bg-white text-slate-400 line-through")
-            }
-          >
-            {segment.label}
-          </button>
-        );
-      })}
+      </section>
     </div>
   );
 }
