@@ -16,8 +16,6 @@ import {
   FileText,
   Images,
   Users,
-  Store,
-  Warehouse,
   Search,
   Truck,
   ShieldCheck,
@@ -42,16 +40,7 @@ function ExistingProductEditor() {
   return <ProductEditor productId={id} />;
 }
 
-type MainTab =
-  | "general"
-  | "media"
-  | "customer"
-  | "retailer"
-  | "distributor"
-  | "seo"
-  | "shipping"
-  | "warranty"
-  | "frequently";
+type MainTab = "general" | "media" | "customer" | "seo" | "shipping" | "warranty" | "frequently";
 
 type ProductForm = {
   name: string;
@@ -222,16 +211,6 @@ const TABS: {
     key: "customer",
     label: "Price & Stock for Customers",
     icon: <Users className="h-4 w-4" />,
-  },
-  {
-    key: "retailer",
-    label: "Price & Stock for Retailers",
-    icon: <Store className="h-4 w-4" />,
-  },
-  {
-    key: "distributor",
-    label: "Price & Stock for Distributors",
-    icon: <Warehouse className="h-4 w-4" />,
   },
   {
     key: "seo",
@@ -699,60 +678,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                       <Input value={f.unit} placeholder="Pc" onChange={(e) => upd("unit", e.target.value)} />
                     </Field>
 
-                    <Field label="Weight (In Kg)">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={f.weight_g == null ? "" : f.weight_g / 1000}
-                        placeholder="0"
-                        onChange={(e) => upd("weight_g", e.target.value === "" ? null : Number(e.target.value) * 1000)}
-                      />
-                    </Field>
-
-                    <Field label="Dimensions">
-                      <div className="grid grid-cols-3 gap-3">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={f.dim_l ?? ""}
-                          placeholder="Length"
-                          onChange={(e) => upd("dim_l", e.target.value === "" ? null : Number(e.target.value))}
-                        />
-                        <Input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={f.dim_w ?? ""}
-                          placeholder="Width"
-                          onChange={(e) => upd("dim_w", e.target.value === "" ? null : Number(e.target.value))}
-                        />
-                        <Input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={f.dim_h ?? ""}
-                          placeholder="Height"
-                          onChange={(e) => upd("dim_h", e.target.value === "" ? null : Number(e.target.value))}
-                        />
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">Length × Width × Height in centimetres.</div>
-                    </Field>
-
-                    <Field label="Minimum Purchase Qty *">
-                      <Input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={f.pack_size ?? 1}
-                        onChange={(e) => upd("pack_size", Math.max(1, Math.trunc(Number(e.target.value || 1))))}
-                      />
-                      <div className="mt-1 text-xs text-slate-500">
-                        The minimum quantity that needs to be purchased by your customer.
-                      </div>
-                    </Field>
-
                     <Field label="Model">
                       <Input
                         value={f.model}
@@ -929,33 +854,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               id={id}
               variantTab="customer"
               title="Price & Stock for Customers"
-              text="MRP, customer price, retailer price, distributor price, stock and pack size are managed per generated SKU."
-            />
-          )}
-
-          {/* RETAILER */}
-
-          {tab === "retailer" && (
-            <VariantArea
-              isNew={isNew}
-              sku={f.sku}
-              id={id}
-              variantTab="retailer"
-              title="Retailer Price & Stock"
-              text="Retailer pricing and retailer MOQ are managed per variation."
-            />
-          )}
-
-          {/* DISTRIBUTOR */}
-
-          {tab === "distributor" && (
-            <VariantArea
-              isNew={isNew}
-              sku={f.sku}
-              id={id}
-              variantTab="distributor"
-              title="Distributor Price & Stock"
-              text="Distributor pricing and distributor MOQ are managed per variation."
+              text="MRP, customer price, stock and pack size are managed per generated SKU."
             />
           )}
 
@@ -1123,7 +1022,7 @@ function VariantArea({
   isNew: boolean;
   sku: string;
   id: string;
-  variantTab: "options" | "customer" | "retailer" | "distributor";
+  variantTab: "options" | "customer";
   title: string;
   text: string;
 }) {
