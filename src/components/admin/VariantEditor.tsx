@@ -668,7 +668,7 @@ export function VariantEditor({
             onClick={() => setTab("customer")}
             icon={<Users className="h-4 w-4" />}
           >
-            Customer Price & Stock
+            Product Price & Stock
           </TabButton>
 
           {showAllTabs && (
@@ -691,21 +691,19 @@ export function VariantEditor({
             </TabButton>
           )}
 
-          {showAllTabs && (
-            <TabButton
-              active={tab === "shipping"}
-              onClick={() => setTab("shipping")}
-              icon={<Truck className="h-4 w-4" />}
-            >
-              Weight & Dimensions
-            </TabButton>
-          )}
+          <TabButton
+            active={tab === "shipping"}
+            onClick={() => setTab("shipping")}
+            icon={<Truck className="h-4 w-4" />}
+          >
+            Weight & Dimensions
+          </TabButton>
           <button
             type="button"
             onClick={() => {
               const next = !showAllTabs;
               setShowAllTabs(next);
-              if (!next && tab !== "quick" && tab !== "customer") setTab("quick");
+              if (!next && !["quick", "customer", "shipping"].includes(tab)) setTab("quick");
             }}
             className="ml-2 shrink-0 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
           >
@@ -1005,7 +1003,6 @@ function QuickVariantsTab({
                 <Th>Distributor</Th>
                 <Th>Stock</Th>
                 <Th>Pack</Th>
-                <Th>Visible to</Th>
                 <Th>Live</Th>
                 <Th>Actions</Th>
               </tr>
@@ -1047,10 +1044,6 @@ function QuickVariantsTab({
                       </div>
                     </Td>
                   ))}
-
-                  <Td>
-                    <SegmentToggles row={row} updateRow={updateRow} />
-                  </Td>
 
                   <Td>
                     <Switch
@@ -1969,108 +1962,114 @@ function CustomerTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
+  type PriceField = "mrp" | "price" | "retailer_price" | "distributor_price" | "stock" | "pack_size";
+
+  const fields: { key: PriceField; label: string; integer?: boolean; min?: number }[] = [
+    { key: "mrp", label: "MRP ₹", min: 0 },
+    { key: "price", label: "Customer Price ₹", min: 0 },
+    { key: "retailer_price", label: "Retailer Price ₹", min: 0 },
+    { key: "distributor_price", label: "Distributor Price ₹", min: 0 },
+    { key: "stock", label: "Stock", integer: true, min: 0 },
+    { key: "pack_size", label: "Pack Size", integer: true, min: 1 },
+  ];
+
+  const copyDown = (field: PriceField, index: number) => {
+    const value = rows[index]?.[field] as number | null;
+    for (const row of rows.slice(index + 1)) {
+      updateRow(row.id, { [field]: value } as Partial<Variant>);
+    }
+    toast.success(`${fields.find((item) => item.key === field)?.label ?? "Value"} copied to rows below.`);
+  };
+
   if (!rows.length) return <EmptyVariants />;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-[1150px] w-full border-collapse text-sm">
-        <thead>
-          <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-            <Th>Variant</Th>
-            <Th>MRP / Unit</Th>
-            <Th>Discount %</Th>
-            <Th>Discount ₹</Th>
-            <Th>Price / Unit</Th>
-            <Th>MOQ</Th>
-            <Th>PCs / Pack</Th>
-            <Th>Pack Total</Th>
-            <Th>Stock</Th>
-            <Th>Low-stock alert</Th>
-          </tr>
-        </thead>
+    <div className="space-y-4">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
+          <h3 className="text-base font-semibold text-slate-950">Product Price & Stock</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Every generated variation has its own MRP, customer price, retailer price, distributor price, stock and pack
+            size. Use the copy button to fill the same value into every row below; each row stays editable afterward.
+          </p>
+        </div>
 
-        <tbody>
-          {rows.map((row) => {
-            const discount = discountPercent(row.mrp, row.price);
-
-            const amount = discountAmount(row.mrp, row.price);
-
-            const packTotal = Number(row.price ?? 0) * Number(row.pack_size ?? 1);
-
-            return (
-              <tr key={row.id} className="border-t border-slate-200">
-                <Td>
-                  <VariantIdentity row={row} />
-                </Td>
-
-                <Td>
-                  <NumberInput value={row.mrp} onChange={(value) => updateRow(row.id, { mrp: value })} />
-                </Td>
-
-                <Td>
-                  <Calculated>{discount.toFixed(2)}%</Calculated>
-                </Td>
-
-                <Td>
-                  <Calculated>{money(amount)}</Calculated>
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.price}
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        price: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <NumberInput value={row.moq} onChange={(value) => updateRow(row.id, { moq: value })} />
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.pack_size}
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        pack_size: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <Calculated>{money(packTotal)}</Calculated>
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.stock}
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        stock: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.low_stock_threshold}
-                    onChange={(value) => updateRow(row.id, { low_stock_threshold: Math.max(0, Number(value ?? 0)) })}
-                  />
-                </Td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1320px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <Th>Variation</Th>
+                <Th>SKU</Th>
+                {fields.map((field) => (
+                  <Th key={field.key}>{field.label}</Th>
+                ))}
+                <Th>Status</Th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
 
-      <p className="mt-3 text-xs text-slate-500">
-        Discount percentage, discount amount and pack total are calculated automatically.
-      </p>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
+                  <Td>
+                    <div className="min-w-[190px]">
+                      <VariantIdentity row={row} />
+                    </div>
+                  </Td>
+
+                  <Td>
+                    <div className="max-w-[220px] break-all font-mono text-xs text-slate-700">{row.sku}</div>
+                  </Td>
+
+                  {fields.map((field) => (
+                    <Td key={field.key}>
+                      <div className="flex min-w-[135px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min={field.min ?? 0}
+                          step={field.integer ? "1" : "any"}
+                          value={(row[field.key] as number | null) ?? ""}
+                          onChange={(event) => {
+                            const raw = event.target.value;
+                            const value = raw === "" ? null : field.integer ? Math.trunc(Number(raw)) : Number(raw);
+                            updateRow(row.id, { [field.key]: value } as Partial<Variant>);
+                          }}
+                          className="h-9 min-w-[100px]"
+                        />
+                        {index < rows.length - 1 && (
+                          <button
+                            type="button"
+                            title={`Copy ${field.label} to all rows below`}
+                            aria-label={`Copy ${field.label} to all rows below`}
+                            onClick={() => copyDown(field.key, index)}
+                            className="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </Td>
+                  ))}
+
+                  <Td>
+                    <div className="flex min-w-[95px] items-center gap-2">
+                      <Switch
+                        checked={Boolean(row.is_active)}
+                        onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
+                      />
+                      <span className="text-xs text-slate-500">{row.is_active ? "Live" : "Draft"}</span>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-900">
+        Prices and stock are staged locally until you click Save Variants / Save All Variant Changes. Existing SKU
+        identity and inventory safety checks are preserved.
+      </div>
     </div>
   );
 }
@@ -2274,115 +2273,121 @@ function ShippingTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
+  type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | "pack_weight_g" | "pack_l" | "pack_w" | "pack_h";
+
+  const unitFields: { key: DimensionKey; label: string; placeholder: string }[] = [
+    { key: "weight_g", label: "Weight (In Gms)", placeholder: "Weight" },
+    { key: "dim_l", label: "Length (In cms)", placeholder: "Length" },
+    { key: "dim_w", label: "Width (In cms)", placeholder: "Width" },
+    { key: "dim_h", label: "Height (In cms)", placeholder: "Height" },
+  ];
+
+  const packageFields: { key: DimensionKey; label: string; placeholder: string }[] = [
+    { key: "pack_weight_g", label: "Weight (In Gms)", placeholder: "Pkg Weight" },
+    { key: "pack_l", label: "Length (In cms)", placeholder: "Pkg Length" },
+    { key: "pack_w", label: "Width (In cms)", placeholder: "Pkg Width" },
+    { key: "pack_h", label: "Height (In cms)", placeholder: "Pkg Height" },
+  ];
+
+  const copyDown = (field: DimensionKey, index: number) => {
+    const value = rows[index]?.[field] as number | null;
+    for (const row of rows.slice(index + 1)) {
+      updateRow(row.id, { [field]: value } as Partial<Variant>);
+    }
+    toast.success("Dimension copied to every row below.");
+  };
+
   if (!rows.length) return <EmptyVariants />;
+
+  const renderCell = (
+    row: Variant,
+    index: number,
+    field: { key: DimensionKey; label: string; placeholder: string },
+  ) => (
+    <Td key={field.key}>
+      <div className="flex min-w-[135px] items-center gap-1">
+        <Input
+          type="number"
+          min="0"
+          step="any"
+          placeholder={field.placeholder}
+          value={(row[field.key] as number | null) ?? ""}
+          onChange={(event) =>
+            updateRow(row.id, {
+              [field.key]: event.target.value === "" ? null : Number(event.target.value),
+            } as Partial<Variant>)
+          }
+          className="h-9 min-w-[105px]"
+        />
+        {index < rows.length - 1 && (
+          <button
+            type="button"
+            title={`Copy ${field.label} to all rows below`}
+            aria-label={`Copy ${field.label} to all rows below`}
+            onClick={() => copyDown(field.key, index)}
+            className="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+    </Td>
+  );
 
   return (
     <div className="space-y-4">
-      {rows.map((row) => (
-        <div key={row.id} className="rounded-xl border border-slate-200">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <VariantIdentity row={row} />
-          </div>
-
-          <div className="grid gap-6 p-4 lg:grid-cols-2">
-            <div>
-              <h4 className="mb-3 text-sm font-semibold">Single Unit / Piece</h4>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <DimensionField
-                  label="Weight (g)"
-                  value={row.weight_g}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      weight_g: value,
-                    })
-                  }
-                />
-
-                <DimensionField
-                  label="Length (cm)"
-                  value={row.dim_l}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      dim_l: value,
-                    })
-                  }
-                />
-
-                <DimensionField
-                  label="Width (cm)"
-                  value={row.dim_w}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      dim_w: value,
-                    })
-                  }
-                />
-
-                <DimensionField
-                  label="Height (cm)"
-                  value={row.dim_h}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      dim_h: value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div>
-              <h4 className="mb-3 text-sm font-semibold">Package</h4>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <DimensionField
-                  label="Weight (g)"
-                  value={row.pack_weight_g}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      pack_weight_g: value,
-                    })
-                  }
-                />
-
-                <DimensionField
-                  label="Length (cm)"
-                  value={row.pack_l}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      pack_l: value,
-                    })
-                  }
-                />
-
-                <DimensionField
-                  label="Width (cm)"
-                  value={row.pack_w}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      pack_w: value,
-                    })
-                  }
-                />
-
-                <DimensionField
-                  label="Height (cm)"
-                  value={row.pack_h}
-                  onChange={(value) =>
-                    updateRow(row.id, {
-                      pack_h: value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-          </div>
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
+          <h3 className="text-base font-semibold text-slate-950">Weight & Dimensions</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            All fields are editable per variation. Enter a value and use the copy button beside it to insert the same
+            value in that column for every variation listed below.
+          </p>
         </div>
-      ))}
 
-      <p className="text-xs text-slate-500">
-        These values use the existing per-variant unit and package shipping columns.
-      </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1450px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-white text-center text-xs font-semibold text-slate-700">
+                <Th rowSpan={2}>Variant</Th>
+                <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
+                  For Single Unit/Pc of product
+                </th>
+                <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
+                  For Package
+                </th>
+              </tr>
+              <tr className="bg-slate-50 text-left text-[11px] font-semibold text-slate-500">
+                {unitFields.map((field) => (
+                  <Th key={field.key}>{field.label}</Th>
+                ))}
+                {packageFields.map((field) => (
+                  <Th key={field.key}>{field.label}</Th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
+                  <Td>
+                    <div className="min-w-[210px]">
+                      <div className="break-words font-semibold text-slate-950">{variantName(row)}</div>
+                      <div className="mt-1 break-all font-mono text-[11px] text-slate-500">{row.sku}</div>
+                    </div>
+                  </Td>
+                  {unitFields.map((field) => renderCell(row, index, field))}
+                  {packageFields.map((field) => renderCell(row, index, field))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        Copy-down only changes the current draft. Every copied cell can still be edited individually before saving.
+      </div>
     </div>
   );
 }
@@ -2919,9 +2924,7 @@ function SegmentToggles({
             onClick={() => updateRow(row.id, { [segment.key]: !on } as Partial<Variant>)}
             className={
               "h-7 w-7 rounded-full border text-xs font-semibold transition " +
-              (on
-                ? "border-sky-300 bg-sky-100 text-sky-800"
-                : "border-slate-200 bg-white text-slate-400 line-through")
+              (on ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-200 bg-white text-slate-400 line-through")
             }
           >
             {segment.label}
