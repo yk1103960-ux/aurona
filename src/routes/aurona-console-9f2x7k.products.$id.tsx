@@ -111,6 +111,9 @@ type ProductForm = {
   estimated_shipping_days: number | null;
   refundable: boolean;
   refund_note: string;
+  visible_customer: boolean;
+  visible_retailer: boolean;
+  visible_distributor: boolean;
 };
 
 const EMPTY: ProductForm = {
@@ -169,6 +172,9 @@ const EMPTY: ProductForm = {
   estimated_shipping_days: null,
   refundable: true,
   refund_note: "",
+  visible_customer: true,
+  visible_retailer: true,
+  visible_distributor: true,
 };
 
 const NEW_PRODUCT_DRAFT_KEY = "aurona-admin-new-product-draft-v1";
@@ -390,6 +396,10 @@ export function ProductEditor({ productId: id }: { productId: string }) {
       image_seed: data.image_seed ?? "",
 
       is_published: data.is_published ?? true,
+
+      visible_customer: (data as any).visible_customer ?? true,
+      visible_retailer: (data as any).visible_retailer ?? true,
+      visible_distributor: (data as any).visible_distributor ?? true,
 
       is_featured: !!data.is_featured,
 
@@ -761,6 +771,28 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             <Field label="Material">
               <Input value={f.material} onChange={(e) => upd("material", e.target.value)} />
             </Field>
+          </Section>
+
+          <Section title="Visible to">
+            <p className="mb-2 text-xs text-slate-500">
+              Choose which account types can see this product and all of its variations. Unticked
+              account types will not see it anywhere on the site.
+            </p>
+            <Check
+              label="Customers"
+              checked={f.visible_customer}
+              onChange={(value) => upd("visible_customer", value)}
+            />
+            <Check
+              label="Retailers"
+              checked={f.visible_retailer}
+              onChange={(value) => upd("visible_retailer", value)}
+            />
+            <Check
+              label="Distributors"
+              checked={f.visible_distributor}
+              onChange={(value) => upd("visible_distributor", value)}
+            />
           </Section>
 
           <Section title="Status">

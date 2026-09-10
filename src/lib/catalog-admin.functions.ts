@@ -59,6 +59,9 @@ const ProductFamilyInput = z.object({
   estimated_shipping_days: z.number().int().min(0).max(365).nullable(),
   refundable: z.boolean(),
   refund_note: z.string().max(1000).default(""),
+  visible_customer: z.boolean().default(true),
+  visible_retailer: z.boolean().default(true),
+  visible_distributor: z.boolean().default(true),
 });
 
 const VariantInput = z.object({
@@ -506,6 +509,17 @@ export const adminSaveProductFamily = createServerFn({ method: "POST" })
       compatibilityMode = !fallback.error;
     }
     if (error) throw new Error(error.message);
+    // Role-based product visibility: applies to the family and its legacy row,
+    // so every variant of a hidden product disappears for that buyer type.
+    if (result?.family_id) {
+      await (supabaseAdmin as any).rpc("admin_set_family_visibility", {
+        _family_id: result.family_id,
+        _product_id: result.product_id ?? null,
+        _c: data.visible_customer,
+        _r: data.visible_retailer,
+        _d: data.visible_distributor,
+      });
+    }
     await writeAudit({
       actorUserId: actor.userId,
       actorEmail: actor.email,
