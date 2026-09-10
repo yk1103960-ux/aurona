@@ -412,6 +412,9 @@ export type ProductVariant = {
   sort_order: number;
   product_id?: string | null;
   product_slug?: string | null;
+  available_customer?: boolean;
+  available_retailer?: boolean;
+  available_distributor?: boolean;
 };
 export type ProductFamily = {
   id: string;
@@ -446,11 +449,21 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
-const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at";
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at, available_customer, available_retailer, available_distributor";
 
-export const familyQuery = (slug: string) =>
+/** Which shopper segment a variation list is being built for. */
+export type VariantSegment = "customer" | "retailer" | "distributor";
+
+const segmentAllows = (v: ProductVariant, segment: VariantSegment) =>
+  segment === "retailer"
+    ? v.available_retailer !== false
+    : segment === "distributor"
+      ? v.available_distributor !== false
+      : v.available_customer !== false;
+
+export const familyQuery = (slug: string, segment: VariantSegment = "customer") =>
   queryOptions({
-    queryKey: ["family", slug],
+    queryKey: ["family", slug, segment],
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     queryFn: async (): Promise<ProductFamily | null> => {
@@ -465,7 +478,9 @@ export const familyQuery = (slug: string) =>
       if (error) throw error;
       if (!data) return null;
       const f = data as unknown as ProductFamily;
-      f.variants = [...(f.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+      f.variants = [...(f.variants ?? [])]
+        .filter((v) => segmentAllows(v, segment))
+        .sort((a, b) => a.sort_order - b.sort_order);
       f.axes = actualAxes([...(f.axes ?? [])].sort((a, b) => a.sort_order - b.sort_order), f.variants);
       const [famImg, variantImgs] = await Promise.all([
         primaryImages("family_id", [f.id]),
