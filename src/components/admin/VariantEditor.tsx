@@ -366,6 +366,9 @@ export function VariantEditor({
           is_active: false,
           sort_order: sourceRows.length + index,
           low_stock_threshold: 10,
+          available_customer: template?.available_customer ?? true,
+          available_retailer: template?.available_retailer ?? true,
+          available_distributor: template?.available_distributor ?? true,
         } satisfies Variant;
       });
       dirty.current = true;
@@ -1002,6 +1005,7 @@ function QuickVariantsTab({
                 <Th>Distributor</Th>
                 <Th>Stock</Th>
                 <Th>Pack</Th>
+                <Th>Visible to</Th>
                 <Th>Live</Th>
                 <Th>Actions</Th>
               </tr>
@@ -1043,6 +1047,10 @@ function QuickVariantsTab({
                       </div>
                     </Td>
                   ))}
+
+                  <Td>
+                    <SegmentToggles row={row} updateRow={updateRow} />
+                  </Td>
 
                   <Td>
                     <Switch
@@ -2879,6 +2887,47 @@ function EmptyVariants() {
   return (
     <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
       No variants yet. Click <strong>Add Variant</strong> first.
+    </div>
+  );
+}
+
+const SEGMENT_FIELDS = [
+  { key: "available_customer", label: "C", title: "Visible to Customers" },
+  { key: "available_retailer", label: "R", title: "Visible to Retailers" },
+  { key: "available_distributor", label: "D", title: "Visible to Distributors" },
+] as const;
+
+/** Simple per-variation availability switches for each buyer type. */
+function SegmentToggles({
+  row,
+  updateRow,
+}: {
+  row: Variant;
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {SEGMENT_FIELDS.map((segment) => {
+        const on = row[segment.key] !== false;
+        return (
+          <button
+            key={segment.key}
+            type="button"
+            title={segment.title}
+            aria-label={segment.title}
+            aria-pressed={on}
+            onClick={() => updateRow(row.id, { [segment.key]: !on } as Partial<Variant>)}
+            className={
+              "h-7 w-7 rounded-full border text-xs font-semibold transition " +
+              (on
+                ? "border-sky-300 bg-sky-100 text-sky-800"
+                : "border-slate-200 bg-white text-slate-400 line-through")
+            }
+          >
+            {segment.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
