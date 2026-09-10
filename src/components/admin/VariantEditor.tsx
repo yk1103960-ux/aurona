@@ -13,8 +13,6 @@ import {
   Plus,
   Trash2,
   Users,
-  Store,
-  Warehouse,
   Truck,
   SlidersHorizontal,
   Pencil,
@@ -44,7 +42,7 @@ import {
 } from "@/lib/variant-workflow";
 import { persistVariationPhotos, validateVariationPhoto, type VariationPhotoDraft } from "@/lib/variant-photo-drafts";
 
-type Tab = "quick" | "options" | "customer" | "retailer" | "distributor" | "shipping";
+type Tab = "quick" | "options" | "customer" | "shipping";
 
 const toNumber = (value: string): number | null => (value === "" ? null : Number(value));
 
@@ -625,7 +623,7 @@ export function VariantEditor({
             <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">Product Variations</div>
 
             <div className="mt-1 text-xs text-slate-500">
-              Manage options, customer pricing, partner pricing and shipping information for every SKU.
+              Manage options, customer pricing, stock, pack size and weight & dimensions for every SKU.
             </div>
           </div>
 
@@ -670,26 +668,6 @@ export function VariantEditor({
           >
             Product Price & Stock
           </TabButton>
-
-          {showAllTabs && (
-            <TabButton
-              active={tab === "retailer"}
-              onClick={() => setTab("retailer")}
-              icon={<Store className="h-4 w-4" />}
-            >
-              Retailer Price & Stock
-            </TabButton>
-          )}
-
-          {showAllTabs && (
-            <TabButton
-              active={tab === "distributor"}
-              onClick={() => setTab("distributor")}
-              icon={<Warehouse className="h-4 w-4" />}
-            >
-              Distributor Price & Stock
-            </TabButton>
-          )}
 
           <TabButton
             active={tab === "shipping"}
@@ -753,10 +731,6 @@ export function VariantEditor({
 
         {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
 
-        {tab === "retailer" && <RetailerTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
-
-        {tab === "distributor" && <DistributorTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
-
         {tab === "shipping" && <ShippingTab rows={rows} updateRow={updateRow} />}
       </div>
 
@@ -799,13 +773,11 @@ export function VariantEditor({
   );
 }
 
-type QuickField = "mrp" | "price" | "retailer_price" | "distributor_price" | "stock" | "pack_size";
+type QuickField = "mrp" | "price" | "stock" | "pack_size";
 
 const QUICK_FIELDS: { key: QuickField; label: string }[] = [
   { key: "mrp", label: "MRP" },
   { key: "price", label: "Customer price" },
-  { key: "retailer_price", label: "Retailer price" },
-  { key: "distributor_price", label: "Distributor price" },
   { key: "stock", label: "Stock" },
   { key: "pack_size", label: "Pack size" },
 ];
@@ -901,8 +873,7 @@ function QuickVariantsTab({
       <div>
         <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
         <p className="text-xs text-slate-500">
-          Enter SKU, prices and stock right here. “Edit” opens weight, dimensions, barcode, MOQ and other advanced
-          details.
+          Enter SKU, MRP, customer price, stock and pack size here. “Edit” opens the remaining variation details.
         </p>
       </div>
 
@@ -935,14 +906,12 @@ function QuickVariantsTab({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-[1050px] w-full border-collapse text-sm">
+            <table className="min-w-[760px] w-full border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
                   <Th>{primaryAxis.label}</Th>
                   <Th>MRP</Th>
                   <Th>Customer</Th>
-                  <Th>Retailer</Th>
-                  <Th>Distributor</Th>
                   <Th>Stock</Th>
                   <Th>Pack</Th>
                   <Th>Apply</Th>
@@ -992,15 +961,13 @@ function QuickVariantsTab({
         <EmptyVariants />
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-collapse text-sm">
+          <table className="min-w-[900px] w-full border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
                 <Th>SKU</Th>
                 <Th>MRP</Th>
                 <Th>Customer</Th>
-                <Th>Retailer</Th>
-                <Th>Distributor</Th>
                 <Th>Stock</Th>
                 <Th>Pack</Th>
                 <Th>Live</Th>
@@ -1157,8 +1124,6 @@ function VariantBulkEditor({
   const fields = {
     price: "Customer price",
     mrp: "MRP",
-    retailer_price: "Retailer price",
-    distributor_price: "Distributor price",
     weight_g: "Weight (g)",
     dim_l: "Length (cm)",
     dim_w: "Width (cm)",
@@ -1393,16 +1358,12 @@ function VariantFullCard({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {field("mrp", "MRP ₹")}
             {field("price", "Customer Price ₹")}
-            {field("retailer_price", "Retailer Price ₹", "Fallback")}
-            {field("distributor_price", "Distributor Price ₹", "Fallback")}
           </div>
         </VariantSection>
 
         <VariantSection title="Order quantities and inventory">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             {field("moq", "Customer MOQ")}
-            {field("retailer_moq", "Retailer MOQ")}
-            {field("distributor_moq", "Distributor MOQ")}
             {field("pack_size", "Pieces / Pack")}
             {field("stock", "Stock")}
             {field("low_stock_threshold", "Low-stock Alert")}
@@ -1781,11 +1742,7 @@ function VariantEditDialog({
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {numberField("mrp", "MRP ₹")}
                 {numberField("price", "Customer price ₹")}
-                {numberField("retailer_price", "Retailer price ₹")}
-                {numberField("distributor_price", "Distributor price ₹")}
                 {numberField("moq", "Customer MOQ", 1)}
-                {numberField("retailer_moq", "Retailer MOQ", 1)}
-                {numberField("distributor_moq", "Distributor MOQ", 1)}
                 {numberField("pack_size", "Pieces per pack", 1)}
               </div>
             </section>
@@ -1823,11 +1780,6 @@ function VariantEditDialog({
                   ["Variation", variantName(row)],
                   ["SKU", row.sku],
                   ["Customer price", row.price === null ? "Not set" : money(row.price)],
-                  ["Retailer price", row.retailer_price === null ? "Existing fallback" : money(row.retailer_price)],
-                  [
-                    "Distributor price",
-                    row.distributor_price === null ? "Existing fallback" : money(row.distributor_price),
-                  ],
                   ["Stock", String(row.stock ?? 0)],
                   ["Selected images", String(photos.length)],
                   [
@@ -2163,221 +2115,6 @@ function CustomerTab({
       ) : (
         <EmptyVariants />
       )}
-    </div>
-  );
-}
-
-function RetailerTab({
-  rows,
-  updateRow,
-  optionsEditor,
-}: {
-  rows: Variant[];
-  updateRow: (id: string, patch: Partial<Variant>) => void;
-  optionsEditor: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-5">
-      <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
-        <div>
-          <h2 className="text-base font-semibold text-slate-950">Retailer Product price & stock</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Choose the retailer attributes of this product and then input values of each attribute.
-          </p>
-        </div>
-        {optionsEditor}
-        {rows.length > 0 && (
-          <>
-            <LowestStartingPrice rows={rows} field="retailer_price" label="Retailer Variant lowest starting price" />
-            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
-              <div className="text-sm text-slate-700">Retailer External link</div>
-              <Input disabled placeholder="Not stored in current Aurona product schema" />
-            </div>
-            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
-              <div className="text-sm text-slate-700">Retailer External link button text</div>
-              <Input disabled placeholder="Not stored in current Aurona product schema" />
-            </div>
-            <LowStockEditor
-              rows={rows}
-              updateRow={updateRow}
-              title="Retailer Low Stock Quantity Warning"
-              quantityLabel="Retailer Quantity"
-            />
-            <StockVisibilityReference prefix="Retailer " />
-          </>
-        )}
-      </section>
-
-      {rows.length ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="min-w-[900px] w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                <Th>Variant</Th>
-                <Th>Customer MRP</Th>
-                <Th>Retailer Price</Th>
-                <Th>Saving ₹</Th>
-                <Th>Saving %</Th>
-                <Th>Retailer MOQ</Th>
-                <Th>PCs / Pack</Th>
-                <Th>Pack Total</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const amount = discountAmount(row.mrp, row.retailer_price);
-                const percent = discountPercent(row.mrp, row.retailer_price);
-                const packTotal = Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
-                return (
-                  <tr key={row.id} className="border-t border-slate-200">
-                    <Td>
-                      <VariantIdentity row={row} />
-                    </Td>
-                    <Td>
-                      <Calculated>{money(Number(row.mrp ?? 0))}</Calculated>
-                    </Td>
-                    <Td>
-                      <NumberInput
-                        value={row.retailer_price}
-                        placeholder="Fallback"
-                        onChange={(value) => updateRow(row.id, { retailer_price: value })}
-                      />
-                    </Td>
-                    <Td>
-                      <Calculated>{money(amount)}</Calculated>
-                    </Td>
-                    <Td>
-                      <Calculated>{percent.toFixed(2)}%</Calculated>
-                    </Td>
-                    <Td>
-                      <NumberInput
-                        value={row.retailer_moq}
-                        onChange={(value) => updateRow(row.id, { retailer_moq: value })}
-                      />
-                    </Td>
-                    <Td>
-                      <Calculated>{row.pack_size ?? "—"}</Calculated>
-                    </Td>
-                    <Td>
-                      <Calculated>{money(packTotal)}</Calculated>
-                    </Td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <EmptyVariants />
-      )}
-      <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        Retailer price and MOQ are persisted per SKU. Aurona currently uses shared product stock/MRP because separate
-        retailer stock/MRP columns do not exist yet.
-      </div>
-    </div>
-  );
-}
-
-function DistributorTab({
-  rows,
-  updateRow,
-  optionsEditor,
-}: {
-  rows: Variant[];
-  updateRow: (id: string, patch: Partial<Variant>) => void;
-  optionsEditor: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-5">
-      <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
-        <div>
-          <h2 className="text-base font-semibold text-slate-950">Distributor Product price & stock</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Choose the distributor attributes of this product and then input values of each attribute.
-          </p>
-        </div>
-        {optionsEditor}
-        {rows.length > 0 && (
-          <>
-            <LowestStartingPrice rows={rows} field="distributor_price" label="Distributor lowest starting price" />
-            <LowStockEditor
-              rows={rows}
-              updateRow={updateRow}
-              title="Distributor Low Stock Quantity Warning"
-              quantityLabel="Distributor Quantity"
-            />
-            <StockVisibilityReference prefix="Distributor " />
-          </>
-        )}
-      </section>
-
-      {rows.length ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="min-w-[900px] w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                <Th>Variant</Th>
-                <Th>Customer MRP</Th>
-                <Th>Distributor Price</Th>
-                <Th>Saving ₹</Th>
-                <Th>Saving %</Th>
-                <Th>Distributor MOQ</Th>
-                <Th>PCs / Pack</Th>
-                <Th>Pack Total</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const amount = discountAmount(row.mrp, row.distributor_price);
-                const percent = discountPercent(row.mrp, row.distributor_price);
-                const packTotal =
-                  Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
-                return (
-                  <tr key={row.id} className="border-t border-slate-200">
-                    <Td>
-                      <VariantIdentity row={row} />
-                    </Td>
-                    <Td>
-                      <Calculated>{money(Number(row.mrp ?? 0))}</Calculated>
-                    </Td>
-                    <Td>
-                      <NumberInput
-                        value={row.distributor_price}
-                        placeholder="Fallback"
-                        onChange={(value) => updateRow(row.id, { distributor_price: value })}
-                      />
-                    </Td>
-                    <Td>
-                      <Calculated>{money(amount)}</Calculated>
-                    </Td>
-                    <Td>
-                      <Calculated>{percent.toFixed(2)}%</Calculated>
-                    </Td>
-                    <Td>
-                      <NumberInput
-                        value={row.distributor_moq}
-                        onChange={(value) => updateRow(row.id, { distributor_moq: value })}
-                      />
-                    </Td>
-                    <Td>
-                      <Calculated>{row.pack_size ?? "—"}</Calculated>
-                    </Td>
-                    <Td>
-                      <Calculated>{money(packTotal)}</Calculated>
-                    </Td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <EmptyVariants />
-      )}
-      <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        Distributor price and MOQ are persisted per SKU. Aurona currently uses shared product stock/MRP because separate
-        distributor stock/MRP columns do not exist yet.
-      </div>
     </div>
   );
 }
