@@ -307,6 +307,7 @@ function QuickAddDialog({
   categoryIcon?: string | null;
 }) {
   const cart = useCart();
+  const quickViewSegment = useVariantSegment();
 
   // Resolve the exact same product family used by the real PDP.
   // Normally ProductCard already has family_slug. If it doesn't, resolve
