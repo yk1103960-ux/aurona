@@ -2038,7 +2038,6 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
 }
 
 function CustomerTab({
-  function CustomerTab({
   rows,
   updateRow,
   optionsEditor,
