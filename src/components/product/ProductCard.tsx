@@ -15,7 +15,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCompare } from "@/hooks/useCompare";
 import { useAuth } from "@/hooks/useAuth";
-import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { useMyRole, useVariantSegment, useVisiblePrices } from "@/lib/pricing";
 import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
@@ -307,6 +307,7 @@ function QuickAddDialog({
   categoryIcon?: string | null;
 }) {
   const cart = useCart();
+  const quickViewSegment = useVariantSegment();
 
   // Resolve the exact same product family used by the real PDP.
   // Normally ProductCard already has family_slug. If it doesn't, resolve
@@ -393,7 +394,7 @@ function QuickAddDialog({
 
   const familySlug = product.family_slug ?? resolvedFamilySlug ?? product.slug;
   const familyResult = useQuery({
-    ...familyQuery(familySlug),
+    ...familyQuery(familySlug, quickViewSegment),
     enabled: open && Boolean(familySlug),
   });
 

@@ -26,6 +26,10 @@ export type Variant = {
   is_active: boolean;
   sort_order: number;
   low_stock_threshold: number;
+  /** Which shopper segments may see and buy this variation. */
+  available_customer?: boolean;
+  available_retailer?: boolean;
+  available_distributor?: boolean;
 };
 
 export type Axis = {
@@ -85,6 +89,9 @@ export function newVariation(
     pack_h: source?.pack_h ?? null,
     sort_order: rows.reduce((max, row) => Math.max(max, row.sort_order), -1) + 1,
     low_stock_threshold: source?.low_stock_threshold ?? 10,
+    available_customer: source?.available_customer ?? true,
+    available_retailer: source?.available_retailer ?? true,
+    available_distributor: source?.available_distributor ?? true,
   };
 }
 

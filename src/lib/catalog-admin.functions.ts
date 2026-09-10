@@ -88,6 +88,9 @@ const VariantInput = z.object({
   sort_order: z.number().int().min(0),
   low_stock_threshold: z.number().int().min(0).default(10),
   barcode: z.string().trim().max(120).default(""),
+  available_customer: z.boolean().default(true),
+  available_retailer: z.boolean().default(true),
+  available_distributor: z.boolean().default(true),
 });
 
 const AxisInput = z.object({
@@ -681,6 +684,16 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
         "Variant save requires the unapplied 20260908130000_variant_save_safety.sql migration. No variant changes were saved. Authorize database setup before retrying.",
       );
     if (error) throw new Error(error.message);
+    const segments = await (supabaseAdmin as any).rpc("admin_set_variant_segments", {
+      _family_id: data.familyId,
+      _segments: reconciledVariants.map((variant) => ({
+        sku: variant.sku.trim(),
+        available_customer: variant.available_customer,
+        available_retailer: variant.available_retailer,
+        available_distributor: variant.available_distributor,
+      })),
+    });
+    if (segments.error) throw new Error(segments.error.message);
     return { ok: true, compatibility_mode: false };
   });
 

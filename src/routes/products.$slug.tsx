@@ -17,7 +17,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCompare } from "@/hooks/useCompare";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
-import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { useMyRole, useVariantSegment, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
 import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar";
@@ -76,7 +76,8 @@ export const Route = createFileRoute("/products/$slug")({
 function PDPRoute() {
   const { slug } = Route.useParams();
   const { v } = Route.useSearch();
-  const fam = useSuspenseQuery(familyQuery(slug)).data;
+  const segment = useVariantSegment();
+  const fam = useSuspenseQuery(familyQuery(slug, segment)).data;
   if (fam && !fam.variants.length) return <div className="container-x py-16"><h1 className="text-2xl font-semibold">{fam.name}</h1><p className="mt-4">No variants are currently available for this product.</p><Button asChild className="mt-6"><Link to="/products">Browse products</Link></Button></div>;
   if (fam) return <FamilyPDP key={fam.id} family={fam} initialSku={v} />;
   return <LegacyPDP slug={slug} />;
