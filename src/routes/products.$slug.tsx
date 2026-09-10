@@ -17,7 +17,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCompare } from "@/hooks/useCompare";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
-import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { useMyRole, useVariantSegment, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
 import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar";

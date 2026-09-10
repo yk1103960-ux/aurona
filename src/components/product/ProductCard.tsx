@@ -15,7 +15,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCompare } from "@/hooks/useCompare";
 import { useAuth } from "@/hooks/useAuth";
-import { useMyRole, useVisiblePrices } from "@/lib/pricing";
+import { useMyRole, useVariantSegment, useVisiblePrices } from "@/lib/pricing";
 import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
