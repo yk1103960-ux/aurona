@@ -64,6 +64,18 @@ export function useRolePricingRealtime() {
   }, [qc]);
 }
 
+/**
+ * Which variation set a shopper should see. Only approved partners get their
+ * partner-only variations; everyone else sees the customer set.
+ */
+export function useVariantSegment(): "customer" | "retailer" | "distributor" {
+  const role = useMyRole();
+  if (!role.isApproved) return "customer";
+  if (role.role === "distributor") return "distributor";
+  if (role.role === "retailer") return "retailer";
+  return "customer";
+}
+
 export type VisiblePrice = { sku: string; mrp: number | null; price: number | null; role: PricingRole };
 
 export const visiblePricesQuery = (skus: string[]) =>
