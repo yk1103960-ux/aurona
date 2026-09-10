@@ -2260,6 +2260,9 @@ export type Database = {
           updated_at: string
           video_provider: string | null
           video_url: string | null
+          visible_customer: boolean
+          visible_distributor: boolean
+          visible_retailer: boolean
           warranty: string | null
           wattage: string | null
           weight_g: number | null
@@ -2317,6 +2320,9 @@ export type Database = {
           updated_at?: string
           video_provider?: string | null
           video_url?: string | null
+          visible_customer?: boolean
+          visible_distributor?: boolean
+          visible_retailer?: boolean
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -2374,6 +2380,9 @@ export type Database = {
           updated_at?: string
           video_provider?: string | null
           video_url?: string | null
+          visible_customer?: boolean
+          visible_distributor?: boolean
+          visible_retailer?: boolean
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -2762,6 +2771,9 @@ export type Database = {
           variations: Json | null
           video_provider: string | null
           video_url: string | null
+          visible_customer: boolean
+          visible_distributor: boolean
+          visible_retailer: boolean
           warranty: string | null
           wattage: string | null
           weight_g: number | null
@@ -2819,6 +2831,9 @@ export type Database = {
           variations?: Json | null
           video_provider?: string | null
           video_url?: string | null
+          visible_customer?: boolean
+          visible_distributor?: boolean
+          visible_retailer?: boolean
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -2876,6 +2891,9 @@ export type Database = {
           variations?: Json | null
           video_provider?: string | null
           video_url?: string | null
+          visible_customer?: boolean
+          visible_distributor?: boolean
+          visible_retailer?: boolean
           warranty?: string | null
           wattage?: string | null
           weight_g?: number | null
@@ -3824,6 +3842,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_family_visibility: {
+        Args: {
+          _c: boolean
+          _d: boolean
+          _family_id: string
+          _product_id: string
+          _r: boolean
+        }
+        Returns: undefined
+      }
       admin_set_primary_product_image: {
         Args: { _image_id: string }
         Returns: undefined
@@ -3941,6 +3969,10 @@ export type Database = {
       refresh_product_review_summary: {
         Args: { _family_id: string }
         Returns: undefined
+      }
+      role_can_view: {
+        Args: { _c: boolean; _d: boolean; _r: boolean }
+        Returns: boolean
       }
       validate_coupon: {
         Args: { _code: string; _subtotal: number }
