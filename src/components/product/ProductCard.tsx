@@ -393,7 +393,7 @@ function QuickAddDialog({
 
   const familySlug = product.family_slug ?? resolvedFamilySlug ?? product.slug;
   const familyResult = useQuery({
-    ...familyQuery(familySlug),
+    ...familyQuery(familySlug, quickViewSegment),
     enabled: open && Boolean(familySlug),
   });
 
