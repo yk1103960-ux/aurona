@@ -2999,8 +2999,12 @@ function FieldTitle({ children }: { children: React.ReactNode }) {
   return <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>;
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="whitespace-nowrap px-3 py-3 font-semibold">{children}</th>;
+function Th({ children, className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <th className={`whitespace-nowrap px-3 py-3 font-semibold ${className ?? ""}`} {...props}>
+      {children}
+    </th>
+  );
 }
 
 function Td({ children }: { children: React.ReactNode }) {
