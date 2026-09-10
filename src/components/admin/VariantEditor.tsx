@@ -2046,10 +2046,7 @@ function CustomerTab({
   updateRow: (id: string, patch: Partial<Variant>) => void;
   optionsEditor: React.ReactNode;
 }) {
-  const copyNumericDown = (
-    field: "mrp" | "price" | "discount_pct" | "pack_size",
-    index: number,
-  ) => {
+  const copyNumericDown = (field: "mrp" | "price" | "discount_pct" | "pack_size", index: number) => {
     const value = rows[index]?.[field];
 
     for (const row of rows.slice(index + 1)) {
@@ -2062,8 +2059,7 @@ function CustomerTab({
   };
 
   const copyAffiliateDown = (index: number) => {
-    const value =
-      rows[index]?.attributes?.__affiliate_commission ?? "";
+    const value = rows[index]?.attributes?.__affiliate_commission ?? "";
 
     for (const row of rows.slice(index + 1)) {
       updateRow(row.id, {
@@ -2074,9 +2070,7 @@ function CustomerTab({
       });
     }
 
-    toast.success(
-      "Affiliate commission copied to all variations below.",
-    );
+    toast.success("Affiliate commission copied to all variations below.");
   };
 
   const changeMrp = (row: Variant, raw: string) => {
@@ -2099,12 +2093,7 @@ function CustomerTab({
     };
 
     if (discount > 0) {
-      patch.price = Number(
-        (
-          mrp -
-          (mrp * Math.min(100, Math.max(0, discount))) / 100
-        ).toFixed(2),
-      );
+      patch.price = Number((mrp - (mrp * Math.min(100, Math.max(0, discount))) / 100).toFixed(2));
     }
 
     updateRow(row.id, patch);
@@ -2131,9 +2120,7 @@ function CustomerTab({
     };
 
     if (mrp > 0) {
-      patch.price = Number(
-        (mrp - (mrp * discount) / 100).toFixed(2),
-      );
+      patch.price = Number((mrp - (mrp * discount) / 100).toFixed(2));
     }
 
     updateRow(row.id, patch);
@@ -2159,12 +2146,9 @@ function CustomerTab({
     };
 
     if (mrp > 0) {
-      const discount =
-        ((mrp - price) / mrp) * 100;
+      const discount = ((mrp - price) / mrp) * 100;
 
-      patch.discount_pct = Number(
-        Math.min(100, Math.max(0, discount)).toFixed(2),
-      );
+      patch.discount_pct = Number(Math.min(100, Math.max(0, discount)).toFixed(2));
     }
 
     updateRow(row.id, patch);
@@ -2188,10 +2172,7 @@ function CustomerTab({
     });
   };
 
-  const changeAffiliate = (
-    row: Variant,
-    raw: string,
-  ) => {
+  const changeAffiliate = (row: Variant, raw: string) => {
     updateRow(row.id, {
       attributes: {
         ...row.attributes,
@@ -2200,15 +2181,7 @@ function CustomerTab({
     });
   };
 
-  const CopyDownButton = ({
-    title,
-    onClick,
-    visible,
-  }: {
-    title: string;
-    onClick: () => void;
-    visible: boolean;
-  }) => {
+  const CopyDownButton = ({ title, onClick, visible }: { title: string; onClick: () => void; visible: boolean }) => {
     if (!visible) return null;
 
     return (
@@ -2240,14 +2213,11 @@ function CustomerTab({
       <div className="space-y-5">
         <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-950">
-              Product Price & Stock
-            </h2>
+            <h2 className="text-base font-semibold text-slate-950">Product Price & Stock</h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              Create product variations first. Generated
-              variations will automatically appear in the
-              customer pricing table.
+              Create product variations first. Generated variations will automatically appear in the customer pricing
+              table.
             </p>
           </div>
 
@@ -2267,13 +2237,10 @@ function CustomerTab({
 
       <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">
-            Product Price & Stock
-          </h2>
+          <h2 className="text-base font-semibold text-slate-950">Product Price & Stock</h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Choose the required product attributes and generate
-            variations. Customer pricing can then be entered
+            Choose the required product attributes and generate variations. Customer pricing can then be entered
             separately for every generated SKU.
           </p>
         </div>
@@ -2289,13 +2256,10 @@ function CustomerTab({
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-slate-950">
-                Customer Product Variations
-              </h3>
+              <h3 className="text-sm font-semibold text-slate-950">Customer Product Variations</h3>
 
               <p className="mt-1 text-xs text-slate-500">
-                Enter MRP, discount, customer price, pack size
-                and affiliate commission for each SKU.
+                Enter MRP, discount, customer price, pack size and affiliate commission for each SKU.
               </p>
             </div>
 
@@ -2335,8 +2299,7 @@ function CustomerTab({
 
             <tbody>
               {rows.map((row, index) => {
-                const hasRowsBelow =
-                  index < rows.length - 1;
+                const hasRowsBelow = index < rows.length - 1;
 
                 return (
                   <tr
@@ -2382,24 +2345,14 @@ function CustomerTab({
                           inputMode="decimal"
                           value={row.mrp ?? ""}
                           placeholder="MRP"
-                          onChange={(event) =>
-                            changeMrp(
-                              row,
-                              event.target.value,
-                            )
-                          }
+                          onChange={(event) => changeMrp(row, event.target.value)}
                           className="h-9 min-w-[110px]"
                         />
 
                         <CopyDownButton
                           visible={hasRowsBelow}
                           title="Copy MRP to all rows below"
-                          onClick={() =>
-                            copyNumericDown(
-                              "mrp",
-                              index,
-                            )
-                          }
+                          onClick={() => copyNumericDown("mrp", index)}
                         />
                       </div>
                     </Td>
@@ -2417,16 +2370,9 @@ function CustomerTab({
                             max="100"
                             step="0.01"
                             inputMode="decimal"
-                            value={
-                              row.discount_pct ?? 0
-                            }
+                            value={row.discount_pct ?? 0}
                             placeholder="0.00"
-                            onChange={(event) =>
-                              changeDiscount(
-                                row,
-                                event.target.value,
-                              )
-                            }
+                            onChange={(event) => changeDiscount(row, event.target.value)}
                             className="h-9 pr-8"
                           />
 
@@ -2438,12 +2384,7 @@ function CustomerTab({
                         <CopyDownButton
                           visible={hasRowsBelow}
                           title="Copy discount to all rows below"
-                          onClick={() =>
-                            copyNumericDown(
-                              "discount_pct",
-                              index,
-                            )
-                          }
+                          onClick={() => copyNumericDown("discount_pct", index)}
                         />
                       </div>
                     </Td>
@@ -2461,24 +2402,14 @@ function CustomerTab({
                           inputMode="decimal"
                           value={row.price ?? ""}
                           placeholder="Price"
-                          onChange={(event) =>
-                            changePrice(
-                              row,
-                              event.target.value,
-                            )
-                          }
+                          onChange={(event) => changePrice(row, event.target.value)}
                           className="h-9 min-w-[110px]"
                         />
 
                         <CopyDownButton
                           visible={hasRowsBelow}
                           title="Copy price to all rows below"
-                          onClick={() =>
-                            copyNumericDown(
-                              "price",
-                              index,
-                            )
-                          }
+                          onClick={() => copyNumericDown("price", index)}
                         />
                       </div>
                     </Td>
@@ -2496,24 +2427,14 @@ function CustomerTab({
                           inputMode="numeric"
                           value={row.pack_size ?? ""}
                           placeholder="1"
-                          onChange={(event) =>
-                            changePack(
-                              row,
-                              event.target.value,
-                            )
-                          }
+                          onChange={(event) => changePack(row, event.target.value)}
                           className="h-9 min-w-[90px]"
                         />
 
                         <CopyDownButton
                           visible={hasRowsBelow}
                           title="Copy Pack Of to all rows below"
-                          onClick={() =>
-                            copyNumericDown(
-                              "pack_size",
-                              index,
-                            )
-                          }
+                          onClick={() => copyNumericDown("pack_size", index)}
                         />
                       </div>
                     </Td>
@@ -2529,27 +2450,16 @@ function CustomerTab({
                           min="0"
                           step="0.01"
                           inputMode="decimal"
-                          value={
-                            row.attributes
-                              ?.__affiliate_commission ??
-                            ""
-                          }
+                          value={row.attributes?.__affiliate_commission ?? ""}
                           placeholder="Commission"
-                          onChange={(event) =>
-                            changeAffiliate(
-                              row,
-                              event.target.value,
-                            )
-                          }
+                          onChange={(event) => changeAffiliate(row, event.target.value)}
                           className="h-9 min-w-[155px]"
                         />
 
                         <CopyDownButton
                           visible={hasRowsBelow}
                           title="Copy affiliate commission to all rows below"
-                          onClick={() =>
-                            copyAffiliateDown(index)
-                          }
+                          onClick={() => copyAffiliateDown(index)}
                         />
                       </div>
                     </Td>
@@ -2566,15 +2476,9 @@ function CustomerTab({
 
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-            <span>
-              Discount supports decimal values such as
-              11.11%.
-            </span>
+            <span>Discount supports decimal values such as 11.11%.</span>
 
-            <span>
-              Use the copy icon to apply a value to all
-              variations below.
-            </span>
+            <span>Use the copy icon to apply a value to all variations below.</span>
           </div>
         </div>
       </section>
@@ -2586,36 +2490,22 @@ function CustomerTab({
       <section className="rounded-xl border border-slate-200 bg-white px-4 py-3">
         <div className="grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
           <div>
-            <div className="font-semibold text-slate-900">
-              MRP
-            </div>
+            <div className="font-semibold text-slate-900">MRP</div>
 
-            <div className="mt-1">
-              Enter the maximum retail price for the
-              variation.
-            </div>
+            <div className="mt-1">Enter the maximum retail price for the variation.</div>
           </div>
 
           <div>
-            <div className="font-semibold text-slate-900">
-              Discount %
-            </div>
+            <div className="font-semibold text-slate-900">Discount %</div>
 
-            <div className="mt-1">
-              Decimal discounts are supported. Example:
-              11.11%.
-            </div>
+            <div className="mt-1">Decimal discounts are supported. Example: 11.11%.</div>
           </div>
 
           <div>
-            <div className="font-semibold text-slate-900">
-              Price
-            </div>
+            <div className="font-semibold text-slate-900">Price</div>
 
             <div className="mt-1">
-              Price automatically follows MRP + Discount.
-              Manual price changes recalculate the
-              discount.
+              Price automatically follows MRP + Discount. Manual price changes recalculate the discount.
             </div>
           </div>
         </div>
