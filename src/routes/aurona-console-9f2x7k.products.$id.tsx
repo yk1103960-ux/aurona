@@ -760,18 +760,9 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                         onChange={(e) => upd("model", e.target.value)}
                       />
                     </Field>
-
-                    <Field label="Barcode">
-                      <Input
-                        value={f.image_seed}
-                        placeholder="Barcode / search seed"
-                        onChange={(e) => upd("image_seed", e.target.value)}
-                      />
-                      <div className="mt-1 text-xs text-amber-600">
-                        Current product schema does not expose a family-level barcode field. Variant barcodes are
-                        managed in variations.
-                      </div>
-                    </Field>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                      Barcode is managed per generated SKU/variation so each sellable variant can have its own barcode.
+                    </div>
                   </div>
                 </Section>
 
@@ -971,132 +962,101 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           {/* SEO */}
 
           {tab === "seo" && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Section title="Search Engine Information">
-                <Field label="URL Slug">
-                  <Input
-                    value={f.slug}
-                    placeholder="Auto-generated from product name"
-                    onChange={(e) => upd("slug", e.target.value)}
-                  />
-                </Field>
-
-                <Field label="Search / Short Description">
-                  <Textarea
-                    rows={5}
-                    value={f.short_description}
-                    onChange={(e) => upd("short_description", e.target.value)}
-                  />
-                </Field>
+            <Section title="SEO Meta Tags">
+              <div className="space-y-4">
                 <Field label="Meta Title">
-                  <Input value={f.meta_title} maxLength={240} onChange={(e) => upd("meta_title", e.target.value)} />
+                  <Input
+                    value={f.meta_title}
+                    maxLength={240}
+                    placeholder="Meta Title"
+                    onChange={(e) => upd("meta_title", e.target.value)}
+                  />
                 </Field>
-                <Field label="Meta Description">
+                <Field label="Description">
                   <Textarea
-                    rows={4}
+                    rows={7}
                     value={f.meta_description}
                     maxLength={600}
                     onChange={(e) => upd("meta_description", e.target.value)}
                   />
                 </Field>
-                <Field label="Meta Image URL">
+                <Field label="Meta Image">
                   <Input
                     type="url"
                     value={f.meta_image_url}
-                    placeholder="https://…"
+                    placeholder="Meta image URL"
                     onChange={(e) => upd("meta_image_url", e.target.value)}
                   />
+                  <div className="mt-1 text-xs text-slate-500">
+                    Existing Aurona schema stores the meta image as a URL. Product image uploads remain under Files &
+                    Media.
+                  </div>
                 </Field>
-              </Section>
-
-              <Section title="Preview">
-                <div className="rounded-lg border p-4">
-                  <div className="truncate text-lg text-blue-700">{f.meta_title || f.name || "Product Name"}</div>
-
-                  <div className="mt-1 break-all text-sm text-emerald-700">
-                    aurona.co.in/products/
-                    {f.slug || slugify(f.name) || "product"}
-                  </div>
-
-                  <div className="mt-2 text-sm text-slate-600">
-                    {f.meta_description ||
-                      f.short_description ||
-                      "Add a meta description to improve the product preview."}
-                  </div>
-                </div>
-              </Section>
-            </div>
+              </div>
+            </Section>
           )}
 
           {/* SHIPPING */}
 
           {tab === "shipping" && (
             <div className="space-y-4">
-              <Section title="Product Default Shipping Dimensions">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Weight (g)">
-                    <NullableNumber value={f.weight_g} onChange={(value) => upd("weight_g", value)} />
-                  </Field>
-
-                  <Field label="Length (cm)">
-                    <NullableNumber value={f.dim_l} onChange={(value) => upd("dim_l", value)} />
-                  </Field>
-
-                  <Field label="Width (cm)">
-                    <NullableNumber value={f.dim_w} onChange={(value) => upd("dim_w", value)} />
-                  </Field>
-
-                  <Field label="Height (cm)">
-                    <NullableNumber value={f.dim_h} onChange={(value) => upd("dim_h", value)} />
-                  </Field>
+              <Section title="Shipping Configuration">
+                <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-900">
+                  Cash On Delivery availability is controlled by the existing checkout/payment configuration. This
+                  product page does not override the global COD setting.
                 </div>
 
-                <div className="text-xs text-slate-500">These are product-level default shipping dimensions.</div>
+                <div className="space-y-3">
+                  <Check
+                    label="Free Shipping"
+                    checked={f.shipping_type === "free"}
+                    onChange={(value) => upd("shipping_type", value ? "free" : "calculated")}
+                  />
+                  <Check
+                    label="Flat Rate"
+                    checked={f.shipping_type === "flat"}
+                    onChange={(value) => upd("shipping_type", value ? "flat" : "calculated")}
+                  />
+                  <Check
+                    label="Is Product Quantity Multiply"
+                    checked={f.shipping_cost_per_quantity}
+                    onChange={(value) => upd("shipping_cost_per_quantity", value)}
+                  />
+
+                  {f.shipping_type === "flat" && (
+                    <Field label="Flat Shipping Cost ₹">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={f.shipping_cost}
+                        onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))}
+                      />
+                    </Field>
+                  )}
+                </div>
               </Section>
 
-              <Section title="Shipping Charge & Promise">
-                <div className="grid gap-3 md:grid-cols-3">
-                  <Field label="Shipping Type">
-                    <select
-                      className="h-10 w-full rounded-md border bg-white px-3 text-sm"
-                      value={f.shipping_type}
-                      onChange={(e) => upd("shipping_type", e.target.value as ProductForm["shipping_type"])}
-                    >
-                      <option value="calculated">Calculated by shipping rules</option>
-                      <option value="free">Free shipping</option>
-                      <option value="flat">Flat charge</option>
-                    </select>
-                  </Field>
-                  <Field label="Flat Shipping Cost ₹">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      disabled={f.shipping_type !== "flat"}
-                      value={f.shipping_cost}
-                      onChange={(e) => upd("shipping_cost", Number(e.target.value || 0))}
-                    />
-                  </Field>
-                  <Field label="Estimated Delivery (days)">
+              <Section title="Estimate Shipping Time">
+                <Field label="Shipping Days">
+                  <div className="flex">
                     <NullableNumber
                       value={f.estimated_shipping_days}
                       onChange={(value) => upd("estimated_shipping_days", value)}
                     />
-                  </Field>
-                </div>
-                <Check
-                  label="Multiply flat shipping cost by order quantity"
-                  checked={f.shipping_cost_per_quantity}
-                  onChange={(value) => upd("shipping_cost_per_quantity", value)}
-                />
+                    <div className="flex items-center rounded-r-md border border-l-0 border-slate-200 bg-slate-50 px-3 text-sm text-slate-500">
+                      Days
+                    </div>
+                  </div>
+                </Field>
               </Section>
 
               {!isNew && f.sku ? (
-                <VariantEditor productSku={f.sku} productId={id} />
+                <VariantEditor productSku={f.sku} productId={id} initialTab="shipping" />
               ) : (
                 <Notice
-                  title="Variant shipping becomes available after save"
-                  text="Save this product first to configure single-unit and package dimensions for each SKU."
+                  title="Weight & Dimensions become available after save"
+                  text="Save this product first to configure single-unit and package dimensions for every generated SKU."
                 />
               )}
             </div>
@@ -1105,35 +1065,22 @@ export function ProductEditor({ productId: id }: { productId: string }) {
           {/* WARRANTY */}
 
           {tab === "warranty" && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Section title="Warranty">
-                <Field label="Warranty">
+            <Section title="Warranty">
+              <Check
+                label="Warranty"
+                checked={Boolean(f.warranty.trim())}
+                onChange={(enabled) => upd("warranty", enabled ? f.warranty.trim() || "1 Year" : "")}
+              />
+              {Boolean(f.warranty.trim()) && (
+                <Field label="Warranty Details">
                   <Input
                     value={f.warranty}
-                    placeholder="Example: 2 Years (T&C Apply)"
+                    placeholder="Example: 1 Year / 2 Years (T&C Apply)"
                     onChange={(e) => upd("warranty", e.target.value)}
                   />
                 </Field>
-
-                <Check
-                  label="Refundable product"
-                  checked={f.refundable}
-                  onChange={(value) => upd("refundable", value)}
-                />
-                <Field label="Refund / Return Note">
-                  <Textarea
-                    rows={4}
-                    value={f.refund_note}
-                    placeholder="Eligibility, exclusions and customer-facing instructions"
-                    onChange={(e) => upd("refund_note", e.target.value)}
-                  />
-                </Field>
-
-                <div className="text-xs text-slate-500">
-                  Warranty is mirrored to the corresponding product family when saved.
-                </div>
-              </Section>
-            </div>
+              )}
+            </Section>
           )}
 
           {/* FREQUENTLY BOUGHT */}
@@ -1249,7 +1196,7 @@ function RelatedProducts({ familyId }: { familyId: string }) {
     }
   };
   return (
-    <Section title="Frequently Bought Together">
+    <Section title="Frequently Bought">
       <div className="flex flex-wrap items-center gap-2">
         <Input
           className="max-w-md"
