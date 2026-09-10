@@ -751,11 +751,11 @@ export function VariantEditor({
           />
         </div>
 
-        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
+        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
 
-        {tab === "retailer" && <RetailerTab rows={rows} updateRow={updateRow} />}
+        {tab === "retailer" && <RetailerTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
 
-        {tab === "distributor" && <DistributorTab rows={rows} updateRow={updateRow} />}
+        {tab === "distributor" && <DistributorTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
 
         {tab === "shipping" && <ShippingTab rows={rows} updateRow={updateRow} />}
       </div>
@@ -1955,121 +1955,214 @@ function VariantSpecifications({
   );
 }
 
-function CustomerTab({
+function LowestStartingPrice({
+  rows,
+  field,
+  label,
+}: {
+  rows: Variant[];
+  field: "price" | "retailer_price" | "distributor_price";
+  label: string;
+}) {
+  const values = rows
+    .map((row) => row[field])
+    .filter((value): value is number => value !== null && Number.isFinite(value) && value >= 0);
+  const lowest = values.length ? Math.min(...values) : 0;
+
+  return (
+    <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
+      <div className="text-sm font-medium text-slate-700">{label} *</div>
+      <Input value={lowest} readOnly className="bg-slate-50" />
+    </div>
+  );
+}
+
+function LowStockEditor({
   rows,
   updateRow,
+  title,
+  quantityLabel,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  title: string;
+  quantityLabel: string;
 }) {
-  type PriceField = "mrp" | "price" | "retailer_price" | "distributor_price" | "stock" | "pack_size";
+  const first = rows[0]?.low_stock_threshold ?? 10;
+  const applyAll = (value: number) => {
+    for (const row of rows) updateRow(row.id, { low_stock_threshold: value });
+  };
 
+  return (
+    <section className="space-y-3 border-t border-slate-200 pt-5">
+      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
+        <div className="text-sm text-slate-700">{quantityLabel}</div>
+        <Input
+          type="number"
+          min="0"
+          step="1"
+          value={first}
+          onChange={(event) => applyAll(Math.max(0, Math.trunc(Number(event.target.value || 0))))}
+        />
+      </div>
+    </section>
+  );
+}
+
+function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
+  return (
+    <section className="space-y-3 border-t border-slate-200 pt-5">
+      <h3 className="text-sm font-semibold text-slate-900">{prefix}Stock Visibility State</h3>
+      <div className="space-y-2">
+        <label className="flex items-center gap-3 text-sm text-slate-700">
+          <input type="radio" checked readOnly />
+          Show {prefix.toLowerCase()}Stock Quantity
+        </label>
+        <label className="flex items-center gap-3 text-sm text-slate-400">
+          <input type="radio" disabled />
+          Show {prefix.toLowerCase()}Stock With Text Only
+        </label>
+        <label className="flex items-center gap-3 text-sm text-slate-400">
+          <input type="radio" disabled />
+          Hide {prefix.toLowerCase()}Stock
+        </label>
+      </div>
+      <p className="text-xs text-amber-700">
+        Aurona currently stores stock quantity per SKU but has no persisted stock-visibility mode field. “Show Stock
+        Quantity” remains the safe active behaviour until that database field is added.
+      </p>
+    </section>
+  );
+}
+
+function CustomerTab({
+  rows,
+  updateRow,
+  optionsEditor,
+}: {
+  rows: Variant[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+  optionsEditor: React.ReactNode;
+}) {
+  type PriceField = "mrp" | "price" | "stock" | "pack_size";
   const fields: { key: PriceField; label: string; integer?: boolean; min?: number }[] = [
     { key: "mrp", label: "MRP ₹", min: 0 },
     { key: "price", label: "Customer Price ₹", min: 0 },
-    { key: "retailer_price", label: "Retailer Price ₹", min: 0 },
-    { key: "distributor_price", label: "Distributor Price ₹", min: 0 },
     { key: "stock", label: "Stock", integer: true, min: 0 },
     { key: "pack_size", label: "Pack Size", integer: true, min: 1 },
   ];
 
   const copyDown = (field: PriceField, index: number) => {
     const value = rows[index]?.[field] as number | null;
-    for (const row of rows.slice(index + 1)) {
-      updateRow(row.id, { [field]: value } as Partial<Variant>);
-    }
+    for (const row of rows.slice(index + 1)) updateRow(row.id, { [field]: value } as Partial<Variant>);
     toast.success(`${fields.find((item) => item.key === field)?.label ?? "Value"} copied to rows below.`);
   };
 
-  if (!rows.length) return <EmptyVariants />;
-
   return (
-    <div className="space-y-4">
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
-          <h3 className="text-base font-semibold text-slate-950">Product Price & Stock</h3>
+    <div className="space-y-5">
+      <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">Product price + stock</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Every generated variation has its own MRP, customer price, retailer price, distributor price, stock and pack
-            size. Use the copy button to fill the same value into every row below; each row stays editable afterward.
+            Choose the attributes of this product and then input values of each attribute.
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-collapse text-sm">
-            <thead>
-              <tr className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <Th>Variation</Th>
-                <Th>SKU</Th>
-                {fields.map((field) => (
-                  <Th key={field.key}>{field.label}</Th>
-                ))}
-                <Th>Status</Th>
-              </tr>
-            </thead>
+        {optionsEditor}
 
-            <tbody>
-              {rows.map((row, index) => (
-                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
-                  <Td>
-                    <div className="min-w-[190px]">
-                      <VariantIdentity row={row} />
-                    </div>
-                  </Td>
+        {rows.length > 0 && (
+          <>
+            <LowestStartingPrice rows={rows} field="price" label="Variant lowest starting price" />
 
-                  <Td>
-                    <div className="max-w-[220px] break-all font-mono text-xs text-slate-700">{row.sku}</div>
-                  </Td>
+            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
+              <div className="text-sm text-slate-700">External link</div>
+              <Input disabled placeholder="Not stored in current Aurona product schema" />
+            </div>
+            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
+              <div className="text-sm text-slate-700">External link button text</div>
+              <Input disabled placeholder="Not stored in current Aurona product schema" />
+            </div>
 
+            <LowStockEditor
+              rows={rows}
+              updateRow={updateRow}
+              title="Low Stock Quantity Warning"
+              quantityLabel="Quantity"
+            />
+            <StockVisibilityReference />
+          </>
+        )}
+      </section>
+
+      {rows.length ? (
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+            <h3 className="text-sm font-semibold text-slate-900">Generated Customer Variations</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <Th>Variation</Th>
+                  <Th>SKU</Th>
                   {fields.map((field) => (
-                    <Td key={field.key}>
-                      <div className="flex min-w-[135px] items-center gap-1">
-                        <Input
-                          type="number"
-                          min={field.min ?? 0}
-                          step={field.integer ? "1" : "any"}
-                          value={(row[field.key] as number | null) ?? ""}
-                          onChange={(event) => {
-                            const raw = event.target.value;
-                            const value = raw === "" ? null : field.integer ? Math.trunc(Number(raw)) : Number(raw);
-                            updateRow(row.id, { [field.key]: value } as Partial<Variant>);
-                          }}
-                          className="h-9 min-w-[100px]"
-                        />
-                        {index < rows.length - 1 && (
-                          <button
-                            type="button"
-                            title={`Copy ${field.label} to all rows below`}
-                            aria-label={`Copy ${field.label} to all rows below`}
-                            onClick={() => copyDown(field.key, index)}
-                            className="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </Td>
+                    <Th key={field.key}>{field.label}</Th>
                   ))}
-
-                  <Td>
-                    <div className="flex min-w-[95px] items-center gap-2">
+                  <Th>Live</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr key={row.id} className="border-t border-slate-200 hover:bg-slate-50/70">
+                    <Td>
+                      <VariantIdentity row={row} />
+                    </Td>
+                    <Td>
+                      <div className="max-w-[220px] break-all font-mono text-xs">{row.sku}</div>
+                    </Td>
+                    {fields.map((field) => (
+                      <Td key={field.key}>
+                        <div className="flex min-w-[130px] items-center gap-1">
+                          <Input
+                            type="number"
+                            min={field.min ?? 0}
+                            step={field.integer ? "1" : "any"}
+                            value={(row[field.key] as number | null) ?? ""}
+                            onChange={(event) => {
+                              const raw = event.target.value;
+                              const value = raw === "" ? null : field.integer ? Math.trunc(Number(raw)) : Number(raw);
+                              updateRow(row.id, { [field.key]: value } as Partial<Variant>);
+                            }}
+                          />
+                          {index < rows.length - 1 && (
+                            <button
+                              type="button"
+                              title={`Copy ${field.label} down`}
+                              onClick={() => copyDown(field.key, index)}
+                              className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-800"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </Td>
+                    ))}
+                    <Td>
                       <Switch
                         checked={Boolean(row.is_active)}
                         onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
                       />
-                      <span className="text-xs text-slate-500">{row.is_active ? "Live" : "Draft"}</span>
-                    </div>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-900">
-        Prices and stock are staged locally until you click Save Variants / Save All Variant Changes. Existing SKU
-        identity and inventory safety checks are preserved.
-      </div>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : (
+        <EmptyVariants />
+      )}
     </div>
   );
 }
@@ -2077,94 +2170,109 @@ function CustomerTab({
 function RetailerTab({
   rows,
   updateRow,
+  optionsEditor,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  optionsEditor: React.ReactNode;
 }) {
-  if (!rows.length) return <EmptyVariants />;
-
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-[900px] w-full border-collapse text-sm">
-        <thead>
-          <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-            <Th>Variant</Th>
-            <Th>Customer MRP</Th>
-            <Th>Retailer Price</Th>
-            <Th>Saving ₹</Th>
-            <Th>Saving %</Th>
-            <Th>Retailer MOQ</Th>
-            <Th>PCs / Pack</Th>
-            <Th>Pack Total</Th>
-          </tr>
-        </thead>
+    <div className="space-y-5">
+      <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">Retailer Product price & stock</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Choose the retailer attributes of this product and then input values of each attribute.
+          </p>
+        </div>
+        {optionsEditor}
+        {rows.length > 0 && (
+          <>
+            <LowestStartingPrice rows={rows} field="retailer_price" label="Retailer Variant lowest starting price" />
+            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
+              <div className="text-sm text-slate-700">Retailer External link</div>
+              <Input disabled placeholder="Not stored in current Aurona product schema" />
+            </div>
+            <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
+              <div className="text-sm text-slate-700">Retailer External link button text</div>
+              <Input disabled placeholder="Not stored in current Aurona product schema" />
+            </div>
+            <LowStockEditor
+              rows={rows}
+              updateRow={updateRow}
+              title="Retailer Low Stock Quantity Warning"
+              quantityLabel="Retailer Quantity"
+            />
+            <StockVisibilityReference prefix="Retailer " />
+          </>
+        )}
+      </section>
 
-        <tbody>
-          {rows.map((row) => {
-            const amount = discountAmount(row.mrp, row.retailer_price);
-
-            const percent = discountPercent(row.mrp, row.retailer_price);
-
-            const packTotal = Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
-
-            return (
-              <tr key={row.id} className="border-t border-slate-200">
-                <Td>
-                  <VariantIdentity row={row} />
-                </Td>
-
-                <Td>
-                  <Calculated>{money(Number(row.mrp ?? 0))}</Calculated>
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.retailer_price}
-                    placeholder="Fallback"
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        retailer_price: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <Calculated>{money(amount)}</Calculated>
-                </Td>
-
-                <Td>
-                  <Calculated>{percent.toFixed(2)}%</Calculated>
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.retailer_moq}
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        retailer_moq: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <Calculated>{row.pack_size ?? "—"}</Calculated>
-                </Td>
-
-                <Td>
-                  <Calculated>{money(packTotal)}</Calculated>
-                </Td>
+      {rows.length ? (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <table className="min-w-[900px] w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <Th>Variant</Th>
+                <Th>Customer MRP</Th>
+                <Th>Retailer Price</Th>
+                <Th>Saving ₹</Th>
+                <Th>Saving %</Th>
+                <Th>Retailer MOQ</Th>
+                <Th>PCs / Pack</Th>
+                <Th>Pack Total</Th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      <div className="mt-3 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        The current database has retailer price and retailer MOQ, but does not have a separate retailer MRP or retailer
-        stock column. This tab therefore safely uses the existing product MRP and shared stock until those columns are
-        intentionally added.
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const amount = discountAmount(row.mrp, row.retailer_price);
+                const percent = discountPercent(row.mrp, row.retailer_price);
+                const packTotal = Number(row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
+                return (
+                  <tr key={row.id} className="border-t border-slate-200">
+                    <Td>
+                      <VariantIdentity row={row} />
+                    </Td>
+                    <Td>
+                      <Calculated>{money(Number(row.mrp ?? 0))}</Calculated>
+                    </Td>
+                    <Td>
+                      <NumberInput
+                        value={row.retailer_price}
+                        placeholder="Fallback"
+                        onChange={(value) => updateRow(row.id, { retailer_price: value })}
+                      />
+                    </Td>
+                    <Td>
+                      <Calculated>{money(amount)}</Calculated>
+                    </Td>
+                    <Td>
+                      <Calculated>{percent.toFixed(2)}%</Calculated>
+                    </Td>
+                    <Td>
+                      <NumberInput
+                        value={row.retailer_moq}
+                        onChange={(value) => updateRow(row.id, { retailer_moq: value })}
+                      />
+                    </Td>
+                    <Td>
+                      <Calculated>{row.pack_size ?? "—"}</Calculated>
+                    </Td>
+                    <Td>
+                      <Calculated>{money(packTotal)}</Calculated>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyVariants />
+      )}
+      <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+        Retailer price and MOQ are persisted per SKU. Aurona currently uses shared product stock/MRP because separate
+        retailer stock/MRP columns do not exist yet.
       </div>
     </div>
   );
@@ -2173,94 +2281,102 @@ function RetailerTab({
 function DistributorTab({
   rows,
   updateRow,
+  optionsEditor,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  optionsEditor: React.ReactNode;
 }) {
-  if (!rows.length) return <EmptyVariants />;
-
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-[900px] w-full border-collapse text-sm">
-        <thead>
-          <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-            <Th>Variant</Th>
-            <Th>Customer MRP</Th>
-            <Th>Distributor Price</Th>
-            <Th>Saving ₹</Th>
-            <Th>Saving %</Th>
-            <Th>Distributor MOQ</Th>
-            <Th>PCs / Pack</Th>
-            <Th>Pack Total</Th>
-          </tr>
-        </thead>
+    <div className="space-y-5">
+      <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">Distributor Product price & stock</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Choose the distributor attributes of this product and then input values of each attribute.
+          </p>
+        </div>
+        {optionsEditor}
+        {rows.length > 0 && (
+          <>
+            <LowestStartingPrice rows={rows} field="distributor_price" label="Distributor lowest starting price" />
+            <LowStockEditor
+              rows={rows}
+              updateRow={updateRow}
+              title="Distributor Low Stock Quantity Warning"
+              quantityLabel="Distributor Quantity"
+            />
+            <StockVisibilityReference prefix="Distributor " />
+          </>
+        )}
+      </section>
 
-        <tbody>
-          {rows.map((row) => {
-            const amount = discountAmount(row.mrp, row.distributor_price);
-
-            const percent = discountPercent(row.mrp, row.distributor_price);
-
-            const packTotal =
-              Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
-
-            return (
-              <tr key={row.id} className="border-t border-slate-200">
-                <Td>
-                  <VariantIdentity row={row} />
-                </Td>
-
-                <Td>
-                  <Calculated>{money(Number(row.mrp ?? 0))}</Calculated>
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.distributor_price}
-                    placeholder="Fallback"
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        distributor_price: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <Calculated>{money(amount)}</Calculated>
-                </Td>
-
-                <Td>
-                  <Calculated>{percent.toFixed(2)}%</Calculated>
-                </Td>
-
-                <Td>
-                  <NumberInput
-                    value={row.distributor_moq}
-                    onChange={(value) =>
-                      updateRow(row.id, {
-                        distributor_moq: value,
-                      })
-                    }
-                  />
-                </Td>
-
-                <Td>
-                  <Calculated>{row.pack_size ?? "—"}</Calculated>
-                </Td>
-
-                <Td>
-                  <Calculated>{money(packTotal)}</Calculated>
-                </Td>
+      {rows.length ? (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <table className="min-w-[900px] w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <Th>Variant</Th>
+                <Th>Customer MRP</Th>
+                <Th>Distributor Price</Th>
+                <Th>Saving ₹</Th>
+                <Th>Saving %</Th>
+                <Th>Distributor MOQ</Th>
+                <Th>PCs / Pack</Th>
+                <Th>Pack Total</Th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      <div className="mt-3 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-        The current database has distributor price and distributor MOQ, but does not have separate distributor MRP or
-        distributor stock columns. Shared MRP/stock are kept for now so existing data remains safe.
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const amount = discountAmount(row.mrp, row.distributor_price);
+                const percent = discountPercent(row.mrp, row.distributor_price);
+                const packTotal =
+                  Number(row.distributor_price ?? row.retailer_price ?? row.price ?? 0) * Number(row.pack_size ?? 1);
+                return (
+                  <tr key={row.id} className="border-t border-slate-200">
+                    <Td>
+                      <VariantIdentity row={row} />
+                    </Td>
+                    <Td>
+                      <Calculated>{money(Number(row.mrp ?? 0))}</Calculated>
+                    </Td>
+                    <Td>
+                      <NumberInput
+                        value={row.distributor_price}
+                        placeholder="Fallback"
+                        onChange={(value) => updateRow(row.id, { distributor_price: value })}
+                      />
+                    </Td>
+                    <Td>
+                      <Calculated>{money(amount)}</Calculated>
+                    </Td>
+                    <Td>
+                      <Calculated>{percent.toFixed(2)}%</Calculated>
+                    </Td>
+                    <Td>
+                      <NumberInput
+                        value={row.distributor_moq}
+                        onChange={(value) => updateRow(row.id, { distributor_moq: value })}
+                      />
+                    </Td>
+                    <Td>
+                      <Calculated>{row.pack_size ?? "—"}</Calculated>
+                    </Td>
+                    <Td>
+                      <Calculated>{money(packTotal)}</Calculated>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyVariants />
+      )}
+      <div className="rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+        Distributor price and MOQ are persisted per SKU. Aurona currently uses shared product stock/MRP because separate
+        distributor stock/MRP columns do not exist yet.
       </div>
     </div>
   );
@@ -2481,12 +2597,15 @@ function AxisEditor({
   }, [combinationSignature]);
 
   const presets = [
-    ["wattage", "Wattage"],
-    ["output_colour", "Output Colour"],
-    ["body_colour", "Body Colour"],
-    ["model", "Model"],
-    ["size", "Size"],
+    ["wattage", "Watts Available"],
+    ["output_colour", "Output Colour Option/s"],
+    ["shape", "Shape"],
+    ["body_colour", "Body Colour/s"],
     ["pack_size", "Pack Size"],
+    ["oscillation", "Oscillation"],
+    ["tank_capacity", "Tank Capacities"],
+    ["size", "Size Option/s"],
+    ["reflector_colour", "Reflector Colour"],
   ] as const;
 
   const selectedMissing = missing.filter((attributes) => selectedCombinationKeys.has(combinationKey(attributes)));
@@ -2880,12 +2999,8 @@ function FieldTitle({ children }: { children: React.ReactNode }) {
   return <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{children}</div>;
 }
 
-function Th({ children, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <th {...props} className="whitespace-nowrap px-3 py-3 font-semibold">
-      {children}
-    </th>
-  );
+function Th({ children }: { children: React.ReactNode }) {
+  return <th className="whitespace-nowrap px-3 py-3 font-semibold">{children}</th>;
 }
 
 function Td({ children }: { children: React.ReactNode }) {
