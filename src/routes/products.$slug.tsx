@@ -117,6 +117,21 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const totalOrderValue = pricePerPack * qty;
   const totalSaved = discountAmount * packSize * qty;
 
+  // Variation-specific values, falling back to the product-level values saved in admin.
+  const weightG = variant.weight_g ?? family.weight_g ?? null;
+  const weightText = weightG ? `${weightG} g` : null;
+  const dims =
+    variant.dim_l || variant.dim_w || variant.dim_h
+      ? { l: variant.dim_l, w: variant.dim_w, h: variant.dim_h }
+      : family.dim_l || family.dim_w || family.dim_h
+        ? { l: family.dim_l, w: family.dim_w, h: family.dim_h }
+        : null;
+  const dimsText = dims ? `${dims.l ?? "—"} × ${dims.w ?? "—"} × ${dims.h ?? "—"} cm` : null;
+  const features = (family.features ?? []).filter((f) => Boolean(f && String(f).trim()));
+  const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
+    ([k, v]) => Boolean(k) && Boolean(v),
+  );
+
   const buyNow = async () => {
     if (!productId || !inStock) return;
     await cart.add.mutateAsync({ productId, quantity: qty });
