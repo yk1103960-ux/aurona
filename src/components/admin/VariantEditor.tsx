@@ -708,7 +708,7 @@ export function VariantEditor({
           />
         </div>
 
-        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
+        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
 
         {tab === "shipping" && <ShippingTab rows={rows} updateRow={updateRow} />}
       </div>
@@ -2018,11 +2018,9 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
 function CustomerTab({
   rows,
   updateRow,
-  optionsEditor,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
-  optionsEditor: React.ReactNode;
 }) {
   const copyNumericDown = (field: "mrp" | "price" | "discount_pct" | "pack_size", index: number) => {
     const value = rows[index]?.[field];
@@ -2194,12 +2192,9 @@ function CustomerTab({
             <h2 className="text-base font-semibold text-slate-950">Commission</h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              Create product variations first. Generated variations will automatically appear in the customer pricing
-              table.
+              No variations yet. Add them in the All Variation Details tab first to set prices and commission here.
             </p>
           </div>
-
-          {optionsEditor}
         </section>
 
         <EmptyVariants />
@@ -2218,12 +2213,9 @@ function CustomerTab({
           <h2 className="text-base font-semibold text-slate-950">Commission</h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Choose the required product attributes and generate variations. Customer pricing can then be entered
-            separately for every generated SKU.
+            Enter MRP, discount, customer price, pack size and affiliate commission for each generated SKU.
           </p>
         </div>
-
-        {optionsEditor}
       </section>
 
       {/* =====================================================
