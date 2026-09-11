@@ -644,15 +644,6 @@ export function VariantEditor({
 
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
-          {false && (
-            <TabButton
-              active={tab === "quick"}
-              onClick={() => setTab("quick")}
-              icon={<SlidersHorizontal className="h-4 w-4" />}
-            >
-              Options & Variants
-            </TabButton>
-          )}
 
 
           {showAllTabs && (
