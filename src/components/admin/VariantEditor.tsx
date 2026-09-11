@@ -692,21 +692,6 @@ export function VariantEditor({
           />
         </div>
 
-        <div hidden={tab !== "options"}>
-          <OptionsTab
-            axes={axes}
-            rows={rows}
-            updateRow={updateRow}
-            removeRow={removeRow}
-            editRow={(row) => {
-              setWizardStep(0);
-              setEditingId(row.id);
-            }}
-            duplicateRow={duplicateRow}
-            manageImages={onManageImages}
-            optionsEditor={editingId ? null : optionsEditor}
-          />
-        </div>
 
         {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
 
