@@ -644,11 +644,11 @@ export function VariantEditor({
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
           <TabButton
-            active={tab === "options"}
-            onClick={() => setTab("options")}
+            active={tab === "quick"}
+            onClick={() => setTab("quick")}
             icon={<SlidersHorizontal className="h-4 w-4" />}
           >
-            All Variation Details
+            Options &amp; Variants
           </TabButton>
 
           <TabButton
