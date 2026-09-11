@@ -439,14 +439,44 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 {features.length > 0 && (
                   <div>
                     <div className="text-eyebrow">Key features</div>
-                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      {features.map((f) => (
-                        <li key={f} className="flex gap-2">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="mt-3 overflow-hidden rounded-xl border border-border">
+                      {features.map((feature, index) => {
+                        const text = String(feature).trim();
+                        const colonIndex = text.indexOf(":");
+                        const dashIndex = text.indexOf(" - ");
+
+                        let separatorIndex = -1;
+                        let separatorLength = 0;
+
+                        if (colonIndex > 0) {
+                          separatorIndex = colonIndex;
+                          separatorLength = 1;
+                        } else if (dashIndex > 0) {
+                          separatorIndex = dashIndex;
+                          separatorLength = 3;
+                        }
+
+                        const hasLabel = separatorIndex > 0;
+                        const label = hasLabel ? text.slice(0, separatorIndex).trim() : "";
+                        const value = hasLabel ? text.slice(separatorIndex + separatorLength).trim() : text;
+
+                        return (
+                          <div
+                            key={`${text}-${index}`}
+                            className="grid grid-cols-[minmax(120px,0.8fr)_1.2fr] gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0 sm:grid-cols-2"
+                          >
+                            {hasLabel ? (
+                              <>
+                                <div className="capitalize text-muted-foreground">{label}</div>
+                                <div className="font-medium">{value || "—"}</div>
+                              </>
+                            ) : (
+                              <div className="col-span-2 font-medium">{value}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
