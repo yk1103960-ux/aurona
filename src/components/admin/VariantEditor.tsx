@@ -187,7 +187,7 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(initialTab === "options" || initialTab === "quick" ? "options" : initialTab);
+    setTab(initialTab === "options" || initialTab === "quick" ? "quick" : initialTab);
   }, [initialTab]);
 
   const family = q.data?.family;
