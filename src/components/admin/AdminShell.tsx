@@ -76,7 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/aurona-console-9f2x7k/products/bulk", label: "Bulk Import & Export", icon: FileUp },
       { to: "/aurona-console-9f2x7k/inventory", label: "SKU Inventory", icon: Boxes },
       { to: "/aurona-console-9f2x7k/categories", label: "Categories", icon: FolderTree },
-      { to: "/aurona-console-9f2x7k/products/options", label: "Brands & Attributes" },
+      // { to: "/aurona-console-9f2x7k/products/options", label: "Brands & Attributes" },
       { to: "/aurona-console-9f2x7k/media", label: "Variation Images", icon: ImageIcon },
       { to: "/aurona-console-9f2x7k/reviews", label: "Product Reviews", icon: Star },
     ],
