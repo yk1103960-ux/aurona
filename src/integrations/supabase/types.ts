@@ -3587,6 +3587,64 @@ export type Database = {
         }
         Relationships: []
       }
+      variant_program_commissions: {
+        Row: {
+          commission_kind: Database["public"]["Enums"]["commission_kind"]
+          commission_value: number
+          created_at: string
+          id: string
+          is_active: boolean
+          max_commission: number | null
+          program_id: string
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          commission_kind?: Database["public"]["Enums"]["commission_kind"]
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_commission?: number | null
+          program_id: string
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          commission_kind?: Database["public"]["Enums"]["commission_kind"]
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_commission?: number | null
+          program_id?: string
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variant_program_commissions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "referral_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variant_program_commissions_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variant_program_commissions_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "public_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wishlist_items: {
         Row: {
           created_at: string
