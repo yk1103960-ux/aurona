@@ -468,7 +468,8 @@ const segmentAllows = (v: ProductVariant, segment: VariantSegment) =>
 export const familyQuery = (slug: string, segment: VariantSegment = "customer") =>
   queryOptions({
     queryKey: ["family", slug, segment],
-    staleTime: 5 * 60 * 1000,
+    // Product details edited in admin must be fresh when the storefront opens.
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
     queryFn: async (): Promise<ProductFamily | null> => {
       const { data, error } = await supabase
