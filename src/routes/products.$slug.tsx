@@ -1,7 +1,19 @@
 import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, PackageCheck, ArrowRight, MessageCircle, Repeat2 } from "lucide-react";
+import {
+  Heart,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Star,
+  Truck,
+  Shield,
+  PackageCheck,
+  ArrowRight,
+  MessageCircle,
+  Repeat2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { productQuery, productsQuery, categoriesQuery, familyQuery, familyProductsQuery } from "@/lib/queries";
@@ -24,7 +36,6 @@ import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar"
 import { useProductReferralClick } from "@/hooks/useReferralCapture";
 
 import type { ProductFamily } from "@/lib/queries";
-
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
@@ -52,13 +63,15 @@ export const Route = createFileRoute("/products/$slug")({
     }
     context.queryClient.ensureQueryData(productImagesQuery({ productId: p.id }));
   },
-  validateSearch: (s: Record<string, unknown>): { v?: string } =>
-    typeof s.v === "string" ? { v: s.v } : {},
+  validateSearch: (s: Record<string, unknown>): { v?: string } => (typeof s.v === "string" ? { v: s.v } : {}),
 
   head: ({ params }) => ({
     meta: [
       { title: `${params.slug.replace(/-/g, " ")} — Aurona` },
-      { name: "description", content: `Buy ${params.slug.replace(/-/g, " ")} at Aurona — manufacturer-direct pricing with warranty and PAN India shipping.` },
+      {
+        name: "description",
+        content: `Buy ${params.slug.replace(/-/g, " ")} at Aurona — manufacturer-direct pricing with warranty and PAN India shipping.`,
+      },
     ],
   }),
   pendingComponent: PDPSkeleton,
@@ -67,18 +80,28 @@ export const Route = createFileRoute("/products/$slug")({
   notFoundComponent: () => (
     <div className="container-x py-24 text-center">
       <h1 className="text-display text-3xl">Product not found</h1>
-      <Button asChild className="mt-6"><Link to="/products">Browse all products</Link></Button>
+      <Button asChild className="mt-6">
+        <Link to="/products">Browse all products</Link>
+      </Button>
     </div>
   ),
 });
-
 
 function PDPRoute() {
   const { slug } = Route.useParams();
   const { v } = Route.useSearch();
   const segment = useVariantSegment();
   const fam = useSuspenseQuery(familyQuery(slug, segment)).data;
-  if (fam && !fam.variants.length) return <div className="container-x py-16"><h1 className="text-2xl font-semibold">{fam.name}</h1><p className="mt-4">No variants are currently available for this product.</p><Button asChild className="mt-6"><Link to="/products">Browse products</Link></Button></div>;
+  if (fam && !fam.variants.length)
+    return (
+      <div className="container-x py-16">
+        <h1 className="text-2xl font-semibold">{fam.name}</h1>
+        <p className="mt-4">No variants are currently available for this product.</p>
+        <Button asChild className="mt-6">
+          <Link to="/products">Browse products</Link>
+        </Button>
+      </div>
+    );
   if (fam) return <FamilyPDP key={fam.id} family={fam} initialSku={v} />;
   return <LegacyPDP slug={slug} />;
 }
@@ -86,10 +109,10 @@ function PDPRoute() {
 function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?: string }) {
   const cats = useSuspenseQuery(categoriesQuery).data;
   const cat = cats.find((c) => c.id === family.category_id);
-  const { data: sameCategory = [] } = useQuery(
-    productsQuery({ categorySlug: cat?.slug ?? "", limit: 10 }),
-  );
-  const related = sameCategory.filter((p) => p.category_id === family.category_id && p.family_slug !== family.slug).slice(0, 10);
+  const { data: sameCategory = [] } = useQuery(productsQuery({ categorySlug: cat?.slug ?? "", limit: 10 }));
+  const related = sameCategory
+    .filter((p) => p.category_id === family.category_id && p.family_slug !== family.slug)
+    .slice(0, 10);
 
   const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
   const [qty, setQty] = useState(1);
@@ -101,7 +124,6 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
   useProductReferralClick(productId);
-
 
   const role = useMyRole();
   const { data: priceMap } = useVisiblePrices([variant.sku]);
@@ -141,45 +163,76 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   return (
     <div className="container-x py-8">
       <div className="mb-6 text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Home</Link> /{" "}
-        <Link to="/products" className="hover:text-foreground">Products</Link>
-        {cat && <> / <Link to="/category/$slug" params={{ slug: cat.slug }} className="hover:text-foreground">{cat.name}</Link></>}
-        <> / <span className="text-foreground">{family.name}</span></>
+        <Link to="/" className="hover:text-foreground">
+          Home
+        </Link>{" "}
+        /{" "}
+        <Link to="/products" className="hover:text-foreground">
+          Products
+        </Link>
+        {cat && (
+          <>
+            {" "}
+            /{" "}
+            <Link to="/category/$slug" params={{ slug: cat.slug }} className="hover:text-foreground">
+              {cat.name}
+            </Link>
+          </>
+        )}
+        <>
+          {" "}
+          / <span className="text-foreground">{family.name}</span>
+        </>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-        <FamilyGallery key={variant.sku} family={family} variantSku={variant.sku} variantImageSeed={variant.image_seed} variantImageUrl={variant.image_url} categoryIcon={cat?.icon} />
+        <FamilyGallery
+          key={variant.sku}
+          family={family}
+          variantSku={variant.sku}
+          variantImageSeed={variant.image_seed}
+          variantImageUrl={variant.image_url}
+          categoryIcon={cat?.icon}
+        />
 
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
           <h1 className="text-display mt-2 text-4xl">{family.name}</h1>
-          <div className="mt-2 text-sm text-muted-foreground">Brand: {family.brand} · Model: {family.main_sku}</div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            Brand: {family.brand} · Model: {family.main_sku}
+          </div>
 
           <PartnerVerificationBanner />
 
           <div className="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
-            <div className={cn(
-              "flex items-center justify-between gap-4 px-4 py-3 text-primary-foreground",
-              role.role === "distributor" ? "bg-gradient-to-r from-primary to-accent" : "bg-primary",
-            )}>
+            <div
+              className={cn(
+                "flex items-center justify-between gap-4 px-4 py-3 text-primary-foreground",
+                role.role === "distributor" ? "bg-gradient-to-r from-primary to-accent" : "bg-primary",
+              )}
+            >
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider">
-                  {role.isPartnerPending ? "Awaiting approval"
-                    : role.role === "retailer" ? "Retailer price"
-                    : role.role === "distributor" ? "Distributor price"
-                    : "Starting price"}
+                  {role.isPartnerPending
+                    ? "Awaiting approval"
+                    : role.role === "retailer"
+                      ? "Retailer price"
+                      : role.role === "distributor"
+                        ? "Distributor price"
+                        : "Starting price"}
                 </div>
                 <div className="text-[11px] opacity-80">
-                  {role.isPartnerPending ? "Your account is under verification"
-                    : role.role === "retailer" ? "Trade wholesale rate"
-                    : role.role === "distributor" ? "Your approved distributor rate"
-                    : "Base price for this selected product model"}
+                  {role.isPartnerPending
+                    ? "Your account is under verification"
+                    : role.role === "retailer"
+                      ? "Trade wholesale rate"
+                      : role.role === "distributor"
+                        ? "Your approved distributor rate"
+                        : "Base price for this selected product model"}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-display text-2xl">
-                  {role.isPartnerPending ? "Hidden" : inr(effectivePrice)}
-                </div>
+                <div className="text-display text-2xl">{role.isPartnerPending ? "Hidden" : inr(effectivePrice)}</div>
                 {/* Constant label: variant resolution happens after hydration,
                     so branching on it here caused a hydration mismatch. */}
                 <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">per unit</div>
@@ -188,30 +241,45 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 {[0, 1, 2, 3, 4].map((i) => (
-                  <Star key={i} className={cn("h-3.5 w-3.5", i < Math.round(Number(family.rating)) ? "fill-gold text-gold" : "text-border")} />
+                  <Star
+                    key={i}
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      i < Math.round(Number(family.rating)) ? "fill-gold text-gold" : "text-border",
+                    )}
+                  />
                 ))}
                 <span className="ml-1">({family.review_count} reviews)</span>
               </div>
-              <span className={cn("font-semibold", inStock ? "text-success" : "text-destructive")}>{inStock ? `${variant.stock} available` : "Out of stock"}</span>
+              <span className={cn("font-semibold", inStock ? "text-success" : "text-destructive")}>
+                {inStock ? `${variant.stock} available` : "Out of stock"}
+              </span>
               <button className="inline-flex items-center gap-1 hover:text-foreground">
                 <MessageCircle className="h-3.5 w-3.5" /> Product enquiry
               </button>
-              <button onClick={() => productId && wl.toggle.mutate(productId)} className="inline-flex items-center gap-1 hover:text-foreground">
-                <Heart className={cn("h-3.5 w-3.5", productId && wl.has(productId) && "fill-current text-destructive")} /> Wishlist
+              <button
+                onClick={() => productId && wl.toggle.mutate(productId)}
+                className="inline-flex items-center gap-1 hover:text-foreground"
+              >
+                <Heart
+                  className={cn("h-3.5 w-3.5", productId && wl.has(productId) && "fill-current text-destructive")}
+                />{" "}
+                Wishlist
               </button>
               <button
                 type="button"
                 onClick={() => compare.toggle(family.slug, family.name)}
-                className={cn("inline-flex items-center gap-1 hover:text-foreground", compare.has(family.slug) && "font-semibold text-primary")}
+                className={cn(
+                  "inline-flex items-center gap-1 hover:text-foreground",
+                  compare.has(family.slug) && "font-semibold text-primary",
+                )}
               >
                 <Repeat2 className="h-3.5 w-3.5" /> {compare.has(family.slug) ? "In compare" : "Compare"}
               </button>
             </div>
           </div>
 
-          {family.short_description && (
-            <p className="mt-6 text-sm text-muted-foreground">{family.short_description}</p>
-          )}
+          {family.short_description && <p className="mt-6 text-sm text-muted-foreground">{family.short_description}</p>}
 
           {/* Axis pickers */}
           {family.axes.length > 0 && (
@@ -254,7 +322,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <div className="text-xs text-muted-foreground">Quantity of packs</div>
             <div className="flex items-center gap-3">
               <div className="flex items-center border border-border">
-                <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-10 w-10 place-items-center hover:bg-surface">
+                <button
+                  onClick={() => setQty(Math.max(1, qty - 1))}
+                  className="grid h-10 w-10 place-items-center hover:bg-surface"
+                >
                   <Minus className="h-4 w-4" />
                 </button>
                 <div className="w-12 text-center text-sm font-semibold">{qty}</div>
@@ -270,7 +341,16 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <PriceRow label="M.R.P." value={`${inr(effectiveMrp)} /Pc`} muted />
             <PriceRow label="Discount %" value={`${off}%`} highlight />
             <PriceRow label="Discount amount" value={`${inr(discountAmount)} /Pc`} highlight />
-            <PriceRow label={role.role === "retailer" ? "Retailer price / unit" : role.role === "distributor" ? "Distributor price / unit" : "Price per unit"} value={`${inr(effectivePrice)} /Pc`} />
+            <PriceRow
+              label={
+                role.role === "retailer"
+                  ? "Retailer price / unit"
+                  : role.role === "distributor"
+                    ? "Distributor price / unit"
+                    : "Price per unit"
+              }
+              value={`${inr(effectivePrice)} /Pc`}
+            />
             <PriceRow label="Price per pack" value={`${inr(pricePerPack)} /Pack`} />
             <PriceRow label="Total order value" value={inr(totalOrderValue)} />
             <PriceRow label="You save on this order" value={inr(totalSaved)} highlight />
@@ -318,7 +398,6 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <ProductAffiliateBar productId={productId} slug={family.slug} />
           </div>
 
-
           <div className="mt-8 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
             <div className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 text-center">
               <Truck className="h-4 w-4 text-gold" /> PAN India delivery
@@ -336,9 +415,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       <div className="mt-16">
         <Tabs defaultValue={family.description || features.length ? "about" : "specs"}>
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-            {(family.description || features.length > 0) && (
-              <TabsTrigger value="about">Description</TabsTrigger>
-            )}
+            {(family.description || features.length > 0) && <TabsTrigger value="about">Description</TabsTrigger>}
             <TabsTrigger value="specs">Specifications</TabsTrigger>
             <TabsTrigger value="variations">All Variations ({family.variants.length})</TabsTrigger>
             <TabsTrigger value="ship">Shipping</TabsTrigger>
@@ -350,9 +427,12 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                   <div>
                     <div className="text-eyebrow">About this product</div>
                     <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
-                      {family.description.split(/\n{2,}|\n/).filter((p) => p.trim()).map((p, i) => (
-                        <p key={i}>{p}</p>
-                      ))}
+                      {family.description
+                        .split(/\n{2,}|\n/)
+                        .filter((p) => p.trim())
+                        .map((p, i) => (
+                          <p key={i}>{p}</p>
+                        ))}
                     </div>
                   </div>
                 )}
@@ -374,22 +454,29 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           )}
           <TabsContent value="specs" className="pt-6">
             <div className="max-w-2xl divide-y divide-border rounded-xl border border-border">
-              {([
-                ["Brand", family.brand],
-                ["Category", cat?.name],
-                ["Main SKU", family.main_sku],
-                ["Selected SKU", variant.sku],
-                ...Object.entries(variant.attributes).filter(([k, v]) => k !== "variant_label" && Boolean(v)).map(([k, v]) => [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const),
-                ...specEntries,
-                ["MOQ", variant.moq ? String(variant.moq) : null],
-                ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
-                ["Weight", weightText],
-                ["Dimensions (LxWxH)", dimsText],
-                ["Body type", family.body_type],
-                ["Warranty", family.warranty],
-                ["Material", family.material],
-                ["Country of origin", "India"],
-              ] as Array<readonly [string, string | null | undefined]>)
+              {(
+                [
+                  ["Brand", family.brand],
+                  ["Category", cat?.name],
+                  ["Main SKU", family.main_sku],
+                  ["Selected SKU", variant.sku],
+                  ...Object.entries(variant.attributes)
+                    .filter(([k, v]) => k !== "variant_label" && Boolean(v))
+                    .map(
+                      ([k, v]) =>
+                        [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
+                    ),
+                  ...specEntries,
+                  ["MOQ", variant.moq ? String(variant.moq) : null],
+                  ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
+                  ["Weight", weightText],
+                  ["Dimensions (LxWxH)", dimsText],
+                  ["Body type", family.body_type],
+                  ["Warranty", family.warranty],
+                  ["Material", family.material],
+                  ["Country of origin", "India"],
+                ] as Array<readonly [string, string | null | undefined]>
+              )
                 .filter(([, v]) => Boolean(v))
                 .map(([k, v]) => (
                   <div key={k} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
@@ -398,19 +485,6 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                   </div>
                 ))}
             </div>
-            {features.length > 0 && (
-              <div className="mt-6 max-w-2xl">
-                <div className="text-eyebrow">Key features</div>
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {features.map((f) => (
-                    <li key={f} className="flex gap-2">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </TabsContent>
           <TabsContent value="variations" className="pt-6">
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -418,7 +492,11 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                 <thead className="bg-surface text-left text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2">SKU</th>
-                    {family.axes.map((a) => <th key={a.axis_key} className="px-3 py-2">{a.label}</th>)}
+                    {family.axes.map((a) => (
+                      <th key={a.axis_key} className="px-3 py-2">
+                        {a.label}
+                      </th>
+                    ))}
                     <th className="px-3 py-2 text-right">MRP</th>
                     <th className="px-3 py-2 text-right">Price</th>
                   </tr>
@@ -427,7 +505,11 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                   {family.variants.map((v) => (
                     <tr key={v.id} className={cn(v.sku === variant.sku && "bg-surface/60")}>
                       <td className="px-3 py-2 font-mono text-xs">{v.sku}</td>
-                      {family.axes.map((a) => <td key={a.axis_key} className="px-3 py-2">{v.attributes[a.axis_key] ?? "—"}</td>)}
+                      {family.axes.map((a) => (
+                        <td key={a.axis_key} className="px-3 py-2">
+                          {v.attributes[a.axis_key] ?? "—"}
+                        </td>
+                      ))}
                       <td className="px-3 py-2 text-right text-muted-foreground line-through">{inr(v.mrp)}</td>
                       <td className="px-3 py-2 text-right font-semibold">{inr(v.price)}</td>
                     </tr>
@@ -458,7 +540,6 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </Link>
         </div>
         <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
-
       </div>
     </div>
   );
@@ -487,10 +568,26 @@ function LegacyPDP({ slug }: { slug: string }) {
   return (
     <div className="container-x py-8">
       <div className="mb-6 text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Home</Link> /{" "}
-        <Link to="/products" className="hover:text-foreground">Products</Link>
-        {cat && <> / <Link to="/category/$slug" params={{ slug: cat.slug }} className="hover:text-foreground">{cat.name}</Link></>}
-        <> / <span className="text-foreground">{product.name}</span></>
+        <Link to="/" className="hover:text-foreground">
+          Home
+        </Link>{" "}
+        /{" "}
+        <Link to="/products" className="hover:text-foreground">
+          Products
+        </Link>
+        {cat && (
+          <>
+            {" "}
+            /{" "}
+            <Link to="/category/$slug" params={{ slug: cat.slug }} className="hover:text-foreground">
+              {cat.name}
+            </Link>
+          </>
+        )}
+        <>
+          {" "}
+          / <span className="text-foreground">{product.name}</span>
+        </>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
@@ -498,36 +595,56 @@ function LegacyPDP({ slug }: { slug: string }) {
         <div>
           <div className="text-eyebrow">{cat?.name ?? "Aurona"}</div>
           <h1 className="text-display mt-2 text-4xl">{product.name}</h1>
-          <div className="mt-2 text-sm text-muted-foreground">SKU: {product.sku} · Brand: {product.brand}</div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            SKU: {product.sku} · Brand: {product.brand}
+          </div>
           <div className="mt-6 flex items-baseline gap-3">
             <span className="text-display text-4xl">{inr(product.price)}</span>
             {Number(product.mrp) > Number(product.price) && (
               <>
                 <span className="text-lg text-muted-foreground line-through">{inr(product.mrp)}</span>
-                <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">{off}% OFF</span>
+                <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">
+                  {off}% OFF
+                </span>
               </>
             )}
           </div>
           <div className="mt-8 flex items-center gap-4">
             <div className="flex items-center rounded-full border border-border">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-11 w-11 place-items-center"><Minus className="h-4 w-4" /></button>
+              <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-11 w-11 place-items-center">
+                <Minus className="h-4 w-4" />
+              </button>
               <div className="w-10 text-center text-sm font-semibold">{qty}</div>
-              <button onClick={() => setQty(qty + 1)} className="grid h-11 w-11 place-items-center"><Plus className="h-4 w-4" /></button>
+              <button onClick={() => setQty(qty + 1)} className="grid h-11 w-11 place-items-center">
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
-            <button onClick={() => wl.toggle.mutate(product.id)} className={cn("grid h-11 w-11 place-items-center rounded-full border border-border hover:bg-surface", wl.has(product.id) && "text-destructive")}>
+            <button
+              onClick={() => wl.toggle.mutate(product.id)}
+              className={cn(
+                "grid h-11 w-11 place-items-center rounded-full border border-border hover:bg-surface",
+                wl.has(product.id) && "text-destructive",
+              )}
+            >
               <Heart className={cn("h-4 w-4", wl.has(product.id) && "fill-current")} />
             </button>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Button size="lg" variant="outline" className="h-12 gap-2 rounded-full" onClick={() => cart.add.mutate({ productId: product.id, quantity: qty })}>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 gap-2 rounded-full"
+              onClick={() => cart.add.mutate({ productId: product.id, quantity: qty })}
+            >
               <ShoppingCart className="h-4 w-4" /> Add to cart
             </Button>
-            <Button size="lg" className="h-12 rounded-full" onClick={buyNow}>Buy now</Button>
+            <Button size="lg" className="h-12 rounded-full" onClick={buyNow}>
+              Buy now
+            </Button>
           </div>
           <div className="mt-4">
             <ProductAffiliateBar productId={product.id} slug={product.slug} />
           </div>
-
         </div>
       </div>
 
@@ -581,8 +698,18 @@ function PriceRow({
   );
 }
 
-function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, categoryIcon }: {
-  family: ProductFamily; variantSku: string; variantImageSeed: string | null; variantImageUrl: string | null; categoryIcon?: string | null;
+function FamilyGallery({
+  family,
+  variantSku,
+  variantImageSeed,
+  variantImageUrl,
+  categoryIcon,
+}: {
+  family: ProductFamily;
+  variantSku: string;
+  variantImageSeed: string | null;
+  variantImageUrl: string | null;
+  categoryIcon?: string | null;
 }) {
   const { data: all = [] } = useQuery(productImagesQuery({ familyId: family.id }));
   // Variation-wise photos, in order of specificity:
@@ -592,21 +719,28 @@ function FamilyGallery({ family, variantSku, variantImageSeed, variantImageUrl, 
   const exact = all.filter((i) => i.variant_sku === variantSku);
   const prefixed = all
     .filter((i) => i.variant_sku && i.variant_sku !== variantSku && variantSku.startsWith(i.variant_sku))
-    .sort((a, b) => (b.variant_sku!.length - a.variant_sku!.length) || a.sort_order - b.sort_order);
+    .sort((a, b) => b.variant_sku!.length - a.variant_sku!.length || a.sort_order - b.sort_order);
   const generic = all.filter((i) => !i.variant_sku);
   const images = exact.length ? exact : prefixed.length ? prefixed : generic.length ? generic : all;
   return (
     <ProductGallery
       images={images}
-      fallback={{ image_seed: variantImageSeed ?? family.image_seed, image_url: variantImageUrl ?? family.image_url, name: family.name, slug: family.slug }}
+      fallback={{
+        image_seed: variantImageSeed ?? family.image_seed,
+        image_url: variantImageUrl ?? family.image_url,
+        name: family.name,
+        slug: family.slug,
+      }}
       categoryIcon={categoryIcon}
       resetKey={variantSku}
     />
   );
 }
 
-
-function LegacyGallery({ product, categoryIcon }: {
+function LegacyGallery({
+  product,
+  categoryIcon,
+}: {
   product: { id: string; name: string; slug: string; image_seed: string | null; image_url?: string | null };
   categoryIcon?: string | null;
 }) {
@@ -614,7 +748,12 @@ function LegacyGallery({ product, categoryIcon }: {
   return (
     <ProductGallery
       images={images}
-      fallback={{ image_seed: product.image_seed, image_url: product.image_url ?? null, name: product.name, slug: product.slug }}
+      fallback={{
+        image_seed: product.image_seed,
+        image_url: product.image_url ?? null,
+        name: product.name,
+        slug: product.slug,
+      }}
       categoryIcon={categoryIcon}
     />
   );
