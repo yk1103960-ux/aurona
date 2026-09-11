@@ -98,7 +98,7 @@ export function VariantEditor({
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>(initialTab === "options" ? "quick" : initialTab);
+  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "customer" : initialTab);
   const [showAllTabs, setShowAllTabs] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
@@ -584,7 +584,7 @@ export function VariantEditor({
       }
       generateCombinations(generationAxes, safeRows, selectedCombinations);
       setEditingId(null);
-      setTab("quick");
+      setTab("customer");
       return;
     }
 
@@ -644,13 +644,7 @@ export function VariantEditor({
 
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
-          <TabButton
-            active={tab === "quick"}
-            onClick={() => setTab("quick")}
-            icon={<SlidersHorizontal className="h-4 w-4" />}
-          >
-            Options & Variants
-          </TabButton>
+
 
           {showAllTabs && (
             <TabButton
@@ -667,7 +661,7 @@ export function VariantEditor({
             onClick={() => setTab("customer")}
             icon={<Users className="h-4 w-4" />}
           >
-            Product Price & Stock
+            Commission
           </TabButton>
 
           <TabButton
@@ -682,7 +676,7 @@ export function VariantEditor({
             onClick={() => {
               const next = !showAllTabs;
               setShowAllTabs(next);
-              if (!next && !["quick", "customer", "shipping"].includes(tab)) setTab("quick");
+              if (!next && !["customer", "shipping"].includes(tab)) setTab("customer");
             }}
             className="ml-2 shrink-0 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
           >
@@ -2213,7 +2207,7 @@ function CustomerTab({
       <div className="space-y-5">
         <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-950">Product Price & Stock</h2>
+            <h2 className="text-base font-semibold text-slate-950">Commission</h2>
 
             <p className="mt-1 text-xs text-slate-500">
               Create product variations first. Generated variations will automatically appear in the customer pricing
@@ -2237,7 +2231,7 @@ function CustomerTab({
 
       <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-950">Product Price & Stock</h2>
+          <h2 className="text-base font-semibold text-slate-950">Commission</h2>
 
           <p className="mt-1 text-xs text-slate-500">
             Choose the required product attributes and generate variations. Customer pricing can then be entered
