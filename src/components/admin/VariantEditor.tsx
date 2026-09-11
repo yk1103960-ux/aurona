@@ -664,7 +664,7 @@ export function VariantEditor({
             onClick={() => setTab("customer")}
             icon={<Users className="h-4 w-4" />}
           >
-            Commission
+            Customer Price & Stock
           </TabButton>
         </div>
       </div>
@@ -691,7 +691,6 @@ export function VariantEditor({
             optionsEditor={tab === "quick" && !editingId ? optionsEditor : null}
           />
         </div>
-
 
         {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
 
