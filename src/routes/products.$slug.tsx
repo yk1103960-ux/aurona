@@ -334,37 +334,75 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="mt-16">
-        <Tabs defaultValue="specs">
+        <Tabs defaultValue={family.description || features.length ? "about" : "specs"}>
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+            {(family.description || features.length > 0) && (
+              <TabsTrigger value="about">Description</TabsTrigger>
+            )}
             <TabsTrigger value="specs">Specifications</TabsTrigger>
             <TabsTrigger value="variations">All Variations ({family.variants.length})</TabsTrigger>
             <TabsTrigger value="ship">Shipping</TabsTrigger>
           </TabsList>
+          {(family.description || features.length > 0) && (
+            <TabsContent value="about" className="pt-6">
+              <div className="grid max-w-4xl gap-8 md:grid-cols-2">
+                {family.description && (
+                  <div>
+                    <div className="text-eyebrow">About this product</div>
+                    <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
+                      {family.description.split(/\n{2,}|\n/).filter((p) => p.trim()).map((p, i) => (
+                        <p key={i}>{p}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {features.length > 0 && (
+                  <div>
+                    <div className="text-eyebrow">Key features</div>
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      {features.map((f) => (
+                        <li key={f} className="flex gap-2">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
           <TabsContent value="specs" className="pt-6">
             <div className="max-w-2xl divide-y divide-border rounded-xl border border-border">
-              {[
+              {([
                 ["Brand", family.brand],
                 ["Category", cat?.name],
                 ["Main SKU", family.main_sku],
                 ["Selected SKU", variant.sku],
                 ...Object.entries(variant.attributes).filter(([k, v]) => k !== "variant_label" && Boolean(v)).map(([k, v]) => [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const),
-                ...Object.entries((family.specifications ?? {}) as Record<string, string>).map(([k, v]) => [k, v] as const),
+                ...specEntries,
+                ["MOQ", variant.moq ? String(variant.moq) : null],
+                ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
+                ["Weight", weightText],
+                ["Dimensions (LxWxH)", dimsText],
                 ["Body type", family.body_type],
                 ["Warranty", family.warranty],
                 ["Material", family.material],
                 ["Country of origin", "India"],
-              ].map(([k, v]) => (
-                <div key={k as string} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
-                  <div className="capitalize text-muted-foreground">{k}</div>
-                  <div className="font-medium">{v || "—"}</div>
-                </div>
-              ))}
+              ] as Array<readonly [string, string | null | undefined]>)
+                .filter(([, v]) => Boolean(v))
+                .map(([k, v]) => (
+                  <div key={k} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
+                    <div className="capitalize text-muted-foreground">{k}</div>
+                    <div className="font-medium">{v}</div>
+                  </div>
+                ))}
             </div>
-            {(family.features ?? []).length > 0 && (
+            {features.length > 0 && (
               <div className="mt-6 max-w-2xl">
                 <div className="text-eyebrow">Key features</div>
                 <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {(family.features ?? []).map((f) => (
+                  {features.map((f) => (
                     <li key={f} className="flex gap-2">
                       <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
                       <span>{f}</span>
