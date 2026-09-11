@@ -1217,21 +1217,35 @@ function specsToText(value: unknown): string {
 
 function textToSpecs(text: string): Record<string, string> {
   const output: Record<string, string> = {};
+  const invalidLines: string[] = [];
 
   for (const line of text.split("\n")) {
-    const index = line.indexOf(":");
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const separator = trimmed.match(/\s(?:-|=)\s|[:=]/);
+    const index = separator?.index ?? -1;
 
     if (index <= 0) {
+      invalidLines.push(trimmed);
       continue;
     }
 
-    const key = line.slice(0, index).trim();
+    const key = trimmed.slice(0, index).trim();
 
-    const value = line.slice(index + 1).trim();
+    const value = trimmed.slice(index + (separator?.[0].length ?? 1)).trim();
 
     if (key && value) {
       output[key] = value;
+    } else {
+      invalidLines.push(trimmed);
     }
+  }
+
+  if (invalidLines.length > 0) {
+    throw new Error(
+      `Fix specification ${invalidLines.length === 1 ? "line" : "lines"}: use Label: Value (for example, IP Rating: IP55).`,
+    );
   }
 
   return output;
