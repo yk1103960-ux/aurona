@@ -769,6 +769,22 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                     </div>
                   </Field>
 
+                  <Field label="Key Features">
+                    <Textarea
+                      rows={8}
+                      value={f.features}
+                      placeholder={
+                        "Paste one key feature per line...\nExample:\nWattage: 12W\nBody Colour: White\nMaterial: Aluminium"
+                      }
+                      onChange={(e) => upd("features", e.target.value)}
+                      className="min-h-[180px] w-full resize-y"
+                    />
+                    <div className="text-xs text-slate-500">
+                      Enter or paste one feature per line. Use “Name: Value” when you want the customer page to show it
+                      in the same two-column lined style as Specifications.
+                    </div>
+                  </Field>
+
                   <div className="space-y-3">
                     <div>
                       <div className="text-xs font-medium text-slate-600">Specification</div>
