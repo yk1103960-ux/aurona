@@ -98,8 +98,7 @@ export function VariantEditor({
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "customer" : initialTab);
-  const [showAllTabs, setShowAllTabs] = useState(false);
+  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "options" : initialTab);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
   const [axisRows, setAxisRows] = useState<Axis[]>([]);
@@ -188,7 +187,7 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(initialTab === "options" ? "quick" : initialTab);
+    setTab(initialTab === "options" || initialTab === "quick" ? "options" : initialTab);
   }, [initialTab]);
 
   const family = q.data?.family;
@@ -644,24 +643,12 @@ export function VariantEditor({
 
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
-
-
-          {showAllTabs && (
-            <TabButton
-              active={tab === "options"}
-              onClick={() => setTab("options")}
-              icon={<SlidersHorizontal className="h-4 w-4" />}
-            >
-              All Variation Details
-            </TabButton>
-          )}
-
           <TabButton
-            active={tab === "customer"}
-            onClick={() => setTab("customer")}
-            icon={<Users className="h-4 w-4" />}
+            active={tab === "options"}
+            onClick={() => setTab("options")}
+            icon={<SlidersHorizontal className="h-4 w-4" />}
           >
-            Commission
+            All Variation Details
           </TabButton>
 
           <TabButton
@@ -671,17 +658,14 @@ export function VariantEditor({
           >
             Weight & Dimensions
           </TabButton>
-          <button
-            type="button"
-            onClick={() => {
-              const next = !showAllTabs;
-              setShowAllTabs(next);
-              if (!next && !["customer", "shipping"].includes(tab)) setTab("customer");
-            }}
-            className="ml-2 shrink-0 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
+
+          <TabButton
+            active={tab === "customer"}
+            onClick={() => setTab("customer")}
+            icon={<Users className="h-4 w-4" />}
           >
-            {showAllTabs ? "Hide extra options" : "More options"}
-          </button>
+            Commission
+          </TabButton>
         </div>
       </div>
 
