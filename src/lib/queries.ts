@@ -443,6 +443,10 @@ export type ProductFamily = {
   body_type: string | null;
   features: string[] | null;
   specifications: Record<string, string> | null;
+  weight_g?: number | null;
+  dim_l?: number | null;
+  dim_w?: number | null;
+  dim_h?: number | null;
   categories: { slug: string; name: string; icon: string | null } | null;
 
   variants: ProductVariant[];
