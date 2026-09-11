@@ -98,7 +98,7 @@ export function VariantEditor({
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "options" : initialTab);
+  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "quick" : initialTab);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
   const [axisRows, setAxisRows] = useState<Axis[]>([]);
