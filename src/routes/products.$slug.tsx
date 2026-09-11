@@ -263,10 +263,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </div>
 
           <div className="mt-8 grid gap-3 border border-border p-4 sm:grid-cols-2">
-            <Spec label="MOQ" value={String(variant.moq)} />
-            <Spec label="Weight" value={variant.weight_g ? `${variant.weight_g} g` : null} />
+            <Spec label="MOQ" value={variant.moq ? String(variant.moq) : null} />
+            <Spec label="Weight" value={weightText} />
             <Spec label="Pack size" value={variant.pack_size ? String(variant.pack_size) : null} />
-            <Spec label="Dimensions (LxWxH)" value={variant.dim_l ? `${variant.dim_l} × ${variant.dim_w} × ${variant.dim_h} cm` : null} />
+            <Spec label="Dimensions (LxWxH)" value={dimsText} />
             <Spec label="Warranty" value={family.warranty} />
             <Spec label="Country of origin" value="India" />
           </div>
