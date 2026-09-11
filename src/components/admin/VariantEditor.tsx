@@ -708,7 +708,7 @@ export function VariantEditor({
           />
         </div>
 
-        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} optionsEditor={optionsEditor} />}
+        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
 
         {tab === "shipping" && <ShippingTab rows={rows} updateRow={updateRow} />}
       </div>
@@ -2018,11 +2018,9 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
 function CustomerTab({
   rows,
   updateRow,
-  optionsEditor,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
-  optionsEditor: React.ReactNode;
 }) {
   const copyNumericDown = (field: "mrp" | "price" | "discount_pct" | "pack_size", index: number) => {
     const value = rows[index]?.[field];
