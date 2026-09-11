@@ -28,6 +28,7 @@ import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import {
   adminGetProductForEdit,
+  adminLoadVariantMatrix,
   adminSaveProductFamily,
   adminSaveRelatedProductFamilies,
 } from "@/lib/catalog-admin.functions";
@@ -873,7 +874,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                 text="Create the product and its variations first, then configure commission for each SKU and partner program."
               />
             ) : (
-              <VariantProgramCommissions productId={id} />
+              <VariantProgramCommissions productId={id} productSku={f.sku} />
             ))}
 
           {/* SEO */}
@@ -1086,71 +1087,90 @@ type CommissionRule = {
   is_active: boolean;
 };
 
-function VariantProgramCommissions({ productId }: { productId: string }) {
+function VariantProgramCommissions({ productId, productSku }: { productId: string; productSku: string }) {
   const qc = useQueryClient();
   const [rules, setRules] = useState<Record<string, CommissionRule>>({});
   const [savingCommissions, setSavingCommissions] = useState(false);
   const initialized = useRef(false);
 
   const q = useQuery({
-    queryKey: ["variant-program-commissions", productId],
+    queryKey: ["variant-program-commissions", productId, productSku],
+    enabled: Boolean(productId && productSku),
+    refetchOnWindowFocus: false,
     queryFn: async () => {
-      // Resolve variants through the same product/family identifiers used by this editor.
-      // First try direct product_id, then family_id for family-authoritative catalog rows.
-      let variantsResult = await (supabase as any)
-        .from("product_variants")
-        .select("id,sku,product_id,family_id,wattage,size,color_temp,model,pack_size")
-        .eq("product_id", productId)
-        .order("sku");
-
-      if (variantsResult.error || !(variantsResult.data ?? []).length) {
-        variantsResult = await (supabase as any)
-          .from("product_variants")
-          .select("id,sku,product_id,family_id,wattage,size,color_temp,model,pack_size")
-          .eq("family_id", productId)
-          .order("sku");
-      }
-
-      if (variantsResult.error) throw variantsResult.error;
-
-      const variants: CommissionVariant[] = (variantsResult.data ?? []).map((v: any) => {
-        const parts = [v.model, v.wattage, v.size, v.color_temp, v.pack_size ? `Pack ${v.pack_size}` : ""].filter(
-          Boolean,
-        );
-        return {
-          id: v.id,
-          sku: v.sku ?? "",
-          variation: parts.length ? parts.join(" • ") : (v.sku ?? "Variation"),
-        };
+      // IMPORTANT:
+      // Use the exact same family/product/SKU resolver as Manage Variations.
+      // Do not guess product_variants.product_id/family_id columns here.
+      const matrix = await adminLoadVariantMatrix({
+        data: {
+          familyId: null,
+          productId,
+          productSku,
+        },
       });
+
+      const variants: CommissionVariant[] = (matrix.variants ?? [])
+        .filter((row: any) => Boolean(row?.id))
+        .map((row: any) => {
+          const attrs = row.attributes && typeof row.attributes === "object" ? row.attributes : {};
+          const attributeValues = Object.entries(attrs)
+            .filter(
+              ([key, value]) =>
+                key !== "variant_label" && value !== null && value !== undefined && String(value).trim(),
+            )
+            .map(([, value]) => String(value).trim());
+
+          const variation =
+            String(attrs.variant_label ?? "").trim() ||
+            attributeValues.join(" • ") ||
+            String(row.sku ?? "").trim() ||
+            "Variation";
+
+          return {
+            id: String(row.id),
+            sku: String(row.sku ?? ""),
+            variation,
+          };
+        });
 
       const programsResult = await (supabase as any)
         .from("referral_programs")
-        .select("id,name,is_active")
-        .order("sort_order");
+        .select("id,name,is_active,is_published,sort_order")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
 
-      if (programsResult.error) throw programsResult.error;
+      if (programsResult.error) {
+        throw new Error(`Partner programs: ${programsResult.error.message}`);
+      }
 
-      const programs: CommissionProgram[] = (programsResult.data ?? []).map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        is_active: p.is_active ?? true,
+      const programs: CommissionProgram[] = (programsResult.data ?? []).map((program: any) => ({
+        id: String(program.id),
+        name: String(program.name ?? "Partner Program"),
+        is_active: program.is_active ?? true,
       }));
 
-      const variantIds = variants.map((v) => v.id);
       let existing: any[] = [];
+      const variantIds = variants.map((variant) => variant.id);
 
-      if (variantIds.length) {
+      if (variantIds.length > 0) {
         const existingResult = await (supabase as any)
           .from("variant_program_commissions")
           .select("id,variant_id,program_id,commission_kind,commission_value,max_commission,is_active")
           .in("variant_id", variantIds);
 
-        if (existingResult.error) throw existingResult.error;
+        if (existingResult.error) {
+          throw new Error(`Commission overrides: ${existingResult.error.message}`);
+        }
+
         existing = existingResult.data ?? [];
       }
 
-      return { variants, programs, existing };
+      return {
+        family: matrix.family,
+        variants,
+        programs,
+        existing,
+      };
     },
   });
 
@@ -1166,6 +1186,7 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
         );
 
         const key = `${variant.id}:${program.id}`;
+
         next[key] = {
           id: existing?.id,
           variant_id: variant.id,
@@ -1187,6 +1208,7 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
 
   const updateRule = (variantId: string, programId: string, patch: Partial<CommissionRule>) => {
     const key = `${variantId}:${programId}`;
+
     setRules((current) => ({
       ...current,
       [key]: {
@@ -1206,32 +1228,53 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
   const saveAll = async () => {
     const rows = Object.values(rules);
 
+    if (!rows.length) {
+      toast.error("No commission rows to save");
+      return;
+    }
+
     for (const row of rows) {
-      if (row.commission_value < 0) {
-        toast.error("Commission cannot be negative");
+      if (!Number.isFinite(row.commission_value) || row.commission_value < 0) {
+        toast.error("Commission value must be 0 or greater");
         return;
       }
+
       if (row.commission_kind === "percentage" && row.commission_value > 100) {
         toast.error("Percentage commission cannot exceed 100%");
+        return;
+      }
+
+      if (row.max_commission != null && (!Number.isFinite(row.max_commission) || row.max_commission < 0)) {
+        toast.error("Maximum commission must be 0 or greater");
         return;
       }
     }
 
     setSavingCommissions(true);
+
     try {
-      const payload = rows.map(({ id: _id, ...row }) => row);
+      const payload = rows.map(({ id: _id, ...row }) => ({
+        variant_id: row.variant_id,
+        program_id: row.program_id,
+        commission_kind: row.commission_kind,
+        commission_value: row.commission_value,
+        max_commission: row.max_commission,
+        is_active: row.is_active,
+      }));
 
-      if (payload.length) {
-        const { error } = await (supabase as any)
-          .from("variant_program_commissions")
-          .upsert(payload, { onConflict: "variant_id,program_id" });
+      const { error } = await (supabase as any)
+        .from("variant_program_commissions")
+        .upsert(payload, { onConflict: "variant_id,program_id" });
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast.success("Variation commissions saved");
       initialized.current = false;
-      await qc.invalidateQueries({ queryKey: ["variant-program-commissions", productId] });
+
+      await qc.invalidateQueries({
+        queryKey: ["variant-program-commissions", productId, productSku],
+      });
+
       await q.refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save commissions");
@@ -1239,6 +1282,10 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
       setSavingCommissions(false);
     }
   };
+
+  if (!productSku) {
+    return <Notice title="Commission" text="This product needs a main SKU before commission settings can be loaded." />;
+  }
 
   if (q.isLoading) {
     return <Notice title="Commission" text="Loading variations and partner programs…" />;
@@ -1248,10 +1295,22 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
     return (
       <Section title="Commission">
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {q.error instanceof Error ? q.error.message : "Could not load commission settings."}
+          <div className="font-semibold">Could not load commission settings.</div>
+          <div className="mt-1 break-words text-xs">
+            {q.error instanceof Error ? q.error.message : "Unknown commission loading error"}
+          </div>
         </div>
-        <Button type="button" variant="outline" onClick={() => q.refetch()}>
-          <RefreshCw className="h-4 w-4" />
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            initialized.current = false;
+            q.refetch();
+          }}
+          disabled={q.isFetching}
+        >
+          <RefreshCw className={`h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} />
           Retry
         </Button>
       </Section>
@@ -1268,8 +1327,8 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
           <div>
             <div className="font-semibold text-slate-900">Variation × Partner Program Commission</div>
             <p className="mt-1 max-w-3xl text-sm text-slate-500">
-              Set a separate percentage or fixed commission for every generated SKU and every partner/referral program.
-              The same SKU can have different commission rules for different programs.
+              Every generated SKU can have a different commission for every partner program. Choose Percentage (%) or
+              Fixed (₹), set the value, optional cap and active status.
             </p>
           </div>
 
@@ -1291,13 +1350,13 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
           />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-[1180px] w-full text-sm">
-              <thead className="bg-slate-50">
+            <table className="w-full min-w-[1180px] text-sm">
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="border-b border-slate-200">
                   <th className="min-w-[190px] p-3 text-left font-semibold text-slate-700">Variation</th>
                   <th className="min-w-[180px] p-3 text-left font-semibold text-slate-700">SKU</th>
                   <th className="min-w-[230px] p-3 text-left font-semibold text-slate-700">Partner Program</th>
-                  <th className="min-w-[130px] p-3 text-left font-semibold text-slate-700">Type</th>
+                  <th className="min-w-[150px] p-3 text-left font-semibold text-slate-700">Type</th>
                   <th className="min-w-[130px] p-3 text-left font-semibold text-slate-700">Value</th>
                   <th className="min-w-[160px] p-3 text-left font-semibold text-slate-700">Max Commission</th>
                   <th className="min-w-[100px] p-3 text-center font-semibold text-slate-700">Active</th>
@@ -1308,20 +1367,28 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
                 {variants.flatMap((variant) =>
                   programs.map((program, programIndex) => {
                     const key = `${variant.id}:${program.id}`;
-                    const rule = rules[key] ?? {
-                      variant_id: variant.id,
-                      program_id: program.id,
-                      commission_kind: "percentage" as CommissionKind,
-                      commission_value: 0,
-                      max_commission: null,
-                      is_active: true,
-                    };
+
+                    const rule =
+                      rules[key] ??
+                      ({
+                        variant_id: variant.id,
+                        program_id: program.id,
+                        commission_kind: "percentage",
+                        commission_value: 0,
+                        max_commission: null,
+                        is_active: true,
+                      } satisfies CommissionRule);
 
                     return (
-                      <tr key={key} className="border-b border-slate-100 align-top last:border-b-0">
+                      <tr
+                        key={key}
+                        className="border-b border-slate-100 align-top last:border-b-0 hover:bg-slate-50/60"
+                      >
                         <td className="p-3">
                           {programIndex === 0 ? (
-                            <div className="font-medium text-slate-900">{variant.variation}</div>
+                            <div className="max-w-[260px] break-words font-medium text-slate-900">
+                              {variant.variation}
+                            </div>
                           ) : (
                             <span className="text-slate-300">↳</span>
                           )}
@@ -1346,9 +1413,9 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
                           <select
                             className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
                             value={rule.commission_kind}
-                            onChange={(e) =>
+                            onChange={(event) =>
                               updateRule(variant.id, program.id, {
-                                commission_kind: e.target.value as CommissionKind,
+                                commission_kind: event.target.value as CommissionKind,
                               })
                             }
                           >
@@ -1365,9 +1432,9 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
                               max={rule.commission_kind === "percentage" ? 100 : undefined}
                               step="0.01"
                               value={rule.commission_value}
-                              onChange={(e) =>
+                              onChange={(event) =>
                                 updateRule(variant.id, program.id, {
-                                  commission_value: Number(e.target.value || 0),
+                                  commission_value: Number(event.target.value || 0),
                                 })
                               }
                             />
@@ -1384,9 +1451,9 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
                             step="0.01"
                             placeholder="No cap"
                             value={rule.max_commission ?? ""}
-                            onChange={(e) =>
+                            onChange={(event) =>
                               updateRule(variant.id, program.id, {
-                                max_commission: e.target.value === "" ? null : Number(e.target.value),
+                                max_commission: event.target.value === "" ? null : Number(event.target.value),
                               })
                             }
                           />
@@ -1397,9 +1464,9 @@ function VariantProgramCommissions({ productId }: { productId: string }) {
                             type="checkbox"
                             className="mt-3 h-4 w-4"
                             checked={rule.is_active}
-                            onChange={(e) =>
+                            onChange={(event) =>
                               updateRule(variant.id, program.id, {
-                                is_active: e.target.checked,
+                                is_active: event.target.checked,
                               })
                             }
                           />
