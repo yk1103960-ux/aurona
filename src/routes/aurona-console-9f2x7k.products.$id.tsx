@@ -22,6 +22,7 @@ import {
   ShoppingBasket,
   RotateCcw,
   Layers3,
+  BadgePercent,
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
@@ -40,7 +41,7 @@ function ExistingProductEditor() {
   return <ProductEditor productId={id} />;
 }
 
-type MainTab = "general" | "media" | "customer" | "seo" | "shipping" | "warranty" | "frequently";
+type MainTab = "general" | "media" | "customer" | "commission" | "seo" | "shipping" | "warranty" | "frequently";
 
 type ProductForm = {
   name: string;
@@ -211,6 +212,11 @@ const TABS: {
     key: "customer",
     label: "Price & Stock for Customers",
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    key: "commission",
+    label: "Commission",
+    icon: <BadgePercent className="h-4 w-4" />,
   },
   {
     key: "seo",
@@ -858,6 +864,18 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             />
           )}
 
+          {/* COMMISSION */}
+
+          {tab === "commission" &&
+            (isNew ? (
+              <Notice
+                title="Save the product first"
+                text="Create the product and its variations first, then configure commission for each SKU and partner program."
+              />
+            ) : (
+              <VariantProgramCommissions productId={id} />
+            ))}
+
           {/* SEO */}
 
           {tab === "seo" && (
@@ -1041,6 +1059,361 @@ function VariantArea({
 
       <VariantEditor productSku={sku} productId={id} initialTab={variantTab} />
     </div>
+  );
+}
+
+type CommissionKind = "percentage" | "fixed";
+
+type CommissionVariant = {
+  id: string;
+  sku: string;
+  variation: string;
+};
+
+type CommissionProgram = {
+  id: string;
+  name: string;
+  is_active: boolean;
+};
+
+type CommissionRule = {
+  id?: string;
+  variant_id: string;
+  program_id: string;
+  commission_kind: CommissionKind;
+  commission_value: number;
+  max_commission: number | null;
+  is_active: boolean;
+};
+
+function VariantProgramCommissions({ productId }: { productId: string }) {
+  const qc = useQueryClient();
+  const [rules, setRules] = useState<Record<string, CommissionRule>>({});
+  const [savingCommissions, setSavingCommissions] = useState(false);
+  const initialized = useRef(false);
+
+  const q = useQuery({
+    queryKey: ["variant-program-commissions", productId],
+    queryFn: async () => {
+      // Resolve variants through the same product/family identifiers used by this editor.
+      // First try direct product_id, then family_id for family-authoritative catalog rows.
+      let variantsResult = await (supabase as any)
+        .from("product_variants")
+        .select("id,sku,product_id,family_id,wattage,size,color_temp,model,pack_size")
+        .eq("product_id", productId)
+        .order("sku");
+
+      if (variantsResult.error || !(variantsResult.data ?? []).length) {
+        variantsResult = await (supabase as any)
+          .from("product_variants")
+          .select("id,sku,product_id,family_id,wattage,size,color_temp,model,pack_size")
+          .eq("family_id", productId)
+          .order("sku");
+      }
+
+      if (variantsResult.error) throw variantsResult.error;
+
+      const variants: CommissionVariant[] = (variantsResult.data ?? []).map((v: any) => {
+        const parts = [v.model, v.wattage, v.size, v.color_temp, v.pack_size ? `Pack ${v.pack_size}` : ""].filter(
+          Boolean,
+        );
+        return {
+          id: v.id,
+          sku: v.sku ?? "",
+          variation: parts.length ? parts.join(" • ") : (v.sku ?? "Variation"),
+        };
+      });
+
+      const programsResult = await (supabase as any)
+        .from("referral_programs")
+        .select("id,name,is_active")
+        .order("sort_order");
+
+      if (programsResult.error) throw programsResult.error;
+
+      const programs: CommissionProgram[] = (programsResult.data ?? []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        is_active: p.is_active ?? true,
+      }));
+
+      const variantIds = variants.map((v) => v.id);
+      let existing: any[] = [];
+
+      if (variantIds.length) {
+        const existingResult = await (supabase as any)
+          .from("variant_program_commissions")
+          .select("id,variant_id,program_id,commission_kind,commission_value,max_commission,is_active")
+          .in("variant_id", variantIds);
+
+        if (existingResult.error) throw existingResult.error;
+        existing = existingResult.data ?? [];
+      }
+
+      return { variants, programs, existing };
+    },
+  });
+
+  useEffect(() => {
+    if (!q.data || initialized.current) return;
+
+    const next: Record<string, CommissionRule> = {};
+
+    for (const variant of q.data.variants) {
+      for (const program of q.data.programs) {
+        const existing = q.data.existing.find(
+          (row: any) => row.variant_id === variant.id && row.program_id === program.id,
+        );
+
+        const key = `${variant.id}:${program.id}`;
+        next[key] = {
+          id: existing?.id,
+          variant_id: variant.id,
+          program_id: program.id,
+          commission_kind: existing?.commission_kind === "fixed" ? "fixed" : "percentage",
+          commission_value: Number(existing?.commission_value ?? 0),
+          max_commission:
+            existing?.max_commission === null || existing?.max_commission === undefined
+              ? null
+              : Number(existing.max_commission),
+          is_active: existing?.is_active ?? true,
+        };
+      }
+    }
+
+    setRules(next);
+    initialized.current = true;
+  }, [q.data]);
+
+  const updateRule = (variantId: string, programId: string, patch: Partial<CommissionRule>) => {
+    const key = `${variantId}:${programId}`;
+    setRules((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] ?? {
+          variant_id: variantId,
+          program_id: programId,
+          commission_kind: "percentage" as CommissionKind,
+          commission_value: 0,
+          max_commission: null,
+          is_active: true,
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const saveAll = async () => {
+    const rows = Object.values(rules);
+
+    for (const row of rows) {
+      if (row.commission_value < 0) {
+        toast.error("Commission cannot be negative");
+        return;
+      }
+      if (row.commission_kind === "percentage" && row.commission_value > 100) {
+        toast.error("Percentage commission cannot exceed 100%");
+        return;
+      }
+    }
+
+    setSavingCommissions(true);
+    try {
+      const payload = rows.map(({ id: _id, ...row }) => row);
+
+      if (payload.length) {
+        const { error } = await (supabase as any)
+          .from("variant_program_commissions")
+          .upsert(payload, { onConflict: "variant_id,program_id" });
+
+        if (error) throw error;
+      }
+
+      toast.success("Variation commissions saved");
+      initialized.current = false;
+      await qc.invalidateQueries({ queryKey: ["variant-program-commissions", productId] });
+      await q.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save commissions");
+    } finally {
+      setSavingCommissions(false);
+    }
+  };
+
+  if (q.isLoading) {
+    return <Notice title="Commission" text="Loading variations and partner programs…" />;
+  }
+
+  if (q.isError) {
+    return (
+      <Section title="Commission">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {q.error instanceof Error ? q.error.message : "Could not load commission settings."}
+        </div>
+        <Button type="button" variant="outline" onClick={() => q.refetch()}>
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
+      </Section>
+    );
+  }
+
+  const variants = q.data?.variants ?? [];
+  const programs = q.data?.programs ?? [];
+
+  return (
+    <Section title="Commission">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="font-semibold text-slate-900">Variation × Partner Program Commission</div>
+            <p className="mt-1 max-w-3xl text-sm text-slate-500">
+              Set a separate percentage or fixed commission for every generated SKU and every partner/referral program.
+              The same SKU can have different commission rules for different programs.
+            </p>
+          </div>
+
+          <Button type="button" onClick={saveAll} disabled={savingCommissions || !variants.length || !programs.length}>
+            <Save className="mr-2 h-4 w-4" />
+            {savingCommissions ? "Saving…" : "Save Commissions"}
+          </Button>
+        </div>
+
+        {!variants.length ? (
+          <Notice
+            title="No generated variations"
+            text="Open Manage Variations and generate at least one SKU before setting commissions."
+          />
+        ) : !programs.length ? (
+          <Notice
+            title="No partner programs"
+            text="Create at least one Referral/Partner Program in Editorial before setting SKU commissions."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="min-w-[1180px] w-full text-sm">
+              <thead className="bg-slate-50">
+                <tr className="border-b border-slate-200">
+                  <th className="min-w-[190px] p-3 text-left font-semibold text-slate-700">Variation</th>
+                  <th className="min-w-[180px] p-3 text-left font-semibold text-slate-700">SKU</th>
+                  <th className="min-w-[230px] p-3 text-left font-semibold text-slate-700">Partner Program</th>
+                  <th className="min-w-[130px] p-3 text-left font-semibold text-slate-700">Type</th>
+                  <th className="min-w-[130px] p-3 text-left font-semibold text-slate-700">Value</th>
+                  <th className="min-w-[160px] p-3 text-left font-semibold text-slate-700">Max Commission</th>
+                  <th className="min-w-[100px] p-3 text-center font-semibold text-slate-700">Active</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {variants.flatMap((variant) =>
+                  programs.map((program, programIndex) => {
+                    const key = `${variant.id}:${program.id}`;
+                    const rule = rules[key] ?? {
+                      variant_id: variant.id,
+                      program_id: program.id,
+                      commission_kind: "percentage" as CommissionKind,
+                      commission_value: 0,
+                      max_commission: null,
+                      is_active: true,
+                    };
+
+                    return (
+                      <tr key={key} className="border-b border-slate-100 align-top last:border-b-0">
+                        <td className="p-3">
+                          {programIndex === 0 ? (
+                            <div className="font-medium text-slate-900">{variant.variation}</div>
+                          ) : (
+                            <span className="text-slate-300">↳</span>
+                          )}
+                        </td>
+
+                        <td className="p-3">
+                          {programIndex === 0 ? (
+                            <span className="break-all font-mono text-xs text-slate-700">{variant.sku}</span>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
+
+                        <td className="p-3">
+                          <div className="font-medium text-slate-800">{program.name}</div>
+                          {!program.is_active && (
+                            <div className="mt-1 text-xs text-amber-600">Program currently paused</div>
+                          )}
+                        </td>
+
+                        <td className="p-3">
+                          <select
+                            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                            value={rule.commission_kind}
+                            onChange={(e) =>
+                              updateRule(variant.id, program.id, {
+                                commission_kind: e.target.value as CommissionKind,
+                              })
+                            }
+                          >
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed (₹)</option>
+                          </select>
+                        </td>
+
+                        <td className="p-3">
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              max={rule.commission_kind === "percentage" ? 100 : undefined}
+                              step="0.01"
+                              value={rule.commission_value}
+                              onChange={(e) =>
+                                updateRule(variant.id, program.id, {
+                                  commission_value: Number(e.target.value || 0),
+                                })
+                              }
+                            />
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                              {rule.commission_kind === "percentage" ? "%" : "₹"}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="p-3">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="No cap"
+                            value={rule.max_commission ?? ""}
+                            onChange={(e) =>
+                              updateRule(variant.id, program.id, {
+                                max_commission: e.target.value === "" ? null : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </td>
+
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            className="mt-3 h-4 w-4"
+                            checked={rule.is_active}
+                            onChange={(e) =>
+                              updateRule(variant.id, program.id, {
+                                is_active: e.target.checked,
+                              })
+                            }
+                          />
+                        </td>
+                      </tr>
+                    );
+                  }),
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </Section>
   );
 }
 
