@@ -2177,7 +2177,7 @@ function CustomerTab({
             <h2 className="text-base font-semibold text-slate-950">Commission</h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              No variations yet. Add them in the All Variation Details tab first to set prices and commission here.
+              No variations yet. Add them in the Options &amp; Variants tab first to set prices and commission here.
             </p>
           </div>
         </section>
