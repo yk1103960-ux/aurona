@@ -740,17 +740,48 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                 </Section>
               </div>
 
-              <Section title="Description">
-                <div className="grid gap-4 lg:grid-cols-2">
+              {/* PRODUCT CONTENT — Manu requirement: exactly 3 simple copy/paste boxes */}
+              <Section title="Product Content">
+                <div className="space-y-5">
                   <Field label="Short Description">
                     <Textarea
-                      rows={5}
+                      rows={4}
                       value={f.short_description}
+                      placeholder="Enter or paste the short description..."
                       onChange={(e) => upd("short_description", e.target.value)}
+                      className="min-h-[110px] w-full resize-y"
                     />
+                    <div className="text-xs text-slate-500">
+                      Shown below the Product Name on the customer product page.
+                    </div>
                   </Field>
-                  <Field label="Full Description">
-                    <Textarea rows={8} value={f.description} onChange={(e) => upd("description", e.target.value)} />
+
+                  <Field label="Description">
+                    <Textarea
+                      rows={10}
+                      value={f.description}
+                      placeholder="Copy and paste the complete product description here..."
+                      onChange={(e) => upd("description", e.target.value)}
+                      className="min-h-[220px] w-full resize-y"
+                    />
+                    <div className="text-xs text-slate-500">
+                      Shown in the Description section of the customer product page.
+                    </div>
+                  </Field>
+
+                  <Field label="Specification">
+                    <Textarea
+                      rows={12}
+                      value={f.specifications}
+                      placeholder={
+                        "Copy and paste the complete product specifications here...\n\nExample:\nWattage: 10W\nInput Voltage: 220-240V\nColour Temperature: 6500K\nMaterial: Aluminium\nIP Rating: IP55\nWarranty: 2 Years"
+                      }
+                      onChange={(e) => upd("specifications", e.target.value)}
+                      className="min-h-[260px] w-full resize-y whitespace-pre-wrap"
+                    />
+                    <div className="text-xs text-slate-500">
+                      Shown in the Specification section of the customer product page.
+                    </div>
                   </Field>
                 </div>
               </Section>
@@ -780,16 +811,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                   <Check label="On Sale" checked={f.is_sale} onChange={(value) => upd("is_sale", value)} />
                 </Section>
               </div>
-
-              <Section title="Key Features & Specifications">
-                <div className="grid gap-6 xl:grid-cols-2">
-                  <EditableFeatureRows value={f.features} onChange={(value) => upd("features", value)} />
-                  <EditableSpecificationRows
-                    value={f.specifications}
-                    onChange={(value) => upd("specifications", value)}
-                  />
-                </div>
-              </Section>
             </div>
           )}
 
@@ -1558,157 +1579,6 @@ function RelatedProducts({ familyId }: { familyId: string }) {
         {q.isLoading && <div className="p-6 text-center text-sm text-slate-500">Loading products…</div>}
       </div>
     </Section>
-  );
-}
-
-function EditableFeatureRows({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const rows = value === "" ? [""] : value.split("\n");
-
-  const commit = (next: string[]) => {
-    onChange(next.join("\n"));
-  };
-
-  return (
-    <div className="space-y-3">
-      <div>
-        <div className="text-sm font-semibold text-slate-900">Key Features</div>
-        <div className="mt-1 text-xs text-slate-500">
-          Add, edit, remove and reorder the product's customer-facing feature points.
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {rows.map((row, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <div className="flex h-10 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-xs font-semibold text-slate-500">
-              {index + 1}
-            </div>
-            <Input
-              value={row}
-              placeholder={index === 0 ? "Example: High lumen output" : "Feature"}
-              onChange={(event) => {
-                const next = [...rows];
-                next[index] = event.target.value;
-                commit(next);
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={rows.length === 1 && row === ""}
-              onClick={() => {
-                const next = rows.filter((_, rowIndex) => rowIndex !== index);
-                commit(next.length ? next : [""]);
-              }}
-            >
-              Delete
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      <Button type="button" variant="outline" onClick={() => commit([...rows, ""])}>
-        + Add Feature
-      </Button>
-    </div>
-  );
-}
-
-function EditableSpecificationRows({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const parseRows = (source: string) => {
-    if (!source.trim()) return [{ label: "", value: "" }];
-
-    return source.split("\n").map((line) => {
-      const separator = line.indexOf(":");
-      if (separator === -1) {
-        return { label: line.trim(), value: "" };
-      }
-      return {
-        label: line.slice(0, separator).trim(),
-        value: line.slice(separator + 1).trim(),
-      };
-    });
-  };
-
-  const rows = parseRows(value);
-
-  const commit = (next: { label: string; value: string }[]) => {
-    onChange(
-      next
-        .map((row) => {
-          const label = row.label.replace(/:/g, "").trim();
-          const specificationValue = row.value.trim();
-
-          if (!label && !specificationValue) return "";
-          if (!label) return specificationValue;
-          return `${label}: ${specificationValue}`;
-        })
-        .join("\n"),
-    );
-  };
-
-  return (
-    <div className="space-y-3">
-      <div>
-        <div className="text-sm font-semibold text-slate-900">Specifications</div>
-        <div className="mt-1 text-xs text-slate-500">
-          Every specification is fully editable. Add any custom specification needed for this product.
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-lg border border-slate-200">
-        <div className="grid grid-cols-[minmax(140px,0.9fr)_minmax(160px,1.1fr)_80px] gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <div>Specification</div>
-          <div>Value</div>
-          <div className="text-center">Action</div>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {rows.map((row, index) => (
-            <div key={index} className="grid grid-cols-[minmax(140px,0.9fr)_minmax(160px,1.1fr)_80px] gap-2 p-3">
-              <Input
-                value={row.label}
-                placeholder="e.g. IP Rating"
-                onChange={(event) => {
-                  const next = rows.map((item) => ({ ...item }));
-                  next[index].label = event.target.value;
-                  commit(next);
-                }}
-              />
-              <Input
-                value={row.value}
-                placeholder="e.g. IP55"
-                onChange={(event) => {
-                  const next = rows.map((item) => ({ ...item }));
-                  next[index].value = event.target.value;
-                  commit(next);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const next = rows.filter((_, rowIndex) => rowIndex !== index);
-                  commit(next.length ? next : [{ label: "", value: "" }]);
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Button type="button" variant="outline" onClick={() => commit([...rows, { label: "", value: "" }])}>
-        + Add Specification
-      </Button>
-
-      <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-        Examples: Wattage → 7W, Body Colour → White, Cutout Size → 75 mm, IP Rating → IP55.
-      </div>
-    </div>
   );
 }
 
