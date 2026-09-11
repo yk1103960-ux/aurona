@@ -98,7 +98,7 @@ export function VariantEditor({
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "options" : initialTab);
+  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "quick" : initialTab);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
   const [axisRows, setAxisRows] = useState<Axis[]>([]);
@@ -187,7 +187,7 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(initialTab === "options" || initialTab === "quick" ? "options" : initialTab);
+    setTab(initialTab === "options" || initialTab === "quick" ? "quick" : initialTab);
   }, [initialTab]);
 
   const family = q.data?.family;
@@ -644,11 +644,11 @@ export function VariantEditor({
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
           <TabButton
-            active={tab === "options"}
-            onClick={() => setTab("options")}
+            active={tab === "quick"}
+            onClick={() => setTab("quick")}
             icon={<SlidersHorizontal className="h-4 w-4" />}
           >
-            All Variation Details
+            Options &amp; Variants
           </TabButton>
 
           <TabButton
@@ -692,21 +692,6 @@ export function VariantEditor({
           />
         </div>
 
-        <div hidden={tab !== "options"}>
-          <OptionsTab
-            axes={axes}
-            rows={rows}
-            updateRow={updateRow}
-            removeRow={removeRow}
-            editRow={(row) => {
-              setWizardStep(0);
-              setEditingId(row.id);
-            }}
-            duplicateRow={duplicateRow}
-            manageImages={onManageImages}
-            optionsEditor={editingId ? null : optionsEditor}
-          />
-        </div>
 
         {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
 
@@ -2192,7 +2177,7 @@ function CustomerTab({
             <h2 className="text-base font-semibold text-slate-950">Commission</h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              No variations yet. Add them in the All Variation Details tab first to set prices and commission here.
+              No variations yet. Add them in the Options &amp; Variants tab first to set prices and commission here.
             </p>
           </div>
         </section>
