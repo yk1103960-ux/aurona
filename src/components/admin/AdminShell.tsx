@@ -36,14 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/components/ui/command";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Search, RefreshCw, AlertTriangle } from "lucide-react";
@@ -98,6 +91,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/aurona-console-9f2x7k/customers", label: "Customers" },
       { to: "/aurona-console-9f2x7k/applications", label: "Partner Applications", icon: Handshake },
       { to: "/aurona-console-9f2x7k/affiliates", label: "Affiliates", icon: Handshake },
+      { to: "/aurona-console-9f2x7k/editorial", label: "Partner Programs", icon: Handshake },
       { to: "/aurona-console-9f2x7k/careers", label: "Career Applications" },
     ],
   },
@@ -143,9 +137,7 @@ function isNavActive(item: NavItem, pathname: string) {
 function currentAdminLabel(pathname: string) {
   if (/\/products\/[^/]+\/variations\/?$/.test(pathname)) return "Manage Variants";
   if (/\/orders\/[^/]+\/?$/.test(pathname)) return "Order Details";
-  const direct = [DASHBOARD, ...NAV_GROUPS.flatMap((group) => group.items)].find((item) =>
-    isNavActive(item, pathname),
-  );
+  const direct = [DASHBOARD, ...NAV_GROUPS.flatMap((group) => group.items)].find((item) => isNavActive(item, pathname));
   if (direct) return direct.label;
   if (pathname.startsWith("/aurona-console-9f2x7k/products/")) return "Product Editor";
   if (pathname.startsWith("/aurona-console-9f2x7k/orders/")) return "Order Details";
@@ -161,11 +153,7 @@ function AdminNavLink({ item, pathname }: { item: NavItem; pathname: string }) {
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 ${active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
     >
-      {Icon ? (
-        <Icon className="h-4 w-4" />
-      ) : (
-        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-      )}
+      {Icon ? <Icon className="h-4 w-4" /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />}
       {item.label}
     </Link>
   );
@@ -181,8 +169,7 @@ export function AdminShell() {
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const searchReturnFocus = useRef<HTMLElement | null>(null);
   const openPageSearch = useCallback(() => {
-    searchReturnFocus.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    searchReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setMenuOpen(false);
     setSearchOpen(true);
   }, []);
@@ -248,13 +235,7 @@ export function AdminShell() {
         nav({ to: "/aurona-console-9f2x7k", replace: true });
       }, IDLE_TIMEOUT_MS);
     };
-    const events: Array<keyof WindowEventMap> = [
-      "mousemove",
-      "keydown",
-      "click",
-      "scroll",
-      "touchstart",
-    ];
+    const events: Array<keyof WindowEventMap> = ["mousemove", "keydown", "click", "scroll", "touchstart"];
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
     reset();
     return () => {
@@ -265,9 +246,7 @@ export function AdminShell() {
 
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">
-        Verifying admin access…
-      </div>
+      <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">Verifying admin access…</div>
     );
   }
   if (!user) return <AdminLogin />;
@@ -321,9 +300,7 @@ export function AdminShell() {
               >
                 <Icon className="h-4 w-4" />
                 <span className="flex-1 text-left">{group.label}</span>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
               </button>
               {expanded && (
                 <div className="ml-3 space-y-1 border-l border-white/10 pl-2">
@@ -401,9 +378,7 @@ export function AdminShell() {
           className="admin-sidebar flex w-72 max-w-[86vw] flex-col gap-0 border-0 bg-slate-950 p-0 text-slate-100 [&>button]:hidden"
         >
           <SheetTitle className="sr-only">Admin navigation</SheetTitle>
-          <SheetDescription className="sr-only">
-            Choose an admin page. Press Escape to close the menu.
-          </SheetDescription>
+          <SheetDescription className="sr-only">Choose an admin page. Press Escape to close the menu.</SheetDescription>
           {sidebarContent}
         </SheetContent>
       </Sheet>
@@ -416,8 +391,7 @@ export function AdminShell() {
           </div>
           <div className="flex items-center gap-3">
             <Button type="button" variant="outline" onClick={openPageSearch}>
-              <Search className="h-4 w-4" /> Find a page{" "}
-              <kbd className="ml-2 text-xs text-slate-400">Ctrl / ⌘ K</kbd>
+              <Search className="h-4 w-4" /> Find a page <kbd className="ml-2 text-xs text-slate-400">Ctrl / ⌘ K</kbd>
             </Button>
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-xs font-bold text-sky-700">
               {(user.email?.[0] ?? "A").toUpperCase()}
@@ -428,11 +402,7 @@ export function AdminShell() {
             </div>
           </div>
         </header>
-        <div
-          id="admin-page-content"
-          tabIndex={-1}
-          className="mx-auto min-w-0 max-w-[1480px] p-4 sm:p-6 lg:p-8"
-        >
+        <div id="admin-page-content" tabIndex={-1} className="mx-auto min-w-0 max-w-[1480px] p-4 sm:p-6 lg:p-8">
           <AdminDataStatus />
           <Outlet />
         </div>
@@ -485,20 +455,14 @@ function AdminDataStatus() {
   const failed = () =>
     cache
       .getAll()
-      .filter(
-        (query) =>
-          query.isActive() && query.state.status === "error" && isAdminQueryKey(query.queryKey),
-      );
+      .filter((query) => query.isActive() && query.state.status === "error" && isAdminQueryKey(query.queryKey));
   const subscribe = useCallback((listener: () => void) => cache.subscribe(listener), [cache]);
   const snapshot = useCallback(
     () =>
       JSON.stringify(
         cache
           .getAll()
-          .filter(
-            (query) =>
-              query.isActive() && query.state.status === "error" && isAdminQueryKey(query.queryKey),
-          )
+          .filter((query) => query.isActive() && query.state.status === "error" && isAdminQueryKey(query.queryKey))
           .map((query) => [query.queryHash, query.state.fetchStatus]),
       ),
     [cache],
@@ -525,9 +489,7 @@ function AdminDataStatus() {
       <div className="flex gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
-          <p className="font-semibold">
-            {online ? "Some page data could not be loaded" : "You are offline"}
-          </p>
+          <p className="font-semibold">{online ? "Some page data could not be loaded" : "You are offline"}</p>
           <p className="mt-1">
             {online
               ? "An empty table may not mean there are no records. Retry the failed requests; database setup or access may need attention."
@@ -563,8 +525,7 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
     event.preventDefault();
     setBusy(true);
 
-    const loginEmail =
-      email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
+    const loginEmail = email.trim().toLowerCase() === "admin" ? "admin@aurona.in" : email.trim().toLowerCase();
     // Drop any existing (non-admin) storefront session first so the console
     // never mixes a customer session with an admin sign-in attempt.
     if (signedInAs) await supabase.auth.signOut();
@@ -603,12 +564,9 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
             <Shield className="h-4 w-4" /> Confidential Access
           </div>
           <div>
-            <h1 className="max-w-2xl text-5xl font-semibold leading-tight text-white">
-              Aurona Admin Console
-            </h1>
+            <h1 className="max-w-2xl text-5xl font-semibold leading-tight text-white">Aurona Admin Console</h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-slate-300">
-              A separate secure entry point for managing products, orders, customers, media and
-              storefront settings.
+              A separate secure entry point for managing products, orders, customers, media and storefront settings.
             </p>
           </div>
           <div className="grid max-w-xl grid-cols-3 gap-3 text-xs text-slate-300">
@@ -629,8 +587,8 @@ function AdminLogin({ signedInAs }: { signedInAs?: string }) {
 
           {signedInAs && (
             <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-100">
-              You are signed in as <span className="font-semibold">{signedInAs}</span>, which has no
-              admin access. Sign in below with an authorized admin account.
+              You are signed in as <span className="font-semibold">{signedInAs}</span>, which has no admin access. Sign
+              in below with an authorized admin account.
               <button
                 type="button"
                 onClick={async () => {
