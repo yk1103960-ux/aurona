@@ -446,65 +446,13 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <TabsTrigger value="variations">All Variations ({family.variants.length})</TabsTrigger>
             <TabsTrigger value="ship">Shipping</TabsTrigger>
           </TabsList>
-          {(family.description || features.length > 0) && (
+          {family.description && (
             <TabsContent value="about" className="pt-6">
-              <div className="grid max-w-4xl gap-8 md:grid-cols-2">
-                {family.description && (
-                  <div>
-                    <div className="text-eyebrow">About this product</div>
-                    <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
-                      {family.description
-                        .split(/\n{2,}|\n/)
-                        .filter((p) => p.trim())
-                        .map((p, i) => (
-                          <p key={i}>{p}</p>
-                        ))}
-                    </div>
-                  </div>
-                )}
-                {features.length > 0 && (
-                  <div>
-                    <div className="text-eyebrow">Key features</div>
-                    <div className="mt-3 overflow-hidden rounded-xl border border-border">
-                      {features.map((feature, index) => {
-                        const text = String(feature).trim();
-                        const colonIndex = text.indexOf(":");
-                        const dashIndex = text.indexOf(" - ");
-
-                        let separatorIndex = -1;
-                        let separatorLength = 0;
-
-                        if (colonIndex > 0) {
-                          separatorIndex = colonIndex;
-                          separatorLength = 1;
-                        } else if (dashIndex > 0) {
-                          separatorIndex = dashIndex;
-                          separatorLength = 3;
-                        }
-
-                        const hasLabel = separatorIndex > 0;
-                        const label = hasLabel ? text.slice(0, separatorIndex).trim() : "";
-                        const value = hasLabel ? text.slice(separatorIndex + separatorLength).trim() : text;
-
-                        return (
-                          <div
-                            key={`${text}-${index}`}
-                            className="grid grid-cols-[minmax(120px,0.8fr)_1.2fr] gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0 sm:grid-cols-2"
-                          >
-                            {hasLabel ? (
-                              <>
-                                <div className="capitalize text-muted-foreground">{label}</div>
-                                <div className="font-medium">{value || "—"}</div>
-                              </>
-                            ) : (
-                              <div className="col-span-2 font-medium">{value}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+              <div className="max-w-2xl">
+                <div className="text-eyebrow">About this product</div>
+                <div className="mt-3">
+                  <LinedRows items={descriptionRows} />
+                </div>
               </div>
             </TabsContent>
           )}
