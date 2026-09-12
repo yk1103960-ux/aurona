@@ -660,6 +660,28 @@ function LegacyPDP({ slug }: { slug: string }) {
   );
 }
 
+function LinedRows({ items }: { items: Array<{ label?: string; value: string }> }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border">
+      {items.map((item, index) => (
+        <div
+          key={index}
+          className="grid grid-cols-[minmax(120px,0.8fr)_1.2fr] gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0 sm:grid-cols-2"
+        >
+          {item.label ? (
+            <>
+              <div className="capitalize text-muted-foreground">{item.label}</div>
+              <div className="font-medium">{item.value || "—"}</div>
+            </>
+          ) : (
+            <div className="col-span-2 font-medium">{item.value}</div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Spec({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
