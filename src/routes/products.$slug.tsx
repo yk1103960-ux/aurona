@@ -439,9 +439,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="mt-16">
-        <Tabs defaultValue={family.description || features.length ? "about" : "specs"}>
+        <Tabs defaultValue={family.description ? "about" : "specs"}>
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-            {(family.description || features.length > 0) && <TabsTrigger value="about">Description</TabsTrigger>}
+            {family.description && <TabsTrigger value="about">Description</TabsTrigger>}
             <TabsTrigger value="specs">Specifications</TabsTrigger>
             <TabsTrigger value="variations">All Variations ({family.variants.length})</TabsTrigger>
             <TabsTrigger value="ship">Shipping</TabsTrigger>
