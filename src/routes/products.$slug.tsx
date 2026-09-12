@@ -149,10 +149,36 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
         ? { l: family.dim_l, w: family.dim_w, h: family.dim_h }
         : null;
   const dimsText = dims ? `${dims.l ?? "—"} × ${dims.w ?? "—"} × ${dims.h ?? "—"} cm` : null;
-  const features = (family.features ?? []).filter((f) => Boolean(f && String(f).trim()));
   const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
     ([k, v]) => Boolean(k) && Boolean(v),
   );
+  const descriptionRows = useMemo(() => {
+    if (!family.description) return [];
+    return family.description
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((text) => {
+        const colonIndex = text.indexOf(":");
+        const dashIndex = text.indexOf(" - ");
+        let separatorIndex = -1;
+        let separatorLength = 0;
+        if (colonIndex > 0) {
+          separatorIndex = colonIndex;
+          separatorLength = 1;
+        } else if (dashIndex > 0) {
+          separatorIndex = dashIndex;
+          separatorLength = 3;
+        }
+        if (separatorIndex > 0) {
+          return {
+            label: text.slice(0, separatorIndex).trim(),
+            value: text.slice(separatorIndex + separatorLength).trim(),
+          };
+        }
+        return { value: text };
+      });
+  }, [family.description]);
 
   const buyNow = async () => {
     if (!productId || !inStock) return;
