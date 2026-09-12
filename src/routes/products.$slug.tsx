@@ -457,37 +457,34 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             </TabsContent>
           )}
           <TabsContent value="specs" className="pt-6">
-            <div className="max-w-2xl divide-y divide-border rounded-xl border border-border">
-              {(
-                [
-                  ["Brand", family.brand],
-                  ["Category", cat?.name],
-                  ["Main SKU", family.main_sku],
-                  ["Selected SKU", variant.sku],
-                  ...Object.entries(variant.attributes)
-                    .filter(([k, v]) => k !== "variant_label" && Boolean(v))
-                    .map(
-                      ([k, v]) =>
-                        [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
-                    ),
-                  ...specEntries,
-                  ["MOQ", variant.moq ? String(variant.moq) : null],
-                  ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
-                  ["Weight", weightText],
-                  ["Dimensions (LxWxH)", dimsText],
-                  ["Body type", family.body_type],
-                  ["Warranty", family.warranty],
-                  ["Material", family.material],
-                  ["Country of origin", "India"],
-                ] as Array<readonly [string, string | null | undefined]>
-              )
-                .filter(([, v]) => Boolean(v))
-                .map(([k, v]) => (
-                  <div key={k} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
-                    <div className="capitalize text-muted-foreground">{k}</div>
-                    <div className="font-medium">{v}</div>
-                  </div>
-                ))}
+            <div className="max-w-2xl">
+              <LinedRows
+                items={(
+                  [
+                    ["Brand", family.brand],
+                    ["Category", cat?.name],
+                    ["Main SKU", family.main_sku],
+                    ["Selected SKU", variant.sku],
+                    ...Object.entries(variant.attributes)
+                      .filter(([k, v]) => k !== "variant_label" && Boolean(v))
+                      .map(
+                        ([k, v]) =>
+                          [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
+                      ),
+                    ...specEntries,
+                    ["MOQ", variant.moq ? String(variant.moq) : null],
+                    ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
+                    ["Weight", weightText],
+                    ["Dimensions (LxWxH)", dimsText],
+                    ["Body type", family.body_type],
+                    ["Warranty", family.warranty],
+                    ["Material", family.material],
+                    ["Country of origin", "India"],
+                  ] as Array<readonly [string, string | null | undefined]>
+                )
+                  .filter(([, v]) => Boolean(v))
+                  .map(([k, v]) => ({ label: k, value: v as string }))}
+              />
             </div>
           </TabsContent>
           <TabsContent value="variations" className="pt-6">
