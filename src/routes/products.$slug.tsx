@@ -149,10 +149,36 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
         ? { l: family.dim_l, w: family.dim_w, h: family.dim_h }
         : null;
   const dimsText = dims ? `${dims.l ?? "—"} × ${dims.w ?? "—"} × ${dims.h ?? "—"} cm` : null;
-  const features = (family.features ?? []).filter((f) => Boolean(f && String(f).trim()));
   const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
     ([k, v]) => Boolean(k) && Boolean(v),
   );
+  const descriptionRows = useMemo(() => {
+    if (!family.description) return [];
+    return family.description
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((text) => {
+        const colonIndex = text.indexOf(":");
+        const dashIndex = text.indexOf(" - ");
+        let separatorIndex = -1;
+        let separatorLength = 0;
+        if (colonIndex > 0) {
+          separatorIndex = colonIndex;
+          separatorLength = 1;
+        } else if (dashIndex > 0) {
+          separatorIndex = dashIndex;
+          separatorLength = 3;
+        }
+        if (separatorIndex > 0) {
+          return {
+            label: text.slice(0, separatorIndex).trim(),
+            value: text.slice(separatorIndex + separatorLength).trim(),
+          };
+        }
+        return { value: text };
+      });
+  }, [family.description]);
 
   const buyNow = async () => {
     if (!productId || !inStock) return;
@@ -413,107 +439,52 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       </div>
 
       <div className="mt-16">
-        <Tabs defaultValue={family.description || features.length ? "about" : "specs"}>
+        <Tabs defaultValue={family.description ? "about" : "specs"}>
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
-            {(family.description || features.length > 0) && <TabsTrigger value="about">Description</TabsTrigger>}
+            {family.description && <TabsTrigger value="about">Description</TabsTrigger>}
             <TabsTrigger value="specs">Specifications</TabsTrigger>
             <TabsTrigger value="variations">All Variations ({family.variants.length})</TabsTrigger>
             <TabsTrigger value="ship">Shipping</TabsTrigger>
           </TabsList>
-          {(family.description || features.length > 0) && (
+          {family.description && (
             <TabsContent value="about" className="pt-6">
-              <div className="grid max-w-4xl gap-8 md:grid-cols-2">
-                {family.description && (
-                  <div>
-                    <div className="text-eyebrow">About this product</div>
-                    <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
-                      {family.description
-                        .split(/\n{2,}|\n/)
-                        .filter((p) => p.trim())
-                        .map((p, i) => (
-                          <p key={i}>{p}</p>
-                        ))}
-                    </div>
-                  </div>
-                )}
-                {features.length > 0 && (
-                  <div>
-                    <div className="text-eyebrow">Key features</div>
-                    <div className="mt-3 overflow-hidden rounded-xl border border-border">
-                      {features.map((feature, index) => {
-                        const text = String(feature).trim();
-                        const colonIndex = text.indexOf(":");
-                        const dashIndex = text.indexOf(" - ");
-
-                        let separatorIndex = -1;
-                        let separatorLength = 0;
-
-                        if (colonIndex > 0) {
-                          separatorIndex = colonIndex;
-                          separatorLength = 1;
-                        } else if (dashIndex > 0) {
-                          separatorIndex = dashIndex;
-                          separatorLength = 3;
-                        }
-
-                        const hasLabel = separatorIndex > 0;
-                        const label = hasLabel ? text.slice(0, separatorIndex).trim() : "";
-                        const value = hasLabel ? text.slice(separatorIndex + separatorLength).trim() : text;
-
-                        return (
-                          <div
-                            key={`${text}-${index}`}
-                            className="grid grid-cols-[minmax(120px,0.8fr)_1.2fr] gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0 sm:grid-cols-2"
-                          >
-                            {hasLabel ? (
-                              <>
-                                <div className="capitalize text-muted-foreground">{label}</div>
-                                <div className="font-medium">{value || "—"}</div>
-                              </>
-                            ) : (
-                              <div className="col-span-2 font-medium">{value}</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+              <div className="max-w-2xl">
+                <div className="text-eyebrow">About this product</div>
+                <div className="mt-3">
+                  <LinedRows items={descriptionRows} />
+                </div>
               </div>
             </TabsContent>
           )}
           <TabsContent value="specs" className="pt-6">
-            <div className="max-w-2xl divide-y divide-border rounded-xl border border-border">
-              {(
-                [
-                  ["Brand", family.brand],
-                  ["Category", cat?.name],
-                  ["Main SKU", family.main_sku],
-                  ["Selected SKU", variant.sku],
-                  ...Object.entries(variant.attributes)
-                    .filter(([k, v]) => k !== "variant_label" && Boolean(v))
-                    .map(
-                      ([k, v]) =>
-                        [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
-                    ),
-                  ...specEntries,
-                  ["MOQ", variant.moq ? String(variant.moq) : null],
-                  ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
-                  ["Weight", weightText],
-                  ["Dimensions (LxWxH)", dimsText],
-                  ["Body type", family.body_type],
-                  ["Warranty", family.warranty],
-                  ["Material", family.material],
-                  ["Country of origin", "India"],
-                ] as Array<readonly [string, string | null | undefined]>
-              )
-                .filter(([, v]) => Boolean(v))
-                .map(([k, v]) => (
-                  <div key={k} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
-                    <div className="capitalize text-muted-foreground">{k}</div>
-                    <div className="font-medium">{v}</div>
-                  </div>
-                ))}
+            <div className="max-w-2xl">
+              <LinedRows
+                items={(
+                  [
+                    ["Brand", family.brand],
+                    ["Category", cat?.name],
+                    ["Main SKU", family.main_sku],
+                    ["Selected SKU", variant.sku],
+                    ...Object.entries(variant.attributes)
+                      .filter(([k, v]) => k !== "variant_label" && Boolean(v))
+                      .map(
+                        ([k, v]) =>
+                          [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
+                      ),
+                    ...specEntries,
+                    ["MOQ", variant.moq ? String(variant.moq) : null],
+                    ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
+                    ["Weight", weightText],
+                    ["Dimensions (LxWxH)", dimsText],
+                    ["Body type", family.body_type],
+                    ["Warranty", family.warranty],
+                    ["Material", family.material],
+                    ["Country of origin", "India"],
+                  ] as Array<readonly [string, string | null | undefined]>
+                )
+                  .filter(([, v]) => Boolean(v))
+                  .map(([k, v]) => ({ label: k, value: v as string }))}
+              />
             </div>
           </TabsContent>
           <TabsContent value="variations" className="pt-6">
@@ -685,6 +656,28 @@ function LegacyPDP({ slug }: { slug: string }) {
           <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function LinedRows({ items }: { items: Array<{ label?: string; value: string }> }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border">
+      {items.map((item, index) => (
+        <div
+          key={index}
+          className="grid grid-cols-[minmax(120px,0.8fr)_1.2fr] gap-4 border-b border-border px-4 py-3 text-sm last:border-b-0 sm:grid-cols-2"
+        >
+          {item.label ? (
+            <>
+              <div className="capitalize text-muted-foreground">{item.label}</div>
+              <div className="font-medium">{item.value || "—"}</div>
+            </>
+          ) : (
+            <div className="col-span-2 font-medium">{item.value}</div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
