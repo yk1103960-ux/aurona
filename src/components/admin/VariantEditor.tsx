@@ -1999,7 +1999,190 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
   );
 }
 
+/**
+ * Bulk price setter: pick an option (Wattage, Size, Colour…) and one of its
+ * values, then apply MRP / discount / price / commission to every matching SKU.
+ */
+function BulkPriceByOption({
+  rows,
+  updateRow,
+}: {
+  rows: Variant[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+}) {
+  const optionKeys = React.useMemo(() => {
+    const keys: string[] = [];
+    for (const row of rows) {
+      for (const key of Object.keys(row.attributes ?? {})) {
+        if (key.startsWith("__")) continue;
+        if (!keys.includes(key)) keys.push(key);
+      }
+    }
+    return keys;
+  }, [rows]);
+
+  const [optionKey, setOptionKey] = useState("");
+  const [optionValue, setOptionValue] = useState("");
+  const [mrp, setMrp] = useState("");
+  const [discount, setDiscount] = useState("");
+  const [price, setPrice] = useState("");
+  const [commission, setCommission] = useState("");
+
+  const activeKey = optionKey || optionKeys[0] || "";
+
+  const values = React.useMemo(() => {
+    const list: string[] = [];
+    for (const row of rows) {
+      const value = row.attributes?.[activeKey];
+      if (value && !list.includes(value)) list.push(value);
+    }
+    return list;
+  }, [rows, activeKey]);
+
+  const activeValue = optionValue && values.includes(optionValue) ? optionValue : "__all";
+
+  const matched = rows.filter(
+    (row) => activeValue === "__all" || row.attributes?.[activeKey] === activeValue,
+  );
+
+  const apply = () => {
+    if (!matched.length) {
+      toast.error("No variations match that option.");
+      return;
+    }
+    const mrpNum = mrp === "" ? null : Number(mrp);
+    const discNum = discount === "" ? null : Math.min(100, Math.max(0, Number(discount)));
+    const priceNum = price === "" ? null : Number(price);
+    if ([mrpNum, discNum, priceNum].some((v) => v !== null && !Number.isFinite(v as number))) {
+      toast.error("Enter valid numbers.");
+      return;
+    }
+    if (mrpNum === null && discNum === null && priceNum === null && commission === "") {
+      toast.error("Enter at least one value to apply.");
+      return;
+    }
+
+    for (const row of matched) {
+      const patch: Partial<Variant> = {};
+      const baseMrp = mrpNum ?? Number(row.mrp ?? 0);
+      if (mrpNum !== null) patch.mrp = mrpNum;
+      if (priceNum !== null) {
+        patch.price = priceNum;
+        if (baseMrp > 0) {
+          patch.discount_pct = Number(
+            Math.min(100, Math.max(0, ((baseMrp - priceNum) / baseMrp) * 100)).toFixed(2),
+          );
+        }
+      } else if (discNum !== null) {
+        patch.discount_pct = discNum;
+        if (baseMrp > 0) patch.price = Number((baseMrp - (baseMrp * discNum) / 100).toFixed(2));
+      } else if (mrpNum !== null) {
+        const existingDiscount = Number(row.discount_pct ?? 0);
+        if (existingDiscount > 0) {
+          patch.price = Number((mrpNum - (mrpNum * existingDiscount) / 100).toFixed(2));
+        }
+      }
+      if (commission !== "") {
+        patch.attributes = { ...row.attributes, __affiliate_commission: commission };
+      }
+      updateRow(row.id, patch);
+    }
+
+    toast.success(`Applied to ${matched.length} variation${matched.length === 1 ? "" : "s"}.`);
+  };
+
+  if (!optionKeys.length) return null;
+
+  const selectClass =
+    "h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300";
+
+  return (
+    <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <p className="text-sm font-semibold text-slate-800">Set prices by option</p>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Option
+          <select
+            className={selectClass}
+            value={activeKey}
+            onChange={(event) => {
+              setOptionKey(event.target.value);
+              setOptionValue("");
+            }}
+          >
+            {optionKeys.map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Value
+          <select
+            className={selectClass}
+            value={activeValue}
+            onChange={(event) => setOptionValue(event.target.value)}
+          >
+            <option value="__all">All values</option>
+            {values.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
+          MRP
+          <Input value={mrp} onChange={(event) => setMrp(event.target.value)} placeholder="MRP" inputMode="decimal" />
+        </label>
+
+        <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
+          Discount %
+          <Input
+            value={discount}
+            onChange={(event) => setDiscount(event.target.value)}
+            placeholder="%"
+            inputMode="decimal"
+          />
+        </label>
+
+        <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
+          Price
+          <Input
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+            placeholder="Price"
+            inputMode="decimal"
+          />
+        </label>
+
+        <label className="flex w-32 flex-col gap-1 text-xs text-slate-500">
+          Commission
+          <Input
+            value={commission}
+            onChange={(event) => setCommission(event.target.value)}
+            placeholder="Commission"
+          />
+        </label>
+
+        <Button type="button" size="sm" onClick={apply}>
+          Apply to {matched.length}
+        </Button>
+      </div>
+
+      <p className="text-xs text-slate-500">
+        Leave a box empty to keep the current value. Price wins over discount when both are filled.
+      </p>
+    </div>
+  );
+}
+
 function CustomerTab({
+
   rows,
   updateRow,
 }: {
@@ -2200,7 +2383,10 @@ function CustomerTab({
             Enter MRP, discount, customer price, pack size and affiliate commission for each generated SKU.
           </p>
         </div>
+
+        <BulkPriceByOption rows={rows} updateRow={updateRow} />
       </section>
+
 
       {/* =====================================================
           CUSTOMER VARIATION PRICE TABLE
