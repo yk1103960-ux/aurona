@@ -1851,6 +1851,35 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
     );
   };
 
+  const STANDARD_LABELS = [
+    "Brand",
+    "Category",
+    "MOQ",
+    "Pack size",
+    "Weight",
+    "Dimensions",
+    "Body type",
+    "Material",
+    "Warranty",
+    "Country of origin",
+    "IP Rating",
+    "Beam Angle",
+    "Input Voltage",
+    "Colour Temperature",
+    "Lumens",
+    "Life span",
+  ];
+
+  const addStandardRows = () => {
+    const existing = new Set(rows.map((row) => row.label.trim().toLowerCase()).filter(Boolean));
+    const filled = rows.filter((row) => row.label.trim() || row.value.trim());
+    const additions = STANDARD_LABELS.filter((label) => !existing.has(label.toLowerCase())).map((label) => ({
+      label,
+      value: "",
+    }));
+    commit([...filled, ...additions]);
+  };
+
   return (
     <div className="space-y-3">
       <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -1900,12 +1929,33 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
         </div>
       </div>
 
-      <Button type="button" variant="outline" onClick={() => commit([...rows, { label: "", value: "" }])}>
-        + Add Specification
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" onClick={() => commit([...rows, { label: "", value: "" }])}>
+          + Add Specification
+        </Button>
+        <Button type="button" variant="outline" onClick={addStandardRows}>
+          Add standard rows
+        </Button>
+      </div>
+
+      <div className="space-y-1">
+        <div className="text-xs font-medium text-slate-600">Edit everything as text (paste friendly)</div>
+        <Textarea
+          rows={8}
+          value={value}
+          placeholder={"Brand: Aurona\nWarranty: 2 Years\nCountry of origin: India"}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-h-[160px] w-full resize-y font-mono text-xs"
+        />
+        <div className="text-xs text-slate-500">
+          One specification per line as “Name: Value”. Anything you type here — including Brand, MOQ, Warranty, Material
+          or Country of origin — replaces that row on the live product page.
+        </div>
+      </div>
     </div>
   );
 }
+
 
 function Section({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   return (
