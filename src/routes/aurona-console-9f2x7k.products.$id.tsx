@@ -1384,13 +1384,14 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           />
         ) : (
           <>
-          <BulkCommissionBar
+          <GroupCommissionPanel
             programs={programs}
             variants={variants}
-            onApply={(programId, variantId, patch) => {
+            onApply={(programId, variantIds, patch) => {
+              const allowed = new Set(variantIds);
               let count = 0;
               for (const variant of variants) {
-                if (variantId !== "__all" && variant.id !== variantId) continue;
+                if (!allowed.has(variant.id)) continue;
                 for (const program of programs) {
                   if (programId !== "__all" && program.id !== programId) continue;
                   updateRule(variant.id, program.id, patch);
