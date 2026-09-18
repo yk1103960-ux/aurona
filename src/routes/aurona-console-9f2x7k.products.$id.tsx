@@ -1374,7 +1374,23 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
             text="Create at least one Referral/Partner Program in Editorial before setting SKU commissions."
           />
         ) : (
+          <>
+          <BulkCommissionBar
+            programs={programs}
+            onApply={(programId, patch) => {
+              let count = 0;
+              for (const variant of variants) {
+                for (const program of programs) {
+                  if (programId !== "__all" && program.id !== programId) continue;
+                  updateRule(variant.id, program.id, patch);
+                  count += 1;
+                }
+              }
+              toast.success(`Applied to ${count} row${count === 1 ? "" : "s"}. Now press Save Commissions.`);
+            }}
+          />
           <div className="overflow-x-auto rounded-xl border border-slate-200">
+
             <table className="w-full min-w-[1180px] text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="border-b border-slate-200">
