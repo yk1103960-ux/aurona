@@ -1094,6 +1094,7 @@ type CommissionVariant = {
   id: string;
   sku: string;
   variation: string;
+  attributes: Record<string, string>;
 };
 
 type CommissionProgram = {
