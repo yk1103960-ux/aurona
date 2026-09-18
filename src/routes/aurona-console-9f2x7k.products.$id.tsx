@@ -1377,9 +1377,11 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           <>
           <BulkCommissionBar
             programs={programs}
-            onApply={(programId, patch) => {
+            variants={variants}
+            onApply={(programId, variantId, patch) => {
               let count = 0;
               for (const variant of variants) {
+                if (variantId !== "__all" && variant.id !== variantId) continue;
                 for (const program of programs) {
                   if (programId !== "__all" && program.id !== programId) continue;
                   updateRule(variant.id, program.id, patch);
