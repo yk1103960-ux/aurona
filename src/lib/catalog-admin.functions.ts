@@ -481,7 +481,7 @@ export const adminDeleteProductFamilyPermanent = createServerFn({ method: "POST"
       entityId: data.familyId,
       after: result,
     });
-    return result as Record<string, unknown>;
+    return { ok: true };
   });
 
 export const adminDuplicateProductFamily = createServerFn({ method: "POST" })
