@@ -389,7 +389,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <Spec label="Pack size" value={variant.pack_size ? String(variant.pack_size) : null} />
             <Spec label="Dimensions (LxWxH)" value={dimsText} />
             <Spec label="Warranty" value={family.warranty} />
-            <Spec label="Country of origin" value="India" />
+            <Spec label="Country of origin" value={specValue(specEntries, "Country of origin") ?? "India"} />
           </div>
 
           {role.isPartnerPending ? (
