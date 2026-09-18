@@ -1526,15 +1526,18 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
   );
 }
 
-/** Shortcut: set one commission for every SKU (or every SKU of one program) at once. */
+/** Shortcut: set one commission for a chosen variation (or all) and program at once. */
 function BulkCommissionBar({
   programs,
+  variants,
   onApply,
 }: {
   programs: CommissionProgram[];
-  onApply: (programId: string, patch: Partial<CommissionRule>) => void;
+  variants: CommissionVariant[];
+  onApply: (programId: string, variantId: string, patch: Partial<CommissionRule>) => void;
 }) {
   const [programId, setProgramId] = useState("__all");
+  const [variantId, setVariantId] = useState("__all");
   const [kind, setKind] = useState<CommissionKind>("percentage");
   const [value, setValue] = useState("");
   const [cap, setCap] = useState("");
