@@ -1152,10 +1152,18 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
             String(row.sku ?? "").trim() ||
             "Variation";
 
+          const attributeMap: Record<string, string> = {};
+          for (const [key, value] of Object.entries(attrs)) {
+            if (key === "variant_label" || key.startsWith("__")) continue;
+            const text = value === null || value === undefined ? "" : String(value).trim();
+            if (text) attributeMap[key] = text;
+          }
+
           return {
             id: String(row.id),
             sku: String(row.sku ?? ""),
             variation,
+            attributes: attributeMap,
           };
         });
 
