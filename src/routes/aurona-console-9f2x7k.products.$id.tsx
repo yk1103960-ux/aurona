@@ -1377,9 +1377,11 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           <>
           <BulkCommissionBar
             programs={programs}
-            onApply={(programId, patch) => {
+            variants={variants}
+            onApply={(programId, variantId, patch) => {
               let count = 0;
               for (const variant of variants) {
+                if (variantId !== "__all" && variant.id !== variantId) continue;
                 for (const program of programs) {
                   if (programId !== "__all" && program.id !== programId) continue;
                   updateRule(variant.id, program.id, patch);
@@ -1526,15 +1528,18 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
   );
 }
 
-/** Shortcut: set one commission for every SKU (or every SKU of one program) at once. */
+/** Shortcut: set one commission for a chosen variation (or all) and program at once. */
 function BulkCommissionBar({
   programs,
+  variants,
   onApply,
 }: {
   programs: CommissionProgram[];
-  onApply: (programId: string, patch: Partial<CommissionRule>) => void;
+  variants: CommissionVariant[];
+  onApply: (programId: string, variantId: string, patch: Partial<CommissionRule>) => void;
 }) {
   const [programId, setProgramId] = useState("__all");
+  const [variantId, setVariantId] = useState("__all");
   const [kind, setKind] = useState<CommissionKind>("percentage");
   const [value, setValue] = useState("");
   const [cap, setCap] = useState("");
@@ -1554,7 +1559,7 @@ function BulkCommissionBar({
       toast.error("Maximum commission must be 0 or greater");
       return;
     }
-    onApply(programId, {
+    onApply(programId, variantId, {
       commission_kind: kind,
       commission_value: amount,
       max_commission: capValue,
@@ -1577,6 +1582,22 @@ function BulkCommissionBar({
           {programs.map((program) => (
             <option key={program.id} value={program.id}>
               {program.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs text-slate-500">
+        Variation
+        <select
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+          value={variantId}
+          onChange={(event) => setVariantId(event.target.value)}
+        >
+          <option value="__all">All variations</option>
+          {variants.map((variant) => (
+            <option key={variant.id} value={variant.id}>
+              {variant.variation}
             </option>
           ))}
         </select>
