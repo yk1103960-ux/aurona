@@ -1586,6 +1586,22 @@ function BulkCommissionBar({
       </label>
 
       <label className="flex flex-col gap-1 text-xs text-slate-500">
+        Variation
+        <select
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+          value={variantId}
+          onChange={(event) => setVariantId(event.target.value)}
+        >
+          <option value="__all">All variations</option>
+          {variants.map((variant) => (
+            <option key={variant.id} value={variant.id}>
+              {variant.variation}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs text-slate-500">
         Type
         <select
           className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
