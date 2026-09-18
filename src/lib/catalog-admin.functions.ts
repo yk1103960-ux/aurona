@@ -461,6 +461,29 @@ export const adminBulkProductFamilyAction = createServerFn({ method: "POST" })
     return { ok: true, compatibility_mode: compatibilityMode };
   });
 
+/** Permanently remove a product family so its SKUs can be reused. Order history is preserved. */
+export const adminDeleteProductFamilyPermanent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ familyId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const actor = await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await (supabaseAdmin as any).rpc(
+      "admin_delete_product_family_permanent",
+      { _family_id: data.familyId },
+    );
+    if (error) throw new Error(error.message);
+    await writeAudit({
+      actorUserId: actor.userId,
+      actorEmail: actor.email,
+      action: "catalog.family_delete_permanent",
+      entityType: "product_family",
+      entityId: data.familyId,
+      after: result,
+    });
+    return result as Record<string, unknown>;
+  });
+
 export const adminDuplicateProductFamily = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ familyId: z.string().uuid() }).parse(input))
