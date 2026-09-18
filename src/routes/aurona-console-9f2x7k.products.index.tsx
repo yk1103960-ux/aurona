@@ -7,7 +7,6 @@ import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Archive,
   Copy,
   Eye,
   EyeOff,
@@ -18,10 +17,12 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   adminBulkProductFamilyAction,
+  adminDeleteProductFamilyPermanent,
   adminDuplicateProductFamily,
   adminListProductFamilies,
 } from "@/lib/catalog-admin.functions";
@@ -253,7 +254,7 @@ function ProductsAdmin() {
           <option value="all">Active + hidden</option>
           <option value="published">Published</option>
           <option value="hidden">Hidden drafts</option>
-          <option value="archived">Archived</option>
+          <option value="archived">Temporarily deleted</option>
         </select>
         <select
           aria-label="Stock filter"
@@ -295,6 +296,12 @@ function ProductsAdmin() {
               <RotateCcw className="mr-1 h-4 w-4" />
               Restore
             </Button>
+          ) : null}
+          {publication === "archived" ? (
+            <Button size="sm" variant="destructive" disabled={busy} onClick={() => deletePermanently()}>
+              <Trash2 className="mr-1 h-4 w-4" />
+              Delete permanently
+            </Button>
           ) : (
             <>
               <Button
@@ -335,8 +342,17 @@ function ProductsAdmin() {
                 disabled={busy}
                 onClick={() => runAction("archive")}
               >
-                <Archive className="mr-1 h-4 w-4" />
-                Archive
+                <Trash2 className="mr-1 h-4 w-4" />
+                Temporary delete
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={busy}
+                onClick={() => deletePermanently()}
+              >
+                <Trash2 className="mr-1 h-4 w-4" />
+                Delete permanently
               </Button>
             </>
           )}
@@ -412,7 +428,7 @@ function ProductsAdmin() {
                     <span
                       className={`rounded px-2 py-1 text-xs ${row.archived_at ? "bg-rose-100 text-rose-700" : row.is_published ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700"}`}
                     >
-                      {row.archived_at ? "Archived" : row.is_published ? "Published" : "Hidden"}
+                      {row.archived_at ? "Temporarily deleted" : row.is_published ? "Published" : "Hidden"}
                     </span>
                     {row.is_featured && (
                       <span className="rounded bg-violet-100 px-2 py-1 text-xs text-violet-700">
@@ -483,11 +499,11 @@ function ProductsAdmin() {
                         <Button
                           size="icon"
                           variant="destructive"
-                          aria-label="Archive product family"
+                          aria-label="Temporarily delete product"
                           disabled={busy}
                           onClick={() => runAction("archive", [row.id])}
                         >
-                          <Archive className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </>
                     )}
@@ -502,6 +518,15 @@ function ProductsAdmin() {
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      aria-label="Delete product permanently"
+                      disabled={busy}
+                      onClick={() => deletePermanently([row.id])}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </td>
               </tr>
