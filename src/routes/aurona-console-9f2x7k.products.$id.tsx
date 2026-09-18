@@ -1904,7 +1904,7 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
 
               <Input
                 value={row.value}
-                placeholder="e.g. IP55"
+                placeholder="Value"
                 onChange={(event) => {
                   const next = rows.map((item) => ({ ...item }));
                   next[index].value = event.target.value;
