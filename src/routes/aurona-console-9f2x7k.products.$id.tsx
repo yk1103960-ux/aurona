@@ -2060,10 +2060,9 @@ function textToSpecs(text: string): Record<string, string> {
 
     const value = trimmed.slice(index + (separator?.[0].length ?? 1)).trim();
 
+    // Skip rows with a label but no value yet (e.g. empty standard rows) instead of failing the save.
     if (key && value) {
       output[key] = value;
-    } else {
-      invalidLines.push(trimmed);
     }
   }
 
