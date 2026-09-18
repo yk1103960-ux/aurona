@@ -129,7 +129,7 @@ function ProductsAdmin() {
     if (
       action === "archive" &&
       !confirm(
-        `Archive ${ids.length} product family/families? Orders, SKUs and history will be preserved.`,
+        `Temporarily delete ${ids.length} product(s)? They can be restored later and orders stay intact.`,
       )
     )
       return;
