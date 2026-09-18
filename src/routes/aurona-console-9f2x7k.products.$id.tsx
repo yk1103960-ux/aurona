@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
@@ -1094,6 +1094,7 @@ type CommissionVariant = {
   id: string;
   sku: string;
   variation: string;
+  attributes: Record<string, string>;
 };
 
 type CommissionProgram = {
@@ -1151,10 +1152,18 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
             String(row.sku ?? "").trim() ||
             "Variation";
 
+          const attributeMap: Record<string, string> = {};
+          for (const [key, value] of Object.entries(attrs)) {
+            if (key === "variant_label" || key.startsWith("__")) continue;
+            const text = value === null || value === undefined ? "" : String(value).trim();
+            if (text) attributeMap[key] = text;
+          }
+
           return {
             id: String(row.id),
             sku: String(row.sku ?? ""),
             variation,
+            attributes: attributeMap,
           };
         });
 
@@ -1375,13 +1384,14 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           />
         ) : (
           <>
-          <BulkCommissionBar
+          <GroupCommissionPanel
             programs={programs}
             variants={variants}
-            onApply={(programId, variantId, patch) => {
+            onApply={(programId, variantIds, patch) => {
+              const allowed = new Set(variantIds);
               let count = 0;
               for (const variant of variants) {
-                if (variantId !== "__all" && variant.id !== variantId) continue;
+                if (!allowed.has(variant.id)) continue;
                 for (const program of programs) {
                   if (programId !== "__all" && program.id !== programId) continue;
                   updateRule(variant.id, program.id, patch);
@@ -1529,112 +1539,188 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
 }
 
 /** Shortcut: set one commission for a chosen variation (or all) and program at once. */
-function BulkCommissionBar({
+function GroupCommissionPanel({
   programs,
   variants,
   onApply,
 }: {
   programs: CommissionProgram[];
   variants: CommissionVariant[];
-  onApply: (programId: string, variantId: string, patch: Partial<CommissionRule>) => void;
+  onApply: (programId: string, variantIds: string[], patch: Partial<CommissionRule>) => void;
 }) {
-  const [programId, setProgramId] = useState("__all");
-  const [variantId, setVariantId] = useState("__all");
-  const [kind, setKind] = useState<CommissionKind>("percentage");
-  const [value, setValue] = useState("");
-  const [cap, setCap] = useState("");
+  const axes = useMemo(() => {
+    const keys: string[] = [];
+    for (const variant of variants) {
+      for (const key of Object.keys(variant.attributes)) {
+        if (!keys.includes(key)) keys.push(key);
+      }
+    }
+    return keys;
+  }, [variants]);
 
-  const apply = () => {
-    const amount = Number(value);
-    if (value === "" || !Number.isFinite(amount) || amount < 0) {
+  const [programId, setProgramId] = useState("__all");
+  const [axis, setAxis] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, { kind: CommissionKind; value: string; cap: string }>>({});
+
+  useEffect(() => {
+    if (!axis && axes.length > 0) setAxis(axes[0]);
+  }, [axes, axis]);
+
+  const groups = useMemo(() => {
+    if (!axis) return [] as { value: string; variantIds: string[] }[];
+    const map = new Map<string, string[]>();
+    for (const variant of variants) {
+      const value = variant.attributes[axis];
+      if (!value) continue;
+      const list = map.get(value) ?? [];
+      list.push(variant.id);
+      map.set(value, list);
+    }
+    return Array.from(map.entries()).map(([value, variantIds]) => ({ value, variantIds }));
+  }, [axis, variants]);
+
+  const draftFor = (key: string) => drafts[key] ?? { kind: "percentage" as CommissionKind, value: "", cap: "" };
+
+  const setDraft = (key: string, patch: Partial<{ kind: CommissionKind; value: string; cap: string }>) =>
+    setDrafts((prev) => ({ ...prev, [key]: { ...draftFor(key), ...patch } }));
+
+  const applyGroup = (key: string, variantIds: string[]) => {
+    const draft = draftFor(key);
+    const amount = Number(draft.value);
+    if (draft.value === "" || !Number.isFinite(amount) || amount < 0) {
       toast.error("Enter a commission value of 0 or more");
       return;
     }
-    if (kind === "percentage" && amount > 100) {
+    if (draft.kind === "percentage" && amount > 100) {
       toast.error("Percentage commission cannot exceed 100%");
       return;
     }
-    const capValue = cap === "" ? null : Number(cap);
+    const capValue = draft.cap === "" ? null : Number(draft.cap);
     if (capValue != null && (!Number.isFinite(capValue) || capValue < 0)) {
       toast.error("Maximum commission must be 0 or greater");
       return;
     }
-    onApply(programId, variantId, {
-      commission_kind: kind,
+    onApply(programId, variantIds, {
+      commission_kind: draft.kind,
       commission_value: amount,
       max_commission: capValue,
       is_active: true,
     });
   };
 
+  if (axes.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <div className="text-sm font-semibold text-slate-800">Quick fill</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-base font-semibold text-slate-900">Set commission by {axis || "option"}</div>
+          <p className="mt-1 max-w-3xl text-xs text-slate-500">
+            Apply one commission to every SKU sharing the same {axis || "option"} value. If this product has no
+            Wattage, choose Size, Model, Colour, Pack Size or any other product option instead.
+          </p>
+        </div>
 
-      <label className="flex flex-col gap-1 text-xs text-slate-500">
-        Partner program
-        <select
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
-          value={programId}
-          onChange={(event) => setProgramId(event.target.value)}
-        >
-          <option value="__all">All programs</option>
-          {programs.map((program) => (
-            <option key={program.id} value={program.id}>
-              {program.name}
-            </option>
-          ))}
-        </select>
-      </label>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-xs text-slate-500">
+            Partner program
+            <select
+              className="h-10 min-w-[180px] rounded-md border border-slate-200 bg-white px-3 text-sm"
+              value={programId}
+              onChange={(event) => setProgramId(event.target.value)}
+            >
+              <option value="__all">All programs</option>
+              {programs.map((program) => (
+                <option key={program.id} value={program.id}>
+                  {program.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <label className="flex flex-col gap-1 text-xs text-slate-500">
-        Variation
-        <select
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
-          value={variantId}
-          onChange={(event) => setVariantId(event.target.value)}
-        >
-          <option value="__all">All variations</option>
-          {variants.map((variant) => (
-            <option key={variant.id} value={variant.id}>
-              {variant.variation}
-            </option>
-          ))}
-        </select>
-      </label>
+          <label className="flex flex-col gap-1 text-xs text-slate-500">
+            Group commission by
+            <select
+              className="h-10 min-w-[200px] rounded-md border border-slate-200 bg-white px-3 text-sm"
+              value={axis}
+              onChange={(event) => setAxis(event.target.value)}
+            >
+              {axes.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
 
-      <label className="flex flex-col gap-1 text-xs text-slate-500">
-        Type
-        <select
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
-          value={kind}
-          onChange={(event) => setKind(event.target.value as CommissionKind)}
-        >
-          <option value="percentage">Percentage (%)</option>
-          <option value="fixed">Fixed (₹)</option>
-        </select>
-      </label>
-
-      <label className="flex w-28 flex-col gap-1 text-xs text-slate-500">
-        Value
-        <Input type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} />
-      </label>
-
-      <label className="flex w-32 flex-col gap-1 text-xs text-slate-500">
-        Max commission
-        <Input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="No cap"
-          value={cap}
-          onChange={(event) => setCap(event.target.value)}
-        />
-      </label>
-
-      <Button type="button" variant="outline" onClick={apply}>
-        Apply to all variations
-      </Button>
+      <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="bg-slate-50">
+            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="p-3 font-semibold">{axis}</th>
+              <th className="p-3 font-semibold">Type</th>
+              <th className="p-3 font-semibold">Value</th>
+              <th className="p-3 font-semibold">Max commission</th>
+              <th className="p-3 text-right font-semibold">Apply</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group) => {
+              const key = `${axis}:${group.value}`;
+              const draft = draftFor(key);
+              return (
+                <tr key={key} className="border-b border-slate-100 last:border-b-0">
+                  <td className="p-3">
+                    <div className="font-semibold text-slate-900">{group.value}</div>
+                    <div className="text-xs text-slate-500">
+                      {group.variantIds.length} SKU{group.variantIds.length === 1 ? "" : "s"}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                      value={draft.kind}
+                      onChange={(event) => setDraft(key, { kind: event.target.value as CommissionKind })}
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed (₹)</option>
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={draft.kind === "percentage" ? "Commission %" : "Commission ₹"}
+                      value={draft.value}
+                      onChange={(event) => setDraft(key, { value: event.target.value })}
+                    />
+                  </td>
+                  <td className="p-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="No cap"
+                      value={draft.cap}
+                      onChange={(event) => setDraft(key, { cap: event.target.value })}
+                    />
+                  </td>
+                  <td className="p-3 text-right">
+                    <Button type="button" onClick={() => applyGroup(key, group.variantIds)}>
+                      Apply to {group.value}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
