@@ -781,3 +781,31 @@ function LegacyGallery({
     />
   );
 }
+
+/** Value saved in the admin Specifications editor for a label, if any. */
+function specValue(entries: Array<readonly [string, string]>, label: string): string | null {
+  const key = label.trim().toLowerCase();
+  const hit = entries.find(([k]) => k.trim().toLowerCase() === key);
+  return hit ? hit[1] : null;
+}
+
+/**
+ * Built-in rows first, but any row the admin also typed in Specifications uses
+ * the admin value; remaining admin specifications are appended in order.
+ */
+function mergeSpecRows(
+  base: Array<readonly [string, string | null | undefined]>,
+  entries: Array<readonly [string, string]>,
+): Array<{ label: string; value: string }> {
+  const used = new Set<string>();
+  const rows = base.map(([label, value]) => {
+    const override = specValue(entries, label);
+    if (override !== null) used.add(label.trim().toLowerCase());
+    return { label, value: override ?? value };
+  });
+  for (const [label, value] of entries) {
+    if (used.has(label.trim().toLowerCase())) continue;
+    rows.push({ label, value });
+  }
+  return rows.filter((r): r is { label: string; value: string } => Boolean(r.value));
+}
