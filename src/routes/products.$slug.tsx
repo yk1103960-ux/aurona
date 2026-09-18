@@ -151,7 +151,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const dimsText = dims ? `${dims.l ?? "—"} × ${dims.w ?? "—"} × ${dims.h ?? "—"} cm` : null;
   const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
     ([k, v]) => Boolean(k) && Boolean(v),
-  );
+  ) as Array<readonly [string, string]>;
+
   const descriptionRows = useMemo(() => {
     if (!family.description) return [];
     return family.description
@@ -389,7 +390,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <Spec label="Pack size" value={variant.pack_size ? String(variant.pack_size) : null} />
             <Spec label="Dimensions (LxWxH)" value={dimsText} />
             <Spec label="Warranty" value={family.warranty} />
-            <Spec label="Country of origin" value="India" />
+            <Spec label="Country of origin" value={specValue(specEntries, "Country of origin") ?? "India"} />
           </div>
 
           {role.isPartnerPending ? (
@@ -459,7 +460,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           <TabsContent value="specs" className="pt-6">
             <div className="max-w-2xl">
               <LinedRows
-                items={(
+                items={mergeSpecRows(
                   [
                     ["Brand", family.brand],
                     ["Category", cat?.name],
@@ -471,7 +472,6 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                         ([k, v]) =>
                           [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
                       ),
-                    ...specEntries,
                     ["MOQ", variant.moq ? String(variant.moq) : null],
                     ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
                     ["Weight", weightText],
@@ -480,13 +480,13 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                     ["Warranty", family.warranty],
                     ["Material", family.material],
                     ["Country of origin", "India"],
-                  ] as Array<readonly [string, string | null | undefined]>
-                )
-                  .filter(([, v]) => Boolean(v))
-                  .map(([k, v]) => ({ label: k, value: v as string }))}
+                  ] as Array<readonly [string, string | null | undefined]>,
+                  specEntries,
+                )}
               />
             </div>
           </TabsContent>
+
           <TabsContent value="variations" className="pt-6">
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full text-sm">
@@ -780,4 +780,32 @@ function LegacyGallery({
       categoryIcon={categoryIcon}
     />
   );
+}
+
+/** Value saved in the admin Specifications editor for a label, if any. */
+function specValue(entries: Array<readonly [string, string]>, label: string): string | null {
+  const key = label.trim().toLowerCase();
+  const hit = entries.find(([k]) => k.trim().toLowerCase() === key);
+  return hit ? hit[1] : null;
+}
+
+/**
+ * Built-in rows first, but any row the admin also typed in Specifications uses
+ * the admin value; remaining admin specifications are appended in order.
+ */
+function mergeSpecRows(
+  base: Array<readonly [string, string | null | undefined]>,
+  entries: Array<readonly [string, string]>,
+): Array<{ label: string; value: string }> {
+  const used = new Set<string>();
+  const rows = base.map(([label, value]) => {
+    const override = specValue(entries, label);
+    if (override !== null) used.add(label.trim().toLowerCase());
+    return { label, value: override ?? value };
+  });
+  for (const [label, value] of entries) {
+    if (used.has(label.trim().toLowerCase())) continue;
+    rows.push({ label, value });
+  }
+  return rows.filter((r): r is { label: string; value: string } => Boolean(r.value));
 }
