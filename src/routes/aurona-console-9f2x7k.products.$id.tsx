@@ -1894,7 +1894,7 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
             <div key={index} className="grid grid-cols-[minmax(160px,0.9fr)_minmax(180px,1.1fr)_90px] gap-2 p-3">
               <Input
                 value={row.label}
-                placeholder="e.g. IP Rating"
+                placeholder="Specification name"
                 onChange={(event) => {
                   const next = rows.map((item) => ({ ...item }));
                   next[index].label = event.target.value;
@@ -1904,7 +1904,7 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
 
               <Input
                 value={row.value}
-                placeholder="e.g. IP55"
+                placeholder="Value"
                 onChange={(event) => {
                   const next = rows.map((item) => ({ ...item }));
                   next[index].value = event.target.value;
