@@ -459,7 +459,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           <TabsContent value="specs" className="pt-6">
             <div className="max-w-2xl">
               <LinedRows
-                items={(
+                items={mergeSpecRows(
                   [
                     ["Brand", family.brand],
                     ["Category", cat?.name],
@@ -471,7 +471,6 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                         ([k, v]) =>
                           [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
                       ),
-                    ...specEntries,
                     ["MOQ", variant.moq ? String(variant.moq) : null],
                     ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
                     ["Weight", weightText],
@@ -480,13 +479,13 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                     ["Warranty", family.warranty],
                     ["Material", family.material],
                     ["Country of origin", "India"],
-                  ] as Array<readonly [string, string | null | undefined]>
-                )
-                  .filter(([, v]) => Boolean(v))
-                  .map(([k, v]) => ({ label: k, value: v as string }))}
+                  ] as Array<readonly [string, string | null | undefined]>,
+                  specEntries,
+                )}
               />
             </div>
           </TabsContent>
+
           <TabsContent value="variations" className="pt-6">
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full text-sm">
