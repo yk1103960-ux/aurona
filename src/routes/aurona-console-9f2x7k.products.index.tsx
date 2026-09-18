@@ -144,6 +144,27 @@ function ProductsAdmin() {
       setBusy(false);
     }
   };
+  const deletePermanently = async (ids = [...selected]) => {
+    if (!ids.length) return;
+    if (
+      !confirm(
+        `Permanently delete ${ids.length} product(s)? This cannot be undone. Their SKUs become reusable and past orders keep their details.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      for (const familyId of ids) {
+        await adminDeleteProductFamilyPermanent({ data: { familyId } });
+      }
+      toast.success(`${ids.length} product(s) permanently deleted`);
+      await refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete products");
+    } finally {
+      setBusy(false);
+    }
+  };
   const duplicate = async (familyId: string) => {
     setBusy(true);
     try {
