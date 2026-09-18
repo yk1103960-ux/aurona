@@ -1519,11 +1519,106 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </Section>
   );
 }
+
+/** Shortcut: set one commission for every SKU (or every SKU of one program) at once. */
+function BulkCommissionBar({
+  programs,
+  onApply,
+}: {
+  programs: CommissionProgram[];
+  onApply: (programId: string, patch: Partial<CommissionRule>) => void;
+}) {
+  const [programId, setProgramId] = useState("__all");
+  const [kind, setKind] = useState<CommissionKind>("percentage");
+  const [value, setValue] = useState("");
+  const [cap, setCap] = useState("");
+
+  const apply = () => {
+    const amount = Number(value);
+    if (value === "" || !Number.isFinite(amount) || amount < 0) {
+      toast.error("Enter a commission value of 0 or more");
+      return;
+    }
+    if (kind === "percentage" && amount > 100) {
+      toast.error("Percentage commission cannot exceed 100%");
+      return;
+    }
+    const capValue = cap === "" ? null : Number(cap);
+    if (capValue != null && (!Number.isFinite(capValue) || capValue < 0)) {
+      toast.error("Maximum commission must be 0 or greater");
+      return;
+    }
+    onApply(programId, {
+      commission_kind: kind,
+      commission_value: amount,
+      max_commission: capValue,
+      is_active: true,
+    });
+  };
+
+  return (
+    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div className="text-sm font-semibold text-slate-800">Quick fill</div>
+
+      <label className="flex flex-col gap-1 text-xs text-slate-500">
+        Partner program
+        <select
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+          value={programId}
+          onChange={(event) => setProgramId(event.target.value)}
+        >
+          <option value="__all">All programs</option>
+          {programs.map((program) => (
+            <option key={program.id} value={program.id}>
+              {program.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs text-slate-500">
+        Type
+        <select
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+          value={kind}
+          onChange={(event) => setKind(event.target.value as CommissionKind)}
+        >
+          <option value="percentage">Percentage (%)</option>
+          <option value="fixed">Fixed (₹)</option>
+        </select>
+      </label>
+
+      <label className="flex w-28 flex-col gap-1 text-xs text-slate-500">
+        Value
+        <Input type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} />
+      </label>
+
+      <label className="flex w-32 flex-col gap-1 text-xs text-slate-500">
+        Max commission
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="No cap"
+          value={cap}
+          onChange={(event) => setCap(event.target.value)}
+        />
+      </label>
+
+      <Button type="button" variant="outline" onClick={apply}>
+        Apply to all variations
+      </Button>
+    </div>
+  );
+}
+
+
 
 function RelatedProducts({ familyId }: { familyId: string }) {
   const [search, setSearch] = useState("");
