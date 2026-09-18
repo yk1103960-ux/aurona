@@ -1943,13 +1943,13 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
         <Textarea
           rows={8}
           value={value}
-          placeholder={"Brand: Aurona\nWarranty: 2 Years\nCountry of origin: India"}
+          placeholder={"IP Rating: IP55\nWarranty: 2 Years\nCountry of origin: India"}
           onChange={(event) => onChange(event.target.value)}
           className="min-h-[160px] w-full resize-y font-mono text-xs"
         />
         <div className="text-xs text-slate-500">
-          One specification per line as “Name: Value”. Anything you type here — including Brand, MOQ, Warranty, Material
-          or Country of origin — replaces that row on the live product page.
+          One specification per line as “Label: Value” (for example, IP Rating: IP55). Anything you type here — including
+          Brand, MOQ, Warranty, Material or Country of origin — replaces that row on the live product page.
         </div>
       </div>
     </div>
