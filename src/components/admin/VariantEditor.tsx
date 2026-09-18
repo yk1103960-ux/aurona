@@ -2200,7 +2200,10 @@ function CustomerTab({
             Enter MRP, discount, customer price, pack size and affiliate commission for each generated SKU.
           </p>
         </div>
+
+        <BulkPriceByOption rows={rows} updateRow={updateRow} />
       </section>
+
 
       {/* =====================================================
           CUSTOMER VARIATION PRICE TABLE
