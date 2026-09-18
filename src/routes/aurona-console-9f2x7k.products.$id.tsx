@@ -1557,7 +1557,7 @@ function BulkCommissionBar({
       toast.error("Maximum commission must be 0 or greater");
       return;
     }
-    onApply(programId, {
+    onApply(programId, variantId, {
       commission_kind: kind,
       commission_value: amount,
       max_commission: capValue,
