@@ -1851,24 +1851,7 @@ function EditableSpecificationRows({ value, onChange }: { value: string; onChang
     );
   };
 
-  const STANDARD_LABELS = [
-    "Brand",
-    "Category",
-    "MOQ",
-    "Pack size",
-    "Weight",
-    "Dimensions",
-    "Body type",
-    "Material",
-    "Warranty",
-    "Country of origin",
-    "IP Rating",
-    "Beam Angle",
-    "Input Voltage",
-    "Colour Temperature",
-    "Lumens",
-    "Life span",
-  ];
+  const STANDARD_LABELS = ["Body type", "Material"];
 
   const addStandardRows = () => {
     const existing = new Set(rows.map((row) => row.label.trim().toLowerCase()).filter(Boolean));
