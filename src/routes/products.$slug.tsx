@@ -151,7 +151,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const dimsText = dims ? `${dims.l ?? "—"} × ${dims.w ?? "—"} × ${dims.h ?? "—"} cm` : null;
   const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
     ([k, v]) => Boolean(k) && Boolean(v),
-  );
+  ) as Array<readonly [string, string]>;
+
   const descriptionRows = useMemo(() => {
     if (!family.description) return [];
     return family.description
