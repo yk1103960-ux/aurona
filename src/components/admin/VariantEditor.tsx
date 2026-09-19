@@ -2356,7 +2356,8 @@ function CustomerTab({
       <div className="space-y-5">
         <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-950">Commission</h2>
+            <h2 className="text-base font-semibold text-slate-950">Customer Pricing &amp; Commission</h2>
+
 
             <p className="mt-1 text-xs text-slate-500">
               No variations yet. Add them in the Options &amp; Variants tab first to set prices and commission here.
