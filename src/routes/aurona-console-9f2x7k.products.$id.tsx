@@ -1080,7 +1080,12 @@ function VariantArea({
     <div className="space-y-4">
       <Notice title={title} text={text} />
 
-      <VariantEditor productSku={sku} productId={id} initialTab={variantTab} />
+      <VariantEditor
+        productSku={sku}
+        productId={id}
+        initialTab={variantTab}
+        customerPricingOnly={variantTab === "customer"}
+      />
     </div>
   );
 }
