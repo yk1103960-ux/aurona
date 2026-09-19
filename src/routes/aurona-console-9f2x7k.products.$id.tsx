@@ -994,16 +994,13 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                 </Field>
               </Section>
 
-              {!isNew && f.sku ? (
-                <VariantEditor productSku={f.sku} productId={id} initialTab="shipping" />
-              ) : (
-                <Notice
-                  title="Weight & Dimensions become available after save"
-                  text="Save this product first to configure single-unit and package dimensions for every generated SKU."
-                />
-              )}
+              <Notice
+                title="Variation weight & dimensions live in Price & Stock for Customers"
+                text="All SKU-level settings (options, SKU, MRP, price, stock, pack size, weight, dimensions, images and commission) are managed in the single Product Variations section under Price & Stock for Customers."
+              />
             </div>
           )}
+
 
           {/* WARRANTY */}
 
