@@ -76,6 +76,7 @@ import { Route as AuronaConsole9f2x7kAuditRouteImport } from './routes/aurona-co
 import { Route as AuronaConsole9f2x7kApplicationsRouteImport } from './routes/aurona-console-9f2x7k.applications'
 import { Route as AuronaConsole9f2x7kAffiliatesRouteImport } from './routes/aurona-console-9f2x7k.affiliates'
 import { Route as AuronaConsole9f2x7kProductsIndexRouteImport } from './routes/aurona-console-9f2x7k.products.index'
+import { Route as AuronaConsole9f2x7kProductsPhotosRouteImport } from './routes/aurona-console-9f2x7k.products.photos'
 import { Route as AuronaConsole9f2x7kProductsOptionsRouteImport } from './routes/aurona-console-9f2x7k.products.options'
 import { Route as AuronaConsole9f2x7kProductsNewRouteImport } from './routes/aurona-console-9f2x7k.products.new'
 import { Route as AuronaConsole9f2x7kProductsMasterRouteImport } from './routes/aurona-console-9f2x7k.products.master'
@@ -456,6 +457,12 @@ const AuronaConsole9f2x7kProductsIndexRoute =
     path: '/products/',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kProductsPhotosRoute =
+  AuronaConsole9f2x7kProductsPhotosRouteImport.update({
+    id: '/products/photos',
+    path: '/products/photos',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kProductsOptionsRoute =
   AuronaConsole9f2x7kProductsOptionsRouteImport.update({
     id: '/products/options',
@@ -634,6 +641,7 @@ export interface FileRoutesByFullPath {
   '/aurona-console-9f2x7k/products/master': typeof AuronaConsole9f2x7kProductsMasterRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
   '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
+  '/aurona-console-9f2x7k/products/photos': typeof AuronaConsole9f2x7kProductsPhotosRoute
   '/aurona-console-9f2x7k/products/': typeof AuronaConsole9f2x7kProductsIndexRoute
   '/api/public/fastrr/collections': typeof ApiPublicFastrrCollectionsRouteWithChildren
   '/api/public/fastrr/products': typeof ApiPublicFastrrProductsRoute
@@ -717,6 +725,7 @@ export interface FileRoutesByTo {
   '/aurona-console-9f2x7k/products/master': typeof AuronaConsole9f2x7kProductsMasterRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
   '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
+  '/aurona-console-9f2x7k/products/photos': typeof AuronaConsole9f2x7kProductsPhotosRoute
   '/aurona-console-9f2x7k/products': typeof AuronaConsole9f2x7kProductsIndexRoute
   '/api/public/fastrr/collections': typeof ApiPublicFastrrCollectionsRouteWithChildren
   '/api/public/fastrr/products': typeof ApiPublicFastrrProductsRoute
@@ -804,6 +813,7 @@ export interface FileRoutesById {
   '/aurona-console-9f2x7k/products/master': typeof AuronaConsole9f2x7kProductsMasterRoute
   '/aurona-console-9f2x7k/products/new': typeof AuronaConsole9f2x7kProductsNewRoute
   '/aurona-console-9f2x7k/products/options': typeof AuronaConsole9f2x7kProductsOptionsRoute
+  '/aurona-console-9f2x7k/products/photos': typeof AuronaConsole9f2x7kProductsPhotosRoute
   '/aurona-console-9f2x7k/products/': typeof AuronaConsole9f2x7kProductsIndexRoute
   '/api/public/fastrr/collections': typeof ApiPublicFastrrCollectionsRouteWithChildren
   '/api/public/fastrr/products': typeof ApiPublicFastrrProductsRoute
@@ -892,6 +902,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/master'
     | '/aurona-console-9f2x7k/products/new'
     | '/aurona-console-9f2x7k/products/options'
+    | '/aurona-console-9f2x7k/products/photos'
     | '/aurona-console-9f2x7k/products/'
     | '/api/public/fastrr/collections'
     | '/api/public/fastrr/products'
@@ -975,6 +986,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/master'
     | '/aurona-console-9f2x7k/products/new'
     | '/aurona-console-9f2x7k/products/options'
+    | '/aurona-console-9f2x7k/products/photos'
     | '/aurona-console-9f2x7k/products'
     | '/api/public/fastrr/collections'
     | '/api/public/fastrr/products'
@@ -1061,6 +1073,7 @@ export interface FileRouteTypes {
     | '/aurona-console-9f2x7k/products/master'
     | '/aurona-console-9f2x7k/products/new'
     | '/aurona-console-9f2x7k/products/options'
+    | '/aurona-console-9f2x7k/products/photos'
     | '/aurona-console-9f2x7k/products/'
     | '/api/public/fastrr/collections'
     | '/api/public/fastrr/products'
@@ -1588,6 +1601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kProductsIndexRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/products/photos': {
+      id: '/aurona-console-9f2x7k/products/photos'
+      path: '/products/photos'
+      fullPath: '/aurona-console-9f2x7k/products/photos'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsPhotosRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/products/options': {
       id: '/aurona-console-9f2x7k/products/options'
       path: '/products/options'
@@ -1756,6 +1776,7 @@ interface AuronaConsole9f2x7kRouteChildren {
   AuronaConsole9f2x7kProductsMasterRoute: typeof AuronaConsole9f2x7kProductsMasterRoute
   AuronaConsole9f2x7kProductsNewRoute: typeof AuronaConsole9f2x7kProductsNewRoute
   AuronaConsole9f2x7kProductsOptionsRoute: typeof AuronaConsole9f2x7kProductsOptionsRoute
+  AuronaConsole9f2x7kProductsPhotosRoute: typeof AuronaConsole9f2x7kProductsPhotosRoute
   AuronaConsole9f2x7kProductsIndexRoute: typeof AuronaConsole9f2x7kProductsIndexRoute
   AuronaConsole9f2x7kProductsIdVariationsRoute: typeof AuronaConsole9f2x7kProductsIdVariationsRoute
 }
@@ -1794,6 +1815,8 @@ const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
   AuronaConsole9f2x7kProductsNewRoute: AuronaConsole9f2x7kProductsNewRoute,
   AuronaConsole9f2x7kProductsOptionsRoute:
     AuronaConsole9f2x7kProductsOptionsRoute,
+  AuronaConsole9f2x7kProductsPhotosRoute:
+    AuronaConsole9f2x7kProductsPhotosRoute,
   AuronaConsole9f2x7kProductsIndexRoute: AuronaConsole9f2x7kProductsIndexRoute,
   AuronaConsole9f2x7kProductsIdVariationsRoute:
     AuronaConsole9f2x7kProductsIdVariationsRoute,
