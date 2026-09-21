@@ -22,15 +22,11 @@ export function ProductGallery({
   resetKey?: string;
 }) {
   const slides = useMemo(() => {
-    const real = images.filter((i) => !!i.image_url);
-    if (real.length > 0 && real.length < 5) {
-      // Pad to 5 boxes by cycling existing photos so the thumbnail
-      // strip always renders the full 5-tile layout.
-      const padded = [...real];
-      while (padded.length < 5) padded.push(real[padded.length % real.length]);
-      return padded;
-    }
-    return real;
+    return images
+      .filter((i) => !!i.image_url)
+      .slice()
+      .sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order)
+      .slice(0, 6);
   }, [images]);
   const hasReal = slides.length > 0;
   const count = hasReal ? slides.length : 5; // 5 fallback thumbs from generated tile
@@ -117,7 +113,7 @@ export function ProductGallery({
         )}
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         {(hasReal ? slides : Array.from({ length: 5 })).map((s, i) => (
 
           <button

@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
 import { adminSetPrimaryProductImage } from "@/lib/catalog-admin.functions";
 
+const MAX_PHOTOS_PER_SCOPE = 6;
+
 type Row = {
   id: string;
   image_url: string;
@@ -111,12 +113,18 @@ export function ProductImageManager({
     if (!files?.length) return;
     if (!q.data || q.error || (targetSku && !q.data.skus.includes(targetSku)))
       return toast.error("Save and reload this SKU before attaching photos");
+    const scopeImages = q.data.images.filter((image) => (image.variant_sku ?? "") === targetSku);
+    const remaining = MAX_PHOTOS_PER_SCOPE - scopeImages.length;
+    if (remaining <= 0) {
+      return toast.error("Maximum 6 photos are already saved for this selection");
+    }
+    if (files.length > remaining) {
+      return toast.error(`You can add only ${remaining} more photo(s) here. Maximum is 6.`);
+    }
     setBusy(true);
     try {
-      const base = q.data?.images.length ?? 0;
-      const scopeHasPrimary = (q.data?.images ?? []).some(
-        (image) => (image.variant_sku ?? "") === targetSku && image.is_primary,
-      );
+      const base = scopeImages.length ? Math.max(...scopeImages.map((image) => image.sort_order)) + 1 : 0;
+      const scopeHasPrimary = scopeImages.some((image) => image.is_primary);
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith("image/")) throw new Error(`${file.name} is not an image`);
@@ -168,6 +176,54 @@ export function ProductImageManager({
     }
   };
 
+  const changeScope = async (row: Row, nextSku: string) => {
+    const previousSku = row.variant_sku ?? "";
+    if (previousSku === nextSku) return;
+    const destinationImages = (q.data?.images ?? []).filter((image) => (image.variant_sku ?? "") === nextSku);
+    if (destinationImages.length >= MAX_PHOTOS_PER_SCOPE) {
+      return toast.error("Maximum 6 photos are already saved for that selection");
+    }
+    const nextSortOrder = destinationImages.length
+      ? Math.max(...destinationImages.map((image) => image.sort_order)) + 1
+      : 0;
+    const { error } = await supabase
+      .from("product_images")
+      .update({ variant_sku: nextSku || null, is_primary: false, sort_order: nextSortOrder })
+      .eq("id", row.id);
+    if (error) return toast.error(error.message);
+
+    const previousScopeRest = (q.data?.images ?? []).filter(
+      (image) => image.id !== row.id && (image.variant_sku ?? "") === previousSku,
+    );
+    if (row.is_primary && previousScopeRest.length) {
+      await adminSetPrimaryProductImage({ data: { imageId: previousScopeRest[0].id } });
+    }
+    refresh();
+  };
+
+  const rowsForScope = (variantSku: string | null) =>
+    (q.data?.images ?? [])
+      .filter((image) => (image.variant_sku ?? "") === (variantSku ?? ""))
+      .slice()
+      .sort((a, b) => a.sort_order - b.sort_order);
+
+  const changePosition = async (row: Row, position: number) => {
+    const scopeRows = rowsForScope(row.variant_sku);
+    const withoutRow = scopeRows.filter((image) => image.id !== row.id);
+    const nextIndex = Math.max(0, Math.min(position - 1, withoutRow.length));
+    const reordered = [...withoutRow.slice(0, nextIndex), row, ...withoutRow.slice(nextIndex)];
+    const updates = reordered.map((image, index) =>
+      image.sort_order === index
+        ? Promise.resolve({ error: null })
+        : supabase.from("product_images").update({ sort_order: index }).eq("id", image.id),
+    );
+    const results = await Promise.all(updates);
+    const failed = results.find((result) => result.error);
+    if (failed?.error) return toast.error(failed.error.message);
+    toast.success("Photo order updated");
+    refresh();
+  };
+
   const remove = async (row: Row) => {
     if (
       !confirm(
@@ -193,9 +249,12 @@ export function ProductImageManager({
   };
 
   const skus = q.data?.skus ?? [];
-  const images = (q.data?.images ?? []).filter(
-    (row) => !variantOnly || row.variant_sku === targetSku,
-  );
+  const images = (q.data?.images ?? [])
+    .filter((row) => !variantOnly || row.variant_sku === targetSku)
+    .slice()
+    .sort((a, b) => (a.variant_sku ?? "").localeCompare(b.variant_sku ?? "") || a.sort_order - b.sort_order);
+  const selectedCount = (q.data?.images ?? []).filter((image) => (image.variant_sku ?? "") === targetSku).length;
+  const remainingCount = Math.max(0, MAX_PHOTOS_PER_SCOPE - selectedCount);
 
   return (
     <div
@@ -208,6 +267,11 @@ export function ProductImageManager({
       {variantOnly && (
         <p className="text-sm text-slate-500">
           Changes to these saved images apply immediately to this SKU.
+        </p>
+      )}
+      {!variantOnly && (
+        <p className="text-sm text-slate-500">
+          Upload up to 6 photos for the selected variation or family gallery. Mark any photo as main and set its position.
         </p>
       )}
       {q.isError && (
@@ -251,6 +315,9 @@ export function ProductImageManager({
         >
           <Upload className="mr-2 h-4 w-4" /> {busy ? "Uploading…" : "Upload photos"}
         </Button>
+        <div className="text-xs text-slate-500">
+          {selectedCount}/{MAX_PHOTOS_PER_SCOPE} photos saved · {remainingCount} left
+        </div>
       </div>
 
       {images.length === 0 ? (
@@ -270,9 +337,7 @@ export function ProductImageManager({
                 className="h-9 w-full rounded-md border px-2 text-xs bg-white"
                 value={row.variant_sku ?? ""}
                 disabled={variantOnly}
-                onChange={(e) =>
-                  patch(row.id, { variant_sku: e.target.value || null, is_primary: false })
-                }
+                onChange={(e) => changeScope(row, e.target.value)}
               >
                 <option value="">All variations</option>
                 {skus.map((s) => (
@@ -292,19 +357,25 @@ export function ProductImageManager({
                 }}
               />
               <div className="flex items-center gap-2">
-                <Input
-                  className="h-9 w-16 text-xs"
-                  type="number"
-                  value={row.sort_order}
-                  onChange={(e) => patch(row.id, { sort_order: Number(e.target.value) })}
-                />
+                <select
+                  aria-label="Photo position"
+                  className="h-9 w-24 rounded-md border bg-white px-2 text-xs"
+                  value={Math.max(1, rowsForScope(row.variant_sku).findIndex((image) => image.id === row.id) + 1)}
+                  onChange={(e) => changePosition(row, Number(e.target.value))}
+                >
+                  {rowsForScope(row.variant_sku).map((image, index) => (
+                    <option key={image.id} value={index + 1}>
+                      {index + 1}{index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}
+                    </option>
+                  ))}
+                </select>
                 <Button
                   type="button"
                   size="sm"
                   variant={row.is_primary ? "default" : "outline"}
                   onClick={() => makePrimary(row)}
                 >
-                  <Star className="mr-1 h-3.5 w-3.5" /> {row.is_primary ? "Primary" : "Set primary"}
+                  <Star className="mr-1 h-3.5 w-3.5" /> {row.is_primary ? "Main" : "Make main"}
                 </Button>
                 <Button
                   type="button"
