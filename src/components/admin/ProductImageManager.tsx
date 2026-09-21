@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
@@ -42,10 +43,10 @@ export function ProductImageManager({
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [targetSku, setTargetSku] = useState(initialVariantSku);
+  const [targetSkus, setTargetSkus] = useState<string[]>([initialVariantSku]);
 
   useEffect(() => {
-    setTargetSku(initialVariantSku);
+    setTargetSkus([initialVariantSku]);
   }, [initialVariantSku]);
 
   const q = useQuery({
@@ -111,20 +112,34 @@ export function ProductImageManager({
 
   const onUpload = async (files: FileList | null) => {
     if (!files?.length) return;
-    if (!q.data || q.error || (targetSku && !q.data.skus.includes(targetSku)))
+    const uploadTargets = Array.from(new Set(targetSkus)).filter(
+      (sku) => sku === "" || (q.data?.skus ?? []).includes(sku),
+    );
+    if (!uploadTargets.length) return toast.error("Select at least one variation");
+    if (!q.data || q.error || uploadTargets.length !== targetSkus.length)
       return toast.error("Save and reload this SKU before attaching photos");
-    const scopeImages = q.data.images.filter((image) => (image.variant_sku ?? "") === targetSku);
-    const remaining = MAX_PHOTOS_PER_SCOPE - scopeImages.length;
-    if (remaining <= 0) {
-      return toast.error("Maximum 6 photos are already saved for this selection");
-    }
-    if (files.length > remaining) {
-      return toast.error(`You can add only ${remaining} more photo(s) here. Maximum is 6.`);
+    for (const sku of uploadTargets) {
+      const scopeImages = q.data.images.filter((image) => (image.variant_sku ?? "") === sku);
+      const remaining = MAX_PHOTOS_PER_SCOPE - scopeImages.length;
+      if (remaining <= 0) {
+        return toast.error(`Maximum 6 photos are already saved for ${sku || "family gallery"}`);
+      }
+      if (files.length > remaining) {
+        return toast.error(`You can add only ${remaining} more photo(s) to ${sku || "family gallery"}. Maximum is 6.`);
+      }
     }
     setBusy(true);
     try {
-      const base = scopeImages.length ? Math.max(...scopeImages.map((image) => image.sort_order)) + 1 : 0;
-      const scopeHasPrimary = scopeImages.some((image) => image.is_primary);
+      const baseBySku = new Map<string, number>();
+      const hasPrimaryBySku = new Map<string, boolean>();
+      for (const sku of uploadTargets) {
+        const scopeImages = q.data.images.filter((image) => (image.variant_sku ?? "") === sku);
+        baseBySku.set(
+          sku,
+          scopeImages.length ? Math.max(...scopeImages.map((image) => image.sort_order)) + 1 : 0,
+        );
+        hasPrimaryBySku.set(sku, scopeImages.some((image) => image.is_primary));
+      }
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith("image/")) throw new Error(`${file.name} is not an image`);
@@ -137,18 +152,23 @@ export function ProductImageManager({
         });
         if (up.error) throw new Error(up.error.message);
 
-        const ins = await supabase.from("product_images").insert({
+        const rows = uploadTargets.map((sku) => ({
           family_id: q.data?.familyId ?? null,
           product_id: q.data?.familyId ? null : productId,
-          variant_sku: targetSku || null,
+          variant_sku: sku || null,
           image_url: `/api/public/product-image/${path}`,
           alt_text: null,
-          sort_order: base + i,
-          is_primary: !scopeHasPrimary && i === 0,
-        });
+          sort_order: (baseBySku.get(sku) ?? 0) + i,
+          is_primary: !hasPrimaryBySku.get(sku) && i === 0,
+        }));
+        const ins = await supabase.from("product_images").insert(rows);
         if (ins.error) throw new Error(ins.error.message);
       }
-      toast.success("Photos uploaded");
+      toast.success(
+        uploadTargets.length === 1
+          ? "Photos uploaded"
+          : `Photos uploaded to ${uploadTargets.length} selections`,
+      );
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -249,12 +269,22 @@ export function ProductImageManager({
   };
 
   const skus = q.data?.skus ?? [];
+  const uploadTargets = targetSkus.filter((sku) => sku === "" || skus.includes(sku));
   const images = (q.data?.images ?? [])
-    .filter((row) => !variantOnly || row.variant_sku === targetSku)
+    .filter((row) => !variantOnly || row.variant_sku === (uploadTargets[0] || ""))
     .slice()
     .sort((a, b) => (a.variant_sku ?? "").localeCompare(b.variant_sku ?? "") || a.sort_order - b.sort_order);
-  const selectedCount = (q.data?.images ?? []).filter((image) => (image.variant_sku ?? "") === targetSku).length;
+  const selectedScope = uploadTargets[0] ?? "";
+  const selectedCount = (q.data?.images ?? []).filter((image) => (image.variant_sku ?? "") === selectedScope).length;
   const remainingCount = Math.max(0, MAX_PHOTOS_PER_SCOPE - selectedCount);
+
+  const toggleTarget = (sku: string, checked: boolean) => {
+    if (variantOnly) return;
+    setTargetSkus((current) => {
+      const next = checked ? [...current, sku] : current.filter((item) => item !== sku);
+      return Array.from(new Set(next));
+    });
+  };
 
   return (
     <div
@@ -283,23 +313,46 @@ export function ProductImageManager({
         </div>
       )}
 
+      <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-xs font-medium text-slate-600">Attach to variations</div>
+            <p className="text-xs text-slate-500">Select one or many SKUs, then upload once.</p>
+          </div>
+          {!variantOnly && skus.length > 0 && (
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={() => setTargetSkus(skus)}>
+                Select all variations
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => setTargetSkus([""])}>
+                Family only
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm">
+            <Checkbox
+              checked={uploadTargets.includes("")}
+              disabled={variantOnly}
+              onCheckedChange={(checked) => toggleTarget("", checked === true)}
+            />
+            <span>All variations / family photo</span>
+          </label>
+          {skus.map((s) => (
+            <label key={s} className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm">
+              <Checkbox
+                checked={uploadTargets.includes(s)}
+                disabled={variantOnly}
+                onCheckedChange={(checked) => toggleTarget(s, checked === true)}
+              />
+              <span className="break-all">{s}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
-        <label className="block space-y-1">
-          <div className="text-xs font-medium text-slate-600">Attach to variation</div>
-          <select
-            className="h-10 min-w-[220px] rounded-md border px-3 text-sm bg-white"
-            value={targetSku}
-            disabled={variantOnly}
-            onChange={(e) => setTargetSku(e.target.value)}
-          >
-            <option value="">All variations (family photo)</option>
-            {skus.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
         <input
           ref={fileRef}
           type="file"
@@ -310,13 +363,13 @@ export function ProductImageManager({
         />
         <Button
           type="button"
-          disabled={busy || q.isPending || q.isError}
+          disabled={busy || q.isPending || q.isError || uploadTargets.length === 0}
           onClick={() => fileRef.current?.click()}
         >
           <Upload className="mr-2 h-4 w-4" /> {busy ? "Uploading…" : "Upload photos"}
         </Button>
         <div className="text-xs text-slate-500">
-          {selectedCount}/{MAX_PHOTOS_PER_SCOPE} photos saved · {remainingCount} left
+          {uploadTargets.length} selected · first selected has {selectedCount}/{MAX_PHOTOS_PER_SCOPE} photos · {remainingCount} left
         </div>
       </div>
 
