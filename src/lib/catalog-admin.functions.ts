@@ -87,6 +87,14 @@ const VariantInput = z.object({
   pack_l: nullableNumber,
   pack_w: nullableNumber,
   pack_h: nullableNumber,
+  retailer_pack_weight_g: nullableNumber,
+  retailer_pack_l: nullableNumber,
+  retailer_pack_w: nullableNumber,
+  retailer_pack_h: nullableNumber,
+  distributor_pack_weight_g: nullableNumber,
+  distributor_pack_l: nullableNumber,
+  distributor_pack_w: nullableNumber,
+  distributor_pack_h: nullableNumber,
   is_active: z.boolean(),
   sort_order: z.number().int().min(0),
   low_stock_threshold: z.number().int().min(0).default(10),
@@ -336,7 +344,7 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     if (!familyIds.length) return { families: [], count: count ?? 0 };
 
     const variantColumns =
-      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, is_active, low_stock_threshold, sort_order, updated_at";
+      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, low_stock_threshold, sort_order, updated_at";
     const legacyVariantColumns = variantColumns.replace("barcode, ", "");
     let variants = await (supabaseAdmin as any)
       .from("product_variants")
@@ -758,7 +766,7 @@ export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
     let compatibilityMode = false;
 
     for (const family of data.families) {
-      let { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
+      let { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v3", {
         _family_id: family.familyId,
         _variants: family.variants,
         _axes: family.axes,
@@ -766,9 +774,9 @@ export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
       });
       if (
         error &&
-        /admin_save_variant_matrix_v2|could not find the function|schema cache/i.test(error.message)
+        /admin_save_variant_matrix_v3|could not find the function|schema cache/i.test(error.message)
       ) {
-        const fallback = await (supabaseAdmin as any).rpc("admin_save_variant_matrix", {
+        const fallback = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v2", {
           _family_id: family.familyId,
           _variants: family.variants,
           _axes: family.axes,
