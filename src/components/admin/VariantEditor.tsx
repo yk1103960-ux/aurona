@@ -2007,7 +2007,7 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
 
 /**
  * Bulk price setter: pick an option (Wattage, Size, Colour…) and one of its
- * values, then apply MRP / discount / price / commission to every matching SKU.
+ * values, then apply MRP / customer, retailer, distributor price / commission to every matching SKU.
  */
 function BulkPriceByOption({
   rows,
@@ -2031,7 +2031,9 @@ function BulkPriceByOption({
   const [optionValue, setOptionValue] = useState("");
   const [mrp, setMrp] = useState("");
   const [discount, setDiscount] = useState("");
-  const [price, setPrice] = useState("");
+  const [customerPrice, setCustomerPrice] = useState("");
+  const [retailerPrice, setRetailerPrice] = useState("");
+  const [distributorPrice, setDistributorPrice] = useState("");
   const [commission, setCommission] = useState("");
 
   const activeKey = optionKey || optionKeys[0] || "";
@@ -2058,12 +2060,25 @@ function BulkPriceByOption({
     }
     const mrpNum = mrp === "" ? null : Number(mrp);
     const discNum = discount === "" ? null : Math.min(100, Math.max(0, Number(discount)));
-    const priceNum = price === "" ? null : Number(price);
-    if ([mrpNum, discNum, priceNum].some((v) => v !== null && !Number.isFinite(v as number))) {
+    const customerPriceNum = customerPrice === "" ? null : Number(customerPrice);
+    const retailerPriceNum = retailerPrice === "" ? null : Number(retailerPrice);
+    const distributorPriceNum = distributorPrice === "" ? null : Number(distributorPrice);
+    if (
+      [mrpNum, discNum, customerPriceNum, retailerPriceNum, distributorPriceNum].some(
+        (v) => v !== null && !Number.isFinite(v as number),
+      )
+    ) {
       toast.error("Enter valid numbers.");
       return;
     }
-    if (mrpNum === null && discNum === null && priceNum === null && commission === "") {
+    if (
+      mrpNum === null &&
+      discNum === null &&
+      customerPriceNum === null &&
+      retailerPriceNum === null &&
+      distributorPriceNum === null &&
+      commission === ""
+    ) {
       toast.error("Enter at least one value to apply.");
       return;
     }
@@ -2072,11 +2087,11 @@ function BulkPriceByOption({
       const patch: Partial<Variant> = {};
       const baseMrp = mrpNum ?? Number(row.mrp ?? 0);
       if (mrpNum !== null) patch.mrp = mrpNum;
-      if (priceNum !== null) {
-        patch.price = priceNum;
+      if (customerPriceNum !== null) {
+        patch.price = customerPriceNum;
         if (baseMrp > 0) {
           patch.discount_pct = Number(
-            Math.min(100, Math.max(0, ((baseMrp - priceNum) / baseMrp) * 100)).toFixed(2),
+            Math.min(100, Math.max(0, ((baseMrp - customerPriceNum) / baseMrp) * 100)).toFixed(2),
           );
         }
       } else if (discNum !== null) {
@@ -2088,6 +2103,8 @@ function BulkPriceByOption({
           patch.price = Number((mrpNum - (mrpNum * existingDiscount) / 100).toFixed(2));
         }
       }
+      if (retailerPriceNum !== null) patch.retailer_price = retailerPriceNum;
+      if (distributorPriceNum !== null) patch.distributor_price = distributorPriceNum;
       if (commission !== "") {
         patch.attributes = { ...row.attributes, __affiliate_commission: commission };
       }
@@ -2104,7 +2121,7 @@ function BulkPriceByOption({
 
   return (
     <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className="text-sm font-semibold text-slate-800">Set prices by option</p>
+      <p className="text-sm font-semibold text-slate-800">Set prices for Customer / Retailer / Distributor</p>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs text-slate-500">
@@ -2159,9 +2176,29 @@ function BulkPriceByOption({
         <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
           Price
           <Input
-            value={price}
-            onChange={(event) => setPrice(event.target.value)}
-            placeholder="Price"
+            value={customerPrice}
+            onChange={(event) => setCustomerPrice(event.target.value)}
+            placeholder="Customer"
+            inputMode="decimal"
+          />
+        </label>
+
+        <label className="flex w-28 flex-col gap-1 text-xs text-slate-500">
+          Retailer
+          <Input
+            value={retailerPrice}
+            onChange={(event) => setRetailerPrice(event.target.value)}
+            placeholder="Retailer"
+            inputMode="decimal"
+          />
+        </label>
+
+        <label className="flex w-32 flex-col gap-1 text-xs text-slate-500">
+          Distributor
+          <Input
+            value={distributorPrice}
+            onChange={(event) => setDistributorPrice(event.target.value)}
+            placeholder="Distributor"
             inputMode="decimal"
           />
         </label>
@@ -2181,7 +2218,7 @@ function BulkPriceByOption({
       </div>
 
       <p className="text-xs text-slate-500">
-        Leave a box empty to keep the current value. Price wins over discount when both are filled.
+        Leave a box empty to keep the current value. Customer price wins over discount when both are filled.
       </p>
     </div>
   );
