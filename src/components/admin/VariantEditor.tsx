@@ -2195,7 +2195,9 @@ function CustomerTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
-  const copyNumericDown = (field: "mrp" | "price" | "discount_pct" | "pack_size", index: number) => {
+  type CustomerNumberField = "mrp" | "price" | "discount_pct" | "pack_size" | "weight_g" | "dim_l" | "dim_w" | "dim_h";
+
+  const copyNumericDown = (field: CustomerNumberField, index: number) => {
     const value = rows[index]?.[field];
 
     for (const row of rows.slice(index + 1)) {
@@ -2321,6 +2323,24 @@ function CustomerTab({
     });
   };
 
+  const changeMeasurement = (row: Variant, field: "weight_g" | "dim_l" | "dim_w" | "dim_h", raw: string) => {
+    if (raw === "") {
+      updateRow(row.id, {
+        [field]: null,
+      } as Partial<Variant>);
+
+      return;
+    }
+
+    const value = Number(raw);
+
+    if (!Number.isFinite(value) || value < 0) return;
+
+    updateRow(row.id, {
+      [field]: value,
+    } as Partial<Variant>);
+  };
+
   const changeAffiliate = (row: Variant, raw: string) => {
     updateRow(row.id, {
       attributes: {
@@ -2387,7 +2407,7 @@ function CustomerTab({
           <h2 className="text-base font-semibold text-slate-950">Customer Pricing &amp; Commission</h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Enter MRP, discount, customer price, pack size and affiliate commission for each generated SKU.
+            Enter MRP, discount, customer price, pack size, weight, dimensions and affiliate commission for each generated SKU.
           </p>
         </div>
 
@@ -2406,7 +2426,7 @@ function CustomerTab({
               <h3 className="text-sm font-semibold text-slate-950">Customer Product Variations</h3>
 
               <p className="mt-1 text-xs text-slate-500">
-                Enter MRP, discount, customer price, pack size and affiliate commission for each SKU.
+                Enter MRP, discount, customer price, pack size, weight, dimensions and affiliate commission for each SKU.
               </p>
             </div>
 
@@ -2418,7 +2438,7 @@ function CustomerTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-collapse text-sm">
+          <table className="w-full min-w-[1820px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {/* 1 */}
@@ -2440,6 +2460,18 @@ function CustomerTab({
                 <Th>Pack Of</Th>
 
                 {/* 7 */}
+                <Th>Weight (g)</Th>
+
+                {/* 8 */}
+                <Th>Length (cm)</Th>
+
+                {/* 9 */}
+                <Th>Width (cm)</Th>
+
+                {/* 10 */}
+                <Th>Height (cm)</Th>
+
+                {/* 11 */}
                 <Th>Affiliate Commission</Th>
               </tr>
             </thead>
@@ -2587,7 +2619,107 @@ function CustomerTab({
                     </Td>
 
                     {/* =========================================
-                        7. AFFILIATE COMMISSION
+                        7. WEIGHT
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[135px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          value={row.weight_g ?? ""}
+                          placeholder="Weight"
+                          onChange={(event) => changeMeasurement(row, "weight_g", event.target.value)}
+                          className="h-9 min-w-[95px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy weight to all rows below"
+                          onClick={() => copyNumericDown("weight_g", index)}
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        8. LENGTH
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[135px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          value={row.dim_l ?? ""}
+                          placeholder="Length"
+                          onChange={(event) => changeMeasurement(row, "dim_l", event.target.value)}
+                          className="h-9 min-w-[95px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy length to all rows below"
+                          onClick={() => copyNumericDown("dim_l", index)}
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        9. WIDTH
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[135px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          value={row.dim_w ?? ""}
+                          placeholder="Width"
+                          onChange={(event) => changeMeasurement(row, "dim_w", event.target.value)}
+                          className="h-9 min-w-[95px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy width to all rows below"
+                          onClick={() => copyNumericDown("dim_w", index)}
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        10. HEIGHT
+                       ========================================= */}
+
+                    <Td>
+                      <div className="flex min-w-[135px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          value={row.dim_h ?? ""}
+                          placeholder="Height"
+                          onChange={(event) => changeMeasurement(row, "dim_h", event.target.value)}
+                          className="h-9 min-w-[95px]"
+                        />
+
+                        <CopyDownButton
+                          visible={hasRowsBelow}
+                          title="Copy height to all rows below"
+                          onClick={() => copyNumericDown("dim_h", index)}
+                        />
+                      </div>
+                    </Td>
+
+                    {/* =========================================
+                        11. AFFILIATE COMMISSION
                        ========================================= */}
 
                     <Td>
