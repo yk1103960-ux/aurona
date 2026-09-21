@@ -63,6 +63,14 @@ type Variant = {
   pack_l: number | null;
   pack_w: number | null;
   pack_h: number | null;
+  retailer_pack_weight_g: number | null;
+  retailer_pack_l: number | null;
+  retailer_pack_w: number | null;
+  retailer_pack_h: number | null;
+  distributor_pack_weight_g: number | null;
+  distributor_pack_l: number | null;
+  distributor_pack_w: number | null;
+  distributor_pack_h: number | null;
   is_active: boolean;
   low_stock_threshold: number;
   sort_order: number;
@@ -132,6 +140,14 @@ type EditableKey =
   | "pack_l"
   | "pack_w"
   | "pack_h"
+  | "retailer_pack_weight_g"
+  | "retailer_pack_l"
+  | "retailer_pack_w"
+  | "retailer_pack_h"
+  | "distributor_pack_weight_g"
+  | "distributor_pack_l"
+  | "distributor_pack_w"
+  | "distributor_pack_h"
   | "low_stock_threshold"
   | "is_active"
   | "attributes";
@@ -170,6 +186,14 @@ const BASE_COLUMNS: Column[] = [
   { key: "pack_l", label: "Pack L cm", width: 100 },
   { key: "pack_w", label: "Pack W cm", width: 100 },
   { key: "pack_h", label: "Pack H cm", width: 100 },
+  { key: "retailer_pack_weight_g", label: "Retailer Pack Weight g", width: 145 },
+  { key: "retailer_pack_l", label: "Retailer Pack L cm", width: 130 },
+  { key: "retailer_pack_w", label: "Retailer Pack W cm", width: 130 },
+  { key: "retailer_pack_h", label: "Retailer Pack H cm", width: 130 },
+  { key: "distributor_pack_weight_g", label: "Distributor Pack Weight g", width: 165 },
+  { key: "distributor_pack_l", label: "Distributor Pack L cm", width: 150 },
+  { key: "distributor_pack_w", label: "Distributor Pack W cm", width: 150 },
+  { key: "distributor_pack_h", label: "Distributor Pack H cm", width: 150 },
   { key: "status", label: "Status", width: 105 },
   { key: "actions", label: "Actions", width: 150 },
 ];
@@ -217,6 +241,14 @@ const PRESETS: Record<Preset, string[]> = {
     "pack_l",
     "pack_w",
     "pack_h",
+    "retailer_pack_weight_g",
+    "retailer_pack_l",
+    "retailer_pack_w",
+    "retailer_pack_h",
+    "distributor_pack_weight_g",
+    "distributor_pack_l",
+    "distributor_pack_w",
+    "distributor_pack_h",
     "actions",
   ],
   all: [...BASE_COLUMNS.map((column) => column.key), "attributes"],
@@ -239,6 +271,14 @@ const numberKeys = new Set<EditableKey>([
   "pack_l",
   "pack_w",
   "pack_h",
+  "retailer_pack_weight_g",
+  "retailer_pack_l",
+  "retailer_pack_w",
+  "retailer_pack_h",
+  "distributor_pack_weight_g",
+  "distributor_pack_l",
+  "distributor_pack_w",
+  "distributor_pack_h",
   "low_stock_threshold",
 ]);
 
@@ -481,6 +521,14 @@ function ProductMaster() {
     pack_l: variant.pack_l,
     pack_w: variant.pack_w,
     pack_h: variant.pack_h,
+    retailer_pack_weight_g: variant.retailer_pack_weight_g,
+    retailer_pack_l: variant.retailer_pack_l,
+    retailer_pack_w: variant.retailer_pack_w,
+    retailer_pack_h: variant.retailer_pack_h,
+    distributor_pack_weight_g: variant.distributor_pack_weight_g,
+    distributor_pack_l: variant.distributor_pack_l,
+    distributor_pack_w: variant.distributor_pack_w,
+    distributor_pack_h: variant.distributor_pack_h,
     is_active: variant.is_active,
     sort_order: variant.sort_order,
     low_stock_threshold: variant.low_stock_threshold ?? 10,

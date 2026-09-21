@@ -44,6 +44,8 @@ import { useProductReferralClick } from "@/hooks/useReferralCapture";
 
 import type { ProductFamily } from "@/lib/queries";
 
+type ShopperSegment = "customer" | "retailer" | "distributor";
+
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
     // Fire everything in parallel — only await family for redirect check.
@@ -168,6 +170,18 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
         ? { l: family.dim_l, w: family.dim_w, h: family.dim_h }
         : null;
   const dimsText = dims ? `${dims.l ?? "—"} × ${dims.w ?? "—"} × ${dims.h ?? "—"} cm` : null;
+  const packageDimensions = selectSegmentPackageDimensions(
+    variant,
+    role.isApproved && role.role === "retailer"
+      ? "retailer"
+      : role.isApproved && role.role === "distributor"
+        ? "distributor"
+        : "customer",
+  );
+  const packWeightText = packageDimensions.weight ? `${packageDimensions.weight} g` : null;
+  const packDimsText = packageDimensions.dims
+    ? `${packageDimensions.dims.l ?? "—"} × ${packageDimensions.dims.w ?? "—"} × ${packageDimensions.dims.h ?? "—"} cm`
+    : null;
   const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
     ([k, v]) => Boolean(k) && Boolean(v),
   ) as Array<readonly [string, string]>;
@@ -408,6 +422,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <Spec label="Weight" value={weightText} />
             <Spec label="Pack size" value={variant.pack_size ? String(variant.pack_size) : null} />
             <Spec label="Dimensions (LxWxH)" value={dimsText} />
+            <Spec label="Package weight" value={packWeightText} />
+            <Spec label="Package dimensions" value={packDimsText} />
             <Spec label="Warranty" value={family.warranty} />
             <Spec label="Country of origin" value={specValue(specEntries, "Country of origin") ?? "India"} />
           </div>
@@ -495,6 +511,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                     ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
                     ["Weight", weightText],
                     ["Dimensions (LxWxH)", dimsText],
+                    ["Package weight", packWeightText],
+                    ["Package dimensions", packDimsText],
                     ["Body type", family.body_type],
                     ["Warranty", family.warranty],
                     ["Material", family.material],
@@ -827,4 +845,41 @@ function mergeSpecRows(
     rows.push({ label, value });
   }
   return rows.filter((r): r is { label: string; value: string } => Boolean(r.value));
+}
+
+function selectSegmentPackageDimensions(
+  variant: ProductFamily["variants"][number],
+  segment: ShopperSegment,
+): {
+  weight: number | null;
+  dims: { l: number | null; w: number | null; h: number | null } | null;
+} {
+  const weight =
+    segment === "retailer"
+      ? variant.retailer_pack_weight_g ?? variant.pack_weight_g ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_weight_g ?? variant.pack_weight_g ?? null
+        : variant.pack_weight_g ?? null;
+  const l =
+    segment === "retailer"
+      ? variant.retailer_pack_l ?? variant.pack_l ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_l ?? variant.pack_l ?? null
+        : variant.pack_l ?? null;
+  const w =
+    segment === "retailer"
+      ? variant.retailer_pack_w ?? variant.pack_w ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_w ?? variant.pack_w ?? null
+        : variant.pack_w ?? null;
+  const h =
+    segment === "retailer"
+      ? variant.retailer_pack_h ?? variant.pack_h ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_h ?? variant.pack_h ?? null
+        : variant.pack_h ?? null;
+  return {
+    weight,
+    dims: l || w || h ? { l, w, h } : null,
+  };
 }
