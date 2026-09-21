@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
@@ -18,6 +17,18 @@ type Row = {
   variant_sku: string | null;
   sort_order: number;
   is_primary: boolean;
+};
+
+type VariantTarget = {
+  sku: string;
+  attributes: Record<string, string>;
+};
+
+type VariantAxis = {
+  axis_key: string;
+  label: string;
+  values: string[];
+  sort_order: number;
 };
 
 /**
@@ -43,10 +54,12 @@ export function ProductImageManager({
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [targetSkus, setTargetSkus] = useState<string[]>([initialVariantSku]);
+  const [groupOptionKey, setGroupOptionKey] = useState(initialVariantSku ? "__sku" : "__family");
+  const [groupValue, setGroupValue] = useState(initialVariantSku || "__all");
 
   useEffect(() => {
-    setTargetSkus([initialVariantSku]);
+    setGroupOptionKey(initialVariantSku ? "__sku" : "__family");
+    setGroupValue(initialVariantSku || "__all");
   }, [initialVariantSku]);
 
   const q = useQuery({
@@ -62,11 +75,20 @@ export function ProductImageManager({
       const { data: variants, error: variantsError } = fam
         ? await supabase
             .from("product_variants")
-            .select("sku")
+            .select("sku, attributes")
             .eq("family_id", fam.id)
             .order("sort_order")
-        : { data: [] as { sku: string }[], error: null };
+        : { data: [] as { sku: string; attributes: Record<string, string> | null }[], error: null };
       if (variantsError) throw variantsError;
+
+      const { data: axes, error: axesError } = fam
+        ? await supabase
+            .from("product_variant_axes")
+            .select("axis_key, label, values, sort_order")
+            .eq("family_id", fam.id)
+            .order("sort_order")
+        : { data: [] as VariantAxis[], error: null };
+      if (axesError) throw axesError;
 
       let images: Row[] = [];
       if (fam) {
@@ -87,7 +109,15 @@ export function ProductImageManager({
         images = (data ?? []) as Row[];
       }
 
-      return { familyId: fam?.id ?? null, skus: (variants ?? []).map((v) => v.sku), images };
+      return {
+        familyId: fam?.id ?? null,
+        variants: (variants ?? []).map((variant) => ({
+          sku: variant.sku,
+          attributes: (variant.attributes ?? {}) as Record<string, string>,
+        })) as VariantTarget[],
+        axes: (axes ?? []) as VariantAxis[],
+        images,
+      };
     },
   });
 
@@ -110,15 +140,61 @@ export function ProductImageManager({
   // Live sync across admin tabs and after uploads from anywhere.
   useRealtime(["product_images"], () => q.refetch());
 
+  const skus = (q.data?.variants ?? []).map((variant) => variant.sku);
+  const axisOptions = (q.data?.axes ?? []).filter((axis) =>
+    (q.data?.variants ?? []).some((variant) => Boolean(variant.attributes[axis.axis_key])),
+  );
+  const activeAxis = axisOptions.find((axis) => axis.axis_key === groupOptionKey) ?? axisOptions[0];
+  const activeAxisValues = activeAxis
+    ? Array.from(
+        new Set(
+          (q.data?.variants ?? [])
+            .map((variant) => variant.attributes[activeAxis.axis_key])
+            .filter(Boolean),
+        ),
+      )
+    : [];
+  const uploadTargets = variantOnly
+    ? [initialVariantSku].filter(Boolean)
+    : groupOptionKey === "__family"
+      ? [""]
+      : groupOptionKey === "__sku"
+        ? groupValue === "__all"
+          ? skus
+          : skus.filter((sku) => sku === groupValue)
+        : (q.data?.variants ?? [])
+            .filter((variant) => {
+              const value = variant.attributes[groupOptionKey];
+              return groupValue === "__all" ? Boolean(value) : value === groupValue;
+            })
+            .map((variant) => variant.sku);
+
+  useEffect(() => {
+    if (variantOnly || !q.data) return;
+    if (groupOptionKey === "__family") {
+      if (groupValue !== "__all") setGroupValue("__all");
+      return;
+    }
+    if (groupOptionKey === "__sku") {
+      if (groupValue !== "__all" && !skus.includes(groupValue)) setGroupValue("__all");
+      return;
+    }
+    const axis = axisOptions.find((item) => item.axis_key === groupOptionKey);
+    if (!axis) {
+      setGroupOptionKey(axisOptions[0]?.axis_key ?? (skus.length ? "__sku" : "__family"));
+      setGroupValue("__all");
+      return;
+    }
+    if (groupValue !== "__all" && !activeAxisValues.includes(groupValue)) setGroupValue("__all");
+  }, [activeAxisValues, axisOptions, groupOptionKey, groupValue, q.data, skus, variantOnly]);
+
   const onUpload = async (files: FileList | null) => {
     if (!files?.length) return;
-    const uploadTargets = Array.from(new Set(targetSkus)).filter(
-      (sku) => sku === "" || (q.data?.skus ?? []).includes(sku),
-    );
-    if (!uploadTargets.length) return toast.error("Select at least one variation");
-    if (!q.data || q.error || uploadTargets.length !== targetSkus.length)
+    const targets = Array.from(new Set(uploadTargets)).filter((sku) => sku === "" || skus.includes(sku));
+    if (!targets.length) return toast.error("No matching variation found");
+    if (!q.data || q.error || targets.length !== uploadTargets.length)
       return toast.error("Save and reload this SKU before attaching photos");
-    for (const sku of uploadTargets) {
+    for (const sku of targets) {
       const scopeImages = q.data.images.filter((image) => (image.variant_sku ?? "") === sku);
       const remaining = MAX_PHOTOS_PER_SCOPE - scopeImages.length;
       if (remaining <= 0) {
@@ -132,7 +208,7 @@ export function ProductImageManager({
     try {
       const baseBySku = new Map<string, number>();
       const hasPrimaryBySku = new Map<string, boolean>();
-      for (const sku of uploadTargets) {
+      for (const sku of targets) {
         const scopeImages = q.data.images.filter((image) => (image.variant_sku ?? "") === sku);
         baseBySku.set(
           sku,
@@ -152,7 +228,7 @@ export function ProductImageManager({
         });
         if (up.error) throw new Error(up.error.message);
 
-        const rows = uploadTargets.map((sku) => ({
+        const rows = targets.map((sku) => ({
           family_id: q.data?.familyId ?? null,
           product_id: q.data?.familyId ? null : productId,
           variant_sku: sku || null,
@@ -165,9 +241,9 @@ export function ProductImageManager({
         if (ins.error) throw new Error(ins.error.message);
       }
       toast.success(
-        uploadTargets.length === 1
+        targets.length === 1
           ? "Photos uploaded"
-          : `Photos uploaded to ${uploadTargets.length} selections`,
+          : `Photos uploaded to ${targets.length} variations`,
       );
       refresh();
     } catch (e) {
@@ -268,8 +344,6 @@ export function ProductImageManager({
     refresh();
   };
 
-  const skus = q.data?.skus ?? [];
-  const uploadTargets = targetSkus.filter((sku) => sku === "" || skus.includes(sku));
   const images = (q.data?.images ?? [])
     .filter((row) => !variantOnly || row.variant_sku === (uploadTargets[0] || ""))
     .slice()
@@ -277,14 +351,6 @@ export function ProductImageManager({
   const selectedScope = uploadTargets[0] ?? "";
   const selectedCount = (q.data?.images ?? []).filter((image) => (image.variant_sku ?? "") === selectedScope).length;
   const remainingCount = Math.max(0, MAX_PHOTOS_PER_SCOPE - selectedCount);
-
-  const toggleTarget = (sku: string, checked: boolean) => {
-    if (variantOnly) return;
-    setTargetSkus((current) => {
-      const next = checked ? [...current, sku] : current.filter((item) => item !== sku);
-      return Array.from(new Set(next));
-    });
-  };
 
   return (
     <div
@@ -313,64 +379,88 @@ export function ProductImageManager({
         </div>
       )}
 
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <div className="text-xs font-medium text-slate-600">Attach to variations</div>
-            <p className="text-xs text-slate-500">Select one or many SKUs, then upload once.</p>
-          </div>
-          {!variantOnly && skus.length > 0 && (
-            <div className="flex gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => setTargetSkus(skus)}>
-                Select all variations
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => setTargetSkus([""])}>
-                Family only
-              </Button>
-            </div>
-          )}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-3">
+          <div className="text-xs font-medium text-slate-600">Set photos by option</div>
+          <p className="text-xs text-slate-500">Choose Wattage, Body Colour, Size or SKU, then upload once for every matching variation.</p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm">
-            <Checkbox
-              checked={uploadTargets.includes("")}
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="block space-y-1">
+            <div className="text-xs font-medium text-slate-600">Option</div>
+            <select
+              className="h-11 min-w-[160px] rounded-md border border-slate-300 bg-white px-3 text-sm"
+              value={groupOptionKey}
               disabled={variantOnly}
-              onCheckedChange={(checked) => toggleTarget("", checked === true)}
-            />
-            <span>All variations / family photo</span>
+              onChange={(event) => {
+                setGroupOptionKey(event.target.value);
+                setGroupValue("__all");
+              }}
+            >
+              <option value="__family">Family photo</option>
+              {axisOptions.map((axis) => (
+                <option key={axis.axis_key} value={axis.axis_key}>
+                  {axis.label || axis.axis_key.replace(/_/g, " ")}
+                </option>
+              ))}
+              {skus.length > 0 && <option value="__sku">Exact SKU</option>}
+            </select>
           </label>
-          {skus.map((s) => (
-            <label key={s} className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm">
-              <Checkbox
-                checked={uploadTargets.includes(s)}
-                disabled={variantOnly}
-                onCheckedChange={(checked) => toggleTarget(s, checked === true)}
-              />
-              <span className="break-all">{s}</span>
-            </label>
-          ))}
-        </div>
-      </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => onUpload(e.target.files)}
-        />
-        <Button
-          type="button"
-          disabled={busy || q.isPending || q.isError || uploadTargets.length === 0}
-          onClick={() => fileRef.current?.click()}
-        >
-          <Upload className="mr-2 h-4 w-4" /> {busy ? "Uploading…" : "Upload photos"}
-        </Button>
-        <div className="text-xs text-slate-500">
-          {uploadTargets.length} selected · first selected has {selectedCount}/{MAX_PHOTOS_PER_SCOPE} photos · {remainingCount} left
+          <label className="block space-y-1">
+            <div className="text-xs font-medium text-slate-600">Value</div>
+            <select
+              className="h-11 min-w-[200px] rounded-md border border-slate-300 bg-white px-3 text-sm"
+              value={groupValue}
+              disabled={variantOnly || groupOptionKey === "__family"}
+              onChange={(event) => setGroupValue(event.target.value)}
+            >
+              {groupOptionKey === "__family" ? (
+                <option value="__all">All variations / family photo</option>
+              ) : groupOptionKey === "__sku" ? (
+                <>
+                  <option value="__all">All SKUs</option>
+                  {skus.map((sku) => (
+                    <option key={sku} value={sku}>
+                      {sku}
+                    </option>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <option value="__all">All values</option>
+                  {activeAxisValues.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </label>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => onUpload(e.target.files)}
+          />
+          <Button
+            type="button"
+            disabled={busy || q.isPending || q.isError || uploadTargets.length === 0}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {busy ? "Uploading…" : `Upload to ${uploadTargets.length || 0}`}
+          </Button>
         </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Maximum 6 photos per variation. Existing photos stay unless you remove them.
+        </p>
+      </div>
+      <div className="text-xs text-slate-500">
+        {uploadTargets.length} selected · first selected has {selectedCount}/{MAX_PHOTOS_PER_SCOPE} photos · {remainingCount} left
       </div>
 
       {images.length === 0 ? (
