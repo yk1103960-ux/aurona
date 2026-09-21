@@ -2612,6 +2612,10 @@ export type Database = {
           dim_w: number | null
           discount_pct: number | null
           distributor_moq: number | null
+          distributor_pack_h: number | null
+          distributor_pack_l: number | null
+          distributor_pack_w: number | null
+          distributor_pack_weight_g: number | null
           distributor_price: number | null
           family_id: string
           id: string
@@ -2628,6 +2632,10 @@ export type Database = {
           price: number
           reserved_stock: number
           retailer_moq: number | null
+          retailer_pack_h: number | null
+          retailer_pack_l: number | null
+          retailer_pack_w: number | null
+          retailer_pack_weight_g: number | null
           retailer_price: number | null
           sku: string
           sort_order: number
@@ -2648,6 +2656,10 @@ export type Database = {
           dim_w?: number | null
           discount_pct?: number | null
           distributor_moq?: number | null
+          distributor_pack_h?: number | null
+          distributor_pack_l?: number | null
+          distributor_pack_w?: number | null
+          distributor_pack_weight_g?: number | null
           distributor_price?: number | null
           family_id: string
           id?: string
@@ -2664,6 +2676,10 @@ export type Database = {
           price: number
           reserved_stock?: number
           retailer_moq?: number | null
+          retailer_pack_h?: number | null
+          retailer_pack_l?: number | null
+          retailer_pack_w?: number | null
+          retailer_pack_weight_g?: number | null
           retailer_price?: number | null
           sku: string
           sort_order?: number
@@ -2684,6 +2700,10 @@ export type Database = {
           dim_w?: number | null
           discount_pct?: number | null
           distributor_moq?: number | null
+          distributor_pack_h?: number | null
+          distributor_pack_l?: number | null
+          distributor_pack_w?: number | null
+          distributor_pack_weight_g?: number | null
           distributor_price?: number | null
           family_id?: string
           id?: string
@@ -2700,6 +2720,10 @@ export type Database = {
           price?: number
           reserved_stock?: number
           retailer_moq?: number | null
+          retailer_pack_h?: number | null
+          retailer_pack_l?: number | null
+          retailer_pack_w?: number | null
+          retailer_pack_weight_g?: number | null
           retailer_price?: number | null
           sku?: string
           sort_order?: number
@@ -3744,6 +3768,10 @@ export type Database = {
           dim_l: number | null
           dim_w: number | null
           discount_pct: number | null
+          distributor_pack_h: number | null
+          distributor_pack_l: number | null
+          distributor_pack_w: number | null
+          distributor_pack_weight_g: number | null
           family_id: string | null
           id: string | null
           image_seed: string | null
@@ -3756,6 +3784,10 @@ export type Database = {
           pack_w: number | null
           pack_weight_g: number | null
           price: number | null
+          retailer_pack_h: number | null
+          retailer_pack_l: number | null
+          retailer_pack_w: number | null
+          retailer_pack_weight_g: number | null
           sku: string | null
           sort_order: number | null
           stock: number | null
@@ -3771,6 +3803,10 @@ export type Database = {
           dim_l?: number | null
           dim_w?: number | null
           discount_pct?: number | null
+          distributor_pack_h?: number | null
+          distributor_pack_l?: number | null
+          distributor_pack_w?: number | null
+          distributor_pack_weight_g?: number | null
           family_id?: string | null
           id?: string | null
           image_seed?: string | null
@@ -3783,6 +3819,10 @@ export type Database = {
           pack_w?: number | null
           pack_weight_g?: number | null
           price?: number | null
+          retailer_pack_h?: number | null
+          retailer_pack_l?: number | null
+          retailer_pack_w?: number | null
+          retailer_pack_weight_g?: number | null
           sku?: string | null
           sort_order?: number | null
           stock?: number | null
@@ -3798,6 +3838,10 @@ export type Database = {
           dim_l?: number | null
           dim_w?: number | null
           discount_pct?: number | null
+          distributor_pack_h?: number | null
+          distributor_pack_l?: number | null
+          distributor_pack_w?: number | null
+          distributor_pack_weight_g?: number | null
           family_id?: string | null
           id?: string | null
           image_seed?: string | null
@@ -3810,6 +3854,10 @@ export type Database = {
           pack_w?: number | null
           pack_weight_g?: number | null
           price?: number | null
+          retailer_pack_h?: number | null
+          retailer_pack_l?: number | null
+          retailer_pack_w?: number | null
+          retailer_pack_weight_g?: number | null
           sku?: string | null
           sort_order?: number | null
           stock?: number | null
