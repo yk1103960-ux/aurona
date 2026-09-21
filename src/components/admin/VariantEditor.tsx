@@ -688,24 +688,18 @@ export function VariantEditor({
       <div className="overflow-x-auto border-b border-slate-200">
         <div className="flex min-w-max gap-1 p-2">
           {!customerPricingOnly && (
-            <>
-              <TabButton
-                active={tab === "quick"}
-                onClick={() => setTab("quick")}
-                icon={<SlidersHorizontal className="h-4 w-4" />}
-              >
-                Options &amp; Variants
-              </TabButton>
-
-              <TabButton
-                active={tab === "shipping"}
-                onClick={() => setTab("shipping")}
-                icon={<Truck className="h-4 w-4" />}
-              >
-                Weight & Dimensions
-              </TabButton>
-            </>
+            <TabButton
+              active={tab === "quick"}
+              onClick={() => setTab("quick")}
+              icon={<SlidersHorizontal className="h-4 w-4" />}
+            >
+              Options &amp; Variants
+            </TabButton>
           )}
+
+          <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
+            Weight & Dimensions
+          </TabButton>
 
           <TabButton
             active={tab === "customer"}
