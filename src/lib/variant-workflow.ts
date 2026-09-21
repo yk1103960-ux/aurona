@@ -23,6 +23,14 @@ export type Variant = {
   pack_l: number | null;
   pack_w: number | null;
   pack_h: number | null;
+  retailer_pack_weight_g: number | null;
+  retailer_pack_l: number | null;
+  retailer_pack_w: number | null;
+  retailer_pack_h: number | null;
+  distributor_pack_weight_g: number | null;
+  distributor_pack_l: number | null;
+  distributor_pack_w: number | null;
+  distributor_pack_h: number | null;
   is_active: boolean;
   sort_order: number;
   low_stock_threshold: number;
@@ -87,6 +95,14 @@ export function newVariation(
     pack_l: source?.pack_l ?? null,
     pack_w: source?.pack_w ?? null,
     pack_h: source?.pack_h ?? null,
+    retailer_pack_weight_g: source?.retailer_pack_weight_g ?? source?.pack_weight_g ?? null,
+    retailer_pack_l: source?.retailer_pack_l ?? source?.pack_l ?? null,
+    retailer_pack_w: source?.retailer_pack_w ?? source?.pack_w ?? null,
+    retailer_pack_h: source?.retailer_pack_h ?? source?.pack_h ?? null,
+    distributor_pack_weight_g: source?.distributor_pack_weight_g ?? source?.pack_weight_g ?? null,
+    distributor_pack_l: source?.distributor_pack_l ?? source?.pack_l ?? null,
+    distributor_pack_w: source?.distributor_pack_w ?? source?.pack_w ?? null,
+    distributor_pack_h: source?.distributor_pack_h ?? source?.pack_h ?? null,
     sort_order: rows.reduce((max, row) => Math.max(max, row.sort_order), -1) + 1,
     low_stock_threshold: source?.low_stock_threshold ?? 10,
     available_customer: source?.available_customer ?? true,
@@ -149,6 +165,14 @@ export function variationIssues(row: Variant, rows: Variant[], axes: Axis[]): st
     "pack_l",
     "pack_w",
     "pack_h",
+    "retailer_pack_weight_g",
+    "retailer_pack_l",
+    "retailer_pack_w",
+    "retailer_pack_h",
+    "distributor_pack_weight_g",
+    "distributor_pack_l",
+    "distributor_pack_w",
+    "distributor_pack_h",
   ] as const)
     if (row[key] !== null && (!Number.isFinite(row[key]) || row[key]! < 0))
       issues.push(`${key.replaceAll("_", " ")} must be zero or more.`);
