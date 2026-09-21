@@ -22,7 +22,11 @@ export function ProductGallery({
   resetKey?: string;
 }) {
   const slides = useMemo(() => {
-    return images.filter((i) => !!i.image_url).slice(0, 6);
+    return images
+      .filter((i) => !!i.image_url)
+      .slice()
+      .sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order)
+      .slice(0, 6);
   }, [images]);
   const hasReal = slides.length > 0;
   const count = hasReal ? slides.length : 5; // 5 fallback thumbs from generated tile
