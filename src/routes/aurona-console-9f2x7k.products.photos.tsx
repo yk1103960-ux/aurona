@@ -32,6 +32,7 @@ type Row = {
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_PHOTOS_PER_SCOPE = 6;
 
 const slug = (value: string) =>
   value
@@ -204,6 +205,18 @@ function BulkPhotos() {
           image.family_id === target.familyId &&
           (image.variant_sku ?? "") === (target.variantSku ?? ""),
       );
+
+      if (scopeImages.length >= MAX_PHOTOS_PER_SCOPE) {
+        failed++;
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === row.id
+              ? { ...r, status: "error", message: "Maximum 6 photos already saved for this SKU" }
+              : r,
+          ),
+        );
+        continue;
+      }
 
       // Same filename already attached to this exact target → skip, never duplicate.
       if (scopeImages.some((image) => (image.image_url as string).includes(`-${row.fileSlug}.`))) {
