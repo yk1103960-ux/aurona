@@ -363,6 +363,14 @@ export function VariantEditor({
           pack_l: template?.pack_l ?? null,
           pack_w: template?.pack_w ?? null,
           pack_h: template?.pack_h ?? null,
+          retailer_pack_weight_g: template?.retailer_pack_weight_g ?? template?.pack_weight_g ?? null,
+          retailer_pack_l: template?.retailer_pack_l ?? template?.pack_l ?? null,
+          retailer_pack_w: template?.retailer_pack_w ?? template?.pack_w ?? null,
+          retailer_pack_h: template?.retailer_pack_h ?? template?.pack_h ?? null,
+          distributor_pack_weight_g: template?.distributor_pack_weight_g ?? template?.pack_weight_g ?? null,
+          distributor_pack_l: template?.distributor_pack_l ?? template?.pack_l ?? null,
+          distributor_pack_w: template?.distributor_pack_w ?? template?.pack_w ?? null,
+          distributor_pack_h: template?.distributor_pack_h ?? template?.pack_h ?? null,
           is_active: false,
           sort_order: sourceRows.length + index,
           low_stock_threshold: 10,
@@ -1123,6 +1131,14 @@ function VariantBulkEditor({
     pack_l: "Package length (cm)",
     pack_w: "Package width (cm)",
     pack_h: "Package height (cm)",
+    retailer_pack_weight_g: "Retailer package weight (g)",
+    retailer_pack_l: "Retailer package length (cm)",
+    retailer_pack_w: "Retailer package width (cm)",
+    retailer_pack_h: "Retailer package height (cm)",
+    distributor_pack_weight_g: "Distributor package weight (g)",
+    distributor_pack_l: "Distributor package length (cm)",
+    distributor_pack_w: "Distributor package width (cm)",
+    distributor_pack_h: "Distributor package height (cm)",
     pack_size: "Pack size",
     low_stock_threshold: "Low-stock threshold",
     is_active: "Active status",
@@ -1389,10 +1405,18 @@ function VariantFullCard({
           </VariantSection>
           <VariantSection title="Package dimensions">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {field("pack_weight_g", "Weight (g)")}
-              {field("pack_l", "Length (cm)")}
-              {field("pack_w", "Width (cm)")}
-              {field("pack_h", "Height (cm)")}
+              {field("pack_weight_g", "Customer weight (g)")}
+              {field("pack_l", "Customer length (cm)")}
+              {field("pack_w", "Customer width (cm)")}
+              {field("pack_h", "Customer height (cm)")}
+              {field("retailer_pack_weight_g", "Retailer weight (g)")}
+              {field("retailer_pack_l", "Retailer length (cm)")}
+              {field("retailer_pack_w", "Retailer width (cm)")}
+              {field("retailer_pack_h", "Retailer height (cm)")}
+              {field("distributor_pack_weight_g", "Distributor weight (g)")}
+              {field("distributor_pack_l", "Distributor length (cm)")}
+              {field("distributor_pack_w", "Distributor width (cm)")}
+              {field("distributor_pack_h", "Distributor height (cm)")}
             </div>
           </VariantSection>
         </div>
@@ -1774,10 +1798,18 @@ function VariantEditDialog({
               </VariantSection>
               <VariantSection title="Shipping package">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {numberField("pack_weight_g", "Weight (g)")}
-                  {numberField("pack_l", "Length (cm)")}
-                  {numberField("pack_w", "Width (cm)")}
-                  {numberField("pack_h", "Height (cm)")}
+                  {numberField("pack_weight_g", "Customer weight (g)")}
+                  {numberField("pack_l", "Customer length (cm)")}
+                  {numberField("pack_w", "Customer width (cm)")}
+                  {numberField("pack_h", "Customer height (cm)")}
+                  {numberField("retailer_pack_weight_g", "Retailer weight (g)")}
+                  {numberField("retailer_pack_l", "Retailer length (cm)")}
+                  {numberField("retailer_pack_w", "Retailer width (cm)")}
+                  {numberField("retailer_pack_h", "Retailer height (cm)")}
+                  {numberField("distributor_pack_weight_g", "Distributor weight (g)")}
+                  {numberField("distributor_pack_l", "Distributor length (cm)")}
+                  {numberField("distributor_pack_w", "Distributor width (cm)")}
+                  {numberField("distributor_pack_h", "Distributor height (cm)")}
                 </div>
               </VariantSection>
               <p className="text-sm text-slate-500">
@@ -2232,7 +2264,16 @@ function CustomerTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
-  type CustomerNumberField = "mrp" | "price" | "discount_pct" | "pack_size" | "weight_g" | "dim_l" | "dim_w" | "dim_h";
+  type CustomerNumberField =
+    | "mrp"
+    | "price"
+    | "discount_pct"
+    | "pack_size"
+    | "weight_g"
+    | "dim_l"
+    | "dim_w"
+    | "dim_h"
+    | PackageDimensionKey;
 
   const copyNumericDown = (field: CustomerNumberField, index: number) => {
     const value = rows[index]?.[field];
@@ -2360,7 +2401,7 @@ function CustomerTab({
     });
   };
 
-  const changeMeasurement = (row: Variant, field: "weight_g" | "dim_l" | "dim_w" | "dim_h", raw: string) => {
+  const changeMeasurement = (row: Variant, field: "weight_g" | "dim_l" | "dim_w" | "dim_h" | PackageDimensionKey, raw: string) => {
     if (raw === "") {
       updateRow(row.id, {
         [field]: null,
@@ -2444,7 +2485,7 @@ function CustomerTab({
           <h2 className="text-base font-semibold text-slate-950">Customer Pricing &amp; Commission</h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Enter MRP, discount, customer price, pack size, weight, dimensions and affiliate commission for each generated SKU.
+            Enter MRP, discount, customer price, pack size, customer/retailer/distributor package dimensions and affiliate commission for each generated SKU.
           </p>
         </div>
 
@@ -2463,7 +2504,7 @@ function CustomerTab({
               <h3 className="text-sm font-semibold text-slate-950">Customer Product Variations</h3>
 
               <p className="mt-1 text-xs text-slate-500">
-                Enter MRP, discount, customer price, pack size, weight, dimensions and affiliate commission for each SKU.
+                Enter MRP, discount, customer price, pack size, package dimensions and affiliate commission for each SKU.
               </p>
             </div>
 
@@ -2475,7 +2516,7 @@ function CustomerTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1820px] border-collapse text-sm">
+          <table className="w-full min-w-[2600px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {/* 1 */}
@@ -2497,18 +2538,23 @@ function CustomerTab({
                 <Th>Pack Of</Th>
 
                 {/* 7 */}
-                <Th>Weight (g)</Th>
+                <Th>Unit Weight (g)</Th>
 
                 {/* 8 */}
-                <Th>Length (cm)</Th>
+                <Th>Unit L (cm)</Th>
 
                 {/* 9 */}
-                <Th>Width (cm)</Th>
+                <Th>Unit W (cm)</Th>
 
                 {/* 10 */}
-                <Th>Height (cm)</Th>
+                <Th>Unit H (cm)</Th>
 
                 {/* 11 */}
+                {PACKAGE_DIMENSION_FIELDS.map((field) => (
+                  <Th key={field.key}>{field.shortLabel}</Th>
+                ))}
+
+                {/* 23 */}
                 <Th>Affiliate Commission</Th>
               </tr>
             </thead>
@@ -2755,8 +2801,31 @@ function CustomerTab({
                       </div>
                     </Td>
 
+                    {PACKAGE_DIMENSION_FIELDS.map((field) => (
+                      <Td key={field.key}>
+                        <div className="flex min-w-[135px] items-center gap-1">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="any"
+                            inputMode="decimal"
+                            value={(row[field.key] as number | null) ?? ""}
+                            placeholder={field.placeholder}
+                            onChange={(event) => changeMeasurement(row, field.key, event.target.value)}
+                            className="h-9 min-w-[95px]"
+                          />
+
+                          <CopyDownButton
+                            visible={hasRowsBelow}
+                            title={`Copy ${field.shortLabel.toLowerCase()} to all rows below`}
+                            onClick={() => copyNumericDown(field.key, index)}
+                          />
+                        </div>
+                      </Td>
+                    ))}
+
                     {/* =========================================
-                        11. AFFILIATE COMMISSION
+                        AFFILIATE COMMISSION
                        ========================================= */}
 
                     <Td>
@@ -2836,7 +2905,7 @@ function ShippingTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
-  type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | "pack_weight_g" | "pack_l" | "pack_w" | "pack_h";
+  type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | PackageDimensionKey;
 
   const unitFields: { key: DimensionKey; label: string; placeholder: string }[] = [
     { key: "weight_g", label: "Weight (In Gms)", placeholder: "Weight" },
@@ -2845,12 +2914,11 @@ function ShippingTab({
     { key: "dim_h", label: "Height (In cms)", placeholder: "Height" },
   ];
 
-  const packageFields: { key: DimensionKey; label: string; placeholder: string }[] = [
-    { key: "pack_weight_g", label: "Weight (In Gms)", placeholder: "Pkg Weight" },
-    { key: "pack_l", label: "Length (In cms)", placeholder: "Pkg Length" },
-    { key: "pack_w", label: "Width (In cms)", placeholder: "Pkg Width" },
-    { key: "pack_h", label: "Height (In cms)", placeholder: "Pkg Height" },
-  ];
+  const packageFields = PACKAGE_DIMENSION_FIELDS.map((field) => ({
+    key: field.key,
+    label: field.label,
+    placeholder: field.placeholder,
+  }));
 
   const copyDown = (field: DimensionKey, index: number) => {
     const value = rows[index]?.[field] as number | null;
@@ -2909,15 +2977,15 @@ function ShippingTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1450px] border-collapse text-sm">
+          <table className="w-full min-w-[2200px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-white text-center text-xs font-semibold text-slate-700">
                 <Th rowSpan={2}>Variant</Th>
                 <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
                   For Single Unit/Pc of product
                 </th>
-                <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
-                  For Package
+                <th colSpan={12} className="border-l border-slate-200 px-3 py-3">
+                  For Package by buyer type
                 </th>
               </tr>
               <tr className="bg-slate-50 text-left text-[11px] font-semibold text-slate-500">
