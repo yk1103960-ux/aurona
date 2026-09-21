@@ -405,8 +405,13 @@ export type ProductVariant = {
   stock: number;
   weight_g: number | null;
   pack_size: number | null;
+  pack_weight_g: number | null;
   dim_l: number | null; dim_w: number | null; dim_h: number | null;
   pack_l: number | null; pack_w: number | null; pack_h: number | null;
+  retailer_pack_weight_g: number | null;
+  retailer_pack_l: number | null; retailer_pack_w: number | null; retailer_pack_h: number | null;
+  distributor_pack_weight_g: number | null;
+  distributor_pack_l: number | null; distributor_pack_w: number | null; distributor_pack_h: number | null;
   image_seed: string | null;
   image_url: string | null;
   sort_order: number;
@@ -453,7 +458,7 @@ export type ProductFamily = {
   axes: VariantAxis[];
 };
 
-const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, image_seed, sort_order, created_at, available_customer, available_retailer, available_distributor";
+const VARIANT_COLS = "id, family_id, sku, attributes, mrp, price, discount_pct, moq, stock, weight_g, pack_size, pack_weight_g, dim_l, dim_w, dim_h, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, image_seed, sort_order, created_at, available_customer, available_retailer, available_distributor";
 
 /** Which shopper segment a variation list is being built for. */
 export type VariantSegment = "customer" | "retailer" | "distributor";
