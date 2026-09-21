@@ -44,6 +44,8 @@ import { useProductReferralClick } from "@/hooks/useReferralCapture";
 
 import type { ProductFamily } from "@/lib/queries";
 
+type ShopperSegment = "customer" | "retailer" | "distributor";
+
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context, params }) => {
     // Fire everything in parallel — only await family for redirect check.
@@ -843,4 +845,41 @@ function mergeSpecRows(
     rows.push({ label, value });
   }
   return rows.filter((r): r is { label: string; value: string } => Boolean(r.value));
+}
+
+function selectSegmentPackageDimensions(
+  variant: ProductFamily["variants"][number],
+  segment: ShopperSegment,
+): {
+  weight: number | null;
+  dims: { l: number | null; w: number | null; h: number | null } | null;
+} {
+  const weight =
+    segment === "retailer"
+      ? variant.retailer_pack_weight_g ?? variant.pack_weight_g ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_weight_g ?? variant.pack_weight_g ?? null
+        : variant.pack_weight_g ?? null;
+  const l =
+    segment === "retailer"
+      ? variant.retailer_pack_l ?? variant.pack_l ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_l ?? variant.pack_l ?? null
+        : variant.pack_l ?? null;
+  const w =
+    segment === "retailer"
+      ? variant.retailer_pack_w ?? variant.pack_w ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_w ?? variant.pack_w ?? null
+        : variant.pack_w ?? null;
+  const h =
+    segment === "retailer"
+      ? variant.retailer_pack_h ?? variant.pack_h ?? null
+      : segment === "distributor"
+        ? variant.distributor_pack_h ?? variant.pack_h ?? null
+        : variant.pack_h ?? null;
+  return {
+    weight,
+    dims: l || w || h ? { l, w, h } : null,
+  };
 }
