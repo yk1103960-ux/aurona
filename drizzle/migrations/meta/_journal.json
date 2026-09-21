@@ -8,6 +8,20 @@
       "when": 1790010330936,
       "tag": "0000_add_segment_package_dimensions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790012042068,
+      "tag": "0001_secure_order_writes_and_variant_view",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790012384987,
+      "tag": "0002_grant_safe_variant_view_source_columns",
+      "breakpoints": true
     }
   ]
 }

@@ -1736,6 +1736,14 @@ function RelatedProducts({ familyId }: { familyId: string }) {
   const [saving, setSaving] = useState(false);
   const loaded = useRef(false);
   const qc = useQueryClient();
+
+  useEffect(() => {
+    loaded.current = false;
+    setSelected([]);
+    setSearch("");
+    setCategoryId("");
+  }, [familyId]);
+
   const q = useQuery({
     queryKey: ["admin-related-products", familyId, search, categoryId],
     queryFn: async () => {
@@ -1789,7 +1797,10 @@ function RelatedProducts({ familyId }: { familyId: string }) {
     setSaving(true);
     try {
       await adminSaveRelatedProductFamilies({ data: { familyId, relatedIds: selected } });
-      await qc.invalidateQueries({ queryKey: ["related-family-products"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["related-family-products", familyId] }),
+        qc.invalidateQueries({ queryKey: ["admin-related-products", familyId] }),
+      ]);
       toast.success("Frequently bought products saved");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save related products");
