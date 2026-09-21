@@ -1731,19 +1731,31 @@ function GroupCommissionPanel({
 
 function RelatedProducts({ familyId }: { familyId: string }) {
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const loaded = useRef(false);
+  const qc = useQueryClient();
   const q = useQuery({
-    queryKey: ["admin-related-products", familyId, search],
+    queryKey: ["admin-related-products", familyId, search, categoryId],
     queryFn: async () => {
+      const [family, categories] = await Promise.all([
+        (supabase as any).from("product_families").select("id,category_id").eq("id", familyId).maybeSingle(),
+        (supabase as any).from("categories").select("id,name").order("name"),
+      ]);
+
+      if (family.error) throw family.error;
+      if (categories.error) throw categories.error;
+
+      const activeCategoryId = categoryId || family.data?.category_id || "";
       let productsQuery = (supabase as any)
         .from("product_families")
-        .select("id,name,main_sku")
+        .select("id,name,main_sku,category_id,categories(name)")
         .neq("id", familyId)
         .is("archived_at", null)
         .order("name")
         .limit(100);
+      if (activeCategoryId) productsQuery = productsQuery.eq("category_id", activeCategoryId);
       if (search.trim())
         productsQuery = productsQuery.or(`name.ilike.%${search.trim()}%,main_sku.ilike.%${search.trim()}%`);
       const [products, related] = await Promise.all([
@@ -1758,6 +1770,8 @@ function RelatedProducts({ familyId }: { familyId: string }) {
       if (related.error) throw related.error;
       return {
         products: products.data ?? [],
+        categories: categories.data ?? [],
+        categoryId: activeCategoryId,
         relatedIds: (related.data ?? []).map((row: any) => row.related_family_id as string),
       };
     },
@@ -1765,13 +1779,17 @@ function RelatedProducts({ familyId }: { familyId: string }) {
   useEffect(() => {
     if (q.data && !loaded.current) {
       setSelected(q.data.relatedIds);
+      setCategoryId(q.data.categoryId);
       loaded.current = true;
     }
   }, [q.data]);
+  const visibleIds = useMemo(() => (q.data?.products ?? []).map((item: any) => item.id as string), [q.data?.products]);
+  const selectVisible = () => setSelected((current) => [...new Set([...current, ...visibleIds])].slice(0, 24));
   const save = async () => {
     setSaving(true);
     try {
       await adminSaveRelatedProductFamilies({ data: { familyId, relatedIds: selected } });
+      await qc.invalidateQueries({ queryKey: ["related-family-products"] });
       toast.success("Frequently bought products saved");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save related products");
@@ -1782,16 +1800,37 @@ function RelatedProducts({ familyId }: { familyId: string }) {
   return (
     <Section title="Frequently Bought">
       <div className="flex flex-wrap items-center gap-2">
+        <select
+          className="h-10 min-w-[220px] rounded-md border border-slate-200 bg-white px-3 text-sm"
+          value={categoryId}
+          onChange={(event) => setCategoryId(event.target.value)}
+        >
+          <option value="">Product category</option>
+          {(q.data?.categories ?? []).map((category: any) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
         <Input
           className="max-w-md"
           value={search}
           placeholder="Search product name or SKU…"
           onChange={(e) => setSearch(e.target.value)}
         />
+        <Button type="button" variant="outline" onClick={selectVisible} disabled={!visibleIds.length}>
+          Select this category
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setSelected([])} disabled={!selected.length}>
+          Clear
+        </Button>
         <Button onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save Selection"}
         </Button>
         <span className="text-xs text-slate-500">{selected.length} selected · maximum 24</span>
+      </div>
+      <div className="text-xs text-slate-500">
+        Choose the product category, then select the products that should appear in Frequently Bought Together.
       </div>
       <div className="max-h-[480px] divide-y overflow-y-auto rounded-lg border">
         {(q.data?.products ?? []).map((item: any) => (
@@ -1808,10 +1847,14 @@ function RelatedProducts({ familyId }: { familyId: string }) {
             <span className="flex-1">
               <span className="font-medium">{item.name}</span>
               <span className="ml-2 font-mono text-xs text-slate-500">{item.main_sku}</span>
+              {item.categories?.name && <span className="ml-2 text-xs text-slate-400">{item.categories.name}</span>}
             </span>
           </label>
         ))}
         {q.isLoading && <div className="p-6 text-center text-sm text-slate-500">Loading products…</div>}
+        {!q.isLoading && (q.data?.products ?? []).length === 0 && (
+          <div className="p-6 text-center text-sm text-slate-500">No products found in this category.</div>
+        )}
       </div>
     </Section>
   );

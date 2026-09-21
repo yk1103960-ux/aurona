@@ -16,7 +16,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { productQuery, productsQuery, categoriesQuery, familyQuery, familyProductsQuery } from "@/lib/queries";
+import {
+  productQuery,
+  productsQuery,
+  categoriesQuery,
+  familyQuery,
+  familyProductsQuery,
+  relatedFamilyProductsQuery,
+} from "@/lib/queries";
 import { productImagesQuery } from "@/lib/product-images";
 import { supabase } from "@/integrations/supabase/client";
 import { discountPct, inr } from "@/lib/format";
@@ -48,6 +55,14 @@ export const Route = createFileRoute("/products/$slug")({
       const skus = fam.variants.map((v) => v.sku).filter(Boolean);
       context.queryClient.ensureQueryData(familyProductsQuery(skus));
       context.queryClient.ensureQueryData(productImagesQuery({ familyId: fam.id }));
+      context.queryClient.ensureQueryData(
+        relatedFamilyProductsQuery({
+          familyId: fam.id,
+          categoryId: fam.category_id,
+          excludeFamilySlug: fam.slug,
+          limit: 10,
+        }),
+      );
       return;
     }
     const p = await context.queryClient.ensureQueryData(productQuery(params.slug));
@@ -109,10 +124,14 @@ function PDPRoute() {
 function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?: string }) {
   const cats = useSuspenseQuery(categoriesQuery).data;
   const cat = cats.find((c) => c.id === family.category_id);
-  const { data: sameCategory = [] } = useQuery(productsQuery({ categorySlug: cat?.slug ?? "", limit: 10 }));
-  const related = sameCategory
-    .filter((p) => p.category_id === family.category_id && p.family_slug !== family.slug)
-    .slice(0, 10);
+  const { data: related = [] } = useQuery(
+    relatedFamilyProductsQuery({
+      familyId: family.id,
+      categoryId: family.category_id,
+      excludeFamilySlug: family.slug,
+      limit: 10,
+    }),
+  );
 
   const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
   const [qty, setQty] = useState(1);
@@ -528,8 +547,8 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
       <div className="mt-20">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <div className="text-eyebrow">Also popular</div>
-            <h2 className="text-display mt-2 text-3xl">You may also like</h2>
+            <div className="text-eyebrow">Frequently bought together</div>
+            <h2 className="text-display mt-2 text-3xl">Pairs from this category</h2>
           </div>
           <Link
             to="/category/$slug"

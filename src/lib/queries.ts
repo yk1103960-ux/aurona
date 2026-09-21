@@ -514,6 +514,122 @@ export const familyProductsQuery = (skus: string[]) =>
     },
   });
 
+export const relatedFamilyProductsQuery = ({
+  familyId,
+  categoryId,
+  excludeFamilySlug,
+  limit = 10,
+}: {
+  familyId: string;
+  categoryId: string | null;
+  excludeFamilySlug?: string;
+  limit?: number;
+}) =>
+  queryOptions({
+    queryKey: ["related-family-products", familyId, categoryId ?? "", excludeFamilySlug ?? "", limit],
+    // Admin changes to Frequently Bought must reflect on the product page immediately.
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    queryFn: async (): Promise<ProductRow[]> => {
+      const cols =
+        "id, slug, main_sku, name, category_id, brand, short_description, min_price, max_price, min_mrp, max_mrp, total_stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, categories(slug, name, icon)";
+
+      const relation = await supabase
+        .from("product_related_families")
+        .select("related_family_id, sort_order")
+        .eq("family_id", familyId)
+        .order("sort_order", { ascending: true });
+
+      if (relation.error) throw relation.error;
+
+      const selectedIds = (relation.data ?? [])
+        .map((row) => row.related_family_id as string | null)
+        .filter((id): id is string => Boolean(id));
+
+      let q = supabase
+        .from("product_families")
+        .select(cols)
+        .eq("is_published", true)
+        .is("archived_at", null);
+
+      if (selectedIds.length > 0) {
+        q = q.in("id", selectedIds);
+      } else if (categoryId) {
+        q = q.eq("category_id", categoryId).neq("id", familyId).order("is_bestseller", { ascending: false }).limit(limit);
+      } else {
+        return [];
+      }
+
+      const { data, error } = await q.order("created_at", { ascending: false });
+      if (error) throw error;
+
+      type FamRow = {
+        id: string;
+        slug: string;
+        main_sku: string;
+        name: string;
+        category_id: string | null;
+        brand: string;
+        short_description: string | null;
+        min_price: number | null;
+        max_price: number | null;
+        min_mrp: number | null;
+        max_mrp: number | null;
+        total_stock: number;
+        rating: number;
+        review_count: number;
+        is_featured: boolean;
+        is_bestseller: boolean;
+        is_new: boolean;
+        is_sale: boolean;
+        image_seed: string | null;
+        categories: { slug: string; name: string; icon: string | null } | null;
+      };
+
+      const order = new Map(selectedIds.map((id, index) => [id, index]));
+      const rows = ((data ?? []) as unknown as FamRow[])
+        .filter((family) => family.id !== familyId && family.slug !== excludeFamilySlug)
+        .sort((a, b) => {
+          if (selectedIds.length === 0) return 0;
+          return (order.get(a.id) ?? 9999) - (order.get(b.id) ?? 9999);
+        })
+        .slice(0, limit);
+
+      const famImgs = await primaryImages("family_id", rows.map((family) => family.id));
+
+      return rows.map((family) => ({
+        id: family.id,
+        slug: family.slug,
+        sku: family.main_sku,
+        name: family.name,
+        category_id: family.category_id,
+        brand: family.brand,
+        short_description: family.short_description,
+        description: null,
+        mrp: Number(family.min_mrp ?? family.min_price ?? 0),
+        price: Number(family.min_price ?? 0),
+        unit: "unit",
+        stock: Number(family.total_stock ?? 0),
+        rating: Number(family.rating ?? 0),
+        review_count: family.review_count ?? 0,
+        wattage: null,
+        size: null,
+        color_temp: null,
+        material: null,
+        warranty: null,
+        is_featured: family.is_featured,
+        is_bestseller: family.is_bestseller,
+        is_new: family.is_new,
+        is_sale: family.is_sale,
+        image_seed: family.image_seed,
+        image_url: famImgs[family.id] ?? null,
+        categories: family.categories,
+        family_slug: family.slug,
+        price_from: (family.min_price ?? 0) !== (family.max_price ?? 0),
+      }));
+    },
+  });
+
 // Lightweight product list for Browse Categories flyout (name, slug, image, family)
 export type BrowseProduct = {
   slug: string;
