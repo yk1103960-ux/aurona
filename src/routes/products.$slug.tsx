@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   Heart,
@@ -126,14 +126,28 @@ function PDPRoute() {
 function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?: string }) {
   const cats = useSuspenseQuery(categoriesQuery).data;
   const cat = cats.find((c) => c.id === family.category_id);
-  const { data: related = [] } = useQuery(
-    relatedFamilyProductsQuery({
-      familyId: family.id,
-      categoryId: family.category_id,
-      excludeFamilySlug: family.slug,
-      limit: 10,
-    }),
-  );
+  const qc = useQueryClient();
+  const relatedOptions = relatedFamilyProductsQuery({
+    familyId: family.id,
+    categoryId: family.category_id,
+    excludeFamilySlug: family.slug,
+    limit: 10,
+  });
+  const { data: related = [] } = useQuery(relatedOptions);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`related-products-${family.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "product_related_families", filter: `family_id=eq.${family.id}` },
+        () => qc.invalidateQueries({ queryKey: ["related-family-products", family.id] }),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [family.id, qc]);
 
   const { selection, setAxis, variant, isAvailable } = useVariantSelection(family, initialSku);
   const [qty, setQty] = useState(1);
@@ -513,9 +527,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                     ["Dimensions (LxWxH)", dimsText],
                     ["Package weight", packWeightText],
                     ["Package dimensions", packDimsText],
-                    ["Body type", family.body_type],
+                    ["Body type", specValue(specEntries, "Body type")],
                     ["Warranty", family.warranty],
-                    ["Material", family.material],
+                    ["Material", specValue(specEntries, "Material")],
                     ["Country of origin", "India"],
                   ] as Array<readonly [string, string | null | undefined]>,
                   specEntries,
