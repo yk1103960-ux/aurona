@@ -45,6 +45,40 @@ import { persistVariationPhotos, validateVariationPhoto, type VariationPhotoDraf
 
 type Tab = "quick" | "options" | "customer" | "shipping";
 
+type PackageDimensionKey =
+  | "pack_weight_g"
+  | "pack_l"
+  | "pack_w"
+  | "pack_h"
+  | "retailer_pack_weight_g"
+  | "retailer_pack_l"
+  | "retailer_pack_w"
+  | "retailer_pack_h"
+  | "distributor_pack_weight_g"
+  | "distributor_pack_l"
+  | "distributor_pack_w"
+  | "distributor_pack_h";
+
+const PACKAGE_DIMENSION_FIELDS: Array<{
+  key: PackageDimensionKey;
+  label: string;
+  shortLabel: string;
+  placeholder: string;
+}> = [
+  { key: "pack_weight_g", label: "Customer Weight (In Gms)", shortLabel: "Customer Wt", placeholder: "C Wt" },
+  { key: "pack_l", label: "Customer Length (In cms)", shortLabel: "Customer L", placeholder: "C L" },
+  { key: "pack_w", label: "Customer Width (In cms)", shortLabel: "Customer W", placeholder: "C W" },
+  { key: "pack_h", label: "Customer Height (In cms)", shortLabel: "Customer H", placeholder: "C H" },
+  { key: "retailer_pack_weight_g", label: "Retailer Weight (In Gms)", shortLabel: "Retailer Wt", placeholder: "R Wt" },
+  { key: "retailer_pack_l", label: "Retailer Length (In cms)", shortLabel: "Retailer L", placeholder: "R L" },
+  { key: "retailer_pack_w", label: "Retailer Width (In cms)", shortLabel: "Retailer W", placeholder: "R W" },
+  { key: "retailer_pack_h", label: "Retailer Height (In cms)", shortLabel: "Retailer H", placeholder: "R H" },
+  { key: "distributor_pack_weight_g", label: "Distributor Weight (In Gms)", shortLabel: "Distributor Wt", placeholder: "D Wt" },
+  { key: "distributor_pack_l", label: "Distributor Length (In cms)", shortLabel: "Distributor L", placeholder: "D L" },
+  { key: "distributor_pack_w", label: "Distributor Width (In cms)", shortLabel: "Distributor W", placeholder: "D W" },
+  { key: "distributor_pack_h", label: "Distributor Height (In cms)", shortLabel: "Distributor H", placeholder: "D H" },
+];
+
 const toNumber = (value: string): number | null => (value === "" ? null : Number(value));
 
 const money = (value: number) =>
