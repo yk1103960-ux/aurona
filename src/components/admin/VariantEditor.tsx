@@ -881,67 +881,6 @@ function QuickVariantsTab({
   manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
-  const availableGroupAxes = axes.filter((axis) => rows.some((row) => Boolean(row.attributes[axis.axis_key])));
-  const defaultGroupAxisKey =
-    availableGroupAxes.find((axis) => axis.axis_key === "wattage")?.axis_key ?? availableGroupAxes[0]?.axis_key ?? "";
-  const [groupAxisKey, setGroupAxisKey] = useState(defaultGroupAxisKey);
-
-  useEffect(() => {
-    if (!availableGroupAxes.length) {
-      if (groupAxisKey) setGroupAxisKey("");
-      return;
-    }
-    if (!availableGroupAxes.some((axis) => axis.axis_key === groupAxisKey)) {
-      setGroupAxisKey(defaultGroupAxisKey);
-    }
-  }, [axes, rows, groupAxisKey, defaultGroupAxisKey]);
-
-  const primaryAxis =
-    availableGroupAxes.find((axis) => axis.axis_key === groupAxisKey) ??
-    availableGroupAxes.find((axis) => axis.axis_key === "wattage") ??
-    availableGroupAxes[0] ??
-    null;
-
-  const groupValues = primaryAxis
-    ? [...new Set(rows.map((row) => row.attributes[primaryAxis.axis_key]).filter(Boolean))]
-    : [];
-
-  const [groupDrafts, setGroupDrafts] = useState<Record<string, Partial<Record<QuickField, string>>>>({});
-
-  const setGroupDraft = (group: string, field: QuickField, value: string) =>
-    setGroupDrafts((current) => ({
-      ...current,
-      [group]: { ...current[group], [field]: value },
-    }));
-
-  const applyGroup = (group: string) => {
-    if (!primaryAxis) return;
-    const draft = groupDrafts[group] ?? {};
-    const patch: Partial<Variant> = {};
-    let changed = 0;
-
-    for (const field of QUICK_FIELDS) {
-      const raw = draft[field.key];
-      if (raw === undefined || raw.trim() === "") continue;
-      const value = Number(raw);
-      if (!Number.isFinite(value)) {
-        toast.error(`Enter a valid ${field.label.toLowerCase()} for ${group}.`);
-        return;
-      }
-      (patch as Record<string, unknown>)[field.key] = value;
-      changed++;
-    }
-
-    if (!changed) {
-      toast.error(`Enter at least one value for ${group}.`);
-      return;
-    }
-
-    const matching = rows.filter((row) => row.attributes[primaryAxis.axis_key] === group);
-    for (const row of matching) updateRow(row.id, patch);
-    toast.success(`Applied ${group} pricing/details to ${matching.length} SKU${matching.length === 1 ? "" : "s"}.`);
-  };
-
   const copyDown = (field: QuickField, index: number) => {
     const value = rows[index][field];
     for (const row of rows.slice(index + 1)) updateRow(row.id, { [field]: value } as Partial<Variant>);
@@ -960,85 +899,7 @@ function QuickVariantsTab({
         </p>
       </div>
 
-      {rows.length > 0 && primaryAxis && groupValues.length > 0 && (
-        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h4 className="font-semibold text-slate-950">Set prices by {primaryAxis.label}</h4>
-              <p className="mt-1 text-xs text-slate-500">
-                Apply one set of prices to every SKU sharing the same {primaryAxis.label.toLowerCase()}. If this product
-                has no Wattage, choose Size, Model, Colour, Pack Size or any other product option instead.
-              </p>
-            </div>
-            {availableGroupAxes.length > 1 && (
-              <label className="min-w-[220px] text-xs font-medium text-slate-600">
-                Group pricing by
-                <select
-                  className="mt-1 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-500"
-                  value={primaryAxis.axis_key}
-                  onChange={(event) => setGroupAxisKey(event.target.value)}
-                >
-                  {availableGroupAxes.map((axis) => (
-                    <option key={axis.axis_key} value={axis.axis_key}>
-                      {axis.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-[1050px] w-full border-collapse text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                  <Th>{primaryAxis.label}</Th>
-                  <Th>MRP</Th>
-                  <Th>Customer</Th>
-                  <Th>Stock</Th>
-                  <Th>Pack</Th>
-                  <Th>Apply</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {groupValues.map((group) => {
-                  const count = rows.filter((row) => row.attributes[primaryAxis.axis_key] === group).length;
-                  return (
-                    <tr key={group} className="border-t border-slate-200 bg-white">
-                      <Td>
-                        <div className="font-semibold text-slate-950">{group}</div>
-                        <div className="text-xs text-slate-500">
-                          {count} SKU{count === 1 ? "" : "s"}
-                        </div>
-                      </Td>
-                      {QUICK_FIELDS.map((field) => (
-                        <Td key={field.key}>
-                          <Input
-                            className="h-9 min-w-[105px]"
-                            inputMode="decimal"
-                            placeholder={field.label}
-                            value={groupDrafts[group]?.[field.key] ?? ""}
-                            onChange={(event) => setGroupDraft(group, field.key, event.target.value)}
-                          />
-                        </Td>
-                      ))}
-                      <Td>
-                        <Button type="button" size="sm" onClick={() => applyGroup(group)}>
-                          Apply to {group}
-                        </Button>
-                      </Td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-xs text-slate-500">
-            These are quick-fill controls only. Individual SKU rows below remain editable, and nothing is saved until
-            Save All Variant Changes.
-          </p>
-        </section>
-      )}
 
       {rows.length === 0 ? (
         <EmptyVariants />
@@ -2190,152 +2051,204 @@ function BulkPriceByOption({
     return keys;
   }, [rows]);
 
-  const [optionKey, setOptionKey] = useState("");
-  const [optionValue, setOptionValue] = useState("");
-  const [mrp, setMrp] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [price, setPrice] = useState("");
+  const defaultGroupKey = optionKeys.find((key) => /watt/i.test(key)) ?? optionKeys[0] ?? "";
+  const [groupKey, setGroupKey] = useState(defaultGroupKey);
+  const [drafts, setDrafts] = useState<
+    Record<string, Partial<Record<"mrp" | "discount" | "price" | "stock" | "pack_size", string>>>
+  >({});
 
-  const activeKey = optionKey || optionKeys[0] || "";
+  useEffect(() => {
+    if (!optionKeys.length) {
+      if (groupKey) setGroupKey("");
+      return;
+    }
+    if (!optionKeys.includes(groupKey)) setGroupKey(defaultGroupKey);
+  }, [optionKeys, groupKey, defaultGroupKey]);
 
-  const values = React.useMemo(() => {
-    const list: string[] = [];
+  const activeKey = optionKeys.includes(groupKey) ? groupKey : defaultGroupKey;
+  const groupValues = React.useMemo(() => {
+    const values: string[] = [];
     for (const row of rows) {
       const value = row.attributes?.[activeKey];
-      if (value && !list.includes(value)) list.push(value);
+      if (value && !values.includes(value)) values.push(value);
     }
-    return list;
+    return values;
   }, [rows, activeKey]);
 
-  const activeValue = optionValue && values.includes(optionValue) ? optionValue : "__all";
+  const optionLabel = (key: string) =>
+    key
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  const matched = rows.filter(
-    (row) => activeValue === "__all" || row.attributes?.[activeKey] === activeValue,
-  );
+  const setDraft = (
+    group: string,
+    field: "mrp" | "discount" | "price" | "stock" | "pack_size",
+    value: string,
+  ) =>
+    setDrafts((current) => ({
+      ...current,
+      [group]: { ...current[group], [field]: value },
+    }));
 
-  const apply = () => {
-    if (!matched.length) {
+  const parseOptional = (raw: string | undefined, fieldLabel: string, integer = false) => {
+    if (raw === undefined || raw.trim() === "") return null;
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < 0 || (integer && !Number.isInteger(value))) {
+      throw new Error(`Enter a valid ${fieldLabel.toLowerCase()}.`);
+    }
+    return value;
+  };
+
+  const applyGroup = (group: string) => {
+    const matching = rows.filter((row) => row.attributes?.[activeKey] === group);
+    if (!matching.length) {
       toast.error("No variations match that option.");
       return;
     }
-    const mrpNum = mrp === "" ? null : Number(mrp);
-    const discNum = discount === "" ? null : clampPct(Number(discount));
-    const priceNum = price === "" ? null : Number(price);
-    if ([mrpNum, discNum, priceNum].some((v) => v !== null && !Number.isFinite(v as number))) {
-      toast.error("Enter valid numbers.");
-      return;
-    }
-    if (mrpNum === null && discNum === null && priceNum === null) {
-      toast.error("Enter at least one value to apply.");
-      return;
-    }
 
-    for (const row of matched) {
-      const patch: Record<string, unknown> = {};
-      const currentMrp = Number((row[mrpKey] as number | null) ?? (segment === "customer" ? 0 : row.mrp ?? 0));
-      const baseMrp = mrpNum ?? currentMrp;
-      if (mrpNum !== null) patch[mrpKey] = mrpNum;
+    const draft = drafts[group] ?? {};
+    try {
+      const mrp = parseOptional(draft.mrp, "MRP");
+      const discount = parseOptional(draft.discount, "discount");
+      const price = parseOptional(draft.price, `${label} price`);
+      const stock = parseOptional(draft.stock, "stock", true);
+      const packSize = parseOptional(draft.pack_size, "pack size");
 
-      if (priceNum !== null) {
-        patch[priceKey] = priceNum;
-        if (segment === "customer" && baseMrp > 0) {
-          patch.discount_pct = Number(clampPct(((baseMrp - priceNum) / baseMrp) * 100).toFixed(2));
-        }
-      } else if (discNum !== null) {
-        if (segment === "customer") patch.discount_pct = discNum;
-        if (baseMrp > 0) patch[priceKey] = roundMoney(baseMrp - (baseMrp * discNum) / 100);
-      } else if (mrpNum !== null) {
-        const existing = segmentDiscount(row, segment);
-        if (existing > 0) patch[priceKey] = roundMoney(mrpNum - (mrpNum * existing) / 100);
+      if ([mrp, discount, price, stock, packSize].every((value) => value === null)) {
+        toast.error(`Enter at least one value for ${group}.`);
+        return;
       }
 
-      updateRow(row.id, patch as Partial<Variant>);
-    }
+      for (const row of matching) {
+        const patch: Record<string, unknown> = {};
+        const currentMrp = Number(
+          (row[mrpKey] as number | null) ?? (segment === "customer" ? 0 : row.mrp ?? 0),
+        );
+        const baseMrp = mrp ?? currentMrp;
 
-    toast.success(
-      `${label} pricing applied to ${matched.length} variation${matched.length === 1 ? "" : "s"}.`,
-    );
+        if (mrp !== null) patch[mrpKey] = mrp;
+        if (price !== null) {
+          patch[priceKey] = price;
+          if (segment === "customer" && baseMrp > 0) {
+            patch.discount_pct = Number(clampPct(((baseMrp - price) / baseMrp) * 100).toFixed(2));
+          }
+        } else if (discount !== null) {
+          const safeDiscount = clampPct(discount);
+          if (segment === "customer") patch.discount_pct = safeDiscount;
+          if (baseMrp > 0) patch[priceKey] = roundMoney(baseMrp - (baseMrp * safeDiscount) / 100);
+        } else if (mrp !== null) {
+          const existingDiscount = segmentDiscount(row, segment);
+          if (existingDiscount > 0) {
+            patch[priceKey] = roundMoney(mrp - (mrp * existingDiscount) / 100);
+          }
+        }
+
+        if (stock !== null) patch.stock = stock;
+        if (packSize !== null) patch.pack_size = packSize;
+        updateRow(row.id, patch as Partial<Variant>);
+      }
+
+      toast.success(
+        `${label} pricing/details applied to ${matching.length} SKU${matching.length === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Enter valid values.");
+    }
   };
 
-  if (!optionKeys.length) return null;
+  if (!optionKeys.length || !activeKey || !groupValues.length) return null;
 
-  const selectClass =
-    "h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300";
+  const fields: Array<{
+    key: "mrp" | "discount" | "price" | "stock" | "pack_size";
+    label: string;
+    placeholder: string;
+  }> = [
+    { key: "mrp", label: "MRP", placeholder: "MRP" },
+    { key: "discount", label: "Discount %", placeholder: "%" },
+    { key: "price", label, placeholder: `${label} price` },
+    { key: "stock", label: "Stock", placeholder: "Stock" },
+    { key: "pack_size", label: "Pack", placeholder: "Pack size" },
+  ];
 
   return (
-    <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className="text-sm font-semibold text-slate-800">Set {label.toLowerCase()} prices by option</p>
+    <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h3 className="font-semibold text-slate-950">Set {label.toLowerCase()} prices by {optionLabel(activeKey)}</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Apply one set of {label.toLowerCase()} prices to every SKU sharing the same option value. Prices stay
+            separate for this account type; stock and pack size belong to the shared SKU.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-slate-500">
-          Option
+        <label className="min-w-[220px] text-xs font-medium text-slate-600">
+          Group pricing by
           <select
-            className={selectClass}
+            className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-500"
             value={activeKey}
-            onChange={(event) => {
-              setOptionKey(event.target.value);
-              setOptionValue("");
-            }}
+            onChange={(event) => setGroupKey(event.target.value)}
           >
             {optionKeys.map((key) => (
               <option key={key} value={key}>
-                {key}
+                {optionLabel(key)}
               </option>
             ))}
           </select>
         </label>
-
-        <label className="flex flex-col gap-1 text-xs text-slate-500">
-          Value
-          <select
-            className={selectClass}
-            value={activeValue}
-            onChange={(event) => setOptionValue(event.target.value)}
-          >
-            <option value="__all">All values</option>
-            {values.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
-          MRP
-          <Input value={mrp} onChange={(event) => setMrp(event.target.value)} placeholder="MRP" inputMode="decimal" />
-        </label>
-
-        <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
-          Discount %
-          <Input
-            value={discount}
-            onChange={(event) => setDiscount(event.target.value)}
-            placeholder="%"
-            inputMode="decimal"
-          />
-        </label>
-
-        <label className="flex w-24 flex-col gap-1 text-xs text-slate-500">
-          Price
-          <Input
-            value={price}
-            onChange={(event) => setPrice(event.target.value)}
-            placeholder="Price"
-            inputMode="decimal"
-          />
-        </label>
-
-        <Button type="button" size="sm" onClick={apply}>
-          Apply to {matched.length}
-        </Button>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Only {label.toLowerCase()} pricing is changed. Leave a box empty to keep the current value; price wins over
-        discount when both are filled.
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1100px] border-collapse text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+              <Th>{optionLabel(activeKey)}</Th>
+              {fields.map((field) => (
+                <Th key={field.key}>{field.label}</Th>
+              ))}
+              <Th>Apply</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {groupValues.map((group) => {
+              const count = rows.filter((row) => row.attributes?.[activeKey] === group).length;
+              return (
+                <tr key={group} className="border-t border-slate-200 bg-white">
+                  <Td>
+                    <div className="font-semibold text-slate-950">{group}</div>
+                    <div className="text-xs text-slate-500">
+                      {count} SKU{count === 1 ? "" : "s"}
+                    </div>
+                  </Td>
+                  {fields.map((field) => (
+                    <Td key={field.key}>
+                      <Input
+                        type="number"
+                        min="0"
+                        step={field.key === "stock" ? "1" : "0.01"}
+                        className="h-10 min-w-[115px]"
+                        inputMode={field.key === "stock" ? "numeric" : "decimal"}
+                        placeholder={field.placeholder}
+                        value={drafts[group]?.[field.key] ?? ""}
+                        onChange={(event) => setDraft(group, field.key, event.target.value)}
+                      />
+                    </Td>
+                  ))}
+                  <Td>
+                    <Button type="button" size="sm" onClick={() => applyGroup(group)}>
+                      Apply to {group}
+                    </Button>
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-3 text-xs text-slate-500">
+        Blank fields keep their current values. Nothing is saved until you use the main save button.
       </p>
-    </div>
+    </section>
   );
 }
 
