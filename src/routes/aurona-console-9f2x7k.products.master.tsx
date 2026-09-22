@@ -330,7 +330,9 @@ function ProductMaster() {
   const [bulkField, setBulkField] = useState<
     "price" | "retailer_price" | "distributor_price" | "mrp" | "pack_size" | "weight_g"
   >("price");
-  const [bulkOperation, setBulkOperation] = useState<"set" | "increase_percent" | "increase_fixed">(
+  const [bulkOperation, setBulkOperation] = useState<
+    "set" | "increase_percent" | "increase_fixed" | "decrease_percent" | "decrease_fixed"
+  >(
     "set",
   );
   const [bulkValue, setBulkValue] = useState("");
@@ -601,16 +603,23 @@ function ProductMaster() {
     const amount = Number(bulkValue);
     if (!selected.size || !Number.isFinite(amount) || amount < 0)
       return toast.error("Select SKUs and enter a valid value");
-    const preview = [...selected].slice(0, 3).map((id) => {
-      const row = allVariants.find((variant) => variant.id === id)!;
-      const before = Number(effective(row)[bulkField] ?? 0);
-      const after =
+    const compute = (before: number) => {
+      const next =
         bulkOperation === "set"
           ? amount
           : bulkOperation === "increase_percent"
             ? before * (1 + amount / 100)
-            : before + amount;
-      return `${row.sku}: ${before} → ${Number(after.toFixed(2))}`;
+            : bulkOperation === "decrease_percent"
+              ? before * (1 - amount / 100)
+              : bulkOperation === "decrease_fixed"
+                ? before - amount
+                : before + amount;
+      return Math.max(0, Number(next.toFixed(2)));
+    };
+    const preview = [...selected].slice(0, 3).map((id) => {
+      const row = allVariants.find((variant) => variant.id === id)!;
+      const before = Number(effective(row)[bulkField] ?? 0);
+      return `${row.sku}: ${before} → ${compute(before)}`;
     });
     if (
       !confirm(
@@ -622,16 +631,11 @@ function ProductMaster() {
       const row = allVariants.find((variant) => variant.id === id);
       if (!row) continue;
       const before = Number(effective(row)[bulkField] ?? 0);
-      const after =
-        bulkOperation === "set"
-          ? amount
-          : bulkOperation === "increase_percent"
-            ? before * (1 + amount / 100)
-            : before + amount;
-      change(row, bulkField, Number(after.toFixed(2)));
+      change(row, bulkField, compute(before));
     }
     toast.success("Bulk changes staged. Review, then Save Selected.");
   };
+
 
   const adjustStock = async () => {
     if (
@@ -916,6 +920,8 @@ function ProductMaster() {
             <option value="set">Set to</option>
             <option value="increase_percent">Increase %</option>
             <option value="increase_fixed">Increase fixed</option>
+            <option value="decrease_percent">Decrease %</option>
+            <option value="decrease_fixed">Decrease fixed</option>
           </select>
           <Input
             className="h-9 w-32 border-slate-700 bg-slate-900 text-white"
