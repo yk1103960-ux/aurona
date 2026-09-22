@@ -2612,6 +2612,7 @@ export type Database = {
           dim_w: number | null
           discount_pct: number | null
           distributor_moq: number | null
+          distributor_mrp: number | null
           distributor_pack_h: number | null
           distributor_pack_l: number | null
           distributor_pack_w: number | null
@@ -2632,6 +2633,7 @@ export type Database = {
           price: number
           reserved_stock: number
           retailer_moq: number | null
+          retailer_mrp: number | null
           retailer_pack_h: number | null
           retailer_pack_l: number | null
           retailer_pack_w: number | null
@@ -2656,6 +2658,7 @@ export type Database = {
           dim_w?: number | null
           discount_pct?: number | null
           distributor_moq?: number | null
+          distributor_mrp?: number | null
           distributor_pack_h?: number | null
           distributor_pack_l?: number | null
           distributor_pack_w?: number | null
@@ -2676,6 +2679,7 @@ export type Database = {
           price: number
           reserved_stock?: number
           retailer_moq?: number | null
+          retailer_mrp?: number | null
           retailer_pack_h?: number | null
           retailer_pack_l?: number | null
           retailer_pack_w?: number | null
@@ -2700,6 +2704,7 @@ export type Database = {
           dim_w?: number | null
           discount_pct?: number | null
           distributor_moq?: number | null
+          distributor_mrp?: number | null
           distributor_pack_h?: number | null
           distributor_pack_l?: number | null
           distributor_pack_w?: number | null
@@ -2720,6 +2725,7 @@ export type Database = {
           price?: number
           reserved_stock?: number
           retailer_moq?: number | null
+          retailer_mrp?: number | null
           retailer_pack_h?: number | null
           retailer_pack_l?: number | null
           retailer_pack_w?: number | null
