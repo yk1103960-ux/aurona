@@ -203,7 +203,7 @@ function ApplyForm() {
     }
     setBusy(true);
     try {
-      const res = await applyFn({ data: { ...f, payout_method: method } });
+      const res = await applyFn({ data: { ...f, program, payout_method: method } });
       toast.success(
         res.status === "approved"
           ? `You're in! Your referral code is ${res.code}.`
@@ -221,7 +221,28 @@ function ApplyForm() {
     <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
       <Benefits />
       <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-6">
-        <div className="text-eyebrow mb-4">Affiliate application</div>
+        <div className="text-eyebrow mb-4">Partner application</div>
+
+        <div className="mb-6">
+          <div className="mb-2 text-sm font-semibold">Apply as</div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {PROGRAMS.map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => setProgram(p.key)}
+                className={`rounded-xl border p-3 text-left transition ${
+                  program === p.key
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <div className="text-sm font-semibold">{p.title}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{p.blurb}</div>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field l="Full name" v={f.full_name} on={set("full_name")} required />
           <Field l="Email" v={f.email} on={set("email")} type="email" required />
@@ -343,7 +364,7 @@ function Dashboard({ data }: { data: MyAffiliate }) {
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-primary">
           <BadgeCheck className="h-5 w-5" />
-          Affiliate approved ✓
+          {programLabel(aff.program)} approved ✓
         </div>
         <div className="text-eyebrow">Your referral link</div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
