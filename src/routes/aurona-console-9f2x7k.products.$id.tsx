@@ -1787,10 +1787,18 @@ function RelatedProducts({ familyId }: { familyId: string }) {
     },
   });
   useEffect(() => {
-    if (q.data && !loaded.current) {
+    if (!q.data) return;
+    if (!loaded.current) {
       setSelected(q.data.relatedIds);
       setCategoryId(q.data.categoryId);
       loaded.current = true;
+      return;
+    }
+    // Picking a category should immediately fill in that category's products,
+    // so saving shows them on the live product page.
+    if (autoFill.current) {
+      autoFill.current = false;
+      setSelected((q.data.products ?? []).map((item: any) => item.id as string).slice(0, 24));
     }
   }, [q.data]);
   const visibleIds = useMemo(() => (q.data?.products ?? []).map((item: any) => item.id as string), [q.data?.products]);
