@@ -1824,7 +1824,10 @@ function RelatedProducts({ familyId }: { familyId: string }) {
         <select
           className="h-10 min-w-[220px] rounded-md border border-slate-200 bg-white px-3 text-sm"
           value={categoryId}
-          onChange={(event) => setCategoryId(event.target.value)}
+          onChange={(event) => {
+            autoFill.current = true;
+            setCategoryId(event.target.value);
+          }}
         >
           <option value="">Product category</option>
           {(q.data?.categories ?? []).map((category: any) => (
