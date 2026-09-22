@@ -1735,6 +1735,7 @@ function RelatedProducts({ familyId }: { familyId: string }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const loaded = useRef(false);
+  const autoFill = useRef(false);
   const qc = useQueryClient();
 
   useEffect(() => {
