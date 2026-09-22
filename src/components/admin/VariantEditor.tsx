@@ -785,7 +785,6 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={rows}
-            axes={axes}
             updateRow={updateRow}
             removeRow={removeRow}
             editRow={(row) => {
@@ -855,18 +854,8 @@ export function VariantEditor({
   );
 }
 
-type QuickField = "mrp" | "price" | "stock" | "pack_size";
-
-const QUICK_FIELDS: { key: QuickField; label: string }[] = [
-  { key: "mrp", label: "MRP" },
-  { key: "price", label: "Customer price" },
-  { key: "stock", label: "Stock" },
-  { key: "pack_size", label: "Pack size" },
-];
-
 function QuickVariantsTab({
   rows,
-  axes,
   updateRow,
   removeRow,
   editRow,
@@ -874,19 +863,12 @@ function QuickVariantsTab({
   optionsEditor,
 }: {
   rows: Variant[];
-  axes: Axis[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   removeRow: (row: Variant) => void;
   editRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
-  const copyDown = (field: QuickField, index: number) => {
-    const value = rows[index][field];
-    for (const row of rows.slice(index + 1)) updateRow(row.id, { [field]: value } as Partial<Variant>);
-    toast.success("Copied to the rows below.");
-  };
-
   return (
     <div className="space-y-5">
       {optionsEditor}
@@ -894,106 +876,61 @@ function QuickVariantsTab({
       <div>
         <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
         <p className="text-xs text-slate-500">
-          Enter SKU, prices and stock right here. “Edit” opens weight, dimensions, barcode, MOQ and other advanced
-          details.
+          Review the generated variation combinations and SKUs. Use Edit to change variation details; pricing and stock
+          are managed only in Step 2.
         </p>
       </div>
-
-
 
       {rows.length === 0 ? (
         <EmptyVariants />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-[980px] w-full border-collapse text-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
-                <Th>SKU</Th>
-                <Th>MRP</Th>
-                <Th>Customer</Th>
-                <Th>Tax %</Th>
-                <Th>Stock</Th>
-                <Th>Pack</Th>
-                <Th>Live</Th>
+                <Th>Generated SKU</Th>
+                <Th>Status</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
 
             <tbody>
-              {rows.map((row, index) => (
+              {rows.map((row) => (
                 <tr key={row.id} className="border-t border-slate-200">
                   <Td>
                     <VariantIdentity row={row} />
                   </Td>
 
                   <Td>
-                    <Input
-                      value={row.sku ?? ""}
-                      onChange={(event) => updateRow(row.id, { sku: event.target.value })}
-                      className="h-9 w-40"
-                    />
-                  </Td>
-
-                  {QUICK_FIELDS.map((field) => (
-                    <React.Fragment key={field.key}>
-                      <Td>
-                        <div className="flex items-center gap-1">
-                          <NumberInput
-                            value={row[field.key] as number | null}
-                            onChange={(value) => updateRow(row.id, { [field.key]: value } as Partial<Variant>)}
-                          />
-                          {index < rows.length - 1 && (
-                            <button
-                              type="button"
-                              title={`Copy ${field.label} to the rows below`}
-                              aria-label={`Copy ${field.label} to the rows below`}
-                              onClick={() => copyDown(field.key, index)}
-                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </Td>
-                      {field.key === "price" && (
-                        <Td>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            className="h-9 min-w-[90px]"
-                            value={row.attributes?.__tax_pct ?? ""}
-                            placeholder="e.g. 18"
-                            onChange={(event) =>
-                              updateRow(row.id, {
-                                attributes: { ...row.attributes, __tax_pct: event.target.value },
-                              })
-                            }
-                          />
-                        </Td>
-                      )}
-                    </React.Fragment>
-                  ))}
-
-                  <Td>
-                    <Switch
-                      checked={Boolean(row.is_active)}
-                      onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
-                    />
+                    <div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-700">
+                      {row.sku}
+                    </div>
                   </Td>
 
                   <Td>
-                    <div className="flex gap-1">
+                    <div className="flex min-w-[110px] items-center gap-2">
+                      <Switch
+                        checked={Boolean(row.is_active)}
+                        onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
+                      />
+                      <span className="text-xs font-medium text-slate-600">
+                        {row.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  </Td>
+
+                  <Td>
+                    <div className="flex min-w-[190px] gap-2">
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => editRow(row)}
-                        title="Advanced details"
+                        title="Edit variation"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="mr-1 h-4 w-4" />
+                        Edit
                       </Button>
 
                       {manageImages && (
@@ -1013,7 +950,8 @@ function QuickVariantsTab({
                         size="sm"
                         variant="ghost"
                         onClick={() => removeRow(row)}
-                        title="Remove this variation"
+                        title="Delete variation"
+                        aria-label={`Delete variation ${row.sku}`}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
