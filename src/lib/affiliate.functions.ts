@@ -215,10 +215,15 @@ export const applyAsAffiliate = createServerFn({ method: "POST" })
         notes: data.notes || null,
         user_id: context.userId,
         code,
+        program: data.program,
+        // Program default commission (if the admin configured one) so each
+        // program can pay its own rate without touching the others.
+        commission_kind: settings.program_commissions?.[data.program]?.kind ?? null,
+        commission_value: settings.program_commissions?.[data.program]?.value ?? null,
         status: settings.auto_approve_affiliates ? "approved" : "pending",
         approved_at: settings.auto_approve_affiliates ? new Date().toISOString() : null,
       })
-      .select("id, code, status")
+      .select("id, code, status, program")
       .single();
     if (error || !row) throw new Error("Could not submit your application. Please try again.");
     await logAffiliate({ affiliateId: row.id, actorUserId: context.userId, action: "affiliate.applied" });
