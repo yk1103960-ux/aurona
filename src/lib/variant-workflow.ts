@@ -9,6 +9,9 @@ export type Variant = {
   discount_pct: number | null;
   retailer_price: number | null;
   distributor_price: number | null;
+  /** Optional MRP shown only to that account type; blank falls back to the shared MRP. */
+  retailer_mrp: number | null;
+  distributor_mrp: number | null;
   moq: number | null;
   retailer_moq: number | null;
   distributor_moq: number | null;
@@ -80,6 +83,8 @@ export function newVariation(
     discount_pct: source?.discount_pct ?? 0,
     retailer_price: source?.retailer_price ?? null,
     distributor_price: source?.distributor_price ?? null,
+    retailer_mrp: source?.retailer_mrp ?? null,
+    distributor_mrp: source?.distributor_mrp ?? null,
     moq: source?.moq ?? 1,
     retailer_moq: source?.retailer_moq ?? null,
     distributor_moq: source?.distributor_moq ?? null,
@@ -157,6 +162,8 @@ export function variationIssues(row: Variant, rows: Variant[], axes: Axis[]): st
     "price",
     "retailer_price",
     "distributor_price",
+    "retailer_mrp",
+    "distributor_mrp",
     "weight_g",
     "dim_l",
     "dim_w",

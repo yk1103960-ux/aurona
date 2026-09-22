@@ -73,6 +73,8 @@ const VariantInput = z.object({
   discount_pct: nullableNumber,
   retailer_price: nullableNumber,
   distributor_price: nullableNumber,
+  retailer_mrp: nullableNumber,
+  distributor_mrp: nullableNumber,
   moq: z.number().int().positive().nullable(),
   retailer_moq: z.number().int().positive().nullable(),
   distributor_moq: z.number().int().positive().nullable(),
@@ -344,7 +346,7 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     if (!familyIds.length) return { families: [], count: count ?? 0 };
 
     const variantColumns =
-      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, low_stock_threshold, sort_order, updated_at";
+      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, low_stock_threshold, sort_order, updated_at";
     const legacyVariantColumns = variantColumns.replace("barcode, ", "");
     let variants = await (supabaseAdmin as any)
       .from("product_variants")
