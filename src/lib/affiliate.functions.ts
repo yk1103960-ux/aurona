@@ -269,6 +269,7 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
         id: aff.id,
         code: aff.code,
         status: aff.status,
+        program: ((aff as Record<string, unknown>)["program"] as string | null) ?? "affiliate",
         full_name: aff.full_name,
         email: aff.email,
         mobile: aff.mobile,
@@ -635,6 +636,9 @@ export const adminSaveAffiliateSettings = createServerFn({ method: "POST" })
         auto_approve_commission_on_delivery: z.boolean(),
         exclude_shipping: z.boolean(),
         terms: z.string().trim().max(5000).optional().or(z.literal("")),
+        program_commissions: z
+          .record(z.string(), z.object({ kind: z.enum(["percentage", "fixed"]), value: z.number().min(0).max(100000) }))
+          .optional(),
       })
       .parse(input),
   )
@@ -716,6 +720,7 @@ export const adminUpdateAffiliate = createServerFn({ method: "POST" })
         mobile: z.string().trim().min(8).max(20).optional(),
         email: z.string().trim().email().max(200).optional(),
         payout_upi: z.string().trim().max(120).nullable().optional(),
+        program: z.enum(["affiliate", "sales", "loyalty"]).optional(),
       })
       .parse(input),
   )
