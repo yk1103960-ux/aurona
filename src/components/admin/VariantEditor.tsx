@@ -2324,8 +2324,7 @@ function BulkDimensionsByOption({
   }, [rows, optionKeys]);
 
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [scope, setScope] = useState<DimensionScope>(initialScope);
-  React.useEffect(() => setScope(initialScope), [initialScope]);
+  const scope = initialScope;
   const [weight, setWeight] = useState("");
   const [length, setLength] = useState("");
   const [width, setWidth] = useState("");
@@ -2404,16 +2403,6 @@ function BulkDimensionsByOption({
           </label>
         ))}
 
-        <label className="flex flex-col gap-1 text-xs text-slate-500">
-          Type
-          <select className={selectClass} value={scope} onChange={(event) => setScope(event.target.value as DimensionScope)}>
-            {DIMENSION_SCOPES.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -2450,54 +2439,55 @@ function ShippingTab({
   updateRow: (id: string, patch: Partial<Variant>) => void;
   initialScope: DimensionScope;
 }) {
-  const [tableScope, setTableScope] = useState<DimensionScope>(initialScope);
-  React.useEffect(() => setTableScope(initialScope), [initialScope]);
-  const [open, setOpen] = useState(false);
-
-  const scope = DIMENSION_SCOPES.find((entry) => entry.id === tableScope)!;
-  const tableFields: { key: DimensionKey; label: string; placeholder: string }[] = [
-    { key: scope.fields.weight, label: "Weight (In Gms)", placeholder: "Weight" },
-    { key: scope.fields.l, label: "Length (In cms)", placeholder: "Length" },
-    { key: scope.fields.w, label: "Width (In cms)", placeholder: "Width" },
-    { key: scope.fields.h, label: "Height (In cms)", placeholder: "Height" },
+  const scope = DIMENSION_SCOPES.find((entry) => entry.id === initialScope)!;
+  const packageLabel = scope.label;
+  const fields: Array<{ key: DimensionKey; label: string; placeholder: string }> = [
+    { key: scope.fields.weight, label: "Package Weight (g)", placeholder: "Weight" },
+    { key: scope.fields.l, label: "Length (cm)", placeholder: "Length" },
+    { key: scope.fields.w, label: "Width (cm)", placeholder: "Width" },
+    { key: scope.fields.h, label: "Height (cm)", placeholder: "Height" },
   ];
 
-  const copyDown = (field: DimensionKey, index: number) => {
+  const copyDown = (field: DimensionKey | "pack_size", index: number) => {
     const value = rows[index]?.[field] as number | null;
     for (const row of rows.slice(index + 1)) {
       updateRow(row.id, { [field]: value } as Partial<Variant>);
     }
-    toast.success("Dimension copied to every row below.");
+    toast.success("Package value copied to every row below.");
   };
 
   if (!rows.length) return <EmptyVariants />;
 
-  const renderCell = (
+  const inputCell = (
     row: Variant,
     index: number,
-    field: { key: DimensionKey; label: string; placeholder: string },
+    field: DimensionKey | "pack_size",
+    label: string,
+    placeholder: string,
+    integer = false,
   ) => (
-    <Td key={field.key}>
+    <Td key={field}>
       <div className="flex min-w-[135px] items-center gap-1">
         <Input
           type="number"
           min="0"
-          step="any"
-          placeholder={field.placeholder}
-          value={(row[field.key] as number | null) ?? ""}
+          step={integer ? "1" : "any"}
+          inputMode={integer ? "numeric" : "decimal"}
+          placeholder={placeholder}
+          value={(row[field] as number | null) ?? ""}
           onChange={(event) =>
             updateRow(row.id, {
-              [field.key]: event.target.value === "" ? null : Number(event.target.value),
+              [field]: event.target.value === "" ? null : Number(event.target.value),
             } as Partial<Variant>)
           }
-          className="h-9 min-w-[105px]"
+          className="h-10 min-w-[105px]"
         />
         {index < rows.length - 1 && (
           <button
             type="button"
-            title={`Copy ${field.label} to all rows below`}
-            aria-label={`Copy ${field.label} to all rows below`}
-            onClick={() => copyDown(field.key, index)}
+            title={`Copy ${label} to all rows below`}
+            aria-label={`Copy ${label} to all rows below`}
+            onClick={() => copyDown(field, index)}
             className="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
           >
             <Copy className="h-3.5 w-3.5" />
@@ -2507,72 +2497,54 @@ function ShippingTab({
     </Td>
   );
 
-  const selectClass =
-    "h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300";
-
   return (
     <div className="space-y-4">
       <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope={initialScope} />
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4">
-          <div>
-            <h3 className="text-base font-semibold text-slate-950">Edit each SKU</h3>
-            <p className="mt-1 text-xs text-slate-500">
-              Showing {scope.label} measurements only. Switch the type to edit another set.
-            </p>
-          </div>
-          <div className="flex items-end gap-2">
-            <select
-              className={selectClass}
-              value={tableScope}
-              onChange={(event) => setTableScope(event.target.value as DimensionScope)}
-            >
-              {DIMENSION_SCOPES.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-            <Button type="button" variant="outline" className="h-9" onClick={() => setOpen((value) => !value)}>
-              {open ? "Hide list" : `Show list (${rows.length})`}
-            </Button>
-          </div>
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
+          <h3 className="text-base font-semibold text-slate-950">{packageLabel} Packing Table</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Enter the pack quantity and outer package measurements for every shared SKU.
+          </p>
         </div>
 
-        {open && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
-              <thead>
-                <tr className="bg-slate-50 text-left text-[11px] font-semibold text-slate-500">
-                  <Th>Variant</Th>
-                  {tableFields.map((field) => (
-                    <Th key={field.key}>{field.label}</Th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {rows.map((row, index) => (
-                  <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
-                    <Td>
-                      <div className="min-w-[210px]">
-                        <div className="break-words font-semibold text-slate-950">{variantName(row)}</div>
-                        <div className="mt-1 break-all font-mono text-[11px] text-slate-500">{row.sku}</div>
-                      </div>
-                    </Td>
-                    {tableFields.map((field) => renderCell(row, index, field))}
-                  </tr>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1150px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <Th>Variation</Th>
+                <Th>SKU</Th>
+                <Th>Pack Size</Th>
+                {fields.map((field) => (
+                  <Th key={field.key}>{field.label}</Th>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+              </tr>
+            </thead>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        Changes here only update the current draft. Save variations to store them.
-      </div>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
+                  <Td>
+                    <div className="min-w-[210px] break-words font-semibold text-slate-950">{variantName(row)}</div>
+                  </Td>
+                  <Td>
+                    <div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-600">{row.sku}</div>
+                  </Td>
+                  {inputCell(row, index, "pack_size", "Pack Size", "Pack size", true)}
+                  {fields.map((field) =>
+                    inputCell(row, index, field.key, field.label, field.placeholder),
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          These values belong to {packageLabel.toLowerCase()}. Use the main save button to store all changes.
+        </div>
+      </section>
     </div>
   );
 }
