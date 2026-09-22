@@ -29,6 +29,13 @@
       "when": 1790051914480,
       "tag": "0003_add_segment_mrp",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790051975241,
+      "tag": "0004_save_segment_mrp",
+      "breakpoints": true
     }
   ]
 }
