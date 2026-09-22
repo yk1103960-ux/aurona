@@ -1739,6 +1739,7 @@ function RelatedProducts({ familyId }: { familyId: string }) {
 
   useEffect(() => {
     loaded.current = false;
+    autoFill.current = false;
     setSelected([]);
     setSearch("");
     setCategoryId("");
