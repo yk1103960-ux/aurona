@@ -661,6 +661,7 @@ export type Database = {
           exclude_shipping: boolean
           id: boolean
           min_payout: number
+          program_commissions: Json
           terms: string | null
           updated_at: string
         }
@@ -676,6 +677,7 @@ export type Database = {
           exclude_shipping?: boolean
           id?: boolean
           min_payout?: number
+          program_commissions?: Json
           terms?: string | null
           updated_at?: string
         }
@@ -691,6 +693,7 @@ export type Database = {
           exclude_shipping?: boolean
           id?: boolean
           min_payout?: number
+          program_commissions?: Json
           terms?: string | null
           updated_at?: string
         }
@@ -775,6 +778,7 @@ export type Database = {
           payout_method: string
           payout_upi: string | null
           pincode: string | null
+          program: string
           state: string | null
           status: Database["public"]["Enums"]["affiliate_status"]
           updated_at: string
@@ -808,6 +812,7 @@ export type Database = {
           payout_method?: string
           payout_upi?: string | null
           pincode?: string | null
+          program?: string
           state?: string | null
           status?: Database["public"]["Enums"]["affiliate_status"]
           updated_at?: string
@@ -841,6 +846,7 @@ export type Database = {
           payout_method?: string
           payout_upi?: string | null
           pincode?: string | null
+          program?: string
           state?: string | null
           status?: Database["public"]["Enums"]["affiliate_status"]
           updated_at?: string
