@@ -155,6 +155,8 @@ export const claimReferral = createServerFn({ method: "POST" })
   });
 
 const ApplySchema = z.object({
+  /** Which partner program the applicant is joining. */
+  program: z.enum(["affiliate", "sales", "loyalty"]).default("affiliate"),
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(200),
   mobile: z.string().trim().min(8).max(20).regex(/^[+\d\s\-()]+$/),
