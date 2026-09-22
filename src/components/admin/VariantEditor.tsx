@@ -254,7 +254,7 @@ export function VariantEditor({
       <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
         <div className="font-semibold">Variation family is not ready</div>
         <p className="mt-1">
-          Save the main product first, then reopen Manage Variations. If it was already saved, apply the product-admin
+          Save the main product first, then reopen Price & Stock for Customers. If it was already saved, apply the product-admin
           parity migration and retry.
         </p>
         <Button className="mt-3" type="button" variant="outline" onClick={() => q.refetch()}>
