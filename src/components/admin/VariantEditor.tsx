@@ -676,7 +676,7 @@ export function VariantEditor({
           <div className="flex gap-2">
             <Button size="sm" variant="outline" type="button" onClick={addRow}>
               <Plus className="mr-1 h-4 w-4" />
-              Add Variation · step by step
+              Add Variation
             </Button>
 
             <Button size="sm" type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
@@ -736,7 +736,17 @@ export function VariantEditor({
           />
         </div>
 
-        {tab === "customer" && <CustomerTab rows={rows} updateRow={updateRow} />}
+        {tab === "customer" && (
+          <CustomerTab
+            rows={rows}
+            updateRow={updateRow}
+            editRow={(row) => {
+              setWizardStep(0);
+              setEditingId(row.id);
+            }}
+            removeRow={removeRow}
+          />
+        )}
 
         {tab === "shipping" && <ShippingTab rows={rows} updateRow={updateRow} />}
       </div>
@@ -2269,9 +2279,13 @@ function BulkPriceByOption({
 function CustomerTab({
   rows,
   updateRow,
+  editRow,
+  removeRow,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  editRow: (row: Variant) => void;
+  removeRow: (row: Variant) => void;
 }) {
   const [segment, setSegment] = React.useState<PriceSegment>("customer");
 
@@ -2282,7 +2296,7 @@ function CustomerTab({
           <div>
             <h2 className="text-base font-semibold text-slate-950">Price &amp; Stock</h2>
             <p className="mt-1 text-xs text-slate-500">
-              No variations yet. Add them in the Options &amp; Variants tab first to set prices here.
+              No variations yet. Click Add Variation above to create the first SKU without leaving this page.
             </p>
           </div>
         </section>
@@ -2314,7 +2328,13 @@ function CustomerTab({
         </span>
       </div>
 
-      <SegmentPriceTable rows={rows} updateRow={updateRow} segment={segment} />
+      <SegmentPriceTable
+        rows={rows}
+        updateRow={updateRow}
+        segment={segment}
+        editRow={editRow}
+        removeRow={removeRow}
+      />
     </div>
   );
 }
@@ -3186,10 +3206,14 @@ function SegmentPriceTable({
   rows,
   updateRow,
   segment,
+  editRow,
+  removeRow,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   segment: PriceSegment;
+  editRow: (row: Variant) => void;
+  removeRow: (row: Variant) => void;
 }) {
   const { label, mrpKey, priceKey } = SEGMENT_PRICE_FIELDS[segment];
 
@@ -3307,6 +3331,7 @@ function SegmentPriceTable({
                 <Th>Discount %</Th>
                 <Th>Price</Th>
                 <Th>Stock</Th>
+                <Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
@@ -3421,6 +3446,23 @@ function SegmentPriceTable({
                           title="Copy stock to all rows below"
                           onClick={() => copyDown(index, (source) => ({ stock: source.stock }))}
                         />
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="flex min-w-[150px] items-center gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => editRow(row)}>
+                          <Pencil className="h-4 w-4" /> Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          aria-label={`Delete variation ${row.sku}`}
+                          title="Delete variation"
+                          onClick={() => removeRow(row)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </Td>
                   </tr>
