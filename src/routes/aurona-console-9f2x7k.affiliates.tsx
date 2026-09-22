@@ -664,6 +664,7 @@ function ConfigTab({ data, refresh }: { data: Data; refresh: () => void }) {
           auto_approve_commission_on_delivery: s.auto_approve_commission_on_delivery,
           exclude_shipping: s.exclude_shipping,
           terms: s.terms,
+          program_commissions: s.program_commissions,
         },
       });
       toast.success("Affiliate settings saved");
@@ -726,6 +727,58 @@ function ConfigTab({ data, refresh }: { data: Data; refresh: () => void }) {
           v={String(s.min_payout)}
           on={(v) => setS((p) => ({ ...p, min_payout: Number(v) || 0 }))}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs">Commission by partner program</Label>
+        <p className="text-xs text-muted-foreground">
+          New partners in each program start on this rate. Blank keeps the default above.
+        </p>
+        {(
+          [
+            ["affiliate", "Affiliate Partner"],
+            ["sales", "Sales Partner"],
+            ["loyalty", "Loyalty Partner"],
+          ] as const
+        ).map(([key, label]) => {
+          const current = s.program_commissions?.[key];
+          return (
+            <div key={key} className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_1fr]">
+              <div className="text-sm font-medium">{label}</div>
+              <div>
+                <Label className="text-xs">Type</Label>
+                <select
+                  value={current?.kind ?? "percentage"}
+                  onChange={(e) =>
+                    setS((p) => ({
+                      ...p,
+                      program_commissions: {
+                        ...p.program_commissions,
+                        [key]: { kind: e.target.value as "percentage" | "fixed", value: current?.value ?? 0 },
+                      },
+                    }))
+                  }
+                  className="mt-1 h-10 w-full rounded-md border border-border bg-background px-2 text-sm"
+                >
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed (₹)</option>
+                </select>
+              </div>
+              <Row
+                l="Value"
+                v={current ? String(current.value) : ""}
+                on={(v) =>
+                  setS((p) => {
+                    const next = { ...(p.program_commissions ?? {}) };
+                    if (v.trim() === "") delete next[key];
+                    else next[key] = { kind: current?.kind ?? "percentage", value: Number(v) || 0 };
+                    return { ...p, program_commissions: next };
+                  })
+                }
+              />
+            </div>
+          );
+        })}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {toggle("enabled", "Program enabled", "Turn the whole affiliate program on or off")}
