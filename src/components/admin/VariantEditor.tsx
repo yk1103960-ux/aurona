@@ -127,7 +127,7 @@ export function VariantEditor({
   customerPricingOnly = false,
   displayOnly,
   priceSegment,
-  customerWorkflow = false,
+  buyerWorkflow,
 }: {
   productSku: string;
   productId: string;
@@ -137,7 +137,7 @@ export function VariantEditor({
   customerPricingOnly?: boolean;
   displayOnly?: Exclude<Tab, "options">;
   priceSegment?: PriceSegment;
-  customerWorkflow?: boolean;
+  buyerWorkflow?: PriceSegment;
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
@@ -667,24 +667,33 @@ export function VariantEditor({
     />
   );
 
+  const workflowLabel =
+    buyerWorkflow === "retailer"
+      ? "Retailer"
+      : buyerWorkflow === "distributor"
+        ? "Distributor"
+        : buyerWorkflow === "customer"
+          ? "Customer"
+          : null;
+
   const sectionTitle =
-    customerWorkflow
-      ? "Price & Stock for Customers"
+    workflowLabel
+      ? `Price & Stock for ${workflowLabel === "Customer" ? "Customers" : workflowLabel}`
       : displayOnly === "quick"
         ? "Options & Variations"
-      : displayOnly === "shipping"
-        ? "Weight & Dimensions"
-        : priceSegment === "retailer"
-          ? "Retailer Price & Stock"
-          : priceSegment === "distributor"
-            ? "Distributor Price & Stock"
-            : priceSegment === "customer"
-              ? "Customer Price & Stock"
-              : "Product Variations";
+        : displayOnly === "shipping"
+          ? "Weight & Dimensions"
+          : priceSegment === "retailer"
+            ? "Retailer Price & Stock"
+            : priceSegment === "distributor"
+              ? "Distributor Price & Stock"
+              : priceSegment === "customer"
+                ? "Customer Price & Stock"
+                : "Product Variations";
 
   const sectionDescription =
-    customerWorkflow
-      ? "Complete the three steps in order: create shared variations, enter customer price and stock, then add weight and dimensions."
+    workflowLabel
+      ? `Complete the three steps in order: create shared variations, enter ${workflowLabel.toLowerCase()} price and stock, then add ${workflowLabel.toLowerCase()} weight and dimensions.`
       : displayOnly === "quick"
         ? "Create, edit or archive variation combinations and their shared SKUs."
         : displayOnly === "shipping"
@@ -694,19 +703,19 @@ export function VariantEditor({
             : "Manage options, pricing, stock, pack size and weight & dimensions for every SKU.";
 
   const saveActionLabel =
-    customerWorkflow
-      ? "Save Customer Product Setup"
+    workflowLabel
+      ? `Save ${workflowLabel} Product Setup`
       : displayOnly === "quick"
         ? "Save Variations"
-      : displayOnly === "shipping"
-        ? "Save Weight & Dimensions"
-        : priceSegment === "retailer"
-          ? "Save Retailer Pricing"
-          : priceSegment === "distributor"
-            ? "Save Distributor Pricing"
-            : priceSegment === "customer"
-              ? "Save Customer Pricing"
-              : "Save All Variant Changes";
+        : displayOnly === "shipping"
+          ? "Save Weight & Dimensions"
+          : priceSegment === "retailer"
+            ? "Save Retailer Pricing"
+            : priceSegment === "distributor"
+              ? "Save Distributor Pricing"
+              : priceSegment === "customer"
+                ? "Save Customer Pricing"
+                : "Save All Variant Changes";
 
   return (
     <fieldset
@@ -746,7 +755,7 @@ export function VariantEditor({
                 onClick={() => setTab("quick")}
                 icon={<SlidersHorizontal className="h-4 w-4" />}
               >
-                {customerWorkflow ? "1. Create Product Variations" : "Options & Variants"}
+                {buyerWorkflow ? "1. Create Product Variations" : "Options & Variants"}
               </TabButton>
             )}
 
@@ -755,11 +764,11 @@ export function VariantEditor({
               onClick={() => setTab("customer")}
               icon={<Users className="h-4 w-4" />}
             >
-              {customerWorkflow ? "2. Price & Stock" : "Customer Price & Stock"}
+              {buyerWorkflow ? "2. Price & Stock" : "Customer Price & Stock"}
             </TabButton>
 
             <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
-              {customerWorkflow ? "3. Weight & Dimensions" : "Weight & Dimensions"}
+              {buyerWorkflow ? "3. Weight & Dimensions" : "Weight & Dimensions"}
             </TabButton>
           </div>
         </div>
@@ -802,7 +811,9 @@ export function VariantEditor({
           />
         )}
 
-        {tab === "shipping" && <ShippingTab rows={rows} updateRow={updateRow} />}
+        {tab === "shipping" && (
+          <ShippingTab rows={rows} updateRow={updateRow} initialScope={buyerWorkflow ?? "customer"} />
+        )}
       </div>
 
       <div className="flex justify-end border-t border-slate-200 bg-slate-50 p-4">
@@ -2431,9 +2442,11 @@ const DIMENSION_SCOPES: Array<{
 function BulkDimensionsByOption({
   rows,
   updateRow,
+  initialScope,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  initialScope: DimensionScope;
 }) {
   const optionKeys = React.useMemo(() => {
     const keys: string[] = [];
@@ -2460,7 +2473,8 @@ function BulkDimensionsByOption({
   }, [rows, optionKeys]);
 
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [scope, setScope] = useState<DimensionScope>("customer");
+  const [scope, setScope] = useState<DimensionScope>(initialScope);
+  React.useEffect(() => setScope(initialScope), [initialScope]);
   const [weight, setWeight] = useState("");
   const [length, setLength] = useState("");
   const [width, setWidth] = useState("");
@@ -2579,11 +2593,14 @@ function BulkDimensionsByOption({
 function ShippingTab({
   rows,
   updateRow,
+  initialScope,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  initialScope: DimensionScope;
 }) {
-  const [tableScope, setTableScope] = useState<DimensionScope>("customer");
+  const [tableScope, setTableScope] = useState<DimensionScope>(initialScope);
+  React.useEffect(() => setTableScope(initialScope), [initialScope]);
   const [open, setOpen] = useState(false);
 
   const scope = DIMENSION_SCOPES.find((entry) => entry.id === tableScope)!;
@@ -2644,7 +2661,7 @@ function ShippingTab({
 
   return (
     <div className="space-y-4">
-      <BulkDimensionsByOption rows={rows} updateRow={updateRow} />
+      <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope={initialScope} />
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4">
