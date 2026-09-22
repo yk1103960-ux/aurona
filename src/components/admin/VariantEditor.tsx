@@ -384,6 +384,8 @@ export function VariantEditor({
           discount_pct: template?.discount_pct ?? 0,
           retailer_price: template?.retailer_price ?? null,
           distributor_price: template?.distributor_price ?? null,
+          retailer_mrp: template?.retailer_mrp ?? null,
+          distributor_mrp: template?.distributor_mrp ?? null,
           moq: template?.moq ?? 1,
           retailer_moq: template?.retailer_moq ?? null,
           distributor_moq: template?.distributor_moq ?? null,
