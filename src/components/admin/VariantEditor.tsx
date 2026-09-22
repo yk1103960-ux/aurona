@@ -127,6 +127,7 @@ export function VariantEditor({
   customerPricingOnly = false,
   displayOnly,
   priceSegment,
+  customerWorkflow = false,
 }: {
   productSku: string;
   productId: string;
@@ -136,6 +137,7 @@ export function VariantEditor({
   customerPricingOnly?: boolean;
   displayOnly?: Exclude<Tab, "options">;
   priceSegment?: PriceSegment;
+  customerWorkflow?: boolean;
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
@@ -666,8 +668,10 @@ export function VariantEditor({
   );
 
   const sectionTitle =
-    displayOnly === "quick"
-      ? "Options & Variations"
+    customerWorkflow
+      ? "Price & Stock for Customers"
+      : displayOnly === "quick"
+        ? "Options & Variations"
       : displayOnly === "shipping"
         ? "Weight & Dimensions"
         : priceSegment === "retailer"
@@ -679,17 +683,21 @@ export function VariantEditor({
               : "Product Variations";
 
   const sectionDescription =
-    displayOnly === "quick"
-      ? "Create, edit or archive variation combinations and their shared SKUs."
-      : displayOnly === "shipping"
-        ? "Edit only single-unit and package weight and dimensions for each shared SKU."
-        : priceSegment
-          ? `Edit only ${priceSegment} pricing. Options and dimensions remain in their own sidebar sections.`
-          : "Manage options, pricing, stock, pack size and weight & dimensions for every SKU.";
+    customerWorkflow
+      ? "Complete the three steps in order: create shared variations, enter customer price and stock, then add weight and dimensions."
+      : displayOnly === "quick"
+        ? "Create, edit or archive variation combinations and their shared SKUs."
+        : displayOnly === "shipping"
+          ? "Edit only single-unit and package weight and dimensions for each shared SKU."
+          : priceSegment
+            ? `Edit only ${priceSegment} pricing. Variations and dimensions stay in Price & Stock for Customers.`
+            : "Manage options, pricing, stock, pack size and weight & dimensions for every SKU.";
 
   const saveActionLabel =
-    displayOnly === "quick"
-      ? "Save Variations"
+    customerWorkflow
+      ? "Save Customer Product Setup"
+      : displayOnly === "quick"
+        ? "Save Variations"
       : displayOnly === "shipping"
         ? "Save Weight & Dimensions"
         : priceSegment === "retailer"
@@ -723,7 +731,7 @@ export function VariantEditor({
 
             <Button size="sm" type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
               <Save className="mr-1 h-4 w-4" />
-              {saving ? "Saving…" : "Save Variants"}
+              {saving ? "Saving…" : saveActionLabel}
             </Button>
           </div>
         </div>
@@ -738,20 +746,20 @@ export function VariantEditor({
                 onClick={() => setTab("quick")}
                 icon={<SlidersHorizontal className="h-4 w-4" />}
               >
-                Options &amp; Variants
+                {customerWorkflow ? "1. Create Product Variations" : "Options & Variants"}
               </TabButton>
             )}
-
-            <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
-              Weight & Dimensions
-            </TabButton>
 
             <TabButton
               active={tab === "customer"}
               onClick={() => setTab("customer")}
               icon={<Users className="h-4 w-4" />}
             >
-              Customer Price & Stock
+              {customerWorkflow ? "2. Price & Stock" : "Customer Price & Stock"}
+            </TabButton>
+
+            <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
+              {customerWorkflow ? "3. Weight & Dimensions" : "Weight & Dimensions"}
             </TabButton>
           </div>
         </div>
