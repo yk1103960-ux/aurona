@@ -144,11 +144,34 @@ function Benefits() {
   );
 }
 
+const PROGRAMS = [
+  {
+    key: "affiliate" as const,
+    title: "Affiliate Partner",
+    blurb: "Share your referral link or code and earn commission on every referred order.",
+  },
+  {
+    key: "sales" as const,
+    title: "Sales Partner",
+    blurb: "Promote Aurona to shops, builders and projects, and earn on confirmed sales.",
+  },
+  {
+    key: "loyalty" as const,
+    title: "Loyalty Partner",
+    blurb: "Join the loyalty and referral rewards programme run by the Aurona team.",
+  },
+];
+
+function programLabel(key: string | null | undefined) {
+  return PROGRAMS.find((p) => p.key === key)?.title ?? "Affiliate Partner";
+}
+
 function ApplyForm() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const applyFn = useServerFn(applyAsAffiliate);
   const [busy, setBusy] = useState(false);
+  const [program, setProgram] = useState<"affiliate" | "sales" | "loyalty">("affiliate");
   const [method, setMethod] = useState<"upi" | "bank">("upi");
   const [f, setF] = useState({
     full_name: "",
