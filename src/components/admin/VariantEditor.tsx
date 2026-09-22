@@ -44,6 +44,7 @@ import {
 import { persistVariationPhotos, validateVariationPhoto, type VariationPhotoDraft } from "@/lib/variant-photo-drafts";
 
 type Tab = "quick" | "options" | "customer" | "shipping";
+type PriceSegment = "customer" | "retailer" | "distributor";
 
 type PackageDimensionKey =
   | "pack_weight_g"
@@ -124,6 +125,8 @@ export function VariantEditor({
   onManageImages,
   initialTab = "options",
   customerPricingOnly = false,
+  displayOnly,
+  priceSegment,
 }: {
   productSku: string;
   productId: string;
@@ -131,10 +134,14 @@ export function VariantEditor({
   onManageImages?: (sku: string) => void;
   initialTab?: Tab;
   customerPricingOnly?: boolean;
+  displayOnly?: Exclude<Tab, "options">;
+  priceSegment?: PriceSegment;
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<Tab>(initialTab === "options" || initialTab === "quick" ? "quick" : initialTab);
+  const [tab, setTab] = useState<Tab>(
+    displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
   const [axisRows, setAxisRows] = useState<Axis[]>([]);
@@ -223,8 +230,8 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(initialTab === "options" || initialTab === "quick" ? "quick" : initialTab);
-  }, [initialTab]);
+    setTab(displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab));
+  }, [initialTab, displayOnly]);
 
   const family = q.data?.family;
   const axes = axisRows;
@@ -674,10 +681,12 @@ export function VariantEditor({
           </div>
 
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" type="button" onClick={addRow}>
-              <Plus className="mr-1 h-4 w-4" />
-              Add Variation
-            </Button>
+            {(!displayOnly || displayOnly === "quick") && (
+              <Button size="sm" variant="outline" type="button" onClick={addRow}>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Variation
+              </Button>
+            )}
 
             <Button size="sm" type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
               <Save className="mr-1 h-4 w-4" />
@@ -687,31 +696,33 @@ export function VariantEditor({
         </div>
       </div>
 
-      <div className="overflow-x-auto border-b border-slate-200">
-        <div className="flex min-w-max gap-1 p-2">
-          {!customerPricingOnly && (
-            <TabButton
-              active={tab === "quick"}
-              onClick={() => setTab("quick")}
-              icon={<SlidersHorizontal className="h-4 w-4" />}
-            >
-              Options &amp; Variants
+      {!displayOnly && (
+        <div className="overflow-x-auto border-b border-slate-200">
+          <div className="flex min-w-max gap-1 p-2">
+            {!customerPricingOnly && (
+              <TabButton
+                active={tab === "quick"}
+                onClick={() => setTab("quick")}
+                icon={<SlidersHorizontal className="h-4 w-4" />}
+              >
+                Options &amp; Variants
+              </TabButton>
+            )}
+
+            <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
+              Weight & Dimensions
             </TabButton>
-          )}
 
-          <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
-            Weight & Dimensions
-          </TabButton>
-
-          <TabButton
-            active={tab === "customer"}
-            onClick={() => setTab("customer")}
-            icon={<Users className="h-4 w-4" />}
-          >
-            Customer Price & Stock
-          </TabButton>
+            <TabButton
+              active={tab === "customer"}
+              onClick={() => setTab("customer")}
+              icon={<Users className="h-4 w-4" />}
+            >
+              Customer Price & Stock
+            </TabButton>
+          </div>
         </div>
-      </div>
+      )}
 
       {(dirty.current || axesDirty || photosPending) && (
         <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -745,6 +756,8 @@ export function VariantEditor({
               setEditingId(row.id);
             }}
             removeRow={removeRow}
+            initialSegment={priceSegment ?? "customer"}
+            lockSegment={Boolean(priceSegment)}
           />
         )}
 
@@ -2077,8 +2090,6 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
   );
 }
 
-type PriceSegment = "customer" | "retailer" | "distributor";
-
 const SEGMENT_PRICE_FIELDS: Record<
   PriceSegment,
   { label: string; mrpKey: "mrp" | "retailer_mrp" | "distributor_mrp"; priceKey: "price" | "retailer_price" | "distributor_price" }
@@ -2281,13 +2292,21 @@ function CustomerTab({
   updateRow,
   editRow,
   removeRow,
+  initialSegment,
+  lockSegment,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
   editRow: (row: Variant) => void;
   removeRow: (row: Variant) => void;
+  initialSegment: PriceSegment;
+  lockSegment: boolean;
 }) {
-  const [segment, setSegment] = React.useState<PriceSegment>("customer");
+  const [segment, setSegment] = React.useState<PriceSegment>(initialSegment);
+
+  useEffect(() => {
+    setSegment(initialSegment);
+  }, [initialSegment]);
 
   if (!rows.length) {
     return (
@@ -2296,7 +2315,7 @@ function CustomerTab({
           <div>
             <h2 className="text-base font-semibold text-slate-950">Price &amp; Stock</h2>
             <p className="mt-1 text-xs text-slate-500">
-              No variations yet. Click Add Variation above to create the first SKU without leaving this page.
+              No variations yet. Create one in Options &amp; Variations, then return here to set pricing.
             </p>
           </div>
         </section>
@@ -2308,25 +2327,27 @@ function CustomerTab({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
-        {(["customer", "retailer", "distributor"] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setSegment(key)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
-              segment === key
-                ? "bg-slate-900 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            {key}
-          </button>
-        ))}
-        <span className="ml-auto text-xs text-slate-500">
-          Each account type keeps its own prices. Stock is shared by all three.
-        </span>
-      </div>
+      {!lockSegment && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
+          {(["customer", "retailer", "distributor"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSegment(key)}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
+                segment === key
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {key}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-slate-500">
+            Each account type keeps its own prices. Stock is shared by all three.
+          </span>
+        </div>
+      )}
 
       <SegmentPriceTable
         rows={rows}
