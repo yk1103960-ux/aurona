@@ -384,6 +384,8 @@ export function VariantEditor({
           discount_pct: template?.discount_pct ?? 0,
           retailer_price: template?.retailer_price ?? null,
           distributor_price: template?.distributor_price ?? null,
+          retailer_mrp: template?.retailer_mrp ?? null,
+          distributor_mrp: template?.distributor_mrp ?? null,
           moq: template?.moq ?? 1,
           retailer_moq: template?.retailer_moq ?? null,
           distributor_moq: template?.distributor_moq ?? null,
@@ -2292,6 +2294,7 @@ function CustomerTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
+  const [segment, setSegment] = React.useState<"customer" | "retailer" | "distributor">("customer");
   type CustomerNumberField =
     | "mrp"
     | "price"
@@ -2504,6 +2507,30 @@ function CustomerTab({
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
+        {(["customer", "retailer", "distributor"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setSegment(key)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
+              segment === key
+                ? "bg-slate-900 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            {key}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-slate-500">
+          Each account type keeps its own prices. Stock is shared by all three.
+        </span>
+      </div>
+
+      {segment !== "customer" ? (
+        <SegmentPriceTable rows={rows} updateRow={updateRow} segment={segment} />
+      ) : (
+      <div className="space-y-5">
       {/* =====================================================
           PRODUCT OPTIONS
          ===================================================== */}
@@ -2923,6 +2950,8 @@ function CustomerTab({
           </div>
         </div>
       </section>
+      </div>
+      )}
     </div>
   );
 }
@@ -3597,6 +3626,200 @@ function SegmentToggles({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Retailer / distributor price table. Independent MRP and selling price per
+ * account type; blank means that account type falls back to the customer value.
+ * Stock is shared and shown read-only here.
+ */
+function SegmentPriceTable({
+  rows,
+  updateRow,
+  segment,
+}: {
+  rows: Variant[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+  segment: "retailer" | "distributor";
+}) {
+  const mrpKey = segment === "retailer" ? ("retailer_mrp" as const) : ("distributor_mrp" as const);
+  const priceKey = segment === "retailer" ? ("retailer_price" as const) : ("distributor_price" as const);
+  const label = segment === "retailer" ? "Retailer" : "Distributor";
+
+  const [bulkMrp, setBulkMrp] = React.useState("");
+  const [bulkPrice, setBulkPrice] = React.useState("");
+
+  const setField = (row: Variant, key: typeof mrpKey | typeof priceKey, raw: string) => {
+    if (raw === "") {
+      updateRow(row.id, { [key]: null } as Partial<Variant>);
+      return;
+    }
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < 0) return;
+    updateRow(row.id, { [key]: value } as Partial<Variant>);
+  };
+
+  const applyToAll = () => {
+    const mrp = bulkMrp.trim() === "" ? null : Number(bulkMrp);
+    const price = bulkPrice.trim() === "" ? null : Number(bulkPrice);
+    if (mrp === null && price === null) {
+      toast.error(`Enter a ${label.toLowerCase()} MRP or price first.`);
+      return;
+    }
+    if ((mrp !== null && (!Number.isFinite(mrp) || mrp < 0)) || (price !== null && (!Number.isFinite(price) || price < 0))) {
+      toast.error("Enter valid amounts.");
+      return;
+    }
+    for (const row of rows) {
+      const patch: Partial<Variant> = {};
+      if (mrp !== null) (patch as Record<string, unknown>)[mrpKey] = mrp;
+      if (price !== null) (patch as Record<string, unknown>)[priceKey] = price;
+      updateRow(row.id, patch);
+    }
+    toast.success(`Applied to all ${rows.length} variations.`);
+  };
+
+  const copyDown = (key: typeof mrpKey | typeof priceKey, index: number) => {
+    const value = rows[index]?.[key] ?? null;
+    for (const row of rows.slice(index + 1)) updateRow(row.id, { [key]: value } as Partial<Variant>);
+    toast.success("Copied to all variations below.");
+  };
+
+  return (
+    <div className="space-y-5">
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">{label} Pricing</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Only approved {label.toLowerCase()} accounts see these prices. Leave a field blank to keep using the
+            customer value for that variation. Customer prices are never changed from here.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div>
+            <div className="mb-1 text-xs font-medium text-slate-600">{label} MRP</div>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={bulkMrp}
+              placeholder="MRP"
+              onChange={(event) => setBulkMrp(event.target.value)}
+              className="h-9 w-32"
+            />
+          </div>
+          <div>
+            <div className="mb-1 text-xs font-medium text-slate-600">{label} price</div>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={bulkPrice}
+              placeholder="Price"
+              onChange={(event) => setBulkPrice(event.target.value)}
+              className="h-9 w-32"
+            />
+          </div>
+          <Button type="button" variant="outline" className="h-9" onClick={applyToAll}>
+            Apply to all {rows.length}
+          </Button>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <Th>Variation</Th>
+                <Th>SKU</Th>
+                <Th>{label} MRP</Th>
+                <Th>{label} price</Th>
+                <Th>Stock (shared)</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => {
+                const hasRowsBelow = index < rows.length - 1;
+                return (
+                  <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
+                    <Td>
+                      <div className="min-w-[210px] max-w-[280px]">
+                        <VariantIdentity row={row} />
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="min-w-[170px] break-all font-mono text-xs font-medium text-slate-700">
+                        {row.sku}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="flex min-w-[165px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={(row[mrpKey] as number | null) ?? ""}
+                          placeholder={String(row.mrp ?? "MRP")}
+                          onChange={(event) => setField(row, mrpKey, event.target.value)}
+                          className="h-9 min-w-[110px]"
+                        />
+                        {hasRowsBelow ? (
+                          <button
+                            type="button"
+                            title="Copy to all rows below"
+                            onClick={() => copyDown(mrpKey, index)}
+                            className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-800"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="flex min-w-[165px] items-center gap-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={(row[priceKey] as number | null) ?? ""}
+                          placeholder={String(row.price ?? "Price")}
+                          onChange={(event) => setField(row, priceKey, event.target.value)}
+                          className="h-9 min-w-[110px]"
+                        />
+                        {hasRowsBelow ? (
+                          <button
+                            type="button"
+                            title="Copy to all rows below"
+                            onClick={() => copyDown(priceKey, index)}
+                            className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-800"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="min-w-[110px] text-xs font-medium text-slate-600">{row.stock ?? 0}</div>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          Blank fields keep the customer value for that variation. Stock is managed in the customer tab and SKU
+          Inventory, and is shared by all account types.
+        </div>
+      </section>
     </div>
   );
 }

@@ -155,6 +155,8 @@ export const claimReferral = createServerFn({ method: "POST" })
   });
 
 const ApplySchema = z.object({
+  /** Which partner program the applicant is joining. */
+  program: z.enum(["affiliate", "sales", "loyalty"]).default("affiliate"),
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(200),
   mobile: z.string().trim().min(8).max(20).regex(/^[+\d\s\-()]+$/),
@@ -213,10 +215,15 @@ export const applyAsAffiliate = createServerFn({ method: "POST" })
         notes: data.notes || null,
         user_id: context.userId,
         code,
+        program: data.program,
+        // Program default commission (if the admin configured one) so each
+        // program can pay its own rate without touching the others.
+        commission_kind: settings.program_commissions?.[data.program]?.kind ?? null,
+        commission_value: settings.program_commissions?.[data.program]?.value ?? null,
         status: settings.auto_approve_affiliates ? "approved" : "pending",
         approved_at: settings.auto_approve_affiliates ? new Date().toISOString() : null,
       })
-      .select("id, code, status")
+      .select("id, code, status, program")
       .single();
     if (error || !row) throw new Error("Could not submit your application. Please try again.");
     await logAffiliate({ affiliateId: row.id, actorUserId: context.userId, action: "affiliate.applied" });
@@ -262,6 +269,7 @@ export const getMyAffiliate = createServerFn({ method: "POST" })
         id: aff.id,
         code: aff.code,
         status: aff.status,
+        program: ((aff as Record<string, unknown>)["program"] as string | null) ?? "affiliate",
         full_name: aff.full_name,
         email: aff.email,
         mobile: aff.mobile,
@@ -628,6 +636,9 @@ export const adminSaveAffiliateSettings = createServerFn({ method: "POST" })
         auto_approve_commission_on_delivery: z.boolean(),
         exclude_shipping: z.boolean(),
         terms: z.string().trim().max(5000).optional().or(z.literal("")),
+        program_commissions: z
+          .record(z.string(), z.object({ kind: z.enum(["percentage", "fixed"]), value: z.number().min(0).max(100000) }))
+          .optional(),
       })
       .parse(input),
   )
@@ -709,6 +720,7 @@ export const adminUpdateAffiliate = createServerFn({ method: "POST" })
         mobile: z.string().trim().min(8).max(20).optional(),
         email: z.string().trim().email().max(200).optional(),
         payout_upi: z.string().trim().max(120).nullable().optional(),
+        program: z.enum(["affiliate", "sales", "loyalty"]).optional(),
       })
       .parse(input),
   )

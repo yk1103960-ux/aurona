@@ -13,6 +13,16 @@ export type AffiliateSettings = {
   auto_approve_commission_on_delivery: boolean;
   exclude_shipping: boolean;
   terms: string | null;
+  /** Default commission per partner program, e.g. { sales: { kind: "percentage", value: 8 } }. */
+  program_commissions: Record<string, { kind: "percentage" | "fixed"; value: number }>;
+};
+
+export type PartnerProgram = "affiliate" | "sales" | "loyalty";
+
+export const PARTNER_PROGRAM_LABELS: Record<PartnerProgram, string> = {
+  affiliate: "Affiliate Partner",
+  sales: "Sales Partner",
+  loyalty: "Loyalty Partner",
 };
 
 async function admin() {
@@ -34,6 +44,7 @@ export async function getSettings(): Promise<AffiliateSettings> {
     auto_approve_commission_on_delivery: data?.auto_approve_commission_on_delivery ?? true,
     exclude_shipping: data?.exclude_shipping ?? true,
     terms: data?.terms ?? null,
+    program_commissions: ((data as Record<string, unknown> | null)?.["program_commissions"] ?? {}) as AffiliateSettings["program_commissions"],
   };
 }
 
