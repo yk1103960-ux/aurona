@@ -898,7 +898,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               id={id}
               section="quick"
               priceSegment="customer"
-              workflow
+              workflowSegment="customer"
               title="Price & Stock for Customers"
               text="Step 1: Create Product Variations. Step 2: Price & Stock. Step 3: Weight & Dimensions. These shared SKUs can then receive retailer and distributor pricing."
             />
@@ -911,10 +911,11 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               isNew={isNew}
               sku={f.sku}
               id={id}
-              section="customer"
+              section="quick"
               priceSegment="retailer"
+              workflowSegment="retailer"
               title="Price & Stock for Retailer"
-              text="Retailer MRP, discount and selling price are independent from customer and distributor pricing."
+              text="Step 1: Create Product Variations. Step 2: Retailer Price & Stock. Step 3: Retailer Weight & Dimensions. Variations and SKUs stay shared with customer and distributor."
             />
           )}
 
@@ -925,10 +926,11 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               isNew={isNew}
               sku={f.sku}
               id={id}
-              section="customer"
+              section="quick"
               priceSegment="distributor"
+              workflowSegment="distributor"
               title="Price & Stock for Distributor"
-              text="Distributor MRP, discount and selling price are independent from customer and retailer pricing."
+              text="Step 1: Create Product Variations. Step 2: Distributor Price & Stock. Step 3: Distributor Weight & Dimensions. Variations and SKUs stay shared with customer and retailer."
             />
           )}
 
@@ -1100,7 +1102,7 @@ function VariantArea({
   id,
   section,
   priceSegment,
-  workflow = false,
+  workflowSegment,
   title,
   text,
 }: {
@@ -1109,7 +1111,7 @@ function VariantArea({
   id: string;
   section: "quick" | "customer" | "shipping";
   priceSegment?: "customer" | "retailer" | "distributor";
-  workflow?: boolean;
+  workflowSegment?: "customer" | "retailer" | "distributor";
   title: string;
   text: string;
 }) {
@@ -1130,9 +1132,9 @@ function VariantArea({
         productSku={sku}
         productId={id}
         initialTab={section}
-        displayOnly={workflow ? undefined : section}
+        displayOnly={workflowSegment ? undefined : section}
         priceSegment={priceSegment}
-        customerWorkflow={workflow}
+        buyerWorkflow={workflowSegment}
       />
     </div>
   );
