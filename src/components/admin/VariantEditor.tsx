@@ -665,6 +665,41 @@ export function VariantEditor({
     />
   );
 
+  const sectionTitle =
+    displayOnly === "quick"
+      ? "Options & Variations"
+      : displayOnly === "shipping"
+        ? "Weight & Dimensions"
+        : priceSegment === "retailer"
+          ? "Retailer Price & Stock"
+          : priceSegment === "distributor"
+            ? "Distributor Price & Stock"
+            : priceSegment === "customer"
+              ? "Customer Price & Stock"
+              : "Product Variations";
+
+  const sectionDescription =
+    displayOnly === "quick"
+      ? "Create, edit or archive variation combinations and their shared SKUs."
+      : displayOnly === "shipping"
+        ? "Edit only single-unit and package weight and dimensions for each shared SKU."
+        : priceSegment
+          ? `Edit only ${priceSegment} pricing. Options and dimensions remain in their own sidebar sections.`
+          : "Manage options, pricing, stock, pack size and weight & dimensions for every SKU.";
+
+  const saveActionLabel =
+    displayOnly === "quick"
+      ? "Save Variations"
+      : displayOnly === "shipping"
+        ? "Save Weight & Dimensions"
+        : priceSegment === "retailer"
+          ? "Save Retailer Pricing"
+          : priceSegment === "distributor"
+            ? "Save Distributor Pricing"
+            : priceSegment === "customer"
+              ? "Save Customer Pricing"
+              : "Save All Variant Changes";
+
   return (
     <fieldset
       disabled={busy}
@@ -673,11 +708,9 @@ export function VariantEditor({
       <div className="border-b border-slate-200 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">Product Variations</div>
+            <div className="text-sm font-semibold uppercase tracking-wider text-slate-600">{sectionTitle}</div>
 
-            <div className="mt-1 text-xs text-slate-500">
-              Manage options, customer pricing, tax, stock, pack size and weight & dimensions for every SKU.
-            </div>
+            <div className="mt-1 text-xs text-slate-500">{sectionDescription}</div>
           </div>
 
           <div className="flex gap-2">
@@ -767,7 +800,7 @@ export function VariantEditor({
       <div className="flex justify-end border-t border-slate-200 bg-slate-50 p-4">
         <Button type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
           <Save className="mr-2 h-4 w-4" />
-          {saving ? "Saving…" : "Save All Variant Changes"}
+          {saving ? "Saving…" : saveActionLabel}
         </Button>
       </div>
 
