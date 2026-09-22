@@ -610,14 +610,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               Clear draft
             </Button>
           )}
-          {!isNew && f.sku && (
-            <Button type="button" variant="outline" asChild>
-              <Link to="/aurona-console-9f2x7k/products/$id/variations" params={{ id }}>
-                <Layers3 className="h-4 w-4" />
-                Manage Variations
-              </Link>
-            </Button>
-          )}
           {isNew && (
             <Button type="button" variant="secondary" disabled={saving} size="lg" onClick={() => save("variations")}>
               <Layers3 className="h-4 w-4" />
