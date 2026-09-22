@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Layers3,
   BadgePercent,
+  Ruler,
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
@@ -42,7 +43,19 @@ function ExistingProductEditor() {
   return <ProductEditor productId={id} />;
 }
 
-type MainTab = "general" | "media" | "customer" | "commission" | "seo" | "shipping" | "warranty" | "frequently";
+type MainTab =
+  | "general"
+  | "media"
+  | "variations"
+  | "customer"
+  | "retailer"
+  | "distributor"
+  | "dimensions"
+  | "commission"
+  | "seo"
+  | "shipping"
+  | "warranty"
+  | "frequently";
 
 type ProductForm = {
   name: string;
@@ -210,9 +223,29 @@ const TABS: {
     icon: <Images className="h-4 w-4" />,
   },
   {
+    key: "variations",
+    label: "Options & Variations",
+    icon: <Layers3 className="h-4 w-4" />,
+  },
+  {
     key: "customer",
     label: "Price & Stock for Customers",
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    key: "retailer",
+    label: "Price & Stock for Retailer",
+    icon: <ShoppingBasket className="h-4 w-4" />,
+  },
+  {
+    key: "distributor",
+    label: "Price & Stock for Distributor",
+    icon: <Truck className="h-4 w-4" />,
+  },
+  {
+    key: "dimensions",
+    label: "Weight & Dimensions",
+    icon: <Ruler className="h-4 w-4" />,
   },
   {
     key: "commission",
@@ -869,16 +902,71 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             </div>
           )}
 
-          {/* CUSTOMER */}
+          {/* OPTIONS & VARIATIONS */}
+
+          {tab === "variations" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              section="quick"
+              title="Options & Variations"
+              text="Create, edit and archive variation combinations. Every generated SKU is shared by all pricing and dimension sections."
+            />
+          )}
+
+          {/* CUSTOMER PRICE & STOCK */}
 
           {tab === "customer" && (
             <VariantArea
               isNew={isNew}
               sku={f.sku}
               id={id}
-              variantTab="customer"
+              section="customer"
+              priceSegment="customer"
               title="Price & Stock for Customers"
-              text="MRP, customer price, stock and pack size are managed per generated SKU."
+              text="Customer MRP, discount, selling price and shared SKU stock."
+            />
+          )}
+
+          {/* RETAILER PRICE & STOCK */}
+
+          {tab === "retailer" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              section="customer"
+              priceSegment="retailer"
+              title="Price & Stock for Retailer"
+              text="Retailer MRP, discount and selling price are independent from customer and distributor pricing."
+            />
+          )}
+
+          {/* DISTRIBUTOR PRICE & STOCK */}
+
+          {tab === "distributor" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              section="customer"
+              priceSegment="distributor"
+              title="Price & Stock for Distributor"
+              text="Distributor MRP, discount and selling price are independent from customer and retailer pricing."
+            />
+          )}
+
+          {/* WEIGHT & DIMENSIONS */}
+
+          {tab === "dimensions" && (
+            <VariantArea
+              isNew={isNew}
+              sku={f.sku}
+              id={id}
+              section="shipping"
+              title="Weight & Dimensions"
+              text="Edit single-unit and package measurements for the same shared variation SKUs."
             />
           )}
 
@@ -1048,14 +1136,16 @@ function VariantArea({
   isNew,
   sku,
   id,
-  variantTab,
+  section,
+  priceSegment,
   title,
   text,
 }: {
   isNew: boolean;
   sku: string;
   id: string;
-  variantTab: "options" | "customer";
+  section: "quick" | "customer" | "shipping";
+  priceSegment?: "customer" | "retailer" | "distributor";
   title: string;
   text: string;
 }) {
@@ -1075,8 +1165,9 @@ function VariantArea({
       <VariantEditor
         productSku={sku}
         productId={id}
-        initialTab={variantTab}
-        customerPricingOnly={variantTab === "customer"}
+        initialTab={section}
+        displayOnly={section}
+        priceSegment={priceSegment}
       />
     </div>
   );
