@@ -2318,6 +2318,182 @@ function CustomerTab({
     </div>
   );
 }
+type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | PackageDimensionKey;
+
+type DimensionScope = "unit" | "customer" | "retailer" | "distributor";
+
+const DIMENSION_SCOPES: Array<{
+  id: DimensionScope;
+  label: string;
+  fields: { weight: DimensionKey; l: DimensionKey; w: DimensionKey; h: DimensionKey };
+}> = [
+  { id: "unit", label: "Single Unit / Pc", fields: { weight: "weight_g", l: "dim_l", w: "dim_w", h: "dim_h" } },
+  { id: "customer", label: "Customer package", fields: { weight: "pack_weight_g", l: "pack_l", w: "pack_w", h: "pack_h" } },
+  {
+    id: "retailer",
+    label: "Retailer package",
+    fields: { weight: "retailer_pack_weight_g", l: "retailer_pack_l", w: "retailer_pack_w", h: "retailer_pack_h" },
+  },
+  {
+    id: "distributor",
+    label: "Distributor package",
+    fields: {
+      weight: "distributor_pack_weight_g",
+      l: "distributor_pack_l",
+      w: "distributor_pack_w",
+      h: "distributor_pack_h",
+    },
+  },
+];
+
+function BulkDimensionsByOption({
+  rows,
+  updateRow,
+}: {
+  rows: Variant[];
+  updateRow: (id: string, patch: Partial<Variant>) => void;
+}) {
+  const optionKeys = React.useMemo(() => {
+    const keys: string[] = [];
+    for (const row of rows) {
+      for (const key of Object.keys(row.attributes ?? {})) {
+        if (key.startsWith("__")) continue;
+        if (!keys.includes(key)) keys.push(key);
+      }
+    }
+    return keys;
+  }, [rows]);
+
+  const valuesByKey = React.useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const key of optionKeys) {
+      const list: string[] = [];
+      for (const row of rows) {
+        const value = row.attributes?.[key];
+        if (value && !list.includes(value)) list.push(value);
+      }
+      map[key] = list;
+    }
+    return map;
+  }, [rows, optionKeys]);
+
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [scope, setScope] = useState<DimensionScope>("customer");
+  const [weight, setWeight] = useState("");
+  const [length, setLength] = useState("");
+  const [width, setWidth] = useState("");
+  const [height, setHeight] = useState("");
+
+  const matched = rows.filter((row) =>
+    optionKeys.every((key) => {
+      const wanted = filters[key];
+      if (!wanted || wanted === "__all") return true;
+      return row.attributes?.[key] === wanted;
+    }),
+  );
+
+  const active = DIMENSION_SCOPES.find((entry) => entry.id === scope)!;
+
+  const apply = () => {
+    if (!matched.length) {
+      toast.error("No variations match those options.");
+      return;
+    }
+    const entries: Array<[DimensionKey, string]> = [
+      [active.fields.weight, weight],
+      [active.fields.l, length],
+      [active.fields.w, width],
+      [active.fields.h, height],
+    ];
+    const patch: Record<string, number> = {};
+    for (const [key, raw] of entries) {
+      if (raw.trim() === "") continue; // empty never overwrites existing values
+      const value = Number(raw);
+      if (!Number.isFinite(value) || value < 0) {
+        toast.error("Enter valid numbers (zero or more).");
+        return;
+      }
+      patch[key] = value;
+    }
+    if (!Object.keys(patch).length) {
+      toast.error("Enter at least one measurement to apply.");
+      return;
+    }
+    for (const row of matched) updateRow(row.id, patch as Partial<Variant>);
+    toast.success(
+      `${active.label} measurements applied to ${matched.length} variation${matched.length === 1 ? "" : "s"}.`,
+    );
+  };
+
+  const selectClass =
+    "h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300";
+
+  return (
+    <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900">Bulk update weight & dimensions</h3>
+        <p className="mt-1 text-xs text-slate-500">
+          Pick the variations to change, choose whose measurements you are setting, then fill only the fields you want
+          to update. Blank fields keep their existing values.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+        {optionKeys.map((key) => (
+          <label key={key} className="flex flex-col gap-1 text-xs text-slate-500">
+            {key.replaceAll("_", " ")}
+            <select
+              className={selectClass}
+              value={filters[key] ?? "__all"}
+              onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
+            >
+              <option value="__all">All variants</option>
+              {(valuesByKey[key] ?? []).map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Type
+          <select className={selectClass} value={scope} onChange={(event) => setScope(event.target.value as DimensionScope)}>
+            {DIMENSION_SCOPES.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Weight (g)
+          <Input type="number" min="0" step="any" value={weight} onChange={(e) => setWeight(e.target.value)} className="h-9 w-28" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Length (cm)
+          <Input type="number" min="0" step="any" value={length} onChange={(e) => setLength(e.target.value)} className="h-9 w-28" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Width (cm)
+          <Input type="number" min="0" step="any" value={width} onChange={(e) => setWidth(e.target.value)} className="h-9 w-28" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-500">
+          Height (cm)
+          <Input type="number" min="0" step="any" value={height} onChange={(e) => setHeight(e.target.value)} className="h-9 w-28" />
+        </label>
+        <Button type="button" onClick={apply} className="h-9">
+          Apply to {matched.length} matching variant{matched.length === 1 ? "" : "s"}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 function ShippingTab({
   rows,
   updateRow,
@@ -2325,20 +2501,16 @@ function ShippingTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
-  type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | PackageDimensionKey;
+  const [tableScope, setTableScope] = useState<DimensionScope>("customer");
+  const [open, setOpen] = useState(false);
 
-  const unitFields: { key: DimensionKey; label: string; placeholder: string }[] = [
-    { key: "weight_g", label: "Weight (In Gms)", placeholder: "Weight" },
-    { key: "dim_l", label: "Length (In cms)", placeholder: "Length" },
-    { key: "dim_w", label: "Width (In cms)", placeholder: "Width" },
-    { key: "dim_h", label: "Height (In cms)", placeholder: "Height" },
+  const scope = DIMENSION_SCOPES.find((entry) => entry.id === tableScope)!;
+  const tableFields: { key: DimensionKey; label: string; placeholder: string }[] = [
+    { key: scope.fields.weight, label: "Weight (In Gms)", placeholder: "Weight" },
+    { key: scope.fields.l, label: "Length (In cms)", placeholder: "Length" },
+    { key: scope.fields.w, label: "Width (In cms)", placeholder: "Width" },
+    { key: scope.fields.h, label: "Height (In cms)", placeholder: "Height" },
   ];
-
-  const packageFields = PACKAGE_DIMENSION_FIELDS.map((field) => ({
-    key: field.key,
-    label: field.label,
-    placeholder: field.placeholder,
-  }));
 
   const copyDown = (field: DimensionKey, index: number) => {
     const value = rows[index]?.[field] as number | null;
@@ -2385,59 +2557,71 @@ function ShippingTab({
     </Td>
   );
 
+  const selectClass =
+    "h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300";
+
   return (
     <div className="space-y-4">
+      <BulkDimensionsByOption rows={rows} updateRow={updateRow} />
+
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
-          <h3 className="text-base font-semibold text-slate-950">Weight & Dimensions</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            All fields are editable per variation. Enter a value and use the copy button beside it to insert the same
-            value in that column for every variation listed below.
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[2200px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-white text-center text-xs font-semibold text-slate-700">
-                <Th rowSpan={2}>Variant</Th>
-                <th colSpan={4} className="border-l border-slate-200 px-3 py-3">
-                  For Single Unit/Pc of product
-                </th>
-                <th colSpan={12} className="border-l border-slate-200 px-3 py-3">
-                  For Package by buyer type
-                </th>
-              </tr>
-              <tr className="bg-slate-50 text-left text-[11px] font-semibold text-slate-500">
-                {unitFields.map((field) => (
-                  <Th key={field.key}>{field.label}</Th>
-                ))}
-                {packageFields.map((field) => (
-                  <Th key={field.key}>{field.label}</Th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((row, index) => (
-                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
-                  <Td>
-                    <div className="min-w-[210px]">
-                      <div className="break-words font-semibold text-slate-950">{variantName(row)}</div>
-                      <div className="mt-1 break-all font-mono text-[11px] text-slate-500">{row.sku}</div>
-                    </div>
-                  </Td>
-                  {unitFields.map((field) => renderCell(row, index, field))}
-                  {packageFields.map((field) => renderCell(row, index, field))}
-                </tr>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-950">Edit each SKU</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Showing {scope.label} measurements only. Switch the type to edit another set.
+            </p>
+          </div>
+          <div className="flex items-end gap-2">
+            <select
+              className={selectClass}
+              value={tableScope}
+              onChange={(event) => setTableScope(event.target.value as DimensionScope)}
+            >
+              {DIMENSION_SCOPES.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.label}
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+            <Button type="button" variant="outline" className="h-9" onClick={() => setOpen((value) => !value)}>
+              {open ? "Hide list" : `Show list (${rows.length})`}
+            </Button>
+          </div>
         </div>
+
+        {open && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-[11px] font-semibold text-slate-500">
+                  <Th>Variant</Th>
+                  {tableFields.map((field) => (
+                    <Th key={field.key}>{field.label}</Th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
+                    <Td>
+                      <div className="min-w-[210px]">
+                        <div className="break-words font-semibold text-slate-950">{variantName(row)}</div>
+                        <div className="mt-1 break-all font-mono text-[11px] text-slate-500">{row.sku}</div>
+                      </div>
+                    </Td>
+                    {tableFields.map((field) => renderCell(row, index, field))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        Copy-down only changes the current draft. Every copied cell can still be edited individually before saving.
+        Changes here only update the current draft. Save variations to store them.
       </div>
     </div>
   );
