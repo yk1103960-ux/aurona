@@ -2292,6 +2292,7 @@ function CustomerTab({
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
 }) {
+  const [segment, setSegment] = React.useState<"customer" | "retailer" | "distributor">("customer");
   type CustomerNumberField =
     | "mrp"
     | "price"
@@ -2504,6 +2505,30 @@ function CustomerTab({
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
+        {(["customer", "retailer", "distributor"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setSegment(key)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
+              segment === key
+                ? "bg-slate-900 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            {key}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-slate-500">
+          Each account type keeps its own prices. Stock is shared by all three.
+        </span>
+      </div>
+
+      {segment !== "customer" ? (
+        <SegmentPriceTable rows={rows} updateRow={updateRow} segment={segment} />
+      ) : (
+      <div className="space-y-5">
       {/* =====================================================
           PRODUCT OPTIONS
          ===================================================== */}
@@ -2923,6 +2948,8 @@ function CustomerTab({
           </div>
         </div>
       </section>
+      </div>
+      )}
     </div>
   );
 }
