@@ -1119,7 +1119,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
     refetchOnWindowFocus: false,
     queryFn: async () => {
       // IMPORTANT:
-      // Use the exact same family/product/SKU resolver as Manage Variations.
+      // Use the exact same family/product/SKU resolver as the inline variation editor.
       // Do not guess product_variants.product_id/family_id columns here.
       const matrix = await adminLoadVariantMatrix({
         data: {
@@ -1369,7 +1369,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
         {!variants.length ? (
           <Notice
             title="No generated variations"
-            text="Open Manage Variations and generate at least one SKU before setting commissions."
+            text="Open Price & Stock for Customers and click Add Variation before setting commissions."
           />
         ) : !programs.length ? (
           <Notice
