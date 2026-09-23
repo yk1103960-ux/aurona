@@ -1465,6 +1465,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                   <th className="min-w-[130px] p-3 text-left font-semibold text-slate-700">Value</th>
                   <th className="min-w-[160px] p-3 text-left font-semibold text-slate-700">Max Commission</th>
                   <th className="min-w-[100px] p-3 text-center font-semibold text-slate-700">Active</th>
+                  <th className="min-w-[170px] p-3 text-center font-semibold text-slate-700">Copy</th>
                 </tr>
               </thead>
 
@@ -1575,6 +1576,33 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                               })
                             }
                           />
+                        </td>
+
+                        <td className="p-3 text-center">
+                          <div className="flex flex-col gap-1">
+                            {(["down", "all"] as const).map((mode) => (
+                              <button
+                                key={mode}
+                                type="button"
+                                className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                                onClick={() => {
+                                  const start = variants.findIndex((row) => row.id === variant.id);
+                                  const targets = mode === "down" ? variants.slice(start + 1) : variants;
+                                  const patch = {
+                                    commission_kind: rule.commission_kind,
+                                    commission_value: rule.commission_value,
+                                    max_commission: rule.max_commission,
+                                    is_active: rule.is_active,
+                                  };
+                                  for (const target of targets)
+                                    if (target.id !== variant.id) updateRule(target.id, program.id, patch);
+                                  toast.success(`Copied to ${targets.filter((t) => t.id !== variant.id).length} SKU(s) for ${program.name}. Press Save Commissions.`);
+                                }}
+                              >
+                                {mode === "down" ? "Apply down ↓" : "Copy to all"}
+                              </button>
+                            ))}
+                          </div>
                         </td>
                       </tr>
                     );
