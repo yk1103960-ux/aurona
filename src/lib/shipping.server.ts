@@ -79,17 +79,22 @@ export async function computePackage(lines: CartLine[], defaultWeightG: number) 
   const byKey = new Map<string, Dims>();
   if (skus.length > 0) {
     const [{ data: variants }, { data: parents }] = await Promise.all([
-      supabaseAdmin.from("product_variants").select("sku, weight_g, dim_l, dim_w, dim_h").in("sku", skus),
+      supabaseAdmin
+        .from("product_variants")
+        .select("sku, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h")
+        .in("sku", skus),
       supabaseAdmin.from("products").select("sku, weight_g, dim_l, dim_w, dim_h").in("sku", skus),
     ]);
     for (const p of parents ?? []) if (p.sku) byKey.set(p.sku, p as Dims);
     for (const v of variants ?? []) {
       const prev = byKey.get(v.sku);
+      // Shipping is billed on the packaging, not the bare product.
+      const pos = (n: number | null | undefined) => (n != null && Number(n) > 0 ? Number(n) : null);
       byKey.set(v.sku, {
-        weight_g: v.weight_g ?? prev?.weight_g ?? null,
-        dim_l: v.dim_l ?? prev?.dim_l ?? null,
-        dim_w: v.dim_w ?? prev?.dim_w ?? null,
-        dim_h: v.dim_h ?? prev?.dim_h ?? null,
+        weight_g: pos(v.pack_weight_g) ?? v.weight_g ?? prev?.weight_g ?? null,
+        dim_l: pos(v.pack_l) ?? v.dim_l ?? prev?.dim_l ?? null,
+        dim_w: pos(v.pack_w) ?? v.dim_w ?? prev?.dim_w ?? null,
+        dim_h: pos(v.pack_h) ?? v.dim_h ?? prev?.dim_h ?? null,
       });
     }
   }
