@@ -248,7 +248,7 @@ export function VariantEditor({
 
   const family = q.data?.family;
   const axes = axisRows;
-  axisOrder.keys = [...axes].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((axis) => axis.axis_key);
+  axisOrder.keys = axes.map((axis) => axis.axis_key);
 
   if (q.isLoading) {
     return (
