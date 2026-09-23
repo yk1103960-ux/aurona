@@ -104,19 +104,30 @@ const discountPercent = (mrp: number | null, price: number | null) => {
   return ((m - p) / m) * 100;
 };
 
+/** "Choose Options" order of the product being edited; names follow it exactly. */
+const axisOrder: { keys: string[] } = { keys: [] };
+
 const variantName = (row: Variant) => {
   if (row.attributes?.variant_label) return row.attributes.variant_label;
-  const values = Object.values(row.attributes ?? {}).filter(Boolean);
+  const attrs = row.attributes ?? {};
+  const ordered = axisOrder.keys.filter((key) => attrs[key]).map((key) => attrs[key]);
+  const rest = Object.entries(attrs)
+    .filter(([key, value]) => key !== "variant_label" && !axisOrder.keys.includes(key) && value)
+    .map(([, value]) => value);
+  const values = [...ordered, ...rest];
   return values.length ? values.join(" / ") : row.sku;
 };
 
-const optionToken = (value: string) =>
-  value
+const optionToken = (value: string) => {
+  const pack = value.trim().match(/^pack\s*(?:of)?\s*(\d+)$/i);
+  if (pack) return `P${pack[1]}`;
+  return value
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 24);
+};
 
 export function VariantEditor({
   productSku,
