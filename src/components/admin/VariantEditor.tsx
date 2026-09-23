@@ -2441,11 +2441,17 @@ function ShippingTab({
 }) {
   const scope = DIMENSION_SCOPES.find((entry) => entry.id === initialScope)!;
   const packageLabel = scope.label;
+  const unitFields: Array<{ key: DimensionKey; label: string; placeholder: string }> = [
+    { key: "weight_g", label: "Weight (g)", placeholder: "Weight" },
+    { key: "dim_l", label: "Length (cm)", placeholder: "Length" },
+    { key: "dim_w", label: "Width (cm)", placeholder: "Width" },
+    { key: "dim_h", label: "Height (cm)", placeholder: "Height" },
+  ];
   const fields: Array<{ key: DimensionKey; label: string; placeholder: string }> = [
     { key: scope.fields.weight, label: "Package Weight (g)", placeholder: "Weight" },
-    { key: scope.fields.l, label: "Length (cm)", placeholder: "Length" },
-    { key: scope.fields.w, label: "Width (cm)", placeholder: "Width" },
-    { key: scope.fields.h, label: "Height (cm)", placeholder: "Height" },
+    { key: scope.fields.l, label: "Package Length (cm)", placeholder: "Length" },
+    { key: scope.fields.w, label: "Package Width (cm)", placeholder: "Width" },
+    { key: scope.fields.h, label: "Package Height (cm)", placeholder: "Height" },
   ];
 
   const copyDown = (field: DimensionKey | "pack_size", index: number) => {
@@ -2453,7 +2459,7 @@ function ShippingTab({
     for (const row of rows.slice(index + 1)) {
       updateRow(row.id, { [field]: value } as Partial<Variant>);
     }
-    toast.success("Package value copied to every row below.");
+    toast.success("Measurement copied to every row below.");
   };
 
   if (!rows.length) return <EmptyVariants />;
@@ -2499,6 +2505,40 @@ function ShippingTab({
 
   return (
     <div className="space-y-4">
+      <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope="unit" />
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
+          <h3 className="text-base font-semibold text-slate-950">Single Product Weight & Dimensions</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Enter the weight, length, width and height for one individual product/SKU.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <Th>Variation</Th>
+                <Th>SKU</Th>
+                {unitFields.map((field) => <Th key={field.key}>{field.label}</Th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
+                  <Td><div className="min-w-[210px] break-words font-semibold text-slate-950">{variantName(row)}</div></Td>
+                  <Td><div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-600">{row.sku}</div></Td>
+                  {unitFields.map((field) => inputCell(row, index, field.key, field.label, field.placeholder))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          These measurements belong to one single product, not its outer package.
+        </div>
+      </section>
+
       <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope={initialScope} />
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
