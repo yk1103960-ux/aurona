@@ -3106,7 +3106,7 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
 
 /** Frozen first two columns (Variation + SKU) for wide admin tables. */
 const FREEZE_1 = "sticky left-0 z-20 w-[240px] min-w-[240px] max-w-[240px] bg-white";
-const FREEZE_2 = "sticky left-[240px] z-20 w-[200px] min-w-[200px] max-w-[200px] bg-white border-r border-slate-200 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]";
+const FREEZE_2 = "sticky left-[240px] z-20 w-[220px] min-w-[220px] max-w-[220px] bg-white border-r border-slate-200 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]";
 
 function EmptyVariants() {
   return (
