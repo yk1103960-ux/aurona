@@ -3150,6 +3150,7 @@ export type Database = {
           refund_amount: number
           refund_method: string | null
           refund_reference: string | null
+          restocked_at: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["return_status"]
@@ -3167,6 +3168,7 @@ export type Database = {
           refund_amount?: number
           refund_method?: string | null
           refund_reference?: string | null
+          restocked_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["return_status"]
@@ -3184,6 +3186,7 @@ export type Database = {
           refund_amount?: number
           refund_method?: string | null
           refund_reference?: string | null
+          restocked_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["return_status"]

@@ -104,19 +104,30 @@ const discountPercent = (mrp: number | null, price: number | null) => {
   return ((m - p) / m) * 100;
 };
 
+/** "Choose Options" order of the product being edited; names follow it exactly. */
+const axisOrder: { keys: string[] } = { keys: [] };
+
 const variantName = (row: Variant) => {
   if (row.attributes?.variant_label) return row.attributes.variant_label;
-  const values = Object.values(row.attributes ?? {}).filter(Boolean);
+  const attrs = row.attributes ?? {};
+  const ordered = axisOrder.keys.filter((key) => attrs[key]).map((key) => attrs[key]);
+  const rest = Object.entries(attrs)
+    .filter(([key, value]) => key !== "variant_label" && !axisOrder.keys.includes(key) && value)
+    .map(([, value]) => value);
+  const values = [...ordered, ...rest];
   return values.length ? values.join(" / ") : row.sku;
 };
 
-const optionToken = (value: string) =>
-  value
+const optionToken = (value: string) => {
+  const pack = value.trim().match(/^pack\s*(?:of)?\s*(\d+)$/i);
+  if (pack) return `P${pack[1]}`;
+  return value
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 24);
+};
 
 export function VariantEditor({
   productSku,
@@ -237,6 +248,7 @@ export function VariantEditor({
 
   const family = q.data?.family;
   const axes = axisRows;
+  axisOrder.keys = axes.map((axis) => axis.axis_key);
 
   if (q.isLoading) {
     return (
@@ -2518,16 +2530,16 @@ function ShippingTab({
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                <Th>Variation</Th>
-                <Th>SKU</Th>
+                <Th className={FREEZE_1}>Variation</Th>
+                <Th className={FREEZE_2}>SKU</Th>
                 {unitFields.map((field) => <Th key={field.key}>{field.label}</Th>)}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, index) => (
                 <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
-                  <Td><div className="min-w-[210px] break-words font-semibold text-slate-950">{variantName(row)}</div></Td>
-                  <Td><div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-600">{row.sku}</div></Td>
+                  <Td className={FREEZE_1}><div className="min-w-[210px] break-words font-semibold text-slate-950">{variantName(row)}</div></Td>
+                  <Td className={FREEZE_2}><div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-600">{row.sku}</div></Td>
                   {unitFields.map((field) => inputCell(row, index, field.key, field.label, field.placeholder))}
                 </tr>
               ))}
@@ -2553,8 +2565,8 @@ function ShippingTab({
           <table className="w-full min-w-[1150px] border-collapse text-sm">
             <thead>
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                <Th>Variation</Th>
-                <Th>SKU</Th>
+                <Th className={FREEZE_1}>Variation</Th>
+                <Th className={FREEZE_2}>SKU</Th>
                 <Th>Pack Size</Th>
                 {fields.map((field) => (
                   <Th key={field.key}>{field.label}</Th>
@@ -2565,10 +2577,10 @@ function ShippingTab({
             <tbody>
               {rows.map((row, index) => (
                 <tr key={row.id} className="border-t border-slate-200 align-middle hover:bg-slate-50/70">
-                  <Td>
+                  <Td className={FREEZE_1}>
                     <div className="min-w-[210px] break-words font-semibold text-slate-950">{variantName(row)}</div>
                   </Td>
-                  <Td>
+                  <Td className={FREEZE_2}>
                     <div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-600">{row.sku}</div>
                   </Td>
                   {inputCell(row, index, "pack_size", "Pack Size", "Pack size", true)}
@@ -3088,9 +3100,13 @@ function Th({ children, className, ...props }: React.ThHTMLAttributes<HTMLTableC
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="align-top px-3 py-3">{children}</td>;
+function Td({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <td className={`align-top px-3 py-3 ${className ?? ""}`}>{children}</td>;
 }
+
+/** Frozen first two columns (Variation + SKU) for wide admin tables. */
+const FREEZE_1 = "sticky left-0 z-20 w-[240px] min-w-[240px] max-w-[240px] bg-white";
+const FREEZE_2 = "sticky left-[240px] z-20 w-[220px] min-w-[220px] max-w-[220px] bg-white border-r border-slate-200 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]";
 
 function EmptyVariants() {
   return (
@@ -3267,8 +3283,8 @@ function SegmentPriceTable({
           <table className="w-full min-w-[1000px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <Th>Variation</Th>
-                <Th>SKU</Th>
+                <Th className={FREEZE_1}>Variation</Th>
+                <Th className={FREEZE_2}>SKU</Th>
                 <Th>MRP</Th>
                 <Th>Discount %</Th>
                 <Th>Price</Th>
@@ -3282,12 +3298,12 @@ function SegmentPriceTable({
                 const discount = segmentDiscount(row, segment);
                 return (
                   <tr key={row.id} className="border-t border-slate-200 align-middle transition-colors hover:bg-slate-50/70">
-                    <Td>
+                    <Td className={FREEZE_1}>
                       <div className="min-w-[210px] max-w-[280px]">
                         <VariantIdentity row={row} />
                       </div>
                     </Td>
-                    <Td>
+                    <Td className={FREEZE_2}>
                       <div className="min-w-[180px] max-w-[250px] break-all font-mono text-xs font-medium text-slate-700">
                         {row.sku}
                       </div>

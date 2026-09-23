@@ -530,6 +530,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                     ["Body type", specValue(specEntries, "Body type")],
                     ["Warranty", family.warranty],
                     ["Material", specValue(specEntries, "Material")],
+                    ["Refundable", family.refundable === false ? "No" : "Yes"],
                     ["Country of origin", "India"],
                   ] as Array<readonly [string, string | null | undefined]>,
                   specEntries,
@@ -571,12 +572,15 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             </div>
           </TabsContent>
           <TabsContent value="ship" className="pt-6 text-sm text-muted-foreground">
-            PAN India delivery in 3–7 business days. Free shipping on orders over ₹999.
+            {family.estimated_shipping_days != null && family.estimated_shipping_days > 0
+              ? `PAN India delivery in ${family.estimated_shipping_days} business day${family.estimated_shipping_days === 1 ? "" : "s"}.`
+              : "PAN India delivery. Delivery time is confirmed at checkout."}{" "}
+            Free shipping on orders over ₹999.
           </TabsContent>
         </Tabs>
       </div>
 
-      <div className="mt-20">
+      {related.length > 0 && <div className="mt-20">
         <div className="mb-8 flex items-end justify-between">
           <div>
             <div className="text-eyebrow">Frequently bought together</div>
@@ -592,7 +596,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </Link>
         </div>
         <RelatedRail products={related} iconFor={(p) => cats.find((c) => c.id === p.category_id)?.icon} />
-      </div>
+      </div>}
     </div>
   );
 }
