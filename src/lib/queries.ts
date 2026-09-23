@@ -446,6 +446,9 @@ export type ProductFamily = {
   warranty: string | null;
   material: string | null;
   body_type: string | null;
+  refundable?: boolean | null;
+  refund_note?: string | null;
+  estimated_shipping_days?: number | null;
   features: string[] | null;
   specifications: Record<string, string> | null;
   weight_g?: number | null;
@@ -547,9 +550,14 @@ export const relatedFamilyProductsQuery = ({
 
       if (relation.error) throw relation.error;
 
-      const selectedIds = (relation.data ?? [])
-        .map((row) => row.related_family_id as string | null)
-        .filter((id): id is string => Boolean(id));
+      // Only admin-selected products: unique, never the current product.
+      const selectedIds = [
+        ...new Set(
+          (relation.data ?? [])
+            .map((row) => row.related_family_id as string | null)
+            .filter((id): id is string => Boolean(id) && id !== familyId),
+        ),
+      ];
 
       let q = supabase
         .from("product_families")
@@ -557,13 +565,9 @@ export const relatedFamilyProductsQuery = ({
         .eq("is_published", true)
         .is("archived_at", null);
 
-      if (selectedIds.length > 0) {
-        q = q.in("id", selectedIds);
-      } else if (categoryId) {
-        q = q.eq("category_id", categoryId).neq("id", familyId).order("is_bestseller", { ascending: false }).limit(limit);
-      } else {
-        return [];
-      }
+      if (selectedIds.length === 0) return [];
+      void categoryId;
+      q = q.in("id", selectedIds);
 
       const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
