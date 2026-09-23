@@ -1615,11 +1615,12 @@ function GroupCommissionPanel({
   const [drafts, setDrafts] = useState<Record<string, { kind: CommissionKind; value: string; cap: string }>>({});
 
   useEffect(() => {
-    if (!axis && axes.length > 0) setAxis(axes[0]);
+    if (!axis) setAxis(axes[0] ?? "__all");
   }, [axes, axis]);
 
   const groups = useMemo(() => {
     if (!axis) return [] as { value: string; variantIds: string[] }[];
+    if (axis === "__all") return [{ value: "All Variants", variantIds: variants.map((variant) => variant.id) }];
     const map = new Map<string, string[]>();
     for (const variant of variants) {
       const value = variant.attributes[axis];
@@ -1660,15 +1661,16 @@ function GroupCommissionPanel({
     });
   };
 
-  if (axes.length === 0) {
+  if (variants.length === 0) {
     return null;
   }
+  const axisLabel = axis === "__all" ? "All Variants" : axis;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-base font-semibold text-slate-900">Set commission by {axis || "option"}</div>
+          <div className="text-base font-semibold text-slate-900">Set commission by {axisLabel || "option"}</div>
           <p className="mt-1 max-w-3xl text-xs text-slate-500">
             Apply one commission to every SKU sharing the same {axis || "option"} value. If this product has no
             Wattage, choose Size, Model, Colour, Pack Size or any other product option instead.
@@ -1699,6 +1701,7 @@ function GroupCommissionPanel({
               value={axis}
               onChange={(event) => setAxis(event.target.value)}
             >
+              <option value="__all">All Variants</option>
               {axes.map((key) => (
                 <option key={key} value={key}>
                   {key}
@@ -1713,7 +1716,7 @@ function GroupCommissionPanel({
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-slate-50">
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="p-3 font-semibold">{axis}</th>
+              <th className="p-3 font-semibold">{axisLabel}</th>
               <th className="p-3 font-semibold">Type</th>
               <th className="p-3 font-semibold">Value</th>
               <th className="p-3 font-semibold">Max commission</th>
