@@ -151,7 +151,11 @@ export const productsQuery = (filter?: {
       const cols = sel(
         "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, wattage, size, categories(slug, name, icon)",
       );
-      let q = supabase.from("products").select(cols);
+      let q = supabase
+        .from("products")
+        .select(cols)
+        .eq("is_published", true)
+        .is("archived_at", null);
       if (filter?.categorySlug) {
         const { data: cat } = await supabase
           .from("categories")
@@ -295,7 +299,11 @@ export const productsPageQuery = (filter: ProductsPageFilter) =>
       // Families whose SKUs have no published price yet (e.g. GORDEN outdoor,
       // Madhani, TF-CL Classic) must still be listed — the card renders
       // "Price on request" instead of hiding a real, published product.
-      let q = supabase.from("product_families").select(cols, { count: "exact" });
+      let q = supabase
+        .from("product_families")
+        .select(cols, { count: "exact" })
+        .eq("is_published", true)
+        .is("archived_at", null);
       if (categoryIds && categoryIds.length > 0) q = q.in("category_id", categoryIds);
       if (term) {
         const like = `%${term.replace(/[%,()]/g, " ")}%`;
@@ -367,6 +375,8 @@ export const productQuery = (slug: string) =>
         .from("products")
         .select("*, categories(slug, name, icon)")
         .eq("slug", slug)
+        .eq("is_published", true)
+        .is("archived_at", null)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
@@ -486,6 +496,8 @@ export const familyQuery = (slug: string, segment: VariantSegment = "customer") 
           `*, categories(slug, name, icon), variants:public_product_variants(${VARIANT_COLS}), axes:product_variant_axes(axis_key, label, values, sort_order)`,
         )
         .eq("slug", slug)
+        .eq("is_published", true)
+        .is("archived_at", null)
         .eq("variants.is_active", true)
         .maybeSingle();
       if (error) throw error;
@@ -674,6 +686,8 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         .from("product_families")
         .select("id, slug, main_sku, name, image_seed, min_price, min_mrp")
         .eq("category_id", cat.id)
+        .eq("is_published", true)
+        .is("archived_at", null)
         .order("name")
         .limit(24);
       const famRows = (fams ?? []) as {
@@ -777,6 +791,8 @@ export const searchSuggestQuery = (term: string) =>
           .from("product_families")
           .select(cols)
           .or(`name.ilike.${like},main_sku.ilike.${like}`)
+          .eq("is_published", true)
+          .is("archived_at", null)
           .order("is_bestseller", { ascending: false })
           .limit(8),
         supabase.from("categories").select("id, name").ilike("name", like).limit(3),
@@ -789,6 +805,8 @@ export const searchSuggestQuery = (term: string) =>
           .from("product_families")
           .select(cols)
           .in("category_id", catIds)
+          .eq("is_published", true)
+          .is("archived_at", null)
           .order("is_bestseller", { ascending: false })
           .limit(8 - rows.length);
         for (const r of (data ?? []) as Row[]) {
