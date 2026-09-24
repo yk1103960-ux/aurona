@@ -32,8 +32,10 @@ import {
   adminAdjustInventory,
   adminBulkProductFamilyAction,
   adminDeleteProductFamilyPermanent,
+  adminDeleteProductVariantPermanent,
   adminListProductMaster,
   adminSaveProductMasterRows,
+  adminSetProductVariantState,
 } from "@/lib/catalog-admin.functions";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/master")({
@@ -74,6 +76,7 @@ type Variant = {
   distributor_pack_w: number | null;
   distributor_pack_h: number | null;
   is_active: boolean;
+  archived_at: string | null;
   low_stock_threshold: number;
   sort_order: number;
   updated_at: string;
@@ -117,6 +120,10 @@ type Family = {
   archived_at: string | null;
   updated_at: string;
   total_stock: number;
+  min_price: number | null;
+  max_price: number | null;
+  min_mrp: number | null;
+  max_mrp: number | null;
   categories: { id: string; name: string } | { id: string; name: string }[] | null;
   variants: Variant[];
   axes: Axis[];
@@ -197,7 +204,7 @@ const BASE_COLUMNS: Column[] = [
   { key: "distributor_pack_w", label: "Distributor Pack W cm", width: 150 },
   { key: "distributor_pack_h", label: "Distributor Pack H cm", width: 150 },
   { key: "status", label: "Status", width: 105 },
-  { key: "actions", label: "Actions", width: 150 },
+  { key: "actions", label: "Actions", width: 220 },
 ];
 
 const PRESETS: Record<Preset, string[]> = {
@@ -298,6 +305,12 @@ const discount = (mrp: number | null, price: number | null) => {
   const base = Number(mrp ?? 0);
   const current = Number(price ?? 0);
   return base > 0 && current < base ? ((base - current) / base) * 100 : 0;
+};
+
+const moneyRange = (minimum: number | null, maximum: number | null) => {
+  if (minimum == null && maximum == null) return "—";
+  if (minimum == null || maximum == null || Number(minimum) === Number(maximum)) return money(minimum ?? maximum);
+  return `${money(minimum)} – ${money(maximum)}`;
 };
 
 function ProductMaster() {
@@ -711,6 +724,42 @@ function ProductMaster() {
     }
   };
 
+  const setVariantState = async (variant: Variant, action: "archive" | "restore") => {
+    if (
+      action === "archive" &&
+      !window.confirm(`Archive SKU ${variant.sku}? Its data will be kept and it can be restored.`)
+    ) return;
+    try {
+      await adminSetProductVariantState({ data: { variantId: variant.id, action } });
+      toast.success(`${variant.sku} ${action === "archive" ? "archived" : "restored"}`);
+      await q.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Could not ${action} variant`);
+    }
+  };
+
+  const deleteVariantPermanently = async (variant: Variant) => {
+    if (!variant.archived_at) {
+      toast.error("Archive this SKU before deleting it permanently.");
+      return;
+    }
+    if (!window.confirm(
+      `Permanently delete SKU ${variant.sku}?\n\nThis cannot be undone. The product and sibling SKUs will remain unchanged.`,
+    )) return;
+    try {
+      await adminDeleteProductVariantPermanent({ data: { variantId: variant.id } });
+      toast.success(`${variant.sku} permanently deleted`);
+      setSelected((current) => {
+        const next = new Set(current);
+        next.delete(variant.id);
+        return next;
+      });
+      await q.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not permanently delete variant");
+    }
+  };
+
   const exportView = () => {
     const rows = shownFamilies.flatMap((family) =>
       family.variants.map((variant) => {
@@ -985,7 +1034,12 @@ function ProductMaster() {
         </div>
       )}
 
-      <div className="max-h-[calc(100vh-270px)] overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div
+        className="scrollbar-visible max-h-[calc(100vh-270px)] overflow-auto overscroll-contain rounded-xl border border-slate-200 bg-white shadow-sm"
+        tabIndex={0}
+        role="region"
+        aria-label="Product Master table. Scroll horizontally and vertically to view all columns and rows."
+      >
         <table className="w-max min-w-full border-collapse text-xs">
           <colgroup>
             {columns.map((column) => (
@@ -1069,6 +1123,8 @@ function ProductMaster() {
                   }}
                   onState={(action) => setFamilyState(family, action)}
                   onDeletePermanent={() => deleteFamilyPermanently(family)}
+                  onVariantState={setVariantState}
+                  onVariantDeletePermanent={deleteVariantPermanently}
                 />
               );
             })}
@@ -1221,6 +1277,8 @@ function FamilyRows({
   onAdjust,
   onState,
   onDeletePermanent,
+  onVariantState,
+  onVariantDeletePermanent,
 }: {
   family: Family;
   open: boolean;
@@ -1237,6 +1295,8 @@ function FamilyRows({
   onAdjust: (row: Variant) => void;
   onState: (action: "publish" | "unpublish" | "archive" | "restore") => void;
   onDeletePermanent: () => void;
+  onVariantState: (variant: Variant, action: "archive" | "restore") => void;
+  onVariantDeletePermanent: (variant: Variant) => void;
 }) {
   return (
     <>
@@ -1280,6 +1340,16 @@ function FamilyRows({
               />
             ) : column.key === "stock" ? (
               <strong>{family.total_stock}</strong>
+            ) : column.key === "sku" ? (
+              <span className="font-mono text-xs">{family.main_sku}</span>
+            ) : column.key === "mrp" ? (
+              <span className="text-xs font-semibold">{moneyRange(family.min_mrp, family.max_mrp)}</span>
+            ) : column.key === "price" ? (
+              <span className="text-xs font-semibold">{moneyRange(family.min_price, family.max_price)}</span>
+            ) : ["discount", "retailer_price", "retailer_margin", "distributor_price", "distributor_margin", "pack_size", "moq", "retailer_moq", "distributor_moq"].includes(column.key) ? (
+              <button type="button" className="text-[11px] font-medium text-sky-700 hover:underline" onClick={onToggle}>
+                {open ? "Variant rows below" : "Expand variants"}
+              </button>
             ) : column.key === "actions" ? (
               <div className="flex gap-1">
                 <Button size="icon" variant="ghost" asChild aria-label="Edit product details">
@@ -1374,6 +1444,8 @@ function FamilyRows({
                   revertCell={revertCell}
                   onSave={() => onSave(row.id)}
                   onAdjust={() => onAdjust(row)}
+                  onVariantState={(action) => onVariantState(source, action)}
+                  onVariantDeletePermanent={() => onVariantDeletePermanent(source)}
                 />
               ))}
             </tr>
@@ -1394,6 +1466,8 @@ function MasterCell({
   revertCell,
   onSave,
   onAdjust,
+  onVariantState,
+  onVariantDeletePermanent,
 }: {
   column: Column;
   family: Family;
@@ -1405,6 +1479,8 @@ function MasterCell({
   revertCell: (id: string, key: EditableKey) => void;
   onSave: () => void;
   onAdjust: () => void;
+  onVariantState: (action: "archive" | "restore") => void;
+  onVariantDeletePermanent: () => void;
 }) {
   const common = `${column.key === "family" ? "sticky left-10 z-10 bg-inherit" : ""} border-r p-1.5 align-middle`;
   if (column.key === "image")
@@ -1457,8 +1533,11 @@ function MasterCell({
   if (column.key === "status")
     return (
       <td className={common}>
-        <button type="button" onClick={() => change(source, "is_active", !row.is_active)}>
-          <StatusBadge active={row.is_active} label={row.is_active ? "Active" : "Inactive"} />
+        <button type="button" onClick={() => change(source, "is_active", !row.is_active)} disabled={Boolean(row.archived_at)}>
+          <StatusBadge
+            active={row.is_active && !row.archived_at}
+            label={row.archived_at ? "Archived" : row.is_active ? "Active" : "Inactive"}
+          />
         </button>
       </td>
     );
@@ -1496,6 +1575,20 @@ function MasterCell({
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>
+          {row.archived_at ? (
+            <>
+              <Button size="icon" variant="success" aria-label="Restore SKU" title="Restore SKU" onClick={() => onVariantState("restore")}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="destructive" aria-label="Delete SKU permanently" title="Delete SKU permanently" onClick={onVariantDeletePermanent}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <Button size="icon" variant="ghost" aria-label="Archive SKU" title="Archive SKU" onClick={() => onVariantState("archive")}>
+              <Archive className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </td>
     );
