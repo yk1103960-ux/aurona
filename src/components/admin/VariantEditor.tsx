@@ -2145,8 +2145,15 @@ function BulkPriceByOption({
         </label>
       </div>
 
-      <div>
-        <table className="w-full min-w-[1100px] border-collapse text-sm">
+      <div className="w-full min-w-0">
+        <table className="w-full table-fixed border-collapse text-sm">
+          <colgroup>
+            <col className="w-[16%]" />
+            {fields.map((field) => (
+              <col key={field.key} className="w-[12%]" />
+            ))}
+            <col className="w-[24%]" />
+          </colgroup>
           <thead className="sticky top-0 z-30 bg-white shadow-sm">
             <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
               <Th>{optionLabel(activeKey)}</Th>
@@ -2173,7 +2180,7 @@ function BulkPriceByOption({
                         type="number"
                         min="0"
                         step={field.key === "stock" ? "1" : "0.01"}
-                        className="h-10 min-w-[115px]"
+                        className="h-10 w-full min-w-0 px-2"
                         inputMode={field.key === "stock" ? "numeric" : "decimal"}
                         placeholder={field.placeholder}
                         value={drafts[group]?.[field.key] ?? ""}
@@ -2182,7 +2189,12 @@ function BulkPriceByOption({
                     </Td>
                   ))}
                   <Td>
-                    <Button type="button" size="sm" onClick={() => applyGroup(group)}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-auto min-h-9 w-full whitespace-normal px-2 py-2 text-center leading-tight"
+                      onClick={() => applyGroup(group)}
+                    >
                       Apply to {group}
                     </Button>
                   </Td>
