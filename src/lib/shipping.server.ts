@@ -215,7 +215,7 @@ export async function quoteShippingForCart(opts: {
     };
   }
 
-  const cacheKey = `${pincode}|${pkg.weightKg}|${opts.cod ? 1 : 0}|${Math.round(opts.subtotal)}`;
+  const cacheKey = `${pincode}|${pkg.weightKg}|${pkg.dims.length}x${pkg.dims.breadth}x${pkg.dims.height}|${opts.cod ? 1 : 0}|${Math.round(opts.subtotal)}`;
   const hit = quoteCache.get(cacheKey);
   if (hit && Date.now() - hit.at < 5 * 60 * 1000) return hit.quote;
 
