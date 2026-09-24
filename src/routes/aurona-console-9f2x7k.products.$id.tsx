@@ -915,7 +915,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               priceSegment="retailer"
               workflowSegment="retailer"
               title="Price & Stock for Retailer"
-              text="Step 1: Create Product Variations. Step 2: Retailer Price & Stock. Step 3: Retailer Weight & Dimensions. Variations and SKUs stay shared with customer and distributor."
+              text="Use the existing shared SKU combinations to set independent Retailer pricing and Retailer package dimensions. Create or change shared variations only in Price & Stock for Customers."
             />
           )}
 
@@ -930,7 +930,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               priceSegment="distributor"
               workflowSegment="distributor"
               title="Price & Stock for Distributor"
-              text="Step 1: Create Product Variations. Step 2: Distributor Price & Stock. Step 3: Distributor Weight & Dimensions. Variations and SKUs stay shared with customer and retailer."
+              text="Use the existing shared SKU combinations to set independent Distributor pricing and Distributor package dimensions. Create or change shared variations only in Price & Stock for Customers."
             />
           )}
 
@@ -1471,7 +1471,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
               toast.success(`Applied to ${count} row${count === 1 ? "" : "s"}. Now press Save Commissions.`);
             }}
           />
-          <div className="rounded-xl border border-slate-200">
+          <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Commission table">
 
             <table className="w-full min-w-[1180px] text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50">
@@ -1514,7 +1514,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                               {variant.variation}
                             </div>
                           ) : (
-                            <span className="text-slate-300">↳</span>
+                            <span className="text-xs text-slate-400">Same variant</span>
                           )}
                         </td>
 
@@ -1522,7 +1522,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                           {programIndex === 0 ? (
                             <span className="break-all font-mono text-xs text-slate-700">{variant.sku}</span>
                           ) : (
-                            <span className="text-slate-300">—</span>
+                            <span className="text-xs text-slate-400">Same SKU</span>
                           )}
                         </td>
 
@@ -1788,7 +1788,7 @@ function GroupCommissionPanel({
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white">
+      <div className="scrollbar-visible mt-4 max-h-[70vh] overflow-auto overscroll-contain rounded-lg border border-slate-200 bg-white" tabIndex={0} role="region" aria-label="Bulk commission table">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm">
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
