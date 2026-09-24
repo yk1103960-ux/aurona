@@ -199,6 +199,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const specEntries = Object.entries((family.specifications ?? {}) as Record<string, string>).filter(
     ([k, v]) => Boolean(k) && Boolean(v),
   ) as Array<readonly [string, string]>;
+  const wattOption = selectedAttribute(family, variant, /(^|\s)watt(?:age)?(\s|$)/i);
+  const outputColourOption = selectedAttribute(family, variant, /output\s+colou?r/i);
+  const countryOfOrigin = specValue(specEntries, "Country of origin");
 
   const descriptionRows = useMemo(() => {
     if (!family.description) return [];
@@ -509,32 +512,25 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           <TabsContent value="specs" className="pt-6">
             <div className="max-w-2xl">
               <LinedRows
-                items={mergeSpecRows(
-                  [
-                    ["Brand", family.brand],
-                    ["Category", cat?.name],
-                    ["Main SKU", family.main_sku],
-                    ["Selected SKU", variant.sku],
-                    ...Object.entries(variant.attributes)
-                      .filter(([k, v]) => k !== "variant_label" && Boolean(v))
-                      .map(
-                        ([k, v]) =>
-                          [family.axes.find((axis) => axis.axis_key === k)?.label ?? k.replace(/_/g, " "), v] as const,
-                      ),
-                    ["MOQ", variant.moq ? String(variant.moq) : null],
-                    ["Pack size", variant.pack_size ? String(variant.pack_size) : null],
-                    ["Weight", weightText],
-                    ["Dimensions (LxWxH)", dimsText],
-                    ["Package weight", packWeightText],
-                    ["Package dimensions", packDimsText],
-                    ["Body type", specValue(specEntries, "Body type")],
-                    ["Warranty", family.warranty],
-                    ["Material", specValue(specEntries, "Material")],
-                    ["Refundable", family.refundable === false ? "No" : "Yes"],
-                    ["Country of origin", "India"],
-                  ] as Array<readonly [string, string | null | undefined]>,
-                  specEntries,
-                )}
+                items={([
+                  ["Brand", family.brand],
+                  ["Category", cat?.name],
+                  ["Main SKU", family.main_sku],
+                  ["Selected SKU", variant.sku],
+                  ["Watt Option", wattOption],
+                  ["Output Colour Option", outputColourOption],
+                  ["MOQ", variant.moq != null ? String(variant.moq) : null],
+                  ["Item Weight", weightText],
+                  ["Item Dimensions", dimsText],
+                  ["Pack Size", variant.pack_size != null ? String(variant.pack_size) : null],
+                  ["Package Weight", packWeightText],
+                  ["Package Dimensions", packDimsText],
+                  ["Warranty", family.warranty],
+                  ["Refundable", family.refundable == null ? null : family.refundable ? "Yes" : "No"],
+                  ["Country of Origin", countryOfOrigin],
+                ] as Array<readonly [string, string | null | undefined]>)
+                  .filter((row): row is readonly [string, string] => Boolean(row[1]))
+                  .map(([label, value]) => ({ label, value }))}
               />
             </div>
           </TabsContent>
@@ -842,6 +838,17 @@ function specValue(entries: Array<readonly [string, string]>, label: string): st
   const key = label.trim().toLowerCase();
   const hit = entries.find(([k]) => k.trim().toLowerCase() === key);
   return hit ? hit[1] : null;
+}
+
+function selectedAttribute(
+  family: ProductFamily,
+  variant: ProductFamily["variants"][number],
+  labelPattern: RegExp,
+): string | null {
+  const axis = family.axes.find(
+    (item) => labelPattern.test(item.label.replaceAll("_", " ")) || labelPattern.test(item.axis_key.replaceAll("_", " ")),
+  );
+  return axis ? variant.attributes?.[axis.axis_key] ?? null : null;
 }
 
 /**
