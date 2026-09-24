@@ -896,7 +896,7 @@ function QuickVariantsTab({
       {rows.length === 0 ? (
         <EmptyVariants />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="rounded-xl border border-slate-200">
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -1969,7 +1969,7 @@ const clampPct = (value: number) => Math.min(100, Math.max(0, value));
 function segmentDiscount(row: Variant, segment: PriceSegment): number {
   if (segment === "customer") return Number(row.discount_pct ?? 0);
   const { mrpKey, priceKey } = SEGMENT_PRICE_FIELDS[segment];
-  const mrp = Number((row[mrpKey] as number | null) ?? row.mrp ?? 0);
+  const mrp = Number((row[mrpKey] as number | null) ?? 0);
   const price = Number((row[priceKey] as number | null) ?? 0);
   if (!mrp || !price || price > mrp) return 0;
   return Number(clampPct(((mrp - price) / mrp) * 100).toFixed(2));
@@ -2147,7 +2147,7 @@ function BulkPriceByOption({
         </label>
       </div>
 
-      <div className="overflow-x-auto">
+      <div>
         <table className="w-full min-w-[1100px] border-collapse text-sm">
           <thead className="sticky top-0 z-30 bg-white shadow-sm">
             <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
@@ -2519,14 +2519,14 @@ function ShippingTab({
     <div className="space-y-4">
       <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope="unit" />
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <section className="rounded-xl border border-slate-200 bg-white">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
           <h3 className="text-base font-semibold text-slate-950">Single Product Weight & Dimensions</h3>
           <p className="mt-1 text-xs text-slate-500">
             Enter the weight, length, width and height for one individual product/SKU.
           </p>
         </div>
-        <div className="overflow-x-auto">
+        <div>
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -2553,7 +2553,7 @@ function ShippingTab({
 
       <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope={initialScope} />
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <section className="rounded-xl border border-slate-200 bg-white">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
           <h3 className="text-base font-semibold text-slate-950">{packageLabel} Packing Table</h3>
           <p className="mt-1 text-xs text-slate-500">
@@ -2561,7 +2561,7 @@ function ShippingTab({
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div>
           <table className="w-full min-w-[1150px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -3157,7 +3157,7 @@ function SegmentToggles({
 
 /**
  * Retailer / distributor price table. Independent MRP and selling price per
- * account type; blank means that account type falls back to the customer value.
+ * account type. Blank private-channel prices remain unset and never inherit customer pricing.
  * Stock is shared and shown read-only here.
  */
 function SegmentPriceTable({
@@ -3175,8 +3175,7 @@ function SegmentPriceTable({
 }) {
   const { label, mrpKey, priceKey } = SEGMENT_PRICE_FIELDS[segment];
 
-  const effectiveMrp = (row: Variant) =>
-    Number((row[mrpKey] as number | null) ?? (segment === "customer" ? 0 : row.mrp ?? 0));
+  const effectiveMrp = (row: Variant) => Number((row[mrpKey] as number | null) ?? 0);
 
   const changeMrp = (row: Variant, raw: string) => {
     if (raw === "") {
@@ -3260,7 +3259,7 @@ function SegmentPriceTable({
           <p className="mt-1 text-xs text-slate-500">
             {segment === "customer"
               ? "Prices shown on the public website. Retailer and distributor pricing is never changed from here."
-              : `Only approved ${label.toLowerCase()} accounts see these prices. Leave a field blank to keep using the customer value for that variation. Customer pricing is never changed from here.`}{" "}
+              : `Only approved ${label.toLowerCase()} accounts see these prices. These values are independent from customer pricing; a blank field remains unset. Customer pricing is never changed from here.`}{" "}
             Weight and dimensions are managed in the Weight &amp; Dimensions tab, and commission in the Commission
             section.
           </p>
@@ -3269,7 +3268,7 @@ function SegmentPriceTable({
         <BulkPriceByOption rows={rows} updateRow={updateRow} segment={segment} />
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <section className="rounded-xl border border-slate-200 bg-white">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-slate-950">{label} Product Variations</h3>
@@ -3279,7 +3278,7 @@ function SegmentPriceTable({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div>
           <table className="w-full min-w-[1000px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -3316,7 +3315,7 @@ function SegmentPriceTable({
                           step="0.01"
                           inputMode="decimal"
                           value={(row[mrpKey] as number | null) ?? ""}
-                          placeholder={segment === "customer" ? "MRP" : String(row.mrp ?? "MRP")}
+                          placeholder={`${label} MRP`}
                           onChange={(event) => changeMrp(row, event.target.value)}
                           className="h-9 min-w-[110px]"
                         />
@@ -3354,8 +3353,7 @@ function SegmentPriceTable({
                             copyDown(index, (source, target) => {
                               const pct = segmentDiscount(source, segment);
                               const mrp = Number(
-                                (target[mrpKey] as number | null) ??
-                                  (segment === "customer" ? 0 : target.mrp ?? 0),
+                                (target[mrpKey] as number | null) ?? 0,
                               );
                               const patch: Record<string, unknown> = {};
                               if (segment === "customer") patch.discount_pct = pct;
@@ -3374,7 +3372,7 @@ function SegmentPriceTable({
                           step="0.01"
                           inputMode="decimal"
                           value={(row[priceKey] as number | null) ?? ""}
-                          placeholder={segment === "customer" ? "Price" : String(row.price ?? "Price")}
+                          placeholder={`${label} Price`}
                           onChange={(event) => changePrice(row, event.target.value)}
                           className="h-9 min-w-[110px]"
                         />
@@ -3432,7 +3430,7 @@ function SegmentPriceTable({
 
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
           Stock belongs to the SKU and is shared by customer, retailer and distributor accounts.
-          {segment === "customer" ? "" : " Blank price or MRP keeps the customer value for that variation."}
+          {segment === "customer" ? "" : " Blank private-channel price or MRP remains unset and does not inherit customer pricing."}
         </div>
       </section>
     </div>
