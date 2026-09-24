@@ -2071,9 +2071,7 @@ function BulkPriceByOption({
 
       for (const row of matching) {
         const patch: Record<string, unknown> = {};
-        const currentMrp = Number(
-          (row[mrpKey] as number | null) ?? (segment === "customer" ? 0 : row.mrp ?? 0),
-        );
+        const currentMrp = Number((row[mrpKey] as number | null) ?? 0);
         const baseMrp = mrp ?? currentMrp;
 
         if (mrp !== null) patch[mrpKey] = mrp;
