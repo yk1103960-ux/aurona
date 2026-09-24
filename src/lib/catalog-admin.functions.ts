@@ -309,7 +309,7 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     let query = (supabaseAdmin as any)
       .from("product_families")
       .select(
-        "id, legacy_product_id, name, main_sku, slug, brand, category_id, model, wattage, color_temp, size, body_type, is_published, is_featured, is_bestseller, archived_at, updated_at, total_stock, categories(id,name)",
+        "id, legacy_product_id, name, main_sku, slug, brand, category_id, model, wattage, color_temp, size, body_type, min_price, max_price, min_mrp, max_mrp, is_published, is_featured, is_bestseller, archived_at, updated_at, total_stock, categories(id,name)",
         { count: "exact" },
       );
     if (matchedIds) query = query.in("id", matchedIds);
@@ -346,20 +346,18 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     if (!familyIds.length) return { families: [], count: count ?? 0 };
 
     const variantColumns =
-      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, low_stock_threshold, sort_order, updated_at";
+      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, archived_at, low_stock_threshold, sort_order, updated_at";
     const legacyVariantColumns = variantColumns.replace("barcode, ", "");
     let variants = await (supabaseAdmin as any)
       .from("product_variants")
       .select(variantColumns)
       .in("family_id", familyIds)
-      .is("archived_at", null)
       .order("sort_order");
     if (variants.error && /barcode|schema cache|does not exist/i.test(variants.error.message)) {
       variants = await (supabaseAdmin as any)
         .from("product_variants")
         .select(legacyVariantColumns)
         .in("family_id", familyIds)
-        .is("archived_at", null)
         .order("sort_order");
     }
     if (variants.error) throw new Error(variants.error.message);
@@ -499,6 +497,52 @@ export const adminDeleteProductFamilyPermanent = createServerFn({ method: "POST"
       action: "catalog.family_delete_permanent",
       entityType: "product_family",
       entityId: data.familyId,
+      after: result,
+    });
+    return { ok: true };
+  });
+
+export const adminSetProductVariantState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ variantId: z.string().uuid(), action: z.enum(["archive", "restore"]) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const actor = await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await (supabaseAdmin as any).rpc(
+      "admin_set_product_variant_state",
+      { _variant_id: data.variantId, _action: data.action },
+    );
+    if (error) throw new Error(error.message);
+    await writeAudit({
+      actorUserId: actor.userId,
+      actorEmail: actor.email,
+      action: `catalog.variant_${data.action}`,
+      entityType: "product_variant",
+      entityId: data.variantId,
+      after: result,
+    });
+    return { ok: true };
+  });
+
+export const adminDeleteProductVariantPermanent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ variantId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const actor = await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await (supabaseAdmin as any).rpc(
+      "admin_delete_product_variant_permanent",
+      { _variant_id: data.variantId },
+    );
+    if (error) throw new Error(error.message);
+    await writeAudit({
+      actorUserId: actor.userId,
+      actorEmail: actor.email,
+      action: "catalog.variant_delete_permanent",
+      entityType: "product_variant",
+      entityId: data.variantId,
       after: result,
     });
     return { ok: true };
