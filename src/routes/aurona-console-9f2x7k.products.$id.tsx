@@ -1149,6 +1149,12 @@ type CommissionVariant = {
   attributes: Record<string, string>;
 };
 
+type CommissionAxis = {
+  axis_key: string;
+  label: string;
+  sort_order: number;
+};
+
 type CommissionProgram = {
   id: string;
   name: string;
@@ -1251,9 +1257,19 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
         existing = existingResult.data ?? [];
       }
 
+      const axes: CommissionAxis[] = (matrix.axes ?? [])
+        .map((axis: any) => ({
+          axis_key: String(axis.axis_key ?? ""),
+          label: String(axis.label ?? axis.axis_key ?? "Option"),
+          sort_order: Number(axis.sort_order ?? 0),
+        }))
+        .filter((axis) => axis.axis_key)
+        .sort((a, b) => a.sort_order - b.sort_order);
+
       return {
         family: matrix.family,
         variants,
+        axes,
         programs,
         existing,
       };
@@ -1404,6 +1420,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
   }
 
   const variants = q.data?.variants ?? [];
+  const axes = q.data?.axes ?? [];
   const programs = q.data?.programs ?? [];
 
   return (
@@ -1439,6 +1456,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           <GroupCommissionPanel
             programs={programs}
             variants={variants}
+            productAxes={axes}
             onApply={(programId, variantIds, patch) => {
               const allowed = new Set(variantIds);
               let count = 0;
@@ -1622,28 +1640,37 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
 function GroupCommissionPanel({
   programs,
   variants,
+  productAxes,
   onApply,
 }: {
   programs: CommissionProgram[];
   variants: CommissionVariant[];
+  productAxes: CommissionAxis[];
   onApply: (programId: string, variantIds: string[], patch: Partial<CommissionRule>) => void;
 }) {
   const axes = useMemo(() => {
-    const keys: string[] = [];
+    const configured = productAxes
+      .filter((axis) => variants.some((variant) => Boolean(variant.attributes[axis.axis_key])))
+      .map((axis) => ({ key: axis.axis_key, label: axis.label }));
+    const configuredKeys = new Set(configured.map((axis) => axis.key));
+    const discovered: Array<{ key: string; label: string }> = [];
     for (const variant of variants) {
       for (const key of Object.keys(variant.attributes)) {
-        if (!keys.includes(key)) keys.push(key);
+        if (!configuredKeys.has(key) && !discovered.some((axis) => axis.key === key)) {
+          discovered.push({ key, label: key.replaceAll("_", " ") });
+        }
       }
     }
-    return keys;
-  }, [variants]);
+    return [...configured, ...discovered];
+  }, [productAxes, variants]);
 
   const [programId, setProgramId] = useState("__all");
   const [axis, setAxis] = useState("");
   const [drafts, setDrafts] = useState<Record<string, { kind: CommissionKind; value: string; cap: string }>>({});
 
   useEffect(() => {
-    if (!axis) setAxis(axes[0] ?? "__all");
+    if (!axis) setAxis("__all");
+    if (axis !== "__all" && !axes.some((item) => item.key === axis)) setAxis("__all");
   }, [axes, axis]);
 
   const groups = useMemo(() => {
@@ -1692,7 +1719,8 @@ function GroupCommissionPanel({
   if (variants.length === 0) {
     return null;
   }
-  const axisLabel = axis === "__all" ? "All Variants" : axis;
+  const axisLabel =
+    axis === "__all" ? "All Variants" : axes.find((item) => item.key === axis)?.label ?? axis;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -1730,9 +1758,9 @@ function GroupCommissionPanel({
               onChange={(event) => setAxis(event.target.value)}
             >
               <option value="__all">All Variants</option>
-              {axes.map((key) => (
-                <option key={key} value={key}>
-                  {key}
+              {axes.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
                 </option>
               ))}
             </select>
@@ -1742,7 +1770,7 @@ function GroupCommissionPanel({
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="w-full min-w-[900px] text-sm">
-          <thead className="bg-slate-50">
+          <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm">
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="p-3 font-semibold">{axisLabel}</th>
               <th className="p-3 font-semibold">Type</th>
