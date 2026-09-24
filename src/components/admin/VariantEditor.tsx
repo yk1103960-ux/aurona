@@ -1684,8 +1684,8 @@ function VariantEditDialog({
             <section hidden={step !== 3} className="space-y-4">
               <h3 className="text-lg font-semibold">Prices and minimum order quantities</h3>
               <p className="text-sm text-slate-500">
-                Set customer, retailer and distributor prices for this SKU. Blank partner prices keep the existing
-                pricing fallback.
+                Set customer, retailer and distributor prices for this SKU. Blank partner prices remain unset and do
+                not inherit Customer pricing.
               </p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {numberField("mrp", "MRP ₹")}
@@ -1740,10 +1740,10 @@ function VariantEditDialog({
                   ["Variation", variantName(row)],
                   ["SKU", row.sku],
                   ["Customer price", row.price === null ? "Not set" : money(row.price)],
-                  ["Retailer price", row.retailer_price === null ? "Existing fallback" : money(row.retailer_price)],
+                  ["Retailer price", row.retailer_price === null ? "Not set" : money(row.retailer_price)],
                   [
                     "Distributor price",
-                    row.distributor_price === null ? "Existing fallback" : money(row.distributor_price),
+                    row.distributor_price === null ? "Not set" : money(row.distributor_price),
                   ],
                   ["Stock", String(row.stock ?? 0)],
                   ["Selected images", String(photos.length)],
