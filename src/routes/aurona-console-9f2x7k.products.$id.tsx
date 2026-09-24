@@ -1471,7 +1471,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
               toast.success(`Applied to ${count} row${count === 1 ? "" : "s"}. Now press Save Commissions.`);
             }}
           />
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="rounded-xl border border-slate-200">
 
             <table className="w-full min-w-[1180px] text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50">
@@ -1649,15 +1649,35 @@ function GroupCommissionPanel({
   onApply: (programId: string, variantIds: string[], patch: Partial<CommissionRule>) => void;
 }) {
   const axes = useMemo(() => {
+    const readableAxisLabel = (axis: CommissionAxis) => {
+      const savedLabel = axis.label.trim();
+      const looksInternal =
+        !savedLabel ||
+        savedLabel === axis.axis_key ||
+        /^[a-z0-9]+(?:_[a-z0-9]+)+$/.test(savedLabel);
+      if (!looksInternal) return savedLabel;
+      return axis.axis_key
+        .split("_")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+    };
     const configured = productAxes
       .filter((axis) => variants.some((variant) => Boolean(variant.attributes[axis.axis_key])))
-      .map((axis) => ({ key: axis.axis_key, label: axis.label }));
+      .map((axis) => ({ key: axis.axis_key, label: readableAxisLabel(axis) }));
     const configuredKeys = new Set(configured.map((axis) => axis.key));
     const discovered: Array<{ key: string; label: string }> = [];
     for (const variant of variants) {
       for (const key of Object.keys(variant.attributes)) {
         if (!configuredKeys.has(key) && !discovered.some((axis) => axis.key === key)) {
-          discovered.push({ key, label: key.replaceAll("_", " ") });
+          discovered.push({
+            key,
+            label: key
+              .split("_")
+              .filter(Boolean)
+              .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+              .join(" "),
+          });
         }
       }
     }
@@ -1728,7 +1748,7 @@ function GroupCommissionPanel({
         <div>
           <div className="text-base font-semibold text-slate-900">Set commission by {axisLabel || "option"}</div>
           <p className="mt-1 max-w-3xl text-xs text-slate-500">
-            Apply one commission to every SKU sharing the same {axis || "option"} value. If this product has no
+            Apply one commission to every SKU sharing the same {axisLabel || "option"} value. If this product has no
             Wattage, choose Size, Model, Colour, Pack Size or any other product option instead.
           </p>
         </div>
@@ -1768,7 +1788,7 @@ function GroupCommissionPanel({
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="mt-4 rounded-lg border border-slate-200 bg-white">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="sticky top-0 z-20 bg-slate-50 shadow-sm">
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
