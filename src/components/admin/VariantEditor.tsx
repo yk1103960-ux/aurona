@@ -687,6 +687,7 @@ export function VariantEditor({
         : buyerWorkflow === "customer"
           ? "Customer"
           : null;
+  const usesSharedSkuSet = buyerWorkflow === "retailer" || buyerWorkflow === "distributor";
 
   const sectionTitle =
     workflowLabel
@@ -705,7 +706,9 @@ export function VariantEditor({
 
   const sectionDescription =
     workflowLabel
-      ? `Complete the three steps in order: create shared variations, enter ${workflowLabel.toLowerCase()} price and stock, then add ${workflowLabel.toLowerCase()} weight and dimensions.`
+      ? usesSharedSkuSet
+        ? `Use the existing shared SKUs to enter independent ${workflowLabel.toLowerCase()} pricing and package dimensions. Customer pricing and shared stock are not changed.`
+        : `Create shared variations once, enter ${workflowLabel.toLowerCase()} price and stock, then add weight and dimensions.`
       : displayOnly === "quick"
         ? "Create, edit or archive variation combinations and their shared SKUs."
         : displayOnly === "shipping"
@@ -743,7 +746,7 @@ export function VariantEditor({
           </div>
 
           <div className="flex gap-2">
-            {(!displayOnly || displayOnly === "quick") && (
+            {(!displayOnly || displayOnly === "quick") && !usesSharedSkuSet && (
               <Button size="sm" variant="outline" type="button" onClick={addRow}>
                 <Plus className="mr-1 h-4 w-4" />
                 Add Variation
@@ -761,7 +764,7 @@ export function VariantEditor({
       {!displayOnly && (
         <div className="overflow-x-auto border-b border-slate-200">
           <div className="flex min-w-max gap-1 p-2">
-            {!customerPricingOnly && (
+            {!customerPricingOnly && !usesSharedSkuSet && (
               <TabButton
                 active={tab === "quick"}
                 onClick={() => setTab("quick")}
@@ -776,11 +779,11 @@ export function VariantEditor({
               onClick={() => setTab("customer")}
               icon={<Users className="h-4 w-4" />}
             >
-              {buyerWorkflow ? "2. Price & Stock" : "Customer Price & Stock"}
+              {buyerWorkflow ? (usesSharedSkuSet ? "1. Price & Stock" : "2. Price & Stock") : "Customer Price & Stock"}
             </TabButton>
 
             <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
-              {buyerWorkflow ? "3. Weight & Dimensions" : "Weight & Dimensions"}
+              {buyerWorkflow ? (usesSharedSkuSet ? "2. Weight & Dimensions" : "3. Weight & Dimensions") : "Weight & Dimensions"}
             </TabButton>
           </div>
         </div>
@@ -896,7 +899,7 @@ function QuickVariantsTab({
       {rows.length === 0 ? (
         <EmptyVariants />
       ) : (
-        <div className="rounded-xl border border-slate-200">
+        <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Variants table">
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -2536,7 +2539,7 @@ function ShippingTab({
             Enter the weight, length, width and height for one individual product/SKU.
           </p>
         </div>
-        <div>
+        <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain" tabIndex={0} role="region" aria-label="Single product dimensions table">
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -2571,7 +2574,7 @@ function ShippingTab({
           </p>
         </div>
 
-        <div>
+        <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain" tabIndex={0} role="region" aria-label={`${packageLabel} package dimensions table`}>
           <table className="w-full min-w-[1150px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -3288,7 +3291,7 @@ function SegmentPriceTable({
           </div>
         </div>
 
-        <div>
+        <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain" tabIndex={0} role="region" aria-label={`${label} price and stock table`}>
           <table className="w-full min-w-[1000px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
