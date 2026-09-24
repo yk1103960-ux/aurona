@@ -63,44 +63,43 @@ async function readSettings(): Promise<Settings> {
 }
 
 /**
- * Real package weight/dimensions from the database only — never from the
- * browser. Resolution order per line: variant row → parent product row →
- * admin-configured default weight.
- *
- * Multi-item carts are modelled as one carton: the footprint is the largest
- * item footprint and the items stack in height (volume-preserving), so the
- * volumetric weight the courier bills stays close to reality instead of being
- * inflated by an arbitrary box.
+ * Build the courier package exclusively from the purchased SKU's packaging
+ * measurements. Single-product measurements are intentionally never used for
+ * shipping quotes.
  */
-export async function computePackage(lines: CartLine[], defaultWeightG: number) {
+export async function computePackage(lines: CartLine[], _defaultWeightG: number) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const skus = lines.map((l) => l.sku).filter(Boolean) as string[];
-  type Dims = { weight_g: number | null; dim_l: number | null; dim_w: number | null; dim_h: number | null };
-  const byKey = new Map<string, Dims>();
+  const skus = [...new Set(lines.map((line) => line.sku).filter(Boolean) as string[])];
+  type PackageDims = { weight_g: number; dim_l: number; dim_w: number; dim_h: number };
+  const byKey = new Map<string, PackageDims>();
+  const positive = (value: number | null | undefined) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
   if (skus.length > 0) {
-    const [{ data: variants }, { data: parents }] = await Promise.all([
-      supabaseAdmin
-        .from("product_variants")
-        .select("sku, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h")
-        .in("sku", skus),
-      supabaseAdmin.from("products").select("sku, weight_g, dim_l, dim_w, dim_h").in("sku", skus),
-    ]);
-    for (const p of parents ?? []) if (p.sku) byKey.set(p.sku, p as Dims);
-    for (const v of variants ?? []) {
-      const prev = byKey.get(v.sku);
-      // Shipping is billed on the packaging, not the bare product.
-      const pos = (n: number | null | undefined) => (n != null && Number(n) > 0 ? Number(n) : null);
-      byKey.set(v.sku, {
-        weight_g: pos(v.pack_weight_g) ?? v.weight_g ?? prev?.weight_g ?? null,
-        dim_l: pos(v.pack_l) ?? v.dim_l ?? prev?.dim_l ?? null,
-        dim_w: pos(v.pack_w) ?? v.dim_w ?? prev?.dim_w ?? null,
-        dim_h: pos(v.pack_h) ?? v.dim_h ?? prev?.dim_h ?? null,
-      });
+    const { data: variants, error } = await supabaseAdmin
+      .from("product_variants")
+      .select("sku, pack_weight_g, pack_l, pack_w, pack_h")
+      .in("sku", skus);
+    if (error) throw new Error("Could not load package measurements for shipping.");
+
+    for (const variant of variants ?? []) {
+      const weight = positive(variant.pack_weight_g);
+      const length = positive(variant.pack_l);
+      const width = positive(variant.pack_w);
+      const height = positive(variant.pack_h);
+      if (variant.sku && weight && length && width && height) {
+        byKey.set(variant.sku, {
+          weight_g: weight,
+          dim_l: length,
+          dim_w: width,
+          dim_h: height,
+        });
+      }
     }
   }
 
-  // Small honest default box (cm) when a product has no dimensions stored.
-  const DEF_L = 20, DEF_W = 15, DEF_H = 10;
   let grams = 0;
   let volumeCm3 = 0;
   let footL = 0;
@@ -108,35 +107,29 @@ export async function computePackage(lines: CartLine[], defaultWeightG: number) 
   let tallest = 0;
 
   for (const line of lines) {
-    const qty = Math.max(1, Number(line.quantity) || 1);
-    const v = line.sku ? byKey.get(line.sku) : undefined;
-    const unitG = v?.weight_g && Number(v.weight_g) > 0 ? Number(v.weight_g) : defaultWeightG;
-    grams += unitG * qty;
+    if (!line.sku) throw new Error(`Package measurements are missing for ${line.name}.`);
+    const packageDims = byKey.get(line.sku);
+    if (!packageDims) {
+      throw new Error(
+        `Complete Package Weight, Length, Width and Height for SKU ${line.sku} before calculating shipping.`,
+      );
+    }
 
-    const l = v?.dim_l && Number(v.dim_l) > 0 ? Number(v.dim_l) : DEF_L;
-    const w = v?.dim_w && Number(v.dim_w) > 0 ? Number(v.dim_w) : DEF_W;
-    const h = v?.dim_h && Number(v.dim_h) > 0 ? Number(v.dim_h) : DEF_H;
-    volumeCm3 += l * w * h * qty;
-    footL = Math.max(footL, l);
-    footW = Math.max(footW, w);
-    tallest = Math.max(tallest, h);
+    const qty = Math.max(1, Number(line.quantity) || 1);
+    grams += packageDims.weight_g * qty;
+    volumeCm3 += packageDims.dim_l * packageDims.dim_w * packageDims.dim_h * qty;
+    footL = Math.max(footL, packageDims.dim_l);
+    footW = Math.max(footW, packageDims.dim_w);
+    tallest = Math.max(tallest, packageDims.dim_h);
   }
 
-  // Derive the carton height from the total volume over the largest footprint,
-  // never smaller than the tallest single item.
-  const length = Math.max(1, Math.round(footL || DEF_L));
-  const breadth = Math.max(1, Math.round(footW || DEF_W));
+  const length = Math.max(1, Math.round(footL));
+  const breadth = Math.max(1, Math.round(footW));
   const height = Math.max(1, Math.round(Math.max(tallest, volumeCm3 / (length * breadth))));
-
-  // Weight is in kilograms — the unit Shiprocket expects.
   const weightKg = Math.max(0.05, Math.round((grams / 1000) * 100) / 100);
-  // Volumetric (courier divisor 5000) is informational: the courier applies
-  // whichever is higher from the length/breadth/height we send.
   const volumetricKg = Math.round(((length * breadth * height) / 5000) * 100) / 100;
   return { weightKg, volumetricKg, dims: { length, breadth, height } };
 }
-
-
 
 /** Pickup pincode for the configured pickup location (cached briefly). */
 let pickupCache: { pincode: string; at: number } | null = null;
