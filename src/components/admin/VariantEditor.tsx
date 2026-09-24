@@ -898,7 +898,7 @@ function QuickVariantsTab({
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full min-w-[720px] border-collapse text-sm">
-            <thead>
+            <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
                 <Th>Generated SKU</Th>
@@ -2149,7 +2149,7 @@ function BulkPriceByOption({
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1100px] border-collapse text-sm">
-          <thead>
+          <thead className="sticky top-0 z-30 bg-white shadow-sm">
             <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
               <Th>{optionLabel(activeKey)}</Th>
               {fields.map((field) => (
@@ -2528,7 +2528,7 @@ function ShippingTab({
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-sm">
-            <thead>
+            <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 <Th className={FREEZE_1}>Variation</Th>
                 <Th className={FREEZE_2}>SKU</Th>
@@ -2563,7 +2563,7 @@ function ShippingTab({
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1150px] border-collapse text-sm">
-            <thead>
+            <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-white text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 <Th className={FREEZE_1}>Variation</Th>
                 <Th className={FREEZE_2}>SKU</Th>
@@ -3281,7 +3281,7 @@ function SegmentPriceTable({
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1000px] border-collapse text-sm">
-            <thead>
+            <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <Th className={FREEZE_1}>Variation</Th>
                 <Th className={FREEZE_2}>SKU</Th>
