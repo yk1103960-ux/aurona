@@ -20,6 +20,7 @@ import {
   Save,
   Search,
   SlidersHorizontal,
+  Trash2,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   adminAdjustInventory,
   adminBulkProductFamilyAction,
+  adminDeleteProductFamilyPermanent,
   adminListProductMaster,
   adminSaveProductMasterRows,
 } from "@/lib/catalog-admin.functions";
@@ -681,6 +683,34 @@ function ProductMaster() {
     }
   };
 
+  const deleteFamilyPermanently = async (family: Family) => {
+    if (!family.archived_at) {
+      toast.error("Archive the product before deleting it permanently.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Permanently delete "${family.name}" and its ${family.variants.length} SKU/variant record(s)?\n\nThis cannot be undone. Existing order history will be preserved as a snapshot.`,
+    );
+    if (!confirmed) return;
+    try {
+      await adminDeleteProductFamilyPermanent({ data: { familyId: family.id } });
+      toast.success(`${family.name} permanently deleted`);
+      setSelected((current) => {
+        const next = new Set(current);
+        for (const variant of family.variants) next.delete(variant.id);
+        return next;
+      });
+      setExpanded((current) => {
+        const next = new Set(current);
+        next.delete(family.id);
+        return next;
+      });
+      await q.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not permanently delete product");
+    }
+  };
+
   const exportView = () => {
     const rows = shownFamilies.flatMap((family) =>
       family.variants.map((variant) => {
@@ -1038,6 +1068,7 @@ function ProductMaster() {
                     setReason("");
                   }}
                   onState={(action) => setFamilyState(family, action)}
+                  onDeletePermanent={() => deleteFamilyPermanently(family)}
                 />
               );
             })}
@@ -1189,6 +1220,7 @@ function FamilyRows({
   onSave,
   onAdjust,
   onState,
+  onDeletePermanent,
 }: {
   family: Family;
   open: boolean;
@@ -1204,6 +1236,7 @@ function FamilyRows({
   onSave: (id: string) => void;
   onAdjust: (row: Variant) => void;
   onState: (action: "publish" | "unpublish" | "archive" | "restore") => void;
+  onDeletePermanent: () => void;
 }) {
   return (
     <>
@@ -1258,14 +1291,26 @@ function FamilyRows({
                   </Link>
                 </Button>
                 {family.archived_at ? (
-                  <Button
-                    size="icon"
-                    variant="success"
-                    aria-label="Restore family"
-                    onClick={() => onState("restore")}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button
+                      size="icon"
+                      variant="success"
+                      aria-label="Restore archived product"
+                      title="Restore archived product"
+                      onClick={() => onState("restore")}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      aria-label="Delete product permanently"
+                      title="Delete permanently — cannot be undone"
+                      onClick={onDeletePermanent}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button
