@@ -478,6 +478,16 @@ export const adminDeleteProductFamilyPermanent = createServerFn({ method: "POST"
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: family, error: familyError } = await (supabaseAdmin as any)
+      .from("product_families")
+      .select("id,name,archived_at")
+      .eq("id", data.familyId)
+      .maybeSingle();
+    if (familyError) throw new Error(familyError.message);
+    if (!family) throw new Error("Product family not found");
+    if (!family.archived_at) {
+      throw new Error("Archive this product before deleting it permanently.");
+    }
     const { data: result, error } = await (supabaseAdmin as any).rpc(
       "admin_delete_product_family_permanent",
       { _family_id: data.familyId },
