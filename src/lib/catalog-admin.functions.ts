@@ -351,22 +351,14 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     const familyIds = (familyRows ?? []).map((row: { id: string }) => row.id);
     if (!familyIds.length) return { families: [], count: count ?? 0 };
 
-    const variantColumns =
-      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, retailer_discount_pct, distributor_discount_pct, moq, retailer_moq, distributor_moq, stock, retailer_stock, distributor_stock, reserved_stock, pack_size, retailer_pack_size, distributor_pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, available_customer, available_retailer, available_distributor, archived_at, low_stock_threshold, sort_order, updated_at";
-    const legacyVariantColumns =
-      "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, archived_at, low_stock_threshold, sort_order, updated_at";
-    let variants = await (supabaseAdmin as any)
+    // Read the columns that actually exist in this environment. Product Master
+    // must remain usable while optional buyer-channel migrations are pending;
+    // missing fields are normalised below without querying nonexistent columns.
+    const variants = await (supabaseAdmin as any)
       .from("product_variants")
-      .select(variantColumns)
+      .select("*")
       .in("family_id", familyIds)
       .order("sort_order");
-    if (variants.error && /barcode|schema cache|does not exist/i.test(variants.error.message)) {
-      variants = await (supabaseAdmin as any)
-        .from("product_variants")
-        .select(legacyVariantColumns)
-        .in("family_id", familyIds)
-        .order("sort_order");
-    }
     if (variants.error) throw new Error(variants.error.message);
 
     const [axes, images] = await Promise.all([
