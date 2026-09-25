@@ -744,7 +744,7 @@ function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
     distributor_discount: numericCell(v[51]), distributor_price: numericCell(v[52]), distributor_moq: numericCell(v[53]), distributor_stock: numericCell(v[54]), distributor_reserved_stock: numericCell(v[55]), distributor_pack_size: numericCell(v[56]),
     distributor_pack_weight_g: numericCell(v[57]), distributor_pack_l: numericCell(v[58]), distributor_pack_w: numericCell(v[59]), distributor_pack_h: numericCell(v[60]),
     commission_program: textCell(v[61]), commission_type: textCell(v[62]).toLowerCase(), commission_value: numericCell(v[63]), max_commission: numericCell(v[64]),
-    seo_title: textCell(v[65]), seo_description: textCell(v[66]), shipping_days: textCell(v[67]), warranty: textCell(v[68]), frequently_bought_category: textCell(v[69]),
+    seo_title: textCell(v[65]), seo_description: textCell(v[66]), shipping_days: numericCell(v[67]), warranty: textCell(v[68]), frequently_bought_category: textCell(v[69]),
   };
 }
 
