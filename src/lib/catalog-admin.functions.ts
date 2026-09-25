@@ -379,9 +379,8 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
 
     return {
       count: count ?? 0,
-      families: (familyRows ?? []).map((family: any) => ({
-        ...family,
-        variants: (variants.data ?? [])
+      families: (familyRows ?? []).map((family: any) => {
+        const familyVariants = (variants.data ?? [])
           .filter((variant: any) => variant.family_id === family.id)
           .map((variant: any) => ({
             ...variant,
@@ -395,10 +394,33 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
             available_customer: variant.available_customer ?? true,
             available_retailer: variant.available_retailer ?? true,
             available_distributor: variant.available_distributor ?? true,
-          })),
-        axes: (axes.data ?? []).filter((axis: any) => axis.family_id === family.id),
-        images: (images.data ?? []).filter((image: any) => image.family_id === family.id),
-      })),
+          }));
+        const activeVariants = familyVariants.filter(
+          (variant: any) => variant.is_active && !variant.archived_at,
+        );
+        const range = (key: string) => {
+          const values = activeVariants
+            .map((variant: any) => Number(variant[key]))
+            .filter((value: number) => Number.isFinite(value) && value >= 0);
+          return values.length ? { min: Math.min(...values), max: Math.max(...values) } : null;
+        };
+        const mrp = range("mrp");
+        const price = range("price");
+        return {
+          ...family,
+          min_mrp: mrp?.min ?? family.min_mrp,
+          max_mrp: mrp?.max ?? family.max_mrp,
+          min_price: price?.min ?? family.min_price,
+          max_price: price?.max ?? family.max_price,
+          total_stock: activeVariants.reduce(
+            (total: number, variant: any) => total + Number(variant.stock ?? 0),
+            0,
+          ),
+          variants: familyVariants,
+          axes: (axes.data ?? []).filter((axis: any) => axis.family_id === family.id),
+          images: (images.data ?? []).filter((image: any) => image.family_id === family.id),
+        };
+      }),
     };
   });
 
