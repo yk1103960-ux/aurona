@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
+import { generateVariantSku } from "@/lib/sku-generation";
 
 const ImportRow = z.object({
   name: z.string().trim().min(1).max(240),
@@ -719,17 +720,21 @@ const numericCell = (value: unknown) => value === "" || value == null ? null : N
 function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
   const v = row.values;
   const attributes: Record<string, string> = {};
+  const variationAxes: Array<{ name: string; value: string; sort_order: number }> = [];
   for (const [nameIndex, valueIndex] of [[13, 14], [15, 16], [17, 18]] as const) {
     const name = textCell(v[nameIndex]);
     const value = textCell(v[valueIndex]);
-    if (name && value) attributes[name] = value;
+    if (name && value) {
+      attributes[name] = value;
+      variationAxes.push({ name, value, sort_order: variationAxes.length });
+    }
   }
   return {
     excel_row: row.excelRow, function: textCell(v[1]).toLowerCase(), category_name: textCell(v[2]),
     product_name: textCell(v[3]), family_id: textCell(v[4]) || null, main_sku: textCell(v[5]).toUpperCase(),
     brand: textCell(v[6]), unit: textCell(v[7]), model: textCell(v[8]), variant_name: textCell(v[9]),
     variant_sku: textCell(v[10]).toUpperCase(), variant_id: textCell(v[11]) || null, barcode: textCell(v[12]) || null,
-    attributes, short_description: textCell(v[20]), description: textCell(v[21]), features: textCell(v[22]),
+    attributes, variation_axes: variationAxes, short_description: textCell(v[20]), description: textCell(v[21]), features: textCell(v[22]),
     refundable: textCell(v[23]), sale_status: textCell(v[24]), active_status: textCell(v[25]),
     mrp: numericCell(v[26]), weight_g: numericCell(v[27]), dim_l: numericCell(v[28]), dim_w: numericCell(v[29]), dim_h: numericCell(v[30]),
     customer_discount: numericCell(v[31]), customer_price: numericCell(v[32]), customer_moq: numericCell(v[33]), customer_stock: numericCell(v[34]), customer_reserved_stock: numericCell(v[35]), customer_pack_size: numericCell(v[36]),
@@ -773,6 +778,14 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       const family = familiesBySku.get(row.main_sku);
       const variant = variantsBySku.get(row.variant_sku);
       if (row.function === 'create' && variant) errors.push("Variant SKU already belongs to an existing variant");
+      if (row.function === 'create' && row.main_sku && row.variant_sku && row.variation_axes.length) {
+        try {
+          const expectedSku = generateVariantSku(row.main_sku, row.variation_axes.map((axis) => ({ name: axis.name, value: axis.value })));
+          if (expectedSku !== row.variant_sku) errors.push(`Variant SKU does not match the approved rules. Expected ${expectedSku}`);
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : "Variation value has no approved SKU rule");
+        }
+      }
       if (row.function === 'update' && !family) errors.push("Update target Main SKU was not found");
       if (row.function === 'update' && !variant) errors.push("Update target Variant SKU was not found");
       for (const [field, value] of Object.entries(row)) {
