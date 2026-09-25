@@ -199,6 +199,27 @@ export const adminListProductFamilies = createServerFn({ method: "POST" })
       .order(column, { ascending, nullsFirst: false })
       .range(from, from + data.pageSize - 1);
     if (error) throw new Error(error.message);
+    // v3 preserves the shared SKU identity; buyer-channel values are updated
+    // on those same variant rows after the matrix save.
+    for (const variant of reconciledVariants) {
+      const { error: channelError } = await (supabaseAdmin as any)
+        .from("product_variants")
+        .update({
+          retailer_mrp: variant.retailer_mrp,
+          retailer_price: variant.retailer_price,
+          retailer_discount_pct: variant.retailer_discount_pct,
+          retailer_stock: variant.retailer_stock,
+          retailer_pack_size: variant.retailer_pack_size,
+          distributor_mrp: variant.distributor_mrp,
+          distributor_price: variant.distributor_price,
+          distributor_discount_pct: variant.distributor_discount_pct,
+          distributor_stock: variant.distributor_stock,
+          distributor_pack_size: variant.distributor_pack_size,
+        })
+        .eq("family_id", data.familyId)
+        .eq("sku", variant.sku.trim().toUpperCase());
+      if (channelError) throw new Error(channelError.message);
+    }
     return { rows: rows ?? [], count: count ?? 0 };
   });
 
@@ -352,7 +373,7 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     if (!familyIds.length) return { families: [], count: count ?? 0 };
 
     const variantColumns =
-      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, archived_at, low_stock_threshold, sort_order, updated_at";
+      "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, retailer_discount_pct, distributor_discount_pct, moq, retailer_moq, distributor_moq, stock, retailer_stock, distributor_stock, reserved_stock, pack_size, retailer_pack_size, distributor_pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, available_customer, available_retailer, available_distributor, archived_at, low_stock_threshold, sort_order, updated_at";
     const legacyVariantColumns = variantColumns.replace("barcode, ", "");
     let variants = await (supabaseAdmin as any)
       .from("product_variants")
@@ -862,6 +883,9 @@ export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
             distributor_discount_pct: variant.distributor_discount_pct,
             distributor_stock: variant.distributor_stock,
             distributor_pack_size: variant.distributor_pack_size,
+            available_customer: variant.available_customer,
+            available_retailer: variant.available_retailer,
+            available_distributor: variant.available_distributor,
           })
           .eq("family_id", family.familyId)
           .eq("sku", variant.sku.trim().toUpperCase());
