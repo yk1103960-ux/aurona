@@ -677,7 +677,7 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [categories, options] = await Promise.all([
+    const [categories, options, programs] = await Promise.all([
       (supabaseAdmin as any)
         .from("categories")
         .select("id,name,slug")
@@ -689,23 +689,22 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
         .in("kind", ["attribute", "colour"])
         .order("sort_order")
         .order("name"),
+      (supabaseAdmin as any)
+        .from("referral_programs")
+        .select("id,name")
+        .eq("is_active", true)
+        .order("name"),
     ]);
-    for (const result of [categories, options]) {
+    for (const result of [categories, options, programs]) {
       if (result.error) throw new Error(result.error.message);
     }
     return {
       categories: categories.data ?? [],
       variations: options.data ?? [],
-      // These are the program keys used by the existing commission system;
-      // there is intentionally no second bulk-upload program table.
-      partnerPrograms: [
-        { code: "affiliate", name: "Affiliate" },
-        { code: "sales", name: "Sales" },
-        { code: "loyalty", name: "Loyalty" },
-      ],
-      templateVersion: "aurona-dynamic-v1-draft",
-      skuRulesConfirmed: false,
-      rowLayoutConfirmed: false,
+      // The existing Partner Program table is authoritative. Bulk Upload does
+      // not maintain a second, hardcoded commission-program list.
+      partnerPrograms: programs.data ?? [],
+      templateVersion: "aurona-product-master-v1",
     };
   });
 
@@ -766,11 +765,25 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const familiesBySku = new Map((familiesResult.data ?? []).map((x: any) => [String(x.main_sku).toUpperCase(), x]));
     const variantsBySku = new Map((variantsResult.data ?? []).map((x: any) => [String(x.sku).toUpperCase(), x]));
     const programs = new Set((programsResult.data ?? []).map((x: any) => String(x.name).toLowerCase()));
+    const metadataCategory = textCell(data.metadata.category_name).toLowerCase();
+    let configuredVariations: Array<{ name: string; values: string[] }> = [];
+    try {
+      const raw = data.metadata.variation_configuration;
+      configuredVariations = Array.isArray(raw) ? raw as typeof configuredVariations : JSON.parse(textCell(raw) || "[]");
+    } catch {
+      throw new Error("The hidden Aurona template configuration is invalid. Download a fresh template.");
+    }
+    const allowedVariations = new Map(configuredVariations.map((axis) => [
+      textCell(axis.name).toLowerCase(),
+      new Set((axis.values ?? []).map((value) => textCell(value).toLowerCase())),
+    ]));
     const seen = new Set<string>();
     const previewRows = rows.map((row) => {
       const errors: string[] = [];
       if (!['create','update'].includes(row.function)) errors.push("Function must be Create or Update");
       if (!categories.has(row.category_name.toLowerCase())) errors.push(`Unknown Product Category: ${row.category_name || "(blank)"}`);
+      if (metadataCategory && row.category_name.toLowerCase() !== metadataCategory) errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
+      if (!row.product_name) errors.push("Product Name is required");
       if (!row.main_sku) errors.push("Main SKU is required");
       if (!row.variant_sku) errors.push("Variant SKU is required");
       if (seen.has(row.variant_sku)) errors.push("Duplicate Variant SKU in this workbook");
@@ -788,11 +801,32 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       }
       if (row.function === 'update' && !family) errors.push("Update target Main SKU was not found");
       if (row.function === 'update' && !variant) errors.push("Update target Variant SKU was not found");
+      if (row.function === 'update' && family && variant && variant.family_id !== family.id) errors.push("Variant SKU does not belong to the supplied Main SKU");
+      for (const axis of row.variation_axes) {
+        const allowed = allowedVariations.get(axis.name.toLowerCase());
+        if (!allowed) errors.push(`Variation ${axis.name} is not part of this template`);
+        else if (!allowed.has(axis.value.toLowerCase())) errors.push(`${axis.value} is not an allowed ${axis.name}. Allowed values: ${[...allowed].join(", ")}`);
+      }
+      if (row.variation_axes.length !== configuredVariations.length) errors.push(`Expected ${configuredVariations.length} variation values, found ${row.variation_axes.length}`);
       for (const [field, value] of Object.entries(row)) {
         if ((field.includes('price') || field.includes('stock') || field.includes('dim_') || field.includes('pack_') || field === 'mrp' || field.includes('moq')) && typeof value === 'number' && (!Number.isFinite(value) || value < 0)) errors.push(`${field} must be a valid non-negative number`);
       }
       if (row.commission_program && !programs.has(row.commission_program.toLowerCase())) errors.push(`Unknown Partner Program: ${row.commission_program}`);
       if (row.commission_type && !['percentage','fixed'].includes(row.commission_type)) errors.push("Commission Type must be Percentage or Fixed");
+      if (row.commission_type === 'percentage' && row.commission_value != null && row.commission_value > 100) errors.push("Percentage commission cannot exceed 100");
+      if (row.refundable && !['yes','no','true','false','1','0'].includes(row.refundable.toLowerCase())) errors.push("Refundable must be YES or NO");
+      if (row.active_status && !['true','false','active','inactive','yes','no'].includes(row.active_status.toLowerCase())) errors.push("Status must be Active/True or Inactive/False");
+      for (const field of ['customer_stock','customer_reserved_stock','retailer_stock','retailer_reserved_stock','distributor_stock','distributor_reserved_stock','customer_moq','retailer_moq','distributor_moq'] as const) {
+        const value = row[field];
+        if (value != null && !Number.isInteger(value)) errors.push(`${field} must be a whole number`);
+      }
+      for (const field of ['customer_pack_size','retailer_pack_size','distributor_pack_size'] as const) {
+        const value = row[field];
+        if (value != null && (!Number.isInteger(value) || value < 1)) errors.push(`${field} must be a positive whole number`);
+      }
+      if (row.mrp != null) for (const [label, price] of [['Customer', row.customer_price], ['Retailer', row.retailer_price], ['Distributor', row.distributor_price]] as const) {
+        if (price != null && price > row.mrp) errors.push(`${label} Price cannot exceed MRP`);
+      }
       return { excelRow: row.excel_row, mainSku: row.main_sku, variantSku: row.variant_sku, action: row.function, errors };
     });
     return {
