@@ -74,7 +74,9 @@ function ComparePage() {
       const { data, error } = await supabase
         .from("products")
         .select("*, categories(slug, name, icon)")
-        .in("slug", slugs);
+        .in("slug", slugs)
+        .eq("is_published", true)
+        .is("archived_at", null);
 
       if (error) throw error;
 
