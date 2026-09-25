@@ -667,3 +667,140 @@ export const adminSetShippingProviderEnabled = createServerFn({ method: "POST" }
     });
     return { ok: true };
   });
+
+/** Read-only sources for the dynamic bulk-upload configurator.
+ * Existing category, option and commission tables remain authoritative.
+ */
+export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [categories, options] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("categories")
+        .select("id,name,slug")
+        .order("name"),
+      (supabaseAdmin as any)
+        .from("catalog_options")
+        .select("id,kind,name,code,details,sort_order")
+        .eq("active", true)
+        .in("kind", ["attribute", "colour"])
+        .order("sort_order")
+        .order("name"),
+    ]);
+    for (const result of [categories, options]) {
+      if (result.error) throw new Error(result.error.message);
+    }
+    return {
+      categories: categories.data ?? [],
+      variations: options.data ?? [],
+      // These are the program keys used by the existing commission system;
+      // there is intentionally no second bulk-upload program table.
+      partnerPrograms: [
+        { code: "affiliate", name: "Affiliate" },
+        { code: "sales", name: "Sales" },
+        { code: "loyalty", name: "Loyalty" },
+      ],
+      templateVersion: "aurona-dynamic-v1-draft",
+      skuRulesConfirmed: false,
+      rowLayoutConfirmed: false,
+    };
+  });
+
+const DynamicBulkInput = z.object({
+  metadata: z.record(z.string(), z.unknown()),
+  rows: z.array(z.object({ excelRow: z.number().int().min(4), values: z.array(z.unknown()).max(70) })).min(1).max(2000),
+});
+
+const textCell = (value: unknown) => String(value ?? "").trim();
+const numericCell = (value: unknown) => value === "" || value == null ? null : Number(value);
+
+function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
+  const v = row.values;
+  const attributes: Record<string, string> = {};
+  for (const [nameIndex, valueIndex] of [[13, 14], [15, 16], [17, 18]] as const) {
+    const name = textCell(v[nameIndex]);
+    const value = textCell(v[valueIndex]);
+    if (name && value) attributes[name] = value;
+  }
+  return {
+    excel_row: row.excelRow, function: textCell(v[1]).toLowerCase(), category_name: textCell(v[2]),
+    product_name: textCell(v[3]), family_id: textCell(v[4]) || null, main_sku: textCell(v[5]).toUpperCase(),
+    brand: textCell(v[6]), unit: textCell(v[7]), model: textCell(v[8]), variant_name: textCell(v[9]),
+    variant_sku: textCell(v[10]).toUpperCase(), variant_id: textCell(v[11]) || null, barcode: textCell(v[12]) || null,
+    attributes, short_description: textCell(v[20]), description: textCell(v[21]), features: textCell(v[22]),
+    refundable: textCell(v[23]), sale_status: textCell(v[24]), active_status: textCell(v[25]),
+    mrp: numericCell(v[26]), weight_g: numericCell(v[27]), dim_l: numericCell(v[28]), dim_w: numericCell(v[29]), dim_h: numericCell(v[30]),
+    customer_discount: numericCell(v[31]), customer_price: numericCell(v[32]), customer_moq: numericCell(v[33]), customer_stock: numericCell(v[34]), customer_reserved_stock: numericCell(v[35]), customer_pack_size: numericCell(v[36]),
+    customer_pack_weight_g: numericCell(v[37]), customer_pack_l: numericCell(v[38]), customer_pack_w: numericCell(v[39]), customer_pack_h: numericCell(v[40]),
+    retailer_discount: numericCell(v[41]), retailer_price: numericCell(v[42]), retailer_moq: numericCell(v[43]), retailer_stock: numericCell(v[44]), retailer_reserved_stock: numericCell(v[45]), retailer_pack_size: numericCell(v[46]),
+    retailer_pack_weight_g: numericCell(v[47]), retailer_pack_l: numericCell(v[48]), retailer_pack_w: numericCell(v[49]), retailer_pack_h: numericCell(v[50]),
+    distributor_discount: numericCell(v[51]), distributor_price: numericCell(v[52]), distributor_moq: numericCell(v[53]), distributor_stock: numericCell(v[54]), distributor_reserved_stock: numericCell(v[55]), distributor_pack_size: numericCell(v[56]),
+    distributor_pack_weight_g: numericCell(v[57]), distributor_pack_l: numericCell(v[58]), distributor_pack_w: numericCell(v[59]), distributor_pack_h: numericCell(v[60]),
+    commission_program: textCell(v[61]), commission_type: textCell(v[62]).toLowerCase(), commission_value: numericCell(v[63]), max_commission: numericCell(v[64]),
+    seo_title: textCell(v[65]), seo_description: textCell(v[66]), shipping_days: textCell(v[67]), warranty: textCell(v[68]), frequently_bought_category: textCell(v[69]),
+  };
+}
+
+export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => DynamicBulkInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const rows = data.rows.map(normalizeDynamicRow);
+    const [categoriesResult, familiesResult, variantsResult, programsResult] = await Promise.all([
+      (supabaseAdmin as any).from("categories").select("id,name"),
+      (supabaseAdmin as any).from("product_families").select("id,main_sku"),
+      (supabaseAdmin as any).from("product_variants").select("id,sku,family_id"),
+      (supabaseAdmin as any).from("referral_programs").select("id,name").eq("is_active", true),
+    ]);
+    for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
+    const categories = new Map((categoriesResult.data ?? []).map((x: any) => [String(x.name).toLowerCase(), x.id]));
+    const familiesBySku = new Map((familiesResult.data ?? []).map((x: any) => [String(x.main_sku).toUpperCase(), x]));
+    const variantsBySku = new Map((variantsResult.data ?? []).map((x: any) => [String(x.sku).toUpperCase(), x]));
+    const programs = new Set((programsResult.data ?? []).map((x: any) => String(x.name).toLowerCase()));
+    const seen = new Set<string>();
+    const previewRows = rows.map((row) => {
+      const errors: string[] = [];
+      if (!['create','update'].includes(row.function)) errors.push("Function must be Create or Update");
+      if (!categories.has(row.category_name.toLowerCase())) errors.push(`Unknown Product Category: ${row.category_name || "(blank)"}`);
+      if (!row.main_sku) errors.push("Main SKU is required");
+      if (!row.variant_sku) errors.push("Variant SKU is required");
+      if (seen.has(row.variant_sku)) errors.push("Duplicate Variant SKU in this workbook");
+      seen.add(row.variant_sku);
+      const family = familiesBySku.get(row.main_sku);
+      const variant = variantsBySku.get(row.variant_sku);
+      if (row.function === 'create' && variant) errors.push("Variant SKU already belongs to an existing variant");
+      if (row.function === 'update' && !family) errors.push("Update target Main SKU was not found");
+      if (row.function === 'update' && !variant) errors.push("Update target Variant SKU was not found");
+      for (const [field, value] of Object.entries(row)) {
+        if ((field.includes('price') || field.includes('stock') || field.includes('dim_') || field.includes('pack_') || field === 'mrp' || field.includes('moq')) && typeof value === 'number' && (!Number.isFinite(value) || value < 0)) errors.push(`${field} must be a valid non-negative number`);
+      }
+      if (row.commission_program && !programs.has(row.commission_program.toLowerCase())) errors.push(`Unknown Partner Program: ${row.commission_program}`);
+      if (row.commission_type && !['percentage','fixed'].includes(row.commission_type)) errors.push("Commission Type must be Percentage or Fixed");
+      return { excelRow: row.excel_row, mainSku: row.main_sku, variantSku: row.variant_sku, action: row.function, errors };
+    });
+    return {
+      rows: previewRows, normalizedRows: rows,
+      productsDetected: new Set(rows.map((row) => row.main_sku)).size,
+      productsToCreate: new Set(rows.filter((row) => row.function === 'create' && !familiesBySku.has(row.main_sku)).map((row) => row.main_sku)).size,
+      productsToUpdate: new Set(rows.filter((row) => row.function === 'update').map((row) => row.main_sku)).size,
+      variantsToCreate: rows.filter((row) => row.function === 'create').length,
+      variantsToUpdate: rows.filter((row) => row.function === 'update').length,
+      errorCount: previewRows.reduce((sum, row) => sum + row.errors.length, 0),
+    };
+  });
+
+export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ rows: z.array(z.record(z.string(), z.unknown())).min(1).max(2000) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const actor = await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v1", { _rows: data.rows, _actor_user_id: actor.userId });
+    if (error) throw new Error(error.message);
+    await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email, action: "catalog.dynamic_bulk_import", entityType: "admin_import_batch", entityId: String(result?.batch_id ?? ""), after: result });
+    return result;
+  });
