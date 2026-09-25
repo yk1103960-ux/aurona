@@ -801,7 +801,7 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       }
       if (row.function === 'update' && !family) errors.push("Update target Main SKU was not found");
       if (row.function === 'update' && !variant) errors.push("Update target Variant SKU was not found");
-      if (row.function === 'update' && family && variant && variant.family_id !== family.id) errors.push("Variant SKU does not belong to the supplied Main SKU");
+      if (row.function === 'update' && family && variant && (variant as { family_id?: string }).family_id !== (family as { id?: string }).id) errors.push("Variant SKU does not belong to the supplied Main SKU");
       for (const axis of row.variation_axes) {
         const allowed = allowedVariations.get(axis.name.toLowerCase());
         if (!allowed) errors.push(`Variation ${axis.name} is not part of this template`);
