@@ -1803,6 +1803,7 @@ export type Database = {
           product_snapshot: Json
           quantity: number
           sku: string | null
+          stock_pcs: number | null
           variant_attributes: Json
           variant_id: string | null
         }
@@ -1816,6 +1817,7 @@ export type Database = {
           product_snapshot?: Json
           quantity: number
           sku?: string | null
+          stock_pcs?: number | null
           variant_attributes?: Json
           variant_id?: string | null
         }
@@ -1829,6 +1831,7 @@ export type Database = {
           product_snapshot?: Json
           quantity?: number
           sku?: string | null
+          stock_pcs?: number | null
           variant_attributes?: Json
           variant_id?: string | null
         }
@@ -4102,6 +4105,10 @@ export type Database = {
           discount: number
           reason: string
         }[]
+      }
+      variant_pack_pcs: {
+        Args: { _attributes: Json; _pack_size: number }
+        Returns: number
       }
     }
     Enums: {
