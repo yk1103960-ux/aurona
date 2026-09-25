@@ -60,9 +60,7 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     const role = (roleData as string | null) ?? "customer";
 
-    if (role === "distributor") {
-      throw new Error("Distributor accounts must contact sales to place orders.");
-    }
+    const buyerType = role === "retailer" || role === "distributor" ? role : "customer";
 
     // 2) Load the caller's cart. Never trust prices/totals sent by the browser.
     const { data: cartRows, error: cartError } = await supabase
@@ -106,10 +104,6 @@ export const placeOrder = createServerFn({ method: "POST" })
 
       if (!Number.isFinite(quantity) || quantity < 1) {
         throw new Error(`Invalid quantity for ${product.name}.`);
-      }
-
-      if (Number(product.stock ?? 0) < quantity) {
-        throw new Error(`${product.name} has only ${Number(product.stock ?? 0)} available.`);
       }
 
       return {
@@ -278,13 +272,14 @@ export const placeOrder = createServerFn({ method: "POST" })
     // cannot be invoked directly by a shopper.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: orderId, error: orderError } = await (supabaseAdmin as any).rpc(
-      "place_order_atomic",
+      "place_order_atomic_v2",
       {
         _user_id: user.id,
         _address: { ...data.address, email: data.address.email || user.email || "" },
         _payment_method: data.payment_method,
         _shipping: shipping,
         _items: pricedItems,
+        _buyer_type: buyerType,
         _coupon_id: couponId,
         _coupon_code: couponCode,
         _discount: discount,
