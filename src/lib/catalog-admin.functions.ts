@@ -869,6 +869,25 @@ export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
         compatibilityMode = compatibilityMode || !fallback.error;
       }
       if (error) throw new Error(error.message);
+      for (const variant of family.variants) {
+        const { error: channelError } = await (supabaseAdmin as any)
+          .from("product_variants")
+          .update({
+            retailer_mrp: variant.retailer_mrp,
+            retailer_price: variant.retailer_price,
+            retailer_discount_pct: variant.retailer_discount_pct,
+            retailer_stock: variant.retailer_stock,
+            retailer_pack_size: variant.retailer_pack_size,
+            distributor_mrp: variant.distributor_mrp,
+            distributor_price: variant.distributor_price,
+            distributor_discount_pct: variant.distributor_discount_pct,
+            distributor_stock: variant.distributor_stock,
+            distributor_pack_size: variant.distributor_pack_size,
+          })
+          .eq("family_id", family.familyId)
+          .eq("sku", variant.sku.trim().toUpperCase());
+        if (channelError) throw new Error(channelError.message);
+      }
     }
 
     await writeAudit({
