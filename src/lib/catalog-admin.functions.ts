@@ -353,7 +353,8 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
 
     const variantColumns =
       "id, family_id, sku, barcode, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, retailer_discount_pct, distributor_discount_pct, moq, retailer_moq, distributor_moq, stock, retailer_stock, distributor_stock, reserved_stock, pack_size, retailer_pack_size, distributor_pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, available_customer, available_retailer, available_distributor, archived_at, low_stock_threshold, sort_order, updated_at";
-    const legacyVariantColumns = variantColumns.replace("barcode, ", "");
+    const legacyVariantColumns =
+      "id, family_id, sku, attributes, mrp, price, discount_pct, retailer_price, distributor_price, retailer_mrp, distributor_mrp, moq, retailer_moq, distributor_moq, stock, reserved_stock, pack_size, weight_g, dim_l, dim_w, dim_h, pack_weight_g, pack_l, pack_w, pack_h, retailer_pack_weight_g, retailer_pack_l, retailer_pack_w, retailer_pack_h, distributor_pack_weight_g, distributor_pack_l, distributor_pack_w, distributor_pack_h, is_active, archived_at, low_stock_threshold, sort_order, updated_at";
     let variants = await (supabaseAdmin as any)
       .from("product_variants")
       .select(variantColumns)
@@ -390,7 +391,19 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
         ...family,
         variants: (variants.data ?? [])
           .filter((variant: any) => variant.family_id === family.id)
-          .map((variant: any) => ({ ...variant, barcode: variant.barcode ?? "" })),
+          .map((variant: any) => ({
+            ...variant,
+            barcode: variant.barcode ?? "",
+            retailer_discount_pct: variant.retailer_discount_pct ?? null,
+            distributor_discount_pct: variant.distributor_discount_pct ?? null,
+            retailer_stock: variant.retailer_stock ?? null,
+            distributor_stock: variant.distributor_stock ?? null,
+            retailer_pack_size: variant.retailer_pack_size ?? null,
+            distributor_pack_size: variant.distributor_pack_size ?? null,
+            available_customer: variant.available_customer ?? true,
+            available_retailer: variant.available_retailer ?? true,
+            available_distributor: variant.available_distributor ?? true,
+          })),
         axes: (axes.data ?? []).filter((axis: any) => axis.family_id === family.id),
         images: (images.data ?? []).filter((image: any) => image.family_id === family.id),
       })),
