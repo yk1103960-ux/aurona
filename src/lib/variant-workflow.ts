@@ -41,6 +41,7 @@ export type Variant = {
   distributor_pack_w: number | null;
   distributor_pack_h: number | null;
   is_active: boolean;
+  archived_at?: string | null;
   sort_order: number;
   low_stock_threshold: number;
   /** Which shopper segments may see and buy this variation. */
