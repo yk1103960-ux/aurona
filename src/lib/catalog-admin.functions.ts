@@ -75,12 +75,18 @@ const VariantInput = z.object({
   distributor_price: nullableNumber,
   retailer_mrp: nullableNumber,
   distributor_mrp: nullableNumber,
+  retailer_discount_pct: nullableNumber,
+  distributor_discount_pct: nullableNumber,
   moq: z.number().int().positive().nullable(),
   retailer_moq: z.number().int().positive().nullable(),
   distributor_moq: z.number().int().positive().nullable(),
   stock: z.number().int().min(0).nullable(),
+  retailer_stock: z.number().int().min(0).nullable(),
+  distributor_stock: z.number().int().min(0).nullable(),
   expected_stock: z.number().int().min(0).optional(),
   pack_size: z.number().int().positive().nullable(),
+  retailer_pack_size: z.number().int().positive().nullable(),
+  distributor_pack_size: z.number().int().positive().nullable(),
   weight_g: nullableNumber,
   dim_l: nullableNumber,
   dim_w: nullableNumber,
@@ -193,6 +199,27 @@ export const adminListProductFamilies = createServerFn({ method: "POST" })
       .order(column, { ascending, nullsFirst: false })
       .range(from, from + data.pageSize - 1);
     if (error) throw new Error(error.message);
+    // v3 preserves the shared SKU identity; buyer-channel values are updated
+    // on those same variant rows after the matrix save.
+    for (const variant of reconciledVariants) {
+      const { error: channelError } = await (supabaseAdmin as any)
+        .from("product_variants")
+        .update({
+          retailer_mrp: variant.retailer_mrp,
+          retailer_price: variant.retailer_price,
+          retailer_discount_pct: variant.retailer_discount_pct,
+          retailer_stock: variant.retailer_stock,
+          retailer_pack_size: variant.retailer_pack_size,
+          distributor_mrp: variant.distributor_mrp,
+          distributor_price: variant.distributor_price,
+          distributor_discount_pct: variant.distributor_discount_pct,
+          distributor_stock: variant.distributor_stock,
+          distributor_pack_size: variant.distributor_pack_size,
+        })
+        .eq("family_id", data.familyId)
+        .eq("sku", variant.sku.trim().toUpperCase());
+      if (channelError) throw new Error(channelError.message);
+    }
     return { rows: rows ?? [], count: count ?? 0 };
   });
 
