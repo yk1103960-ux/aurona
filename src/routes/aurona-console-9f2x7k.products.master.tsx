@@ -7,13 +7,13 @@ import {
   ChevronDown,
   ChevronRight,
   Columns3,
+  Copy,
   Download,
   ExternalLink,
   ImageIcon,
   Minus,
   PackageSearch,
   Pencil,
-  Layers3,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -33,6 +33,7 @@ import {
   adminBulkProductFamilyAction,
   adminDeleteProductFamilyPermanent,
   adminDeleteProductVariantPermanent,
+  adminDuplicateProductFamily,
   adminListProductMaster,
   adminSaveProductMasterRows,
   adminSetProductVariantState,
@@ -51,15 +52,15 @@ type Variant = {
   mrp: number | null;
   price: number | null;
   discount_pct: number | null;
-  retailer_price: number | null;
-  distributor_price: number | null;
   retailer_mrp: number | null;
-  distributor_mrp: number | null;
+  retailer_price: number | null;
   retailer_discount_pct: number | null;
-  distributor_discount_pct: number | null;
   retailer_stock: number | null;
-  distributor_stock: number | null;
   retailer_pack_size: number | null;
+  distributor_mrp: number | null;
+  distributor_price: number | null;
+  distributor_discount_pct: number | null;
+  distributor_stock: number | null;
   distributor_pack_size: number | null;
   moq: number | null;
   retailer_moq: number | null;
@@ -84,6 +85,9 @@ type Variant = {
   distributor_pack_w: number | null;
   distributor_pack_h: number | null;
   is_active: boolean;
+  available_customer: boolean;
+  available_retailer: boolean;
+  available_distributor: boolean;
   archived_at: string | null;
   low_stock_threshold: number;
   sort_order: number;
@@ -167,6 +171,9 @@ type EditableKey =
   | "distributor_pack_h"
   | "low_stock_threshold"
   | "is_active"
+  | "available_customer"
+  | "available_retailer"
+  | "available_distributor"
   | "attributes";
 
 type Drafts = Record<string, Partial<Pick<Variant, EditableKey>>>;
@@ -565,6 +572,9 @@ function ProductMaster() {
     is_active: variant.is_active,
     sort_order: variant.sort_order,
     low_stock_threshold: variant.low_stock_threshold ?? 10,
+    available_customer: variant.available_customer !== false,
+    available_retailer: variant.available_retailer !== false,
+    available_distributor: variant.available_distributor !== false,
   });
 
   const saveIds = async (ids: string[]) => {
@@ -737,6 +747,20 @@ function ProductMaster() {
       await q.refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not permanently delete product");
+    }
+  };
+
+  const duplicateFamily = async (family: Family) => {
+    if (!window.confirm(`Duplicate "${family.name}" with its current product data and SKU structure?`)) return;
+    try {
+      const result = await adminDuplicateProductFamily({ data: { familyId: family.id } });
+      toast.success(`${family.name} duplicated`);
+      await q.refetch();
+      if (result?.product_id) {
+        window.location.assign(`/aurona-console-9f2x7k/products/${result.product_id}`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not duplicate product");
     }
   };
 
@@ -1139,6 +1163,7 @@ function ProductMaster() {
                   }}
                   onState={(action) => setFamilyState(family, action)}
                   onDeletePermanent={() => deleteFamilyPermanently(family)}
+                  onDuplicate={() => duplicateFamily(family)}
                   onVariantState={setVariantState}
                   onVariantDeletePermanent={deleteVariantPermanently}
                 />
@@ -1293,6 +1318,7 @@ function FamilyRows({
   onAdjust,
   onState,
   onDeletePermanent,
+  onDuplicate,
   onVariantState,
   onVariantDeletePermanent,
 }: {
@@ -1311,6 +1337,7 @@ function FamilyRows({
   onAdjust: (row: Variant) => void;
   onState: (action: "publish" | "unpublish" | "archive" | "restore") => void;
   onDeletePermanent: () => void;
+  onDuplicate: () => void;
   onVariantState: (variant: Variant, action: "archive" | "restore") => void;
   onVariantDeletePermanent: (variant: Variant) => void;
 }) {
@@ -1368,13 +1395,21 @@ function FamilyRows({
               </button>
             ) : column.key === "actions" ? (
               <div className="flex gap-1">
-                <Button size="icon" variant="ghost" asChild aria-label="Edit product details">
+                <Button size="icon" variant="ghost" asChild aria-label="View storefront" title="View storefront">
+                  <Link to="/products/$slug" params={{ slug: family.slug }} target="_blank">
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="icon" variant="ghost" asChild aria-label="Edit Product" title="Edit Product">
                   <Link
                     to="/aurona-console-9f2x7k/products/$id"
                     params={{ id: family.legacy_product_id ?? family.id }}
                   >
                     <Pencil className="h-4 w-4" />
                   </Link>
+                </Button>
+                <Button size="icon" variant="ghost" aria-label="Duplicate product" title="Duplicate product" onClick={onDuplicate}>
+                  <Copy className="h-4 w-4" />
                 </Button>
                 {family.archived_at ? (
                   <>
@@ -1413,8 +1448,9 @@ function FamilyRows({
                     </Button>
                     <Button
                       size="icon"
-                      variant="destructive"
+                      variant="ghost"
                       aria-label="Archive family"
+                      title="Temporarily delete (archive)"
                       onClick={() => onState("archive")}
                     >
                       <Archive className="h-4 w-4" />
@@ -1578,19 +1614,32 @@ function MasterCell({
               <Pencil className="h-4 w-4" />
             </Link>
           </Button>
-          <Button size="icon" variant="ghost" asChild aria-label="Manage variations and images">
-            <Link
-              to="/aurona-console-9f2x7k/products/$id/variations"
-              params={{ id: family.legacy_product_id ?? family.id }}
-            >
-              <Layers3 className="h-4 w-4" />
-            </Link>
-          </Button>
           <Button size="icon" variant="ghost" asChild aria-label="View storefront">
             <Link to="/products/$slug" params={{ slug: family.slug }} target="_blank">
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>
+          {([
+            ["available_customer", "C", "Available to Customers"],
+            ["available_retailer", "R", "Available to Retailers"],
+            ["available_distributor", "D", "Available to Distributors"],
+          ] as const).map(([key, label, title]) => {
+            const enabled = row[key] !== false;
+            return (
+              <button
+                key={key}
+                type="button"
+                title={title}
+                aria-label={title}
+                aria-pressed={enabled}
+                disabled={Boolean(row.archived_at)}
+                onClick={() => change(source, key, !enabled)}
+                className={`h-8 w-8 rounded-md border text-xs font-semibold ${enabled ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-200 bg-white text-slate-400 line-through"}`}
+              >
+                {label}
+              </button>
+            );
+          })}
           {row.archived_at ? (
             <>
               <Button size="icon" variant="success" aria-label="Restore SKU" title="Restore SKU" onClick={() => onVariantState("restore")}>
