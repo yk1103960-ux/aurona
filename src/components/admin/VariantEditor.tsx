@@ -3063,7 +3063,7 @@ function NumberInput({
     <Input
       type="number"
       step="any"
-      className="min-w-[100px] text-right"
+      className="w-[80px] min-w-[80px] text-right"
       value={value ?? ""}
       placeholder={placeholder}
       onChange={(e) => onChange(toNumber(e.target.value))}
@@ -3292,7 +3292,7 @@ function SegmentPriceTable({
         </div>
 
         <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain" tabIndex={0} role="region" aria-label={`${label} price and stock table`}>
-          <table className="w-full min-w-[1000px] border-collapse text-sm">
+          <table className="w-full min-w-[900px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <Th className={FREEZE_1}>Variation</Th>
@@ -3321,7 +3321,7 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[155px] items-center gap-1">
+                      <div className="flex min-w-[125px] items-center gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -3330,7 +3330,7 @@ function SegmentPriceTable({
                           value={(row[mrpKey] as number | null) ?? ""}
                           placeholder={`${label} MRP`}
                           onChange={(event) => changeMrp(row, event.target.value)}
-                          className="h-9 min-w-[110px]"
+                          className="h-9 w-[88px] min-w-[88px]"
                         />
                         <CopyButton
                           visible={hasRowsBelow}
@@ -3342,8 +3342,8 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[165px] items-center gap-1">
-                        <div className="relative min-w-[115px]">
+                      <div className="flex min-w-[133px] items-center gap-1">
+                        <div className="relative w-[92px] min-w-[92px]">
                           <Input
                             type="number"
                             min="0"
@@ -3378,7 +3378,7 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[155px] items-center gap-1">
+                      <div className="flex min-w-[125px] items-center gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -3387,7 +3387,7 @@ function SegmentPriceTable({
                           value={(row[priceKey] as number | null) ?? ""}
                           placeholder={`${label} Price`}
                           onChange={(event) => changePrice(row, event.target.value)}
-                          className="h-9 min-w-[110px]"
+                          className="h-9 w-[88px] min-w-[88px]"
                         />
                         <CopyButton
                           visible={hasRowsBelow}
@@ -3399,7 +3399,7 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[130px] items-center gap-1">
+                      <div className="flex min-w-[105px] items-center gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -3408,7 +3408,7 @@ function SegmentPriceTable({
                           value={row.stock ?? ""}
                           placeholder="0"
                           onChange={(event) => changeStock(row, event.target.value)}
-                          className="h-9 min-w-[90px]"
+                          className="h-9 w-[72px] min-w-[72px]"
                         />
                         <CopyButton
                           visible={hasRowsBelow}
