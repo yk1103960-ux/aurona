@@ -470,6 +470,44 @@ export const adminBulkProductFamilyAction = createServerFn({ method: "POST" })
     } else if (error) {
       throw new Error(error.message);
     }
+
+    // Keep legacy storefront rows aligned with the authoritative family.
+    // Older catalogue fallbacks read products, so their state must match.
+    const { data: familyStates, error: familyStateError } = await (supabaseAdmin as any)
+      .from("product_families")
+      .select("id,legacy_product_id,is_published,archived_at")
+      .in("id", data.familyIds);
+    if (familyStateError) throw new Error(familyStateError.message);
+
+    const { data: familyVariants, error: familyVariantError } = await (supabaseAdmin as any)
+      .from("product_variants")
+      .select("family_id,sku")
+      .in("family_id", data.familyIds);
+    if (familyVariantError) throw new Error(familyVariantError.message);
+
+    for (const family of familyStates ?? []) {
+      const legacyPatch = {
+        is_published: Boolean(family.is_published) && !family.archived_at,
+        archived_at: family.archived_at ?? null,
+      };
+      if (family.legacy_product_id) {
+        const { error: legacyIdError } = await (supabaseAdmin as any)
+          .from("products")
+          .update(legacyPatch)
+          .eq("id", family.legacy_product_id);
+        if (legacyIdError) throw new Error(legacyIdError.message);
+      }
+      const skus = (familyVariants ?? [])
+        .filter((variant: any) => variant.family_id === family.id && variant.sku)
+        .map((variant: any) => variant.sku);
+      if (skus.length) {
+        const { error: legacySkuError } = await (supabaseAdmin as any)
+          .from("products")
+          .update(legacyPatch)
+          .in("sku", skus);
+        if (legacySkuError) throw new Error(legacySkuError.message);
+      }
+    }
     await writeAudit({
       actorUserId: actor.userId,
       actorEmail: actor.email,
