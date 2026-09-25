@@ -149,6 +149,11 @@ function ProductsAdmin() {
   };
   const deletePermanently = async (ids = [...selected]) => {
     if (!ids.length) return;
+    const activeTargets = rows.filter((row) => ids.includes(row.id) && !row.archived_at);
+    if (activeTargets.length) {
+      toast.error("Archive the product first, then use Delete Permanently.");
+      return;
+    }
     if (
       !confirm(
         `Permanently delete ${ids.length} product(s)? This cannot be undone. Their SKUs become reusable and past orders keep their details.`,
@@ -538,18 +543,16 @@ function ProductsAdmin() {
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     )}
-                    {row.archived_at && (
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        aria-label="Delete product permanently"
-                        title="Delete permanently — cannot be undone"
-                        disabled={busy}
-                        onClick={() => deletePermanently([row.id])}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      aria-label="Delete product permanently"
+                      title={row.archived_at ? "Delete permanently — cannot be undone" : "Archive first, then delete permanently"}
+                      disabled={busy}
+                      onClick={() => deletePermanently([row.id])}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </td>
               </tr>
