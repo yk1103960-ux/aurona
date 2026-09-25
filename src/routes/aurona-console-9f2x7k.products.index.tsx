@@ -197,7 +197,14 @@ function ProductsAdmin() {
             {q.data?.count ?? "…"} product families · family data is authoritative
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={publication === "archived" ? "default" : "outline"}
+            onClick={() => updateFilter(setPublication, "archived")}
+          >
+            <Archive className="h-4 w-4" />
+            Archived Products
+          </Button>
           <Button
             variant="outline"
             onClick={() => nav({ to: "/aurona-console-9f2x7k/products/bulk" })}
@@ -211,7 +218,30 @@ function ProductsAdmin() {
           </Button>
         </div>
       </div>
-      <div className="grid gap-2 rounded-xl border bg-white p-3 sm:grid-cols-2 lg:grid-cols-6">
+      {publication === "archived" && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <div>
+            <h2 className="flex items-center gap-2 font-semibold text-amber-950">
+              <Archive className="h-5 w-5" /> Archived Products
+            </h2>
+            <p className="mt-1 text-sm text-amber-800">
+              Archived products remain stored. Select products below to restore or permanently delete them.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => updateFilter(setPublication, "all")}>
+              Back to active products
+            </Button>
+            <Button size="sm" variant="secondary" disabled={busy || selected.size === 0} onClick={() => runAction("restore")}>
+              <RotateCcw className="mr-1 h-4 w-4" /> Restore selected
+            </Button>
+            <Button size="sm" variant="destructive" disabled={busy || selected.size === 0} onClick={() => deletePermanently()}>
+              <Trash2 className="mr-1 h-4 w-4" /> Delete permanently
+            </Button>
+          </div>
+        </section>
+      )}
+            <div className="grid gap-2 rounded-xl border bg-white p-3 sm:grid-cols-2 lg:grid-cols-6">
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
