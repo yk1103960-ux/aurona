@@ -7,12 +7,12 @@ import { inr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Archive,
   Copy,
   Eye,
   EyeOff,
   ExternalLink,
   FileUp,
-  Layers3,
   Pencil,
   Plus,
   RotateCcw,
@@ -342,7 +342,7 @@ function ProductsAdmin() {
                 disabled={busy}
                 onClick={() => runAction("archive")}
               >
-                <Trash2 className="mr-1 h-4 w-4" />
+                <Archive className="mr-1 h-4 w-4" />
                 Temporary delete
               </Button>
               <Button
@@ -449,25 +449,12 @@ function ProductsAdmin() {
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button asChild size="icon" variant="ghost" aria-label="Edit product family">
+                    <Button asChild size="icon" variant="ghost" aria-label="Edit Product" title="Edit Product">
                       <Link
                         to="/aurona-console-9f2x7k/products/$id"
                         params={{ id: row.legacy_product_id ?? row.id }}
                       >
                         <Pencil className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Manage variations and images"
-                    >
-                      <Link
-                        to="/aurona-console-9f2x7k/products/$id/variations"
-                        params={{ id: row.legacy_product_id ?? row.id }}
-                      >
-                        <Layers3 className="h-4 w-4" />
                       </Link>
                     </Button>
                     {!row.archived_at && (
@@ -498,12 +485,13 @@ function ProductsAdmin() {
                         </Button>
                         <Button
                           size="icon"
-                          variant="destructive"
+                          variant="ghost"
                           aria-label="Temporarily delete product"
+                          title="Temporarily delete (archive)"
                           disabled={busy}
                           onClick={() => runAction("archive", [row.id])}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Archive className="h-4 w-4" />
                         </Button>
                       </>
                     )}
@@ -518,15 +506,18 @@ function ProductsAdmin() {
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      aria-label="Delete product permanently"
-                      disabled={busy}
-                      onClick={() => deletePermanently([row.id])}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {row.archived_at && (
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        aria-label="Delete product permanently"
+                        title="Delete permanently — cannot be undone"
+                        disabled={busy}
+                        onClick={() => deletePermanently([row.id])}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -541,7 +532,7 @@ function ProductsAdmin() {
             {q.isError && (
               <tr>
                 <td colSpan={7} className="p-10 text-center text-rose-600">
-                  Could not load product families.
+{q.error instanceof Error ? q.error.message : "Could not load product families."}
                 </td>
               </tr>
             )}
