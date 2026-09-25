@@ -119,6 +119,27 @@ export const placeOrder = createServerFn({ method: "POST" })
     // 4) Recompute the shopper's actual visible price for every SKU.
     const skus = [...new Set(items.map((item) => item.sku).filter(Boolean))];
 
+    // Enforce the same per-buyer SKU availability used by the storefront.
+    // This prevents an old cart or a direct request from buying a variation
+    // that an admin has limited to another account type.
+    const { data: channelVariants, error: channelError } = await supabase
+      .from("public_product_variants")
+      .select("sku, available_customer, available_retailer, available_distributor")
+      .in("sku", skus);
+    if (channelError) throw new Error(channelError.message || "Could not verify product availability.");
+    const channelBySku = new Map((channelVariants ?? []).map((variant) => [variant.sku, variant]));
+    for (const item of items) {
+      const variant = channelBySku.get(item.sku);
+      const allowed = variant && (
+        buyerType === "retailer"
+          ? variant.available_retailer !== false
+          : buyerType === "distributor"
+            ? variant.available_distributor !== false
+            : variant.available_customer !== false
+      );
+      if (!allowed) throw new Error(`${item.name} is not available for your account type.`);
+    }
+
     const { data: visiblePrices, error: priceError } = await supabase.rpc("get_visible_prices", {
       _skus: skus,
     });
