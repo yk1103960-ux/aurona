@@ -15,14 +15,15 @@ COMMENT ON COLUMN public.product_variants.distributor_stock IS 'Distributor inve
 CREATE OR REPLACE FUNCTION public.admin_import_dynamic_products_v1(_rows jsonb, _actor_user_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  item jsonb; fam public.product_families%ROWTYPE; variant public.product_variants%ROWTYPE;
+  item jsonb; axis jsonb; fam public.product_families%ROWTYPE; variant public.product_variants%ROWTYPE;
   category_id uuid; program_id uuid; batch_id uuid; result jsonb;
   created_products integer := 0; updated_products integer := 0; created_variants integer := 0; updated_variants integer := 0;
-  attrs jsonb; function_name text; requested_main_sku text; requested_variant_sku text;
+  attrs jsonb; function_name text; requested_main_sku text; requested_variant_sku text; family_created boolean;
 BEGIN
   IF jsonb_array_length(COALESCE(_rows, '[]'::jsonb)) < 1 OR jsonb_array_length(_rows) > 2000 THEN RAISE EXCEPTION 'Import must contain 1 to 2000 rows'; END IF;
   INSERT INTO public.admin_import_batches(kind,status,row_count,created_by) VALUES ('dynamic_catalog','completed',jsonb_array_length(_rows),_actor_user_id) RETURNING id INTO batch_id;
   FOR item IN SELECT value FROM jsonb_array_elements(_rows) LOOP
+    family_created := false;
     function_name := lower(btrim(item->>'function')); requested_main_sku := upper(btrim(item->>'main_sku')); requested_variant_sku := upper(btrim(item->>'variant_sku'));
     IF function_name NOT IN ('create','update') OR requested_main_sku = '' OR requested_variant_sku = '' THEN RAISE EXCEPTION 'Invalid function or SKU at Excel row %', item->>'excel_row'; END IF;
     SELECT id INTO category_id FROM public.categories WHERE lower(name)=lower(btrim(item->>'category_name')) LIMIT 1;
@@ -36,6 +37,7 @@ BEGIN
         'warranty',NULLIF(item->>'warranty',''),'mrp',COALESCE(NULLIF(item->>'mrp','')::numeric,0),'price',COALESCE(NULLIF(item->>'customer_price','')::numeric,0),'stock',0,'is_published',false
       ));
       SELECT * INTO fam FROM public.product_families WHERE id=(result->>'family_id')::uuid FOR UPDATE; created_products:=created_products+1;
+      family_created := true;
     ELSIF function_name='update' AND NOT FOUND THEN RAISE EXCEPTION 'Update target Main SKU % was not found',requested_main_sku;
     ELSIF function_name='update' THEN
       UPDATE public.product_families SET
@@ -46,6 +48,21 @@ BEGIN
       WHERE id=fam.id RETURNING * INTO fam; updated_products:=updated_products+1;
     END IF;
     attrs := COALESCE(item->'attributes','{}'::jsonb);
+    IF family_created THEN
+      -- admin_upsert_product_family creates one compatibility SKU. A dynamic
+      -- matrix replaces only that brand-new placeholder, never an existing SKU.
+      DELETE FROM public.product_variants WHERE family_id=fam.id AND sku=requested_main_sku AND attributes='{}'::jsonb;
+    END IF;
+    FOR axis IN SELECT value FROM jsonb_array_elements(COALESCE(item->'variation_axes','[]'::jsonb)) LOOP
+      INSERT INTO public.product_variant_axes(family_id,axis_key,label,values,sort_order)
+      VALUES(fam.id,lower(regexp_replace(btrim(axis->>'name'),'[^a-zA-Z0-9]+','_','g')),btrim(axis->>'name'),jsonb_build_array(axis->>'value'),COALESCE((axis->>'sort_order')::integer,0))
+      ON CONFLICT(family_id,axis_key) DO UPDATE SET
+        label=EXCLUDED.label,
+        sort_order=LEAST(product_variant_axes.sort_order,EXCLUDED.sort_order),
+        values=(SELECT jsonb_agg(value ORDER BY ordinal) FROM (
+          SELECT value,MIN(ordinal) ordinal FROM jsonb_array_elements_text(product_variant_axes.values||EXCLUDED.values) WITH ORDINALITY AS x(value,ordinal) GROUP BY value
+        ) distinct_values);
+    END LOOP;
     IF EXISTS(SELECT 1 FROM public.product_variants v WHERE v.sku=requested_variant_sku AND v.family_id<>fam.id) THEN RAISE EXCEPTION 'Variant SKU % belongs to another product',requested_variant_sku; END IF;
     SELECT * INTO variant FROM public.product_variants v WHERE v.id=NULLIF(item->>'variant_id','')::uuid OR (v.family_id=fam.id AND v.sku=requested_variant_sku) LIMIT 1 FOR UPDATE;
     IF function_name='create' AND FOUND THEN RAISE EXCEPTION 'Variant SKU % already exists',requested_variant_sku;
