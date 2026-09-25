@@ -84,7 +84,7 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     const { data: products, error: productError } = await supabase
       .from("products")
-      .select("id, sku, name, price, stock, is_published")
+      .select("id, sku, name, price, stock, is_published, archived_at")
       .in("id", productIds);
 
     if (productError) {
@@ -96,7 +96,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const items = cart.map((row) => {
       const product = productById.get(row.product_id);
 
-      if (!product || !product.is_published) {
+      if (!product || !product.is_published || product.archived_at) {
         throw new Error("A product in your cart is no longer available.");
       }
 
