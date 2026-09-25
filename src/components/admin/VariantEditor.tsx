@@ -154,10 +154,13 @@ export function VariantEditor({
   priceSegment?: PriceSegment;
   buyerWorkflow?: PriceSegment;
 }) {
+  const sharedBuyerWorkflow = buyerWorkflow === "retailer" || buyerWorkflow === "distributor";
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>(
-    displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
+    sharedBuyerWorkflow
+      ? "customer"
+      : displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
@@ -247,8 +250,12 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab));
-  }, [initialTab, displayOnly]);
+    setTab(
+      buyerWorkflow === "retailer" || buyerWorkflow === "distributor"
+        ? "customer"
+        : displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
+    );
+  }, [initialTab, displayOnly, buyerWorkflow]);
 
   const family = q.data?.family;
   const axes = axisRows;
