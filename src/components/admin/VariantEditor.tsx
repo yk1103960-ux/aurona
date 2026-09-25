@@ -2228,22 +2228,22 @@ function BulkPriceByOption({
         </label>
       </div>
 
-      <div className="w-full min-w-0">
-        <table className="w-full table-fixed border-collapse text-sm">
+      <div className="scrollbar-visible w-full min-w-0 overflow-x-auto overscroll-x-contain" tabIndex={0} role="region" aria-label={`${label} bulk pricing table`}>
+        <table className="w-full min-w-[720px] table-fixed border-collapse text-sm">
           <colgroup>
-            <col className="w-[16%]" />
+            <col className="w-[17%]" />
             {fields.map((field) => (
-              <col key={field.key} className="w-[12%]" />
+              <col key={field.key} className="w-[11%]" />
             ))}
-            <col className="w-[24%]" />
+            <col className="w-[28%]" />
           </colgroup>
           <thead className="sticky top-0 z-30 bg-white shadow-sm">
             <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-              <Th>{optionLabel(activeKey)}</Th>
+              <Th className="px-2">{optionLabel(activeKey)}</Th>
               {fields.map((field) => (
-                <Th key={field.key}>{field.label}</Th>
+                <Th key={field.key} className="px-2">{field.label}</Th>
               ))}
-              <Th>Apply</Th>
+              <Th className="px-2">Apply</Th>
             </tr>
           </thead>
           <tbody>
@@ -2251,19 +2251,19 @@ function BulkPriceByOption({
               const count = rows.filter((row) => row.attributes?.[activeKey] === group).length;
               return (
                 <tr key={group} className="border-t border-slate-200 bg-white">
-                  <Td>
+                  <Td className="px-2">
                     <div className="font-semibold text-slate-950">{group}</div>
                     <div className="text-xs text-slate-500">
                       {count} SKU{count === 1 ? "" : "s"}
                     </div>
                   </Td>
                   {fields.map((field) => (
-                    <Td key={field.key}>
+                    <Td key={field.key} className="px-2">
                       <Input
                         type="number"
                         min="0"
                         step={field.key === "stock" ? "1" : "0.01"}
-                        className="h-10 w-full min-w-0 px-2"
+                        className="h-9 w-full min-w-0 px-2 text-xs"
                         inputMode={field.key === "stock" ? "numeric" : "decimal"}
                         placeholder={field.placeholder}
                         value={drafts[group]?.[field.key] ?? ""}
@@ -2271,11 +2271,11 @@ function BulkPriceByOption({
                       />
                     </Td>
                   ))}
-                  <Td>
+                  <Td className="px-2">
                     <Button
                       type="button"
                       size="sm"
-                      className="h-auto min-h-9 w-full whitespace-normal px-2 py-2 text-center leading-tight"
+                      className="h-auto min-h-9 w-full max-w-full whitespace-normal break-words px-1.5 py-1.5 text-center text-xs leading-tight"
                       onClick={() => applyGroup(group)}
                     >
                       Apply to {group}
@@ -2578,7 +2578,7 @@ function ShippingTab({
     integer = false,
   ) => (
     <Td key={field}>
-      <div className="flex min-w-[135px] items-center gap-1">
+      <div className="flex min-w-[110px] items-center gap-1">
         <Input
           type="number"
           min="0"
@@ -2591,7 +2591,7 @@ function ShippingTab({
               [field]: event.target.value === "" ? null : Number(event.target.value),
             } as Partial<Variant>)
           }
-          className="h-10 min-w-[105px]"
+          className="h-9 w-[84px] min-w-[84px] px-2 text-xs"
         />
         {index < rows.length - 1 && (
           <button
@@ -3401,7 +3401,7 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[125px] items-center gap-1">
+                      <div className="flex min-w-[105px] items-center gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -3410,7 +3410,7 @@ function SegmentPriceTable({
                           value={(row[mrpKey] as number | null) ?? ""}
                           placeholder={`${label} MRP`}
                           onChange={(event) => changeMrp(row, event.target.value)}
-                          className="h-9 w-[88px] min-w-[88px]"
+                          className="h-9 w-[72px] min-w-[72px] px-2 text-xs"
                         />
                         <CopyButton
                           visible={hasRowsBelow}
@@ -3422,8 +3422,8 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[133px] items-center gap-1">
-                        <div className="relative w-[92px] min-w-[92px]">
+                      <div className="flex min-w-[112px] items-center gap-1">
+                        <div className="relative w-[76px] min-w-[76px]">
                           <Input
                             type="number"
                             min="0"
@@ -3433,9 +3433,9 @@ function SegmentPriceTable({
                             value={segment === "customer" ? (row.discount_pct ?? 0) : discount || ""}
                             placeholder="0.00"
                             onChange={(event) => changeDiscount(row, event.target.value)}
-                            className="h-9 pr-8"
+                            className="h-9 px-2 pr-6 text-xs"
                           />
-                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
                             %
                           </span>
                         </div>
@@ -3479,7 +3479,7 @@ function SegmentPriceTable({
                       </div>
                     </Td>
                     <Td>
-                      <div className="flex min-w-[105px] items-center gap-1">
+                      <div className="flex min-w-[92px] items-center gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -3488,7 +3488,7 @@ function SegmentPriceTable({
                           value={(row[stockKey] as number | null) ?? ""}
                           placeholder="0"
                           onChange={(event) => changeStock(row, event.target.value)}
-                          className="h-9 w-[72px] min-w-[72px]"
+                          className="h-9 w-[60px] min-w-[60px] px-2 text-xs"
                         />
                         <CopyButton
                           visible={hasRowsBelow}
