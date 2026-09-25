@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import {
   Save,
   Plus,
+  Archive,
+  RotateCcw,
   Trash2,
   Users,
   Truck,
@@ -28,6 +30,8 @@ import {
   adminLoadVariantMatrix,
   adminSaveVariantMatrix,
   adminSetPrimaryProductImage,
+  adminSetProductVariantState,
+  adminDeleteProductVariantPermanent,
 } from "@/lib/catalog-admin.functions";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { Textarea } from "@/components/ui/textarea";
@@ -462,6 +466,69 @@ export function VariantEditor({
     toast.success("Variant marked inactive. Save variants to apply.");
   };
 
+  const archiveVariant = async (row: Variant) => {
+    if (busy) return;
+    if (row.id.startsWith("new-")) {
+      removeRow(row);
+      return;
+    }
+    if (!confirm(`Archive variant ${row.sku}? It can be restored later.`)) return;
+    setSaving(true);
+    try {
+      await adminSetProductVariantState({ data: { variantId: row.id, action: "archive" } });
+      dirty.current = false;
+      await q.refetch();
+      await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
+      toast.success(`Variant ${row.sku} archived.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not archive variant");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreVariant = async (row: Variant) => {
+    if (busy || row.id.startsWith("new-")) return;
+    setSaving(true);
+    try {
+      await adminSetProductVariantState({ data: { variantId: row.id, action: "restore" } });
+      dirty.current = false;
+      await q.refetch();
+      await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
+      toast.success(`Variant ${row.sku} restored.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not restore variant");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteVariantPermanently = async (row: Variant) => {
+    if (busy) return;
+    if (row.id.startsWith("new-")) {
+      removeRow(row);
+      return;
+    }
+    if (!row.archived_at) {
+      toast.error("Archive this variant before deleting it permanently.");
+      return;
+    }
+    if (!confirm(`Permanently delete variant ${row.sku}? This cannot be undone.`)) return;
+    setSaving(true);
+    try {
+      await adminDeleteProductVariantPermanent({ data: { variantId: row.id } });
+      setEditingId((current) => (current === row.id ? null : current));
+      dirty.current = false;
+      await q.refetch();
+      await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
+      toast.success(`Variant ${row.sku} permanently deleted.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not permanently delete variant");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const saveMatrix = async (): Promise<Variant[] | null> => {
     if (busy) return null;
     let cleaned: Axis[];
@@ -801,7 +868,9 @@ export function VariantEditor({
           <QuickVariantsTab
             rows={rows}
             updateRow={updateRow}
-            removeRow={removeRow}
+            archiveVariant={archiveVariant}
+            restoreVariant={restoreVariant}
+            deleteVariantPermanently={deleteVariantPermanently}
             editRow={(row) => {
               setWizardStep(0);
               setEditingId(row.id);
@@ -872,14 +941,18 @@ export function VariantEditor({
 function QuickVariantsTab({
   rows,
   updateRow,
-  removeRow,
+  archiveVariant,
+  restoreVariant,
+  deleteVariantPermanently,
   editRow,
   manageImages,
   optionsEditor,
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
-  removeRow: (row: Variant) => void;
+  archiveVariant: (row: Variant) => void;
+  restoreVariant: (row: Variant) => void;
+  deleteVariantPermanently: (row: Variant) => void;
   editRow: (row: Variant) => void;
   manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
@@ -925,18 +998,20 @@ function QuickVariantsTab({
 
                   <Td>
                     <div className="flex min-w-[110px] items-center gap-2">
-                      <Switch
-                        checked={Boolean(row.is_active)}
-                        onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
-                      />
+                      {!row.archived_at && (
+                        <Switch
+                          checked={Boolean(row.is_active)}
+                          onCheckedChange={(checked) => updateRow(row.id, { is_active: checked })}
+                        />
+                      )}
                       <span className="text-xs font-medium text-slate-600">
-                        {row.is_active ? "Active" : "Inactive"}
+                        {row.archived_at ? "Archived" : row.is_active ? "Active" : "Inactive"}
                       </span>
                     </div>
                   </Td>
 
                   <Td>
-                    <div className="flex min-w-[190px] gap-2">
+                    <div className="flex min-w-[260px] flex-wrap gap-2">
                       <Button
                         type="button"
                         size="sm"
@@ -960,16 +1035,21 @@ function QuickVariantsTab({
                         </Button>
                       )}
 
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeRow(row)}
-                        title="Delete variation"
-                        aria-label={`Delete variation ${row.sku}`}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      {row.archived_at ? (
+                        <Button type="button" size="sm" variant="outline" onClick={() => restoreVariant(row)} title="Restore archived variant" aria-label={`Restore variant ${row.sku}`}>
+                          <RotateCcw className="mr-1 h-4 w-4" /> Restore
+                        </Button>
+                      ) : (
+                        <Button type="button" size="sm" variant="outline" onClick={() => archiveVariant(row)} title={row.id.startsWith("new-") ? "Remove unsaved variant" : "Archive variant"} aria-label={`${row.id.startsWith("new-") ? "Remove" : "Archive"} variant ${row.sku}`}>
+                          <Archive className="mr-1 h-4 w-4" /> {row.id.startsWith("new-") ? "Remove" : "Archive"}
+                        </Button>
+                      )}
+
+                      {!row.id.startsWith("new-") && (
+                        <Button type="button" size="sm" variant="destructive" onClick={() => deleteVariantPermanently(row)} title={row.archived_at ? "Delete variant permanently" : "Archive before permanent deletion"} aria-label={`Permanently delete variant ${row.sku}`}>
+                          <Trash2 className="mr-1 h-4 w-4" /> Delete permanently
+                        </Button>
+                      )}
                     </div>
                   </Td>
                 </tr>
