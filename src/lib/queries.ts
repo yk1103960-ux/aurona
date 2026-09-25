@@ -59,7 +59,11 @@ export const categoriesQuery = queryOptions({
 export const categoryCountsQuery = queryOptions({
   queryKey: ["category-counts"],
   queryFn: async () => {
-    const { data, error } = await supabase.from("products").select("category_id");
+    const { data, error } = await supabase
+      .from("products")
+      .select("category_id")
+      .eq("is_published", true)
+      .is("archived_at", null);
     if (error) throw error;
     const map: Record<string, number> = {};
     for (const row of data ?? []) {
@@ -715,6 +719,8 @@ export const browseProductsByCategoryQuery = (categorySlug: string) =>
         .from("products")
         .select("id, slug, sku, name, image_seed, price, mrp, wattage, stock")
         .eq("category_id", cat.id)
+        .eq("is_published", true)
+        .is("archived_at", null)
         .order("is_bestseller", { ascending: false })
         .order("name")
         .limit(24);
