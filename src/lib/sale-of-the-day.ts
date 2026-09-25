@@ -52,6 +52,7 @@ export const saleOfTheDayQuery = (count = 6) =>
           "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, wattage, size, categories(slug, name, icon)",
         )
         .eq("is_published", true)
+        .is("archived_at", null)
         .eq("is_sale", true)) as unknown as { data: SaleRow[] | null };
 
       let pool = (flagged.data ?? []).filter((p) => Number(p.price) > 0 && Number(p.mrp) > Number(p.price));
@@ -62,7 +63,8 @@ export const saleOfTheDayQuery = (count = 6) =>
           .select(
             "id, slug, sku, name, category_id, brand, short_description, mrp, price, unit, stock, rating, review_count, is_featured, is_bestseller, is_new, is_sale, image_seed, wattage, size, categories(slug, name, icon)",
           )
-          .eq("is_published", true)) as unknown as { data: SaleRow[] | null };
+          .eq("is_published", true)
+          .is("archived_at", null)) as unknown as { data: SaleRow[] | null };
         const extra = (all.data ?? []).filter(
           (p) => Number(p.price) > 0 && Number(p.mrp) > Number(p.price) && !pool.some((x) => x.id === p.id),
         );
