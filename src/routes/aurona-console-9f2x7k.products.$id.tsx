@@ -644,16 +644,18 @@ export function ProductEditor({ productId: id }: { productId: string }) {
         </div>
       </div>
 
-      {/* OLD ADMIN STYLE PRODUCT EDITOR LAYOUT */}
-      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-4">
-          <nav className="overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+      {/* Horizontal navigation leaves the full content width available to variant tables. */}
+      <div className="space-y-4">
+        <nav
+          className="scrollbar-visible sticky top-0 z-40 flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur"
+          aria-label="Edit product sections"
+        >
             {TABS.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => setTab(item.key)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition ${
+                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
                   tab === item.key ? "bg-sky-50 text-sky-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
@@ -661,8 +663,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                 <span className="leading-tight">{item.label}</span>
               </button>
             ))}
-          </nav>
-        </aside>
+        </nav>
 
         <main className="min-w-0 space-y-4">
           {/* GENERAL */}
