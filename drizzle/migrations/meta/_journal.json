@@ -57,6 +57,13 @@
       "when": 1790358159980,
       "tag": "0007_hide_deleted_variant_product_rows",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790358225504,
+      "tag": "0008_restrict_tax_rules_read",
+      "breakpoints": true
     }
   ]
 }
