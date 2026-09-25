@@ -101,6 +101,8 @@ function ProductsAdmin() {
   });
   const q = useQuery({
     queryKey: ["admin-product-families", search, categoryId, brand, publication, stock, sort, page],
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
     queryFn: async () =>
       adminListProductFamilies({
         data: {
