@@ -47,6 +47,15 @@ BEGIN
         warranty=COALESCE(NULLIF(item->>'warranty',''),warranty), updated_at=now()
       WHERE id=fam.id RETURNING * INTO fam; updated_products:=updated_products+1;
     END IF;
+    UPDATE public.product_families SET
+      meta_title=COALESCE(NULLIF(item->>'seo_title',''),meta_title),
+      meta_description=COALESCE(NULLIF(item->>'seo_description',''),meta_description),
+      estimated_shipping_days=COALESCE(NULLIF(item->>'shipping_days','')::integer,estimated_shipping_days),
+      refundable=CASE WHEN NULLIF(item->>'refundable','') IS NULL THEN refundable ELSE lower(item->>'refundable') IN ('yes','true','1') END,
+      warranty=COALESCE(NULLIF(item->>'warranty',''),warranty),
+      is_sale=CASE WHEN NULLIF(item->>'sale_status','') IS NULL THEN is_sale ELSE lower(item->>'sale_status') IN ('sale','deal','yes','true','1') END,
+      updated_at=now()
+    WHERE id=fam.id RETURNING * INTO fam;
     attrs := COALESCE(item->'attributes','{}'::jsonb);
     IF family_created THEN
       -- admin_upsert_product_family creates one compatibility SKU. A dynamic
