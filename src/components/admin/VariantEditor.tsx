@@ -1958,11 +1958,11 @@ function StockVisibilityReference({ prefix = "" }: { prefix?: string }) {
 
 const SEGMENT_PRICE_FIELDS: Record<
   PriceSegment,
-  { label: string; mrpKey: "mrp" | "retailer_mrp" | "distributor_mrp"; priceKey: "price" | "retailer_price" | "distributor_price" }
+  { label: string; mrpKey: "mrp" | "retailer_mrp" | "distributor_mrp"; priceKey: "price" | "retailer_price" | "distributor_price"; stockKey: "stock" | "retailer_stock" | "distributor_stock"; packSizeKey: "pack_size" | "retailer_pack_size" | "distributor_pack_size" }
 > = {
-  customer: { label: "Customer", mrpKey: "mrp", priceKey: "price" },
-  retailer: { label: "Retailer", mrpKey: "retailer_mrp", priceKey: "retailer_price" },
-  distributor: { label: "Distributor", mrpKey: "distributor_mrp", priceKey: "distributor_price" },
+  customer: { label: "Customer", mrpKey: "mrp", priceKey: "price", stockKey: "stock", packSizeKey: "pack_size" },
+  retailer: { label: "Retailer", mrpKey: "retailer_mrp", priceKey: "retailer_price", stockKey: "retailer_stock", packSizeKey: "retailer_pack_size" },
+  distributor: { label: "Distributor", mrpKey: "distributor_mrp", priceKey: "distributor_price", stockKey: "distributor_stock", packSizeKey: "distributor_pack_size" },
 };
 
 const roundMoney = (value: number) => Number(value.toFixed(2));
@@ -1991,7 +1991,7 @@ function BulkPriceByOption({
   updateRow: (id: string, patch: Partial<Variant>) => void;
   segment: PriceSegment;
 }) {
-  const { label, mrpKey, priceKey } = SEGMENT_PRICE_FIELDS[segment];
+  const { label, mrpKey, priceKey, stockKey, packSizeKey } = SEGMENT_PRICE_FIELDS[segment];
 
   const optionKeys = React.useMemo(() => {
     const keys: string[] = [];
@@ -2094,8 +2094,8 @@ function BulkPriceByOption({
           }
         }
 
-        if (stock !== null) patch.stock = stock;
-        if (packSize !== null) patch.pack_size = packSize;
+        if (stock !== null) patch[stockKey] = stock;
+        if (packSize !== null) patch[packSizeKey] = packSize;
         updateRow(row.id, patch as Partial<Variant>);
       }
 
@@ -2128,7 +2128,7 @@ function BulkPriceByOption({
           <h3 className="font-semibold text-slate-950">Set {label.toLowerCase()} prices by {optionLabel(activeKey)}</h3>
           <p className="mt-1 text-xs text-slate-500">
             Apply one set of {label.toLowerCase()} prices to every SKU sharing the same option value. Prices stay
-            separate for this account type; stock and pack size belong to the shared SKU.
+            separate for this account type, including stock and pack size. The SKU identity remains shared.
           </p>
         </div>
 
@@ -3186,7 +3186,7 @@ function SegmentPriceTable({
   editRow: (row: Variant) => void;
   removeRow: (row: Variant) => void;
 }) {
-  const { label, mrpKey, priceKey } = SEGMENT_PRICE_FIELDS[segment];
+  const { label, mrpKey, priceKey, stockKey } = SEGMENT_PRICE_FIELDS[segment];
 
   const effectiveMrp = (row: Variant) => Number((row[mrpKey] as number | null) ?? 0);
 
@@ -3236,12 +3236,12 @@ function SegmentPriceTable({
 
   const changeStock = (row: Variant, raw: string) => {
     if (raw === "") {
-      updateRow(row.id, { stock: null });
+      updateRow(row.id, { [stockKey]: null } as Partial<Variant>);
       return;
     }
     const value = Number(raw);
     if (!Number.isInteger(value) || value < 0) return;
-    updateRow(row.id, { stock: value });
+    updateRow(row.id, { [stockKey]: value } as Partial<Variant>);
   };
 
   const copyDown = (index: number, build: (source: Variant, target: Variant) => Partial<Variant>) => {
@@ -3405,7 +3405,7 @@ function SegmentPriceTable({
                           min="0"
                           step="1"
                           inputMode="numeric"
-                          value={row.stock ?? ""}
+                          value={(row[stockKey] as number | null) ?? ""}
                           placeholder="0"
                           onChange={(event) => changeStock(row, event.target.value)}
                           className="h-9 w-[72px] min-w-[72px]"
@@ -3413,7 +3413,7 @@ function SegmentPriceTable({
                         <CopyButton
                           visible={hasRowsBelow}
                           title="Copy stock to all rows below"
-                          onClick={() => copyDown(index, (source) => ({ stock: source.stock }))}
+                          onClick={() => copyDown(index, (source) => ({ [stockKey]: source[stockKey] }) as Partial<Variant>)}
                         />
                       </div>
                     </Td>
