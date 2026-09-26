@@ -743,7 +743,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                 </Section>
               </div>
 
-              {/* PRODUCT CONTENT — Manu requirement: exactly 3 simple copy/paste boxes */}
+              {/* PRODUCT CONTENT */}
               <Section title="Product Content">
                 <div className="space-y-5">
                   <Field label="Short Description">
@@ -769,22 +769,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                     />
                     <div className="text-xs text-slate-500">
                       Shown in the Description section of the customer product page.
-                    </div>
-                  </Field>
-
-                  <Field label="Key Features">
-                    <Textarea
-                      rows={8}
-                      value={f.features}
-                      placeholder={
-                        "Paste one key feature per line...\nExample:\nWattage: 12W\nBody Colour: White\nMaterial: Aluminium"
-                      }
-                      onChange={(e) => upd("features", e.target.value)}
-                      className="min-h-[180px] w-full resize-y"
-                    />
-                    <div className="text-xs text-slate-500">
-                      Enter or paste one feature per line. Use “Name: Value” when you want the customer page to show it
-                      in the same two-column lined style as Specifications.
                     </div>
                   </Field>
 
