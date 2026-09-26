@@ -562,17 +562,35 @@ export function VariantEditor({
   const saveMatrix = async (): Promise<Variant[] | null> => {
     if (busy) return null;
     let cleaned: Axis[];
+    let synchronizedRows: Variant[];
+    let currentRowsForSave: Variant[];
     try {
-      cleaned = prepareVariationAxes(axisRows, q.data?.axes ?? [], rows);
-      for (const row of rows) {
-        const issues = variationIssues(row, rows, cleaned);
+      // The editable/sellable matrix is defined only by the CURRENT option axes/values.
+      // Historical rows stay in the database for order/history safety, but they must be
+      // inactive and must never block validation or count as part of the current setup.
+      const rowsWithStaleInactive = rows.map((row) =>
+        variantMatchesCurrentAxes(row, axisRows) ? row : { ...row, is_active: false },
+      );
+
+      cleaned = prepareVariationAxes(axisRows, q.data?.axes ?? [], rowsWithStaleInactive);
+      currentRowsForSave = rowsWithStaleInactive.filter((row) => variantMatchesCurrentAxes(row, cleaned));
+      synchronizedRows = rowsWithStaleInactive.map((row) =>
+        variantMatchesCurrentAxes(row, cleaned) ? row : { ...row, is_active: false },
+      );
+
+      if (!currentRowsForSave.length) {
+        throw new Error("Generate at least one valid variation for the currently selected option values.");
+      }
+
+      for (const row of currentRowsForSave) {
+        const issues = variationIssues(row, currentRowsForSave, cleaned);
         if (issues.length) throw new Error(`${row.sku || "Variation"}: ${issues[0]}`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Review your variation details.");
       return null;
     }
-    const snapshot = rows;
+    const snapshot = synchronizedRows;
     const pending = photoDrafts;
     setSaving(true);
     let committed = false;
