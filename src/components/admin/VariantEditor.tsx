@@ -21,6 +21,9 @@ import {
   Pencil,
   Image as ImageIcon,
   Copy,
+  Eye,
+  EyeOff,
+  ExternalLink,
   ArrowLeft,
   ArrowRight,
   Upload,
@@ -137,6 +140,7 @@ export function VariantEditor({
   productSku,
   productId,
   familyId,
+  productSlug,
   onManageImages,
   initialTab = "options",
   customerPricingOnly = false,
@@ -147,6 +151,7 @@ export function VariantEditor({
   productSku: string;
   productId: string;
   familyId?: string | null;
+  productSlug?: string;
   onManageImages?: (sku: string) => void;
   initialTab?: Tab;
   customerPricingOnly?: boolean;
@@ -874,6 +879,7 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={rows}
+            productSlug={productSlug}
             updateRow={updateRow}
             duplicateRow={duplicateRow}
             archiveVariant={archiveVariant}
@@ -883,7 +889,6 @@ export function VariantEditor({
               setWizardStep(0);
               setEditingId(row.id);
             }}
-            manageImages={onManageImages}
             optionsEditor={tab === "quick" && !editingId ? optionsEditor : null}
           />
         </div>
@@ -948,23 +953,23 @@ export function VariantEditor({
 
 function QuickVariantsTab({
   rows,
+  productSlug,
   updateRow,
   duplicateRow,
   archiveVariant,
   restoreVariant,
   deleteVariantPermanently,
   editRow,
-  manageImages,
   optionsEditor,
 }: {
   rows: Variant[];
+  productSlug?: string;
   updateRow: (id: string, patch: Partial<Variant>) => void;
   duplicateRow: (row: Variant) => void;
   archiveVariant: (row: Variant) => void;
   restoreVariant: (row: Variant) => void;
   deleteVariantPermanently: (row: Variant) => void;
   editRow: (row: Variant) => void;
-  manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
   return (
@@ -1021,54 +1026,72 @@ function QuickVariantsTab({
                   </Td>
 
                   <Td>
-                    <div className="flex min-w-[260px] flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => editRow(row)}
-                        title="Edit variation"
-                      >
-                        <Pencil className="mr-1 h-4 w-4" />
-                        Edit
-                      </Button>
-
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => duplicateRow(row)}
-                        title="Copy variation"
-                        aria-label={`Copy variation ${row.sku}`}
-                      >
-                        <Copy className="mr-1 h-4 w-4" /> Copy
-                      </Button>
-
-                      {manageImages && (
+                    <div className="flex min-w-[264px] items-center gap-1">
+                      {productSlug && (
                         <Button
                           type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => manageImages(row.sku)}
-                          title="Images for this SKU"
+                          size="icon"
+                          variant="ghost"
+                          asChild
+                          title="View on storefront"
+                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         >
-                          <ImageIcon className="h-4 w-4" />
+                          <a href={`/products/${productSlug}`} target="_blank" rel="noreferrer" aria-label={`View ${row.sku} on storefront`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
                         </Button>
                       )}
 
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => editRow(row)}
+                        title="Edit variation"
+                        aria-label={`Edit variation ${row.sku}`}
+                        className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => updateRow(row.id, { is_active: !row.is_active })}
+                        disabled={Boolean(row.archived_at)}
+                        title={row.is_active ? "Set variation inactive" : "Set variation active"}
+                        aria-label={`${row.is_active ? "Set inactive" : "Set active"} variation ${row.sku}`}
+                        className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        {row.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => duplicateRow(row)}
+                        title="Copy variation"
+                        aria-label={`Copy variation ${row.sku}`}
+                        className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+
                       {row.archived_at ? (
-                        <Button type="button" size="sm" variant="outline" onClick={() => restoreVariant(row)} title="Restore archived variant" aria-label={`Restore variant ${row.sku}`}>
-                          <RotateCcw className="mr-1 h-4 w-4" /> Restore
+                        <Button type="button" size="icon" variant="ghost" onClick={() => restoreVariant(row)} title="Restore archived variant" aria-label={`Restore variant ${row.sku}`} className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                          <RotateCcw className="h-4 w-4" />
                         </Button>
                       ) : (
-                        <Button type="button" size="sm" variant="outline" onClick={() => archiveVariant(row)} title={row.id.startsWith("new-") ? "Remove unsaved variant" : "Archive variant"} aria-label={`${row.id.startsWith("new-") ? "Remove" : "Archive"} variant ${row.sku}`}>
-                          <Archive className="mr-1 h-4 w-4" /> {row.id.startsWith("new-") ? "Remove" : "Archive"}
+                        <Button type="button" size="icon" variant="ghost" onClick={() => archiveVariant(row)} title={row.id.startsWith("new-") ? "Remove unsaved variant" : "Archive variant"} aria-label={`${row.id.startsWith("new-") ? "Remove" : "Archive"} variant ${row.sku}`} className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                          <Archive className="h-4 w-4" />
                         </Button>
                       )}
 
                       {!row.id.startsWith("new-") && (
-                        <Button type="button" size="sm" variant="destructive" onClick={() => deleteVariantPermanently(row)} title={row.archived_at ? "Delete variant permanently" : "Archive before permanent deletion"} aria-label={`Permanently delete variant ${row.sku}`}>
-                          <Trash2 className="mr-1 h-4 w-4" /> Delete permanently
+                        <Button type="button" size="icon" variant="destructive" onClick={() => deleteVariantPermanently(row)} title={row.archived_at ? "Delete variant permanently" : "Archive before permanent deletion"} aria-label={`Permanently delete variant ${row.sku}`} className="h-10 w-10 shadow-sm">
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

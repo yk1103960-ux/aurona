@@ -110,6 +110,7 @@ function ProductVariationsPage() {
         productSku={data.main_sku}
         productId={editorId}
         familyId={data.id}
+        productSlug={data.slug}
         onManageImages={(sku) => {
           setPhotoSku(sku);
           window.setTimeout(

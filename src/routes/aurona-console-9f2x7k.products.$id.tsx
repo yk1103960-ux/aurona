@@ -896,6 +896,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             <VariantArea
               isNew={isNew}
               sku={f.sku}
+              slug={f.slug}
               id={id}
               section="quick"
               priceSegment="customer"
@@ -911,6 +912,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             <VariantArea
               isNew={isNew}
               sku={f.sku}
+              slug={f.slug}
               id={id}
               section="quick"
               priceSegment="retailer"
@@ -926,6 +928,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
             <VariantArea
               isNew={isNew}
               sku={f.sku}
+              slug={f.slug}
               id={id}
               section="quick"
               priceSegment="distributor"
@@ -1100,6 +1103,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
 function VariantArea({
   isNew,
   sku,
+  slug,
   id,
   section,
   priceSegment,
@@ -1109,6 +1113,7 @@ function VariantArea({
 }: {
   isNew: boolean;
   sku: string;
+  slug: string;
   id: string;
   section: "quick" | "customer" | "shipping";
   priceSegment?: "customer" | "retailer" | "distributor";
@@ -1132,6 +1137,7 @@ function VariantArea({
       <VariantEditor
         productSku={sku}
         productId={id}
+        productSlug={slug}
         initialTab={section}
         displayOnly={workflowSegment ? undefined : section}
         priceSegment={priceSegment}
