@@ -698,13 +698,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                       <Input value={f.unit} placeholder="Pc" onChange={(e) => upd("unit", e.target.value)} />
                     </Field>
 
-                    <Field label="Model">
-                      <Input
-                        value={f.model}
-                        placeholder="Lens / Glass / COB"
-                        onChange={(e) => upd("model", e.target.value)}
-                      />
-                    </Field>
                   </div>
                 </Section>
 
