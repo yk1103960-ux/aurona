@@ -889,7 +889,6 @@ export function VariantEditor({
               setWizardStep(0);
               setEditingId(row.id);
             }}
-            manageImages={onManageImages}
             optionsEditor={tab === "quick" && !editingId ? optionsEditor : null}
           />
         </div>
@@ -961,7 +960,6 @@ function QuickVariantsTab({
   restoreVariant,
   deleteVariantPermanently,
   editRow,
-  manageImages,
   optionsEditor,
 }: {
   rows: Variant[];
@@ -972,7 +970,6 @@ function QuickVariantsTab({
   restoreVariant: (row: Variant) => void;
   deleteVariantPermanently: (row: Variant) => void;
   editRow: (row: Variant) => void;
-  manageImages?: (sku: string) => void;
   optionsEditor: React.ReactNode;
 }) {
   return (
