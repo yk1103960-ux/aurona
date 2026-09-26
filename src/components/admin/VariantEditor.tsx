@@ -125,6 +125,21 @@ const variantName = (row: Variant) => {
   return values.length ? values.join(" / ") : row.sku;
 };
 
+const variantMatchesCurrentAxes = (row: Variant, axes: Axis[]) => {
+  if (!axes.length) return true;
+  const attrs = row.attributes ?? {};
+  const axisKeys = new Set(axes.map((axis) => axis.axis_key));
+  const variationKeys = Object.entries(attrs)
+    .filter(([key, value]) => key !== "variant_label" && Boolean(value))
+    .map(([key]) => key);
+
+  return (
+    axes.every((axis) => axis.values.includes(attrs[axis.axis_key])) &&
+    variationKeys.length === axes.length &&
+    variationKeys.every((key) => axisKeys.has(key))
+  );
+};
+
 const optionToken = (value: string) => {
   const pack = value.trim().match(/^pack\s*(?:of)?\s*(\d+)$/i);
   if (pack) return `P${pack[1]}`;
@@ -387,7 +402,8 @@ export function VariantEditor({
     selectedCombinations?: Record<string, string>[],
   ) => {
     try {
-      const allMissing = missingCombinations(sourceAxes, sourceRows);
+      const currentSourceRows = sourceRows.filter((row) => variantMatchesCurrentAxes(row, sourceAxes));
+      const allMissing = missingCombinations(sourceAxes, currentSourceRows);
       const combinationKey = (attributes: Record<string, string>) =>
         sourceAxes.map((axis) => `${axis.axis_key}=${attributes[axis.axis_key] ?? ""}`).join("||");
       const selectedKeys = selectedCombinations ? new Set(selectedCombinations.map(combinationKey)) : null;
@@ -881,6 +897,7 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={rows}
+            axes={axes}
             productSlug={productSlug}
             busy={busy}
             updateRow={updateRow}
@@ -956,6 +973,7 @@ export function VariantEditor({
 
 function QuickVariantsTab({
   rows,
+  axes,
   productSlug,
   busy,
   updateRow,
@@ -967,6 +985,7 @@ function QuickVariantsTab({
   optionsEditor,
 }: {
   rows: Variant[];
+  axes: Axis[];
   productSlug?: string;
   busy: boolean;
   updateRow: (id: string, patch: Partial<Variant>) => void;
@@ -977,19 +996,21 @@ function QuickVariantsTab({
   editRow: (row: Variant) => void;
   optionsEditor: React.ReactNode;
 }) {
+  const currentRows = rows.filter((row) => variantMatchesCurrentAxes(row, axes));
+
   return (
     <div className="space-y-5">
       {optionsEditor}
 
       <div>
-        <h3 className="text-lg font-semibold">Variants · {rows.length}</h3>
+        <h3 className="text-lg font-semibold">Variants · {currentRows.length}</h3>
         <p className="text-xs text-slate-500">
           Review the generated variation combinations and SKUs. Use Edit to change variation details; pricing and stock
           are managed only in Step 2.
         </p>
       </div>
 
-      {rows.length === 0 ? (
+      {currentRows.length === 0 ? (
         <EmptyVariants />
       ) : (
         <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Variants table">
@@ -1004,7 +1025,7 @@ function QuickVariantsTab({
             </thead>
 
             <tbody>
-              {rows.map((row) => (
+              {currentRows.map((row) => (
                 <tr key={row.id} className="border-t border-slate-200">
                   <Td>
                     <VariantIdentity row={row} />
@@ -2823,7 +2844,7 @@ function AxisEditor({
     if (
       affected.length &&
       !confirm(
-        `Remove ${axis.label}? ${affected.length} existing variation${affected.length === 1 ? "" : "s"} use this option. They will be kept for data safety but made inactive and the removed option will be cleared from their variation attributes.`,
+        `Remove ${axis.label}? ${affected.length} existing variation${affected.length === 1 ? "" : "s"} use this option. They will be kept for data safety and made inactive; their historical variation data will remain unchanged.`,
       )
     )
       return;
@@ -2831,12 +2852,9 @@ function AxisEditor({
 
     setNeedsRegeneration(true);
     setVariants((current) =>
-      current.map((row) => {
-        if (!row.attributes?.[axis.axis_key]) return row;
-        const attributes = { ...row.attributes };
-        delete attributes[axis.axis_key];
-        return { ...row, attributes, is_active: false };
-      }),
+      current.map((row) =>
+        row.attributes?.[axis.axis_key] ? { ...row, is_active: false } : row,
+      ),
     );
     setExcluded((current) => {
       const next = { ...current };
@@ -2873,12 +2891,9 @@ function AxisEditor({
 
     setNeedsRegeneration(true);
     setVariants((current) =>
-      current.map((row) => {
-        if (row.attributes?.[axis.axis_key] !== value) return row;
-        const attributes = { ...row.attributes };
-        delete attributes[axis.axis_key];
-        return { ...row, attributes, is_active: false };
-      }),
+      current.map((row) =>
+        row.attributes?.[axis.axis_key] === value ? { ...row, is_active: false } : row,
+      ),
     );
     setExcluded((current) => ({
       ...current,
@@ -2908,8 +2923,9 @@ function AxisEditor({
   let missing: Record<string, string>[] = [];
   try {
     if (activeAxes.length === rows.length && activeAxes.length > 0) {
+      const currentVariants = variants.filter((row) => variantMatchesCurrentAxes(row, activeAxes));
       allCombinations = missingCombinations(activeAxes, []);
-      missing = missingCombinations(activeAxes, variants);
+      missing = missingCombinations(activeAxes, currentVariants);
     }
   } catch {
     allCombinations = [];
