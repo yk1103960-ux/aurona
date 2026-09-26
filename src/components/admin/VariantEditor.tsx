@@ -23,6 +23,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  ExternalLink,
   ArrowLeft,
   ArrowRight,
   Upload,
@@ -139,6 +140,7 @@ export function VariantEditor({
   productSku,
   productId,
   familyId,
+  productSlug,
   onManageImages,
   initialTab = "options",
   customerPricingOnly = false,
@@ -149,6 +151,7 @@ export function VariantEditor({
   productSku: string;
   productId: string;
   familyId?: string | null;
+  productSlug?: string;
   onManageImages?: (sku: string) => void;
   initialTab?: Tab;
   customerPricingOnly?: boolean;
@@ -876,6 +879,7 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={rows}
+            productSlug={productSlug}
             updateRow={updateRow}
             duplicateRow={duplicateRow}
             archiveVariant={archiveVariant}
@@ -950,6 +954,7 @@ export function VariantEditor({
 
 function QuickVariantsTab({
   rows,
+  productSlug,
   updateRow,
   duplicateRow,
   archiveVariant,
@@ -960,6 +965,7 @@ function QuickVariantsTab({
   optionsEditor,
 }: {
   rows: Variant[];
+  productSlug?: string;
   updateRow: (id: string, patch: Partial<Variant>) => void;
   duplicateRow: (row: Variant) => void;
   archiveVariant: (row: Variant) => void;
@@ -1024,6 +1030,21 @@ function QuickVariantsTab({
 
                   <Td>
                     <div className="flex min-w-[264px] items-center gap-1">
+                      {productSlug && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          asChild
+                          title="View on storefront"
+                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        >
+                          <a href={`/products/${productSlug}`} target="_blank" rel="noreferrer" aria-label={`View ${row.sku} on storefront`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+
                       <Button
                         type="button"
                         size="icon"
@@ -1060,20 +1081,6 @@ function QuickVariantsTab({
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
-
-                      {manageImages && (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => manageImages(row.sku)}
-                          title="Images for this SKU"
-                          aria-label={`Manage images for ${row.sku}`}
-                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                        >
-                          <ImageIcon className="h-4 w-4" />
-                        </Button>
-                      )}
 
                       {row.archived_at ? (
                         <Button type="button" size="icon" variant="ghost" onClick={() => restoreVariant(row)} title="Restore archived variant" aria-label={`Restore variant ${row.sku}`} className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
