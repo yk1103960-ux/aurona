@@ -880,6 +880,7 @@ export function VariantEditor({
           <QuickVariantsTab
             rows={rows}
             productSlug={productSlug}
+            busy={busy}
             updateRow={updateRow}
             duplicateRow={duplicateRow}
             archiveVariant={archiveVariant}
@@ -954,6 +955,7 @@ export function VariantEditor({
 function QuickVariantsTab({
   rows,
   productSlug,
+  busy,
   updateRow,
   duplicateRow,
   archiveVariant,
@@ -964,6 +966,7 @@ function QuickVariantsTab({
 }: {
   rows: Variant[];
   productSlug?: string;
+  busy: boolean;
   updateRow: (id: string, patch: Partial<Variant>) => void;
   duplicateRow: (row: Variant) => void;
   archiveVariant: (row: Variant) => void;
