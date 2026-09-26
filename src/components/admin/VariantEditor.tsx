@@ -521,11 +521,12 @@ export function VariantEditor({
       removeRow(row);
       return;
     }
-    if (!row.archived_at) {
-      toast.error("Archive this variant before deleting it permanently.");
+    if (
+      !confirm(
+        `Permanently delete variant ${row.sku}? This cannot be undone. Archive is the recoverable option; Delete Permanently removes this SKU and variant data.`,
+      )
+    )
       return;
-    }
-    if (!confirm(`Permanently delete variant ${row.sku}? This cannot be undone.`)) return;
     setSaving(true);
     try {
       await adminDeleteProductVariantPermanent({ data: { variantId: row.id } });
@@ -1085,32 +1086,18 @@ function QuickVariantsTab({
                       </Button>
 
                       {row.archived_at ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() => restoreVariant(row)}
-                            title="Restore archived variant"
-                            aria-label={`Restore variant ${row.sku}`}
-                            className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="destructive"
-                            disabled={busy}
-                            onClick={() => deleteVariantPermanently(row)}
-                            title="Delete variant permanently"
-                            aria-label={`Permanently delete variant ${row.sku}`}
-                            className="h-10 w-10 shadow-sm"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => restoreVariant(row)}
+                          title="Restore archived variant"
+                          aria-label={`Restore variant ${row.sku}`}
+                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
                       ) : (
                         <Button
                           type="button"
@@ -1125,6 +1112,19 @@ function QuickVariantsTab({
                           <Archive className="h-4 w-4" />
                         </Button>
                       )}
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        disabled={busy}
+                        onClick={() => deleteVariantPermanently(row)}
+                        title="Delete variant permanently"
+                        aria-label={`Permanently delete variant ${row.sku}`}
+                        className="h-10 w-10 shadow-sm"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </Td>
                 </tr>
