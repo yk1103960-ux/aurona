@@ -215,6 +215,7 @@ const BASE_COLUMNS: Column[] = [
   { key: "distributor_pack_w", label: "Distributor Pack W cm", width: 150 },
   { key: "distributor_pack_h", label: "Distributor Pack H cm", width: 150 },
   { key: "status", label: "Status", width: 105 },
+  { key: "available_for", label: "Available For", width: 150 },
   { key: "actions", label: "Actions", width: 220 },
 ];
 
@@ -230,6 +231,7 @@ const PRESETS: Record<Preset, string[]> = {
     "pack_size",
     "stock",
     "status",
+    "available_for",
     "actions",
   ],
   pricing: [
@@ -248,7 +250,16 @@ const PRESETS: Record<Preset, string[]> = {
     "distributor_moq",
     "actions",
   ],
-  inventory: ["family", "sku", "pack_size", "stock", "low_stock_threshold", "status", "actions"],
+  inventory: [
+    "family",
+    "sku",
+    "pack_size",
+    "stock",
+    "low_stock_threshold",
+    "status",
+    "available_for",
+    "actions",
+  ],
   variations: [
     "image",
     "family",
@@ -261,6 +272,7 @@ const PRESETS: Record<Preset, string[]> = {
     "pack_size",
     "stock",
     "status",
+    "available_for",
     "actions",
   ],
   shipping: [
@@ -360,7 +372,12 @@ export function ProductMaster() {
     if (typeof window === "undefined") return new Set(PRESETS.essential);
     try {
       const stored = JSON.parse(localStorage.getItem(COLUMN_KEY) ?? "null");
-      return Array.isArray(stored) ? new Set(stored) : new Set(PRESETS.essential);
+      if (Array.isArray(stored)) {
+        const next = new Set<string>(stored);
+        if (next.has("status")) next.add("available_for");
+        return next;
+      }
+      return new Set(PRESETS.essential);
     } catch {
       return new Set(PRESETS.essential);
     }
@@ -1351,6 +1368,8 @@ function FamilyRows({
   onVariantState: (variant: Variant, action: "archive" | "restore") => void;
   onVariantDeletePermanent: (variant: Variant) => void;
 }) {
+  const availableVariants = family.variants.filter((variant) => !variant.archived_at);
+
   return (
     <>
       <tr className="border-b border-slate-200 bg-slate-50/90">
@@ -1391,6 +1410,36 @@ function FamilyRows({
                   family.archived_at ? "Archived" : family.is_published ? "Published" : "Hidden"
                 }
               />
+            ) : column.key === "available_for" ? (
+              <div className="flex items-center gap-1">
+                {([
+                  ["available_customer", "C", "Available to Customers"],
+                  ["available_retailer", "R", "Available to Retailers"],
+                  ["available_distributor", "D", "Available to Distributors"],
+                ] as const).map(([key, label, title]) => {
+                  const enabled =
+                    availableVariants.length > 0 &&
+                    availableVariants.every((variant) => effective(variant)[key] !== false);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      title={title}
+                      aria-label={title}
+                      aria-pressed={enabled}
+                      disabled={Boolean(family.archived_at) || availableVariants.length === 0}
+                      onClick={() => {
+                        for (const variant of availableVariants) {
+                          change(variant, key, !enabled);
+                        }
+                      }}
+                      className={`h-8 w-8 rounded-md border text-xs font-semibold ${enabled ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-200 bg-white text-slate-400 line-through"}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             ) : column.key === "stock" ? (
               <strong>{family.total_stock}</strong>
             ) : column.key === "sku" ? (
@@ -1612,6 +1661,34 @@ function MasterCell({
         </button>
       </td>
     );
+  if (column.key === "available_for")
+    return (
+      <td className={common}>
+        <div className="flex items-center gap-1">
+          {([
+            ["available_customer", "C", "Available to Customers"],
+            ["available_retailer", "R", "Available to Retailers"],
+            ["available_distributor", "D", "Available to Distributors"],
+          ] as const).map(([key, label, title]) => {
+            const enabled = row[key] !== false;
+            return (
+              <button
+                key={key}
+                type="button"
+                title={title}
+                aria-label={title}
+                aria-pressed={enabled}
+                disabled={Boolean(row.archived_at)}
+                onClick={() => change(source, key, !enabled)}
+                className={`h-8 w-8 rounded-md border text-xs font-semibold ${enabled ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-200 bg-white text-slate-400 line-through"}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </td>
+    );
   if (column.key === "actions")
     return (
       <td className={common}>
@@ -1638,27 +1715,6 @@ function MasterCell({
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>
-          {([
-            ["available_customer", "C", "Available to Customers"],
-            ["available_retailer", "R", "Available to Retailers"],
-            ["available_distributor", "D", "Available to Distributors"],
-          ] as const).map(([key, label, title]) => {
-            const enabled = row[key] !== false;
-            return (
-              <button
-                key={key}
-                type="button"
-                title={title}
-                aria-label={title}
-                aria-pressed={enabled}
-                disabled={Boolean(row.archived_at)}
-                onClick={() => change(source, key, !enabled)}
-                className={`h-8 w-8 rounded-md border text-xs font-semibold ${enabled ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-200 bg-white text-slate-400 line-through"}`}
-              >
-                {label}
-              </button>
-            );
-          })}
           {row.archived_at ? (
             <>
               <Button size="icon" variant="success" aria-label="Restore SKU" title="Restore SKU" onClick={() => onVariantState("restore")}>
