@@ -2793,15 +2793,19 @@ function AxisEditor({
 }) {
   const [valueDrafts, setValueDrafts] = useState<Record<string, string>>({});
   const [selectedCombinationKeys, setSelectedCombinationKeys] = useState<Set<string>>(new Set());
+  const [needsRegeneration, setNeedsRegeneration] = useState(false);
 
-  const updateAxis = (id: string, patch: Partial<Axis>) =>
+  const updateAxis = (id: string, patch: Partial<Axis>) => {
+    setNeedsRegeneration(true);
     setRows(rows.map((axis) => (axis.id === id ? { ...axis, ...patch } : axis)));
+  };
 
   const addAxis = (preset?: { key: string; label: string }) => {
     let sequence = rows.length + 1;
     while (rows.some((axis) => axis.axis_key === `option_${sequence}`)) sequence++;
     const key = preset?.key ?? `option_${sequence}`;
     if (rows.some((axis) => axis.axis_key === key)) return;
+    setNeedsRegeneration(true);
     setRows([
       ...rows,
       {
@@ -2825,6 +2829,7 @@ function AxisEditor({
       return;
     if (!affected.length && !confirm(`Remove ${axis.label}?`)) return;
 
+    setNeedsRegeneration(true);
     setVariants((current) =>
       current.map((row) => {
         if (!row.attributes?.[axis.axis_key]) return row;
@@ -2866,6 +2871,7 @@ function AxisEditor({
       return;
     }
 
+    setNeedsRegeneration(true);
     setVariants((current) =>
       current.map((row) => {
         if (row.attributes?.[axis.axis_key] !== value) return row;
@@ -2919,7 +2925,7 @@ function AxisEditor({
     setSelectedCombinationKeys((current) => {
       const valid = new Set(missing.map(combinationKey));
       const next = new Set([...current].filter((key) => valid.has(key)));
-      if (current.size === 0) valid.forEach((key) => next.add(key));
+      if (next.size === 0) valid.forEach((key) => next.add(key));
       return next;
     });
     // combinationSignature is intentionally the dependency: it changes only when combinations change.
@@ -2966,9 +2972,11 @@ function AxisEditor({
     if (!rows.length) return toast.error("Add at least one option first.");
     if (rows.some((axis) => !axis.label.trim() || !axis.values.length))
       return toast.error("Give every option a name and at least one value.");
-    if (!missing.length) return toast.info("All selected combinations already exist.");
-    if (!selectedMissing.length) return toast.error("Select at least one SKU combination to generate.");
-    void saveAxes(true, selectedMissing);
+    if (!missing.length && !needsRegeneration)
+      return toast.info("All selected combinations already exist.");
+    if (missing.length && !selectedMissing.length)
+      return toast.error("Select at least one SKU combination to generate.");
+    void saveAxes(true, selectedMissing).then(() => setNeedsRegeneration(false));
   };
 
   return (
@@ -3234,13 +3242,24 @@ function AxisEditor({
                 : "Enter all option values above to build combinations."}
             </p>
             <p className="mt-1 text-xs text-sky-700">
-              Only checked new combinations are generated. They start inactive with zero stock so you can safely edit
-              SKU, prices, images and stock before activation.
+              {needsRegeneration
+                ? "Variation options changed. Regenerate to apply the new option/value set and refresh the valid combinations."
+                : "Only checked new combinations are generated. They start inactive with zero stock so you can safely edit SKU, prices, images and stock before activation."}
             </p>
           </div>
-          <Button type="button" size="lg" onClick={generate} disabled={saving || !selectedMissing.length}>
+          <Button
+            type="button"
+            size="lg"
+            onClick={generate}
+            disabled={saving || (!selectedMissing.length && !needsRegeneration)}
+            className={needsRegeneration ? "ring-2 ring-amber-400 ring-offset-2" : undefined}
+          >
             <Plus className="mr-2 h-4 w-4" />
-            {saving ? "Generating…" : `Generate ${selectedMissing.length || ""} Variations`}
+            {saving
+              ? "Generating…"
+              : needsRegeneration && !selectedMissing.length
+                ? "Regenerate Variations"
+                : `Generate ${selectedMissing.length || ""} Variations`}
           </Button>
         </div>
       </div>
