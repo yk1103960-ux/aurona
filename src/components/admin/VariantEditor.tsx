@@ -279,6 +279,7 @@ export function VariantEditor({
 
   const family = q.data?.family;
   const axes = axisRows;
+  const currentRows = rows.filter((row) => variantMatchesCurrentAxes(row, axes));
   axisOrder.keys = axes.map((axis) => axis.axis_key);
 
   if (q.isLoading) {
@@ -850,7 +851,7 @@ export function VariantEditor({
               </Button>
             )}
 
-            <Button size="sm" type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
+            <Button size="sm" type="button" onClick={saveAll} disabled={busy || currentRows.length === 0}>
               <Save className="mr-1 h-4 w-4" />
               {saving ? "Saving…" : saveActionLabel}
             </Button>
@@ -896,7 +897,7 @@ export function VariantEditor({
       <div className="p-4">
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
-            rows={rows}
+            rows={currentRows}
             axes={axes}
             productSlug={productSlug}
             busy={busy}
@@ -915,7 +916,7 @@ export function VariantEditor({
 
         {tab === "customer" && (
           <CustomerTab
-            rows={rows}
+            rows={currentRows}
             updateRow={updateRow}
             editRow={(row) => {
               setWizardStep(0);
@@ -928,12 +929,12 @@ export function VariantEditor({
         )}
 
         {tab === "shipping" && (
-          <ShippingTab rows={rows} updateRow={updateRow} initialScope={buyerWorkflow ?? "customer"} />
+          <ShippingTab rows={currentRows} updateRow={updateRow} initialScope={buyerWorkflow ?? "customer"} />
         )}
       </div>
 
       <div className="flex justify-end border-t border-slate-200 bg-slate-50 p-4">
-        <Button type="button" onClick={saveAll} disabled={busy || rows.length === 0}>
+        <Button type="button" onClick={saveAll} disabled={busy || currentRows.length === 0}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Saving…" : saveActionLabel}
         </Button>
@@ -996,7 +997,7 @@ function QuickVariantsTab({
   editRow: (row: Variant) => void;
   optionsEditor: React.ReactNode;
 }) {
-  const currentRows = rows.filter((row) => variantMatchesCurrentAxes(row, axes));
+  const currentRows = rows;
 
   return (
     <div className="space-y-5">
@@ -1005,8 +1006,8 @@ function QuickVariantsTab({
       <div>
         <h3 className="text-lg font-semibold">Variants · {currentRows.length}</h3>
         <p className="text-xs text-slate-500">
-          Review the generated variation combinations and SKUs. Use Edit to change variation details; pricing and stock
-          are managed only in Step 2.
+          Showing only variants that match the current selected option values. Historical variants stay preserved separately.
+          Use Edit to change variation details; pricing and stock are managed only in Step 2.
         </p>
       </div>
 
