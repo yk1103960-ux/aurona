@@ -1702,7 +1702,7 @@ function MasterCell({
           >
             <Save className="h-4 w-4" />
           </Button>
-          <Button size="icon" variant="ghost" asChild aria-label="Edit full product">
+          <Button size="icon" variant="ghost" asChild aria-label="Edit Product" title="Edit Product">
             <Link
               to="/aurona-console-9f2x7k/products/$id"
               params={{ id: family.legacy_product_id ?? family.id }}
