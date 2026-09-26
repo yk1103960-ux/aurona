@@ -1469,6 +1469,15 @@ function FamilyRows({
                     >
                       <Archive className="h-4 w-4" />
                     </Button>
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      aria-label="Delete product permanently"
+                      title="Delete permanently — cannot be undone"
+                      onClick={onDeletePermanent}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </>
                 )}
               </div>
