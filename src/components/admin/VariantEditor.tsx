@@ -988,11 +988,14 @@ function QuickVariantsTab({
         <EmptyVariants />
       ) : (
         <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Variants table">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
                 <Th>Generated SKU</Th>
+                <Th>Customer</Th>
+                <Th>Retailer</Th>
+                <Th>Distributor</Th>
                 <Th>Status</Th>
                 <Th>Actions</Th>
               </tr>
@@ -1009,6 +1012,18 @@ function QuickVariantsTab({
                     <div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-700">
                       {row.sku}
                     </div>
+                  </Td>
+
+                  <Td>
+                    <SegmentPrice value={row.price} available={row.available_customer !== false} />
+                  </Td>
+
+                  <Td>
+                    <SegmentPrice value={row.retailer_price} available={row.available_retailer !== false} />
+                  </Td>
+
+                  <Td>
+                    <SegmentPrice value={row.distributor_price} available={row.available_distributor !== false} />
                   </Td>
 
                   <Td>
@@ -1102,6 +1117,17 @@ function QuickVariantsTab({
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function SegmentPrice({ value, available }: { value: number | null; available: boolean }) {
+  return (
+    <div className="min-w-[108px]">
+      <div className="font-semibold text-slate-800">{value == null ? "—" : money(value)}</div>
+      <div className={`mt-0.5 text-[11px] font-medium ${available ? "text-emerald-700" : "text-slate-400"}`}>
+        {available ? "Available" : "Not available"}
+      </div>
     </div>
   );
 }
