@@ -1081,19 +1081,44 @@ function QuickVariantsTab({
                       </Button>
 
                       {row.archived_at ? (
-
-                        <Button type="button" size="icon" variant="ghost" onClick={() => restoreVariant(row)} title="Restore archived variant" aria-label={`Restore variant ${row.sku}`} className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() => restoreVariant(row)}
+                            title="Restore archived variant"
+                            aria-label={`Restore variant ${row.sku}`}
+                            className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            disabled={busy}
+                            onClick={() => deleteVariantPermanently(row)}
+                            title="Delete variant permanently"
+                            aria-label={`Permanently delete variant ${row.sku}`}
+                            className="h-10 w-10 shadow-sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       ) : (
-                        <Button type="button" size="icon" variant="ghost" onClick={() => archiveVariant(row)} title={row.id.startsWith("new-") ? "Remove unsaved variant" : "Archive variant"} aria-label={`${row.id.startsWith("new-") ? "Remove" : "Archive"} variant ${row.sku}`} className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => archiveVariant(row)}
+                          title={row.id.startsWith("new-") ? "Remove unsaved variant" : "Archive variant"}
+                          aria-label={`${row.id.startsWith("new-") ? "Remove" : "Archive"} variant ${row.sku}`}
+                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        >
                           <Archive className="h-4 w-4" />
-                        </Button>
-                      )}
-
-                      {!row.id.startsWith("new-") && (
-                        <Button type="button" size="icon" variant="destructive" onClick={() => deleteVariantPermanently(row)} title={row.archived_at ? "Delete variant permanently" : "Archive before permanent deletion"} aria-label={`Permanently delete variant ${row.sku}`} className="h-10 w-10 shadow-sm">
-                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

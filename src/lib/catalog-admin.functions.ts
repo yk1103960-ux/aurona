@@ -581,10 +581,47 @@ export const adminSetProductVariantState = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin as any).rpc(
-      "admin_set_product_variant_state",
-      { _variant_id: data.variantId, _action: data.action },
-    );
+    const db = supabaseAdmin as any;
+
+    let { data: result, error } = await db.rpc("admin_set_product_variant_state", {
+      _variant_id: data.variantId,
+      _action: data.action,
+    });
+
+    if (
+      error &&
+      /admin_set_product_variant_state|could not find the function|schema cache/i.test(error.message)
+    ) {
+      const current = await db
+        .from("product_variants")
+        .select("id,family_id,sku,archived_at")
+        .eq("id", data.variantId)
+        .maybeSingle();
+      if (current.error) throw new Error(current.error.message);
+      if (!current.data) throw new Error("Product variant not found");
+
+      const now = new Date().toISOString();
+      const updated = await db
+        .from("product_variants")
+        .update({
+          is_active: data.action === "restore",
+          archived_at: data.action === "archive" ? now : null,
+          updated_at: now,
+        })
+        .eq("id", data.variantId)
+        .select("id,family_id,sku,archived_at")
+        .single();
+      if (updated.error) throw new Error(updated.error.message);
+
+      result = {
+        variant_id: updated.data.id,
+        family_id: updated.data.family_id,
+        sku: updated.data.sku,
+        action: data.action,
+      };
+      error = null;
+    }
+
     if (error) throw new Error(error.message);
     await writeAudit({
       actorUserId: actor.userId,
@@ -603,10 +640,80 @@ export const adminDeleteProductVariantPermanent = createServerFn({ method: "POST
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin as any).rpc(
-      "admin_delete_product_variant_permanent",
-      { _variant_id: data.variantId },
-    );
+    const db = supabaseAdmin as any;
+
+    let { data: result, error } = await db.rpc("admin_delete_product_variant_permanent", {
+      _variant_id: data.variantId,
+    });
+
+    if (
+      error &&
+      /admin_delete_product_variant_permanent|could not find the function|schema cache/i.test(error.message)
+    ) {
+      const variant = await db
+        .from("product_variants")
+        .select("id,family_id,sku,attributes,archived_at")
+        .eq("id", data.variantId)
+        .maybeSingle();
+      if (variant.error) throw new Error(variant.error.message);
+      if (!variant.data) throw new Error("Product variant not found");
+      if (!variant.data.archived_at)
+        throw new Error("Archive this variant before deleting it permanently");
+
+      const orderItems = await db
+        .from("order_items")
+        .select("id,product_snapshot,sku,price,variant_attributes")
+        .eq("variant_id", data.variantId);
+      if (orderItems.error) throw new Error(orderItems.error.message);
+
+      for (const item of orderItems.data ?? []) {
+        const snapshot =
+          item.product_snapshot ??
+          {
+            family_id: variant.data.family_id,
+            variant_id: variant.data.id,
+            sku: item.sku ?? variant.data.sku,
+            price: item.price,
+            attributes: item.variant_attributes ?? variant.data.attributes,
+            deleted_at: new Date().toISOString(),
+          };
+        const preserved = await db
+          .from("order_items")
+          .update({
+            product_snapshot: snapshot,
+            sku: item.sku ?? variant.data.sku,
+            variant_id: null,
+          })
+          .eq("id", item.id);
+        if (preserved.error) throw new Error(preserved.error.message);
+      }
+
+      for (const [table, column] of [
+        ["inventory_ledger", "variant_id"],
+        ["variant_program_commissions", "variant_id"],
+      ] as const) {
+        const removed = await db.from(table).delete().eq(column, data.variantId);
+        if (removed.error) throw new Error(removed.error.message);
+      }
+
+      const images = await db
+        .from("product_images")
+        .delete()
+        .eq("family_id", variant.data.family_id)
+        .eq("variant_sku", variant.data.sku);
+      if (images.error) throw new Error(images.error.message);
+
+      const deleted = await db.from("product_variants").delete().eq("id", data.variantId);
+      if (deleted.error) throw new Error(deleted.error.message);
+
+      result = {
+        variant_id: variant.data.id,
+        family_id: variant.data.family_id,
+        sku: variant.data.sku,
+      };
+      error = null;
+    }
+
     if (error) throw new Error(error.message);
     await writeAudit({
       actorUserId: actor.userId,
