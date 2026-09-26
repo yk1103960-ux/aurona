@@ -705,9 +705,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                         onChange={(e) => upd("model", e.target.value)}
                       />
                     </Field>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                      Barcode is managed per generated SKU/variation so each sellable variant can have its own barcode.
-                    </div>
                   </div>
                 </Section>
 
