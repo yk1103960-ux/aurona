@@ -142,12 +142,14 @@ export function prepareVariationAxes(rows: Axis[], previous: Axis[], variants: V
     if (
       variants.some(
         (row) =>
+          row.is_active &&
+          !row.archived_at &&
           row.attributes[old.axis_key] &&
           !replacement?.values.includes(row.attributes[old.axis_key]),
       )
     )
       throw new Error(
-        `Existing SKUs use ${old.label} values that would be removed. Remap those SKUs first.`,
+        `Active SKUs still use ${old.label} values that would be removed. Make those affected SKUs inactive first.`,
       );
   }
   return cleaned;
