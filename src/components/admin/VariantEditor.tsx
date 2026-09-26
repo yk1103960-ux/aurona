@@ -988,7 +988,7 @@ function QuickVariantsTab({
         <EmptyVariants />
       ) : (
         <div className="scrollbar-visible max-h-[70vh] overflow-auto overscroll-contain rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Variants table">
-          <table className="w-full min-w-[1040px] border-collapse text-sm">
+          <table className="w-full min-w-[1260px] border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-white shadow-sm">
               <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <Th>Variation</Th>
@@ -1041,7 +1041,7 @@ function QuickVariantsTab({
                   </Td>
 
                   <Td>
-                    <div className="flex min-w-[264px] items-center gap-1">
+                    <div className="flex min-w-[430px] items-center gap-1">
                       {productSlug && (
                         <Button
                           type="button"
@@ -1073,6 +1073,18 @@ function QuickVariantsTab({
                         type="button"
                         size="icon"
                         variant="ghost"
+                        onClick={() => duplicateRow(row)}
+                        title="Copy variation"
+                        aria-label={`Copy variation ${row.sku}`}
+                        className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
                         onClick={() => updateRow(row.id, { is_active: !row.is_active })}
                         disabled={Boolean(row.archived_at)}
                         title={row.is_active ? "Set variation inactive" : "Set variation active"}
@@ -1082,17 +1094,33 @@ function QuickVariantsTab({
                         {row.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
 
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => duplicateRow(row)}
-                        title="Copy variation"
-                        aria-label={`Copy variation ${row.sku}`}
-                        className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                      {([
+                        ["available_customer", "C", "Available to Customers"],
+                        ["available_retailer", "R", "Available to Retailers"],
+                        ["available_distributor", "D", "Available to Distributors"],
+                      ] as const).map(([key, label, title]) => {
+                        const enabled = row[key] !== false;
+                        return (
+                          <Button
+                            key={key}
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            title={title}
+                            aria-label={`${title}: ${enabled ? "on" : "off"}`}
+                            aria-pressed={enabled}
+                            disabled={Boolean(row.archived_at)}
+                            onClick={() => updateRow(row.id, { [key]: !enabled })}
+                            className={`h-10 w-10 border text-xs font-semibold ${
+                              enabled
+                                ? "border-sky-300 bg-sky-100 text-sky-800 hover:bg-sky-200"
+                                : "border-slate-200 bg-white text-slate-400 line-through hover:bg-slate-100"
+                            }`}
+                          >
+                            {label}
+                          </Button>
+                        );
+                      })}
 
                       {row.archived_at ? (
                         <Button type="button" size="icon" variant="ghost" onClick={() => restoreVariant(row)} title="Restore archived variant" aria-label={`Restore variant ${row.sku}`} className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
