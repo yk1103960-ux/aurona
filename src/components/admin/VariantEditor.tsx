@@ -1108,16 +1108,6 @@ function QuickVariantsTab({
   );
 }
 
-function SegmentPrice({ value, available }: { value: number | null; available: boolean }) {
-  return (
-    <div className="min-w-[108px]">
-      <div className="font-semibold text-slate-800">{value == null ? "—" : money(value)}</div>
-      <div className={`mt-0.5 text-[11px] font-medium ${available ? "text-emerald-700" : "text-slate-400"}`}>
-        {available ? "Available" : "Not available"}
-      </div>
-    </div>
-  );
-}
 
 function OptionsTab({
   axes,
