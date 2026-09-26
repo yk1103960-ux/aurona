@@ -875,6 +875,7 @@ export function VariantEditor({
           <QuickVariantsTab
             rows={rows}
             updateRow={updateRow}
+            duplicateRow={duplicateRow}
             archiveVariant={archiveVariant}
             restoreVariant={restoreVariant}
             deleteVariantPermanently={deleteVariantPermanently}
@@ -948,6 +949,7 @@ export function VariantEditor({
 function QuickVariantsTab({
   rows,
   updateRow,
+  duplicateRow,
   archiveVariant,
   restoreVariant,
   deleteVariantPermanently,
@@ -957,6 +959,7 @@ function QuickVariantsTab({
 }: {
   rows: Variant[];
   updateRow: (id: string, patch: Partial<Variant>) => void;
+  duplicateRow: (row: Variant) => void;
   archiveVariant: (row: Variant) => void;
   restoreVariant: (row: Variant) => void;
   deleteVariantPermanently: (row: Variant) => void;
@@ -1028,6 +1031,17 @@ function QuickVariantsTab({
                       >
                         <Pencil className="mr-1 h-4 w-4" />
                         Edit
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => duplicateRow(row)}
+                        title="Copy variation"
+                        aria-label={`Copy variation ${row.sku}`}
+                      >
+                        <Copy className="mr-1 h-4 w-4" /> Copy
                       </Button>
 
                       {manageImages && (
