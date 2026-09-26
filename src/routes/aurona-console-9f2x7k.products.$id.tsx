@@ -772,19 +772,6 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                     </div>
                   </Field>
 
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-xs font-medium text-slate-600">Specification</div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        Add, edit or delete specifications. Each specification has its own name and value.
-                      </div>
-                    </div>
-
-                    <EditableSpecificationRows
-                      value={f.specifications}
-                      onChange={(value) => upd("specifications", value)}
-                    />
-                  </div>
                 </div>
               </Section>
 
