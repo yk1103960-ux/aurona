@@ -752,6 +752,7 @@ export function VariantEditor({
         setAxisRows(next);
         setAxesDirty(true);
       }}
+      setVariants={setRows}
       excluded={excluded}
       setExcluded={setExcluded}
       draftOnly={Boolean(editingId)}
@@ -2773,6 +2774,7 @@ function AxisEditor({
   rows,
   variants,
   setRows,
+  setVariants,
   saving,
   saveAxes,
   excluded,
@@ -2782,6 +2784,7 @@ function AxisEditor({
   rows: Axis[];
   variants: Variant[];
   setRows: (rows: Axis[]) => void;
+  setVariants: React.Dispatch<React.SetStateAction<Variant[]>>;
   saving: boolean;
   saveAxes: (generate: boolean, selectedCombinations?: Record<string, string>[]) => Promise<void>;
   excluded: Record<string, string[]>;
@@ -2812,9 +2815,75 @@ function AxisEditor({
   };
 
   const removeAxis = (axis: Axis) => {
-    if (variants.some((row) => row.attributes[axis.axis_key]))
-      return toast.error("This option is already used by an existing SKU.");
-    if (confirm(`Remove ${axis.label}?`)) setRows(rows.filter((row) => row.id !== axis.id));
+    const affected = variants.filter((row) => row.attributes?.[axis.axis_key]);
+    if (
+      affected.length &&
+      !confirm(
+        `Remove ${axis.label}? ${affected.length} existing variation${affected.length === 1 ? "" : "s"} use this option. They will be kept for data safety but made inactive and the removed option will be cleared from their variation attributes.`,
+      )
+    )
+      return;
+    if (!affected.length && !confirm(`Remove ${axis.label}?`)) return;
+
+    setVariants((current) =>
+      current.map((row) => {
+        if (!row.attributes?.[axis.axis_key]) return row;
+        const attributes = { ...row.attributes };
+        delete attributes[axis.axis_key];
+        return { ...row, attributes, is_active: false };
+      }),
+    );
+    setExcluded((current) => {
+      const next = { ...current };
+      delete next[axis.id];
+      return next;
+    });
+    setRows(
+      rows
+        .filter((row) => row.id !== axis.id)
+        .map((row, index) => ({ ...row, sort_order: index })),
+    );
+    toast.success(
+      affected.length
+        ? `${axis.label} removed. Affected saved variations were made inactive so their pricing/stock data is preserved.`
+        : `${axis.label} removed.`,
+    );
+  };
+
+  const removeValue = (axis: Axis, value: string) => {
+    const affected = variants.filter((row) => row.attributes?.[axis.axis_key] === value);
+    if (
+      affected.length &&
+      !confirm(
+        `Remove "${value}" from ${axis.label}? ${affected.length} existing variation${affected.length === 1 ? "" : "s"} use this value. They will be kept for data safety but made inactive.`,
+      )
+    )
+      return;
+
+    const nextValues = axis.values.filter((item) => item.trim() !== value.trim());
+    if (!nextValues.length) {
+      toast.error(`${axis.label} needs at least one value. Remove the whole option instead.`);
+      return;
+    }
+
+    setVariants((current) =>
+      current.map((row) => {
+        if (row.attributes?.[axis.axis_key] !== value) return row;
+        const attributes = { ...row.attributes };
+        delete attributes[axis.axis_key];
+        return { ...row, attributes, is_active: false };
+      }),
+    );
+    setExcluded((current) => ({
+      ...current,
+      [axis.id]: (current[axis.id] ?? []).filter((item) => item !== value),
+    }));
+    updateAxis(axis.id, { values: nextValues });
+    toast.success(
+      affected.length
+        ? `"${value}" removed. Affected variations were made inactive; existing pricing and stock were preserved.`
+        : `"${value}" removed.`,
+    );
   };
 
   const activeAxes = rows
@@ -3004,30 +3073,23 @@ function AxisEditor({
 
               {axis.values.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map((value) => {
-                    const disabled = (excluded[axis.id] ?? []).includes(value);
-                    return (
+                  {[...new Set(axis.values.map((value) => value.trim()).filter(Boolean))].map((value) => (
+                    <span
+                      key={value}
+                      className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 py-1 pl-3 pr-1 text-xs font-medium text-sky-800"
+                    >
+                      {value}
                       <button
-                        key={value}
                         type="button"
-                        onClick={() =>
-                          setExcluded((current) => ({
-                            ...current,
-                            [axis.id]: disabled
-                              ? (current[axis.id] ?? []).filter((item) => item !== value)
-                              : [...(current[axis.id] ?? []), value],
-                          }))
-                        }
-                        className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                          disabled
-                            ? "border-slate-200 bg-slate-100 text-slate-400 line-through"
-                            : "border-sky-200 bg-sky-50 text-sky-800"
-                        }`}
+                        onClick={() => removeValue(axis, value)}
+                        className="grid h-6 w-6 place-items-center rounded-full text-red-600 hover:bg-red-50"
+                        title={`Remove ${value}`}
+                        aria-label={`Remove ${value} from ${axis.label}`}
                       >
-                        {value}
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    );
-                  })}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
