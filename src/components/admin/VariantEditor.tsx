@@ -2983,18 +2983,34 @@ function AxisEditor({
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-semibold text-slate-800">1. Choose options</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {presets.map(([key, label]) => (
-            <Button
-              key={key}
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={rows.some((axis) => axis.axis_key === key)}
-              onClick={() => addAxis({ key, label })}
-            >
-              <Plus className="mr-1 h-4 w-4" /> {label}
-            </Button>
-          ))}
+          {presets.map(([key, label]) => {
+            const selected = rows.find((axis) => axis.axis_key === key);
+            return (
+              <Button
+                key={key}
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (!selected) {
+                    addAxis({ key, label });
+                    return;
+                  }
+                  document
+                    .getElementById(`variation-axis-${selected.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                title={selected ? `${label} is already selected — click to edit its values` : `Add ${label}`}
+              >
+                {selected ? (
+                  <span className="mr-1 font-semibold text-emerald-700">✓</span>
+                ) : (
+                  <Plus className="mr-1 h-4 w-4" />
+                )}
+                {label}
+              </Button>
+            );
+          })}
           <Button type="button" size="sm" variant="outline" onClick={() => addAxis()}>
             <Plus className="mr-1 h-4 w-4" /> Other option
           </Button>
@@ -3005,7 +3021,11 @@ function AxisEditor({
         <div className="space-y-3">
           <p className="text-sm font-semibold text-slate-800">2. Enter values</p>
           {rows.map((axis) => (
-            <div key={axis.id} className="rounded-xl border border-slate-200 p-3 sm:p-4">
+            <div
+              key={axis.id}
+              id={`variation-axis-${axis.id}`}
+              className="rounded-xl border border-slate-200 p-3 sm:p-4"
+            >
               <div className="grid gap-3 md:grid-cols-[180px_1fr_auto] md:items-start">
                 <label>
                   <FieldTitle>Option</FieldTitle>
