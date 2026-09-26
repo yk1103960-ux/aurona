@@ -1161,8 +1161,41 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
         },
       });
 
+      const currentAxes = (matrix.axes ?? [])
+        .map((axis: any) => ({
+          key: String(axis.axis_key ?? ""),
+          values: Array.isArray(axis.values)
+            ? axis.values.map((value: unknown) => String(value).trim()).filter(Boolean)
+            : [],
+        }))
+        .filter((axis: { key: string; values: string[] }) => axis.key && axis.values.length);
+
+      const matchesCurrentVariationSet = (row: any) => {
+        if (!currentAxes.length) return true;
+        const attrs = row?.attributes && typeof row.attributes === "object" ? row.attributes : {};
+        const axisKeys = new Set(currentAxes.map((axis: { key: string }) => axis.key));
+        const variationKeys = Object.entries(attrs)
+          .filter(
+            ([key, value]) =>
+              key !== "variant_label" &&
+              !key.startsWith("__") &&
+              value !== null &&
+              value !== undefined &&
+              String(value).trim(),
+          )
+          .map(([key]) => key);
+
+        return (
+          currentAxes.every((axis: { key: string; values: string[] }) =>
+            axis.values.includes(String(attrs[axis.key] ?? "").trim()),
+          ) &&
+          variationKeys.length === currentAxes.length &&
+          variationKeys.every((key) => axisKeys.has(key))
+        );
+      };
+
       const variants: CommissionVariant[] = (matrix.variants ?? [])
-        .filter((row: any) => Boolean(row?.id))
+        .filter((row: any) => Boolean(row?.id) && matchesCurrentVariationSet(row))
         .map((row: any) => {
           const attrs = row.attributes && typeof row.attributes === "object" ? row.attributes : {};
           const attributeValues = Object.entries(attrs)
