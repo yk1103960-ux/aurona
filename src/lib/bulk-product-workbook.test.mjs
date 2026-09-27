@@ -38,6 +38,14 @@ const MASTER_DETAIL_HEADERS = [
   "SEO Description","","","",
 ];
 
+const MASTER_MERGES = [
+  "A1:A2","B1:B2","C1:C2","D1:D2","E1:E2","F1:F2","G1:G2","H1:H2","I1:I2","J1:J2","K1:K2",
+  "L1:L2","M1:M2","N1:N2","O1:O2","P1:P2","Q1:Q2","R1:R2","S1:S2","T1:T2","U1:U2","V1:V2",
+  "W1:W2","X1:X2","Y1:Y2","Z1:Z2","AA1:AE1","AF1:AO1","AP1:AY1","AZ1:BI1","BJ1:BM1",
+  "BN1:BO1","BP1:BP2","BQ1:BQ2","BR1:BR2",
+].sort();
+
+
 test("generated workbook headers exactly match the supplied 70-column Product Master template", () => {
   const variations = [{ name: "Watts", values: ["5W"] }];
   const bytes = createBulkProductWorkbook({
@@ -54,6 +62,11 @@ test("generated workbook headers exactly match the supplied 70-column Product Ma
   assert.deepEqual(matrix[0].slice(0, 70), MASTER_TOP_HEADERS);
   assert.deepEqual(matrix[1].slice(0, 70), MASTER_DETAIL_HEADERS);
   assert.deepEqual(matrix[2].slice(0, 70), Array.from({ length: 70 }, (_, index) => index + 1));
+
+  const merges = (sheet["!merges"] ?? [])
+    .map((range) => XLSX.utils.encode_range(range))
+    .sort();
+  assert.deepEqual(merges, MASTER_MERGES);
 });
 
 test("selected 2x2 values generate exactly four combinations in selected axis order", () => {
@@ -164,6 +177,35 @@ test("generated Product Master workbook preserves all 70 master columns and roun
       },
     ],
   );
+});
+
+test("parser accepts the exact Product Master multi-row structure without a hidden config sheet", () => {
+  const variations = [
+    { name: "Watts", values: ["5W", "7W"] },
+    { name: "Output Colour", values: ["RED", "WHITE"] },
+  ];
+  const bytes = createBulkProductWorkbook({
+    categoryId: "00000000-0000-0000-0000-000000000001",
+    categoryName: "Concealed Lighths",
+    productName: "Nexa",
+    mainSku: "CL-NEXA",
+    variations,
+    combinations: generateVariationCombinations(variations),
+  });
+
+  const workbook = XLSX.read(bytes, { type: "array" });
+  delete workbook.Sheets["_Aurona_Config"];
+  workbook.SheetNames = workbook.SheetNames.filter((name) => name !== "_Aurona_Config");
+  const masterOnly = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+  const parsed = parseBulkProductWorkbook(masterOnly);
+
+  assert.equal(parsed.rows.length, 4);
+  assert.equal(parsed.metadata.category_name, "Concealed Lighths");
+  assert.equal(parsed.metadata.main_sku, "CL-NEXA");
+  assert.deepEqual(parsed.metadata.variation_configuration, [
+    { name: "Watts", values: ["5W", "7W"] },
+    { name: "Output Colour", values: ["RED", "WHITE"] },
+  ]);
 });
 
 test("wrong Product Master column order is rejected instead of silently remapping data", () => {
