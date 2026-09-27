@@ -906,6 +906,9 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const variantsById = new Map((variantsResult.data ?? []).map((x: any) => [String(x.id), x]));
     const programs = new Set((programsResult.data ?? []).map((x: any) => String(x.name).toLowerCase()));
     const metadataCategory = normalizeBulkCategoryName(data.metadata.category_name);
+    const metadataMainSku = textCell(data.metadata.main_sku)
+      ? normalizeMainSku(textCell(data.metadata.main_sku))
+      : "";
     let configuredVariations: Array<{ name: string; values: string[] }> = [];
     try {
       const raw = data.metadata.variation_configuration;
@@ -928,6 +931,9 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       if (metadataCategory && categoryKey !== metadataCategory) errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
       if (!row.product_name) errors.push("Product Name is required");
       if (!row.main_sku) errors.push("Main SKU is required");
+      if (metadataMainSku && row.main_sku !== metadataMainSku) {
+        errors.push(`Main SKU was changed after template generation. Expected ${metadataMainSku}`);
+      }
       if (!row.variant_sku) errors.push("Variant SKU is required");
       if (seen.has(row.variant_sku)) errors.push("Duplicate Variant SKU in this workbook");
       seen.add(row.variant_sku);
