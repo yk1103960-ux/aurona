@@ -830,11 +830,28 @@ export function ProductMaster() {
   };
 
   const exportView = async () => {
+    if (!shownFamilies.length) {
+      toast.error("No products are visible to export.");
+      return;
+    }
     try {
       const result = await adminExportProductMasterRows({
         data: { familyIds: shownFamilies.map((family) => family.id) },
       });
-      const bytes = await createProductMasterExport(result);
+      const exportFamilies = shownFamilies.map((visibleFamily) => {
+        const storedFamily = result.families.find((family) => family.id === visibleFamily.id);
+        return {
+          ...visibleFamily,
+          ...storedFamily,
+          // The Product Master grid is already showing these variants. Use them
+          // if the supplemental export query returned no variant records.
+          variants: storedFamily?.variants?.length
+            ? storedFamily.variants
+            : visibleFamily.variants,
+          axes: storedFamily?.axes?.length ? storedFamily.axes : visibleFamily.axes,
+        };
+      });
+      const bytes = await createProductMasterExport({ ...result, families: exportFamilies });
       const blob = new Blob([bytes as BlobPart], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
