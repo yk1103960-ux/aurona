@@ -424,6 +424,52 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     };
   });
 
+// Export reads the full stored fields separately from the compact grid query.
+// The UI's filters, pagination and visible columns are unchanged.
+export const adminExportProductMasterRows = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ familyIds: z.array(z.string().uuid()).max(50) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    if (!data.familyIds.length) return { families: [], commissions: [], programs: [] };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+    const [families, variants, axes] = await Promise.all([
+      db.from("product_families").select("*,categories(id,name)").in("id", data.familyIds),
+      db.from("product_variants").select("*").in("family_id", data.familyIds).order("sort_order"),
+      db.from("product_variant_axes").select("*").in("family_id", data.familyIds).order("sort_order"),
+    ]);
+    for (const result of [families, variants, axes]) {
+      if (result.error) throw new Error(result.error.message);
+    }
+    const variantIds = (variants.data ?? []).map((row: any) => row.id);
+    const commissions = variantIds.length
+      ? await db.from("variant_program_commissions").select("*").in("variant_id", variantIds)
+      : { data: [], error: null };
+    if (commissions.error) throw new Error(commissions.error.message);
+    const programIds = [...new Set((commissions.data ?? []).map((row: any) => row.program_id).filter(Boolean))];
+    const programs = programIds.length
+      ? await db.from("referral_programs").select("id,name").in("id", programIds)
+      : { data: [], error: null };
+    if (programs.error) throw new Error(programs.error.message);
+    return {
+      families: data.familyIds.flatMap((id) => {
+        const family = (families.data ?? []).find((item: any) => item.id === id);
+        return family
+          ? [{
+              ...family,
+              variants: (variants.data ?? []).filter((item: any) => item.family_id === id),
+              axes: (axes.data ?? []).filter((item: any) => item.family_id === id),
+            }]
+          : [];
+      }),
+      commissions: commissions.data ?? [],
+      programs: programs.data ?? [],
+    };
+  });
+
 export const adminBulkProductFamilyAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
