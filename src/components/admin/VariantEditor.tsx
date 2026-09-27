@@ -131,6 +131,48 @@ const variantName = (row: Variant) => {
   return values.length ? values.join(" / ") : row.sku;
 };
 
+const savedOptionLabel = (key: string) =>
+  PRODUCT_VARIATION_PRESETS.find(([presetKey]) => presetKey === key)?.[1] ??
+  key.replace(/_/g, " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+
+/** Fill option inputs only from persisted axes, attributes, or legacy family fields. */
+const hydrateSavedAxes = (
+  savedAxes: Axis[],
+  savedVariants: Variant[],
+  family: Record<string, unknown> | null,
+): Axis[] => {
+  const axes = new Map<string, Axis>();
+  savedAxes.forEach((axis, index) => axes.set(axis.axis_key, {
+    ...axis,
+    label: axis.label?.trim() || savedOptionLabel(axis.axis_key),
+    values: Array.isArray(axis.values) ? axis.values.map(String).filter((value) => value.trim()) : [],
+    sort_order: axis.sort_order ?? index,
+  }));
+  for (const variant of savedVariants) {
+    for (const [key, raw] of Object.entries(variant.attributes ?? {})) {
+      const value = String(raw ?? "").trim();
+      if (!value || key === "variant_label" || key.startsWith("__")) continue;
+      if (!axes.has(key)) axes.set(key, {
+        id: `new-${key}`, axis_key: key, label: savedOptionLabel(key), values: [], sort_order: axes.size,
+      });
+      const axis = axes.get(key)!;
+      if (!axis.values.includes(value)) axis.values.push(value);
+    }
+  }
+  if (!axes.size && family) {
+    for (const [field, key] of [
+      ["wattage", "wattage"], ["color_temp", "output_colour"],
+      ["size", "size"], ["body_type", "body_type"],
+    ] as const) {
+      const values = parsePastedValues(String(family[field] ?? ""));
+      if (values.length) axes.set(key, {
+        id: `new-${key}`, axis_key: key, label: savedOptionLabel(key), values, sort_order: axes.size,
+      });
+    }
+  }
+  return [...axes.values()].sort((a, b) => a.sort_order - b.sort_order);
+};
+
 const normalizeOptionValue = (value: unknown) => String(value ?? "").trim().toLocaleLowerCase();
 
 const variantCombinationKey = (row: Variant, axes: Axis[]) =>
@@ -277,10 +319,11 @@ export function VariantEditor({
           barcode: row.barcode ?? "",
           expected_stock: Number(row.stock ?? 0),
         })) as Variant[],
-        axes: (result.axes ?? []).map((axis: Axis) => ({
-          ...axis,
-          values: Array.isArray(axis.values) ? axis.values : [],
-        })) as Axis[],
+        axes: hydrateSavedAxes(
+          (result.axes ?? []) as Axis[],
+          (result.variants ?? []) as Variant[],
+          result.family as Record<string, unknown> | null,
+        ),
       };
     },
   });
@@ -583,22 +626,30 @@ export function VariantEditor({
   };
 
   const deleteVariantPermanently = async (row: Variant) => {
-    if (busy) return;
+    if (busy || !confirm(`Permanently delete variant ${row.sku}? This cannot be restored.`)) return;
     if (row.id.startsWith("new-")) {
-      removeRow(row);
+      dirty.current = true;
+      setRows((current) => current.filter((item) => item.id !== row.id));
+      setPhotoDrafts((current) => {
+        const next = { ...current };
+        delete next[row.id];
+        return next;
+      });
+      setEditingId((current) => (current === row.id ? null : current));
       return;
     }
-    if (
-      !confirm(
-        `Permanently delete variant ${row.sku}? This cannot be undone. Archive is the recoverable option; Delete Permanently removes this SKU and variant data.`,
-      )
-    )
-      return;
+    const hadUnsavedChanges = dirty.current || axesDirty || photosPending;
     setSaving(true);
     try {
-      await adminDeleteProductVariantPermanent({ data: { variantId: row.id } });
+      await adminDeleteProductVariantPermanent({ data: { variantId: row.id, fromVariationEditor: true } });
+      setRows((current) => current.filter((item) => item.id !== row.id));
+      setPhotoDrafts((current) => {
+        const next = { ...current };
+        delete next[row.id];
+        return next;
+      });
       setEditingId((current) => (current === row.id ? null : current));
-      dirty.current = false;
+      dirty.current = hadUnsavedChanges;
       await q.refetch();
       await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
       toast.success(`Variant ${row.sku} permanently deleted.`);
@@ -997,7 +1048,7 @@ export function VariantEditor({
               setWizardStep(0);
               setEditingId(row.id);
             }}
-            removeRow={removeRow}
+            removeRow={deleteVariantPermanently}
             initialSegment={priceSegment ?? "customer"}
             lockSegment={Boolean(priceSegment)}
           />
@@ -1203,12 +1254,26 @@ function QuickVariantsTab({
                           size="icon"
                           variant="ghost"
                           disabled={busy}
-                          onClick={() => archiveVariant(row)}
-                          title={row.id.startsWith("new-") ? "Delete unsaved variation" : "Delete variation (archive; can be restored)"}
-                          aria-label={`Delete variation ${row.sku}`}
-                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          onClick={() => deleteVariantPermanently(row)}
+                          title="Delete variation permanently"
+                          aria-label={`Delete variation permanently ${row.sku}`}
+                          className="h-10 w-10 text-red-700 hover:bg-red-50 hover:text-red-800"
                         >
                           <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {!row.archived_at && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => archiveVariant(row)}
+                          title="Archive variant (can be restored)"
+                          aria-label={`Archive variant ${row.sku}`}
+                          className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        >
+                          <Archive className="h-4 w-4" />
                         </Button>
                       )}
 
@@ -3808,7 +3873,7 @@ function SegmentPriceTable({
                           variant="destructive"
                           aria-label={`Delete variation ${row.sku}`}
                           title="Delete variation"
-                          onClick={() => archiveVariant(row)}
+                          onClick={() => deleteVariantPermanently(row)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
