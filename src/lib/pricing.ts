@@ -114,7 +114,7 @@ export const visibleInventoryQuery = (skus: string[]) =>
     staleTime: 30 * 1000,
     queryFn: async (): Promise<Record<string, VisibleInventory>> => {
       if (skus.length === 0) return {};
-      const { data, error } = await supabase.rpc("get_visible_inventory", { _skus: skus });
+      const { data, error } = await (supabase as any).rpc("get_visible_inventory", { _skus: skus });
       if (error) throw error;
       const map: Record<string, VisibleInventory> = {};
       for (const row of (data ?? []) as VisibleInventory[]) map[row.sku] = row;
