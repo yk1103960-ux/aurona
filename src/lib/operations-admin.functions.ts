@@ -2,7 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
-import { generateVariantSku, normalizeMainSku } from "@/lib/sku-generation";
+import { normalizeMainSku } from "@/lib/sku-generation";
+import {
+  buildBulkCategoryLookups,
+  expectedBulkVariantSku,
+  normalizeBulkCategoryName,
+  resolveBulkCategory,
+} from "@/lib/bulk-product-identity";
 import { bulkColumnValue, PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
 
 const ImportRow = z.object({
@@ -24,13 +30,6 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
-
-const normalizeBulkCategoryName = (value: unknown) =>
-  String(value ?? "")
-    .normalize("NFKC")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLocaleLowerCase("en-IN");
 
 export const adminPreviewCatalogImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -894,11 +893,8 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       (supabaseAdmin as any).from("referral_programs").select("id,name").eq("is_active", true),
     ]);
     for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
-    const categories = new Map(
-      (categoriesResult.data ?? []).map((x: any) => [
-        normalizeBulkCategoryName(x.name),
-        { id: x.id, name: String(x.name) },
-      ]),
+    const categoryLookups = buildBulkCategoryLookups(
+      (categoriesResult.data ?? []).map((x: any) => ({ id: String(x.id), name: String(x.name) })),
     );
     const familiesBySku = new Map((familiesResult.data ?? []).map((x: any) => [String(x.main_sku).toUpperCase(), x]));
     const familiesById = new Map((familiesResult.data ?? []).map((x: any) => [String(x.id), x]));
@@ -925,10 +921,19 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       const errors: string[] = [];
       if (!['create','update'].includes(row.function)) errors.push("Function must be Create or Update");
       const categoryKey = normalizeBulkCategoryName(row.category_name);
-      const resolvedCategory = categories.get(categoryKey);
-      if (!resolvedCategory) errors.push(`Unknown Product Category: ${row.category_name || "(blank)"}`);
-      else row.category_name = resolvedCategory.name;
-      if (metadataCategory && categoryKey !== metadataCategory) errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
+      const resolvedCategory = resolveBulkCategory(
+        categoryLookups,
+        row.category_name,
+        data.metadata.category_id,
+      );
+      if (!resolvedCategory) {
+        errors.push(`Unknown Product Category: ${row.category_name || "(blank)"}`);
+      } else {
+        row.category_name = resolvedCategory.name;
+      }
+      if (metadataCategory && categoryKey !== metadataCategory) {
+        errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
+      }
       if (!row.product_name) errors.push("Product Name is required");
       if (!row.main_sku) errors.push("Main SKU is required");
       if (metadataMainSku && row.main_sku !== metadataMainSku) {
@@ -961,7 +966,10 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       if (row.function === 'create' && variant) errors.push("Variant SKU already belongs to an existing variant");
       if (row.function === 'create' && row.main_sku && row.variant_sku && row.variation_axes.length) {
         try {
-          const expectedSku = generateVariantSku(row.main_sku, row.variation_axes.map((axis) => ({ name: axis.name, value: axis.value })));
+          const expectedSku = expectedBulkVariantSku(
+            row.main_sku,
+            row.variation_axes.map((axis) => ({ name: axis.name, value: axis.value })),
+          );
           if (expectedSku !== row.variant_sku) errors.push(`Variant SKU does not match the approved rules. Expected ${expectedSku}`);
         } catch (error) {
           errors.push(error instanceof Error ? error.message : "Variation value has no approved SKU rule");
@@ -1034,21 +1042,22 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
 
     const categoriesResult = await (supabaseAdmin as any).from("categories").select("id,name");
     if (categoriesResult.error) throw new Error(categoriesResult.error.message);
-    const categories = new Map(
-      (categoriesResult.data ?? []).map((row: any) => [
-        normalizeBulkCategoryName(row.name),
-        String(row.name),
-      ]),
+    const categoryLookups = buildBulkCategoryLookups(
+      (categoriesResult.data ?? []).map((row: any) => ({
+        id: String(row.id),
+        name: String(row.name),
+      })),
     );
 
     const rows = data.rows.map((rawRow, index) => {
       const row = { ...rawRow } as Record<string, unknown>;
-      const categoryKey = normalizeBulkCategoryName(row.category_name);
-      const categoryName = categories.get(categoryKey);
-      if (!categoryName) {
-        throw new Error(`Unknown Product Category at import row ${index + 1}: ${String(row.category_name ?? "(blank)")}`);
+      const categoryRecord = resolveBulkCategory(categoryLookups, row.category_name);
+      if (!categoryRecord) {
+        throw new Error(
+          `Unknown Product Category at import row ${index + 1}: ${String(row.category_name ?? "(blank)")}`,
+        );
       }
-      row.category_name = categoryName;
+      row.category_name = categoryRecord.name;
 
       const mainSku = normalizeMainSku(String(row.main_sku ?? ""));
       const axes = Array.isArray(row.variation_axes)
@@ -1057,7 +1066,7 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
             value: String(axis.value ?? "").trim(),
           }))
         : [];
-      const expectedSku = generateVariantSku(mainSku, axes);
+      const expectedSku = expectedBulkVariantSku(mainSku, axes);
       const suppliedSku = String(row.variant_sku ?? "").trim().toUpperCase();
       if (expectedSku !== suppliedSku) {
         throw new Error(
