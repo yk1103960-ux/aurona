@@ -762,13 +762,18 @@ export const adminSaveProductFamily = createServerFn({ method: "POST" })
     // Role-based product visibility: applies to the family and its legacy row,
     // so every variant of a hidden product disappears for that buyer type.
     if (result?.family_id) {
-      await (supabaseAdmin as any).rpc("admin_set_family_visibility", {
+      const visibility = await (supabaseAdmin as any).rpc("admin_set_family_visibility", {
         _family_id: result.family_id,
         _product_id: result.product_id ?? null,
         _c: data.visible_customer,
         _r: data.visible_retailer,
         _d: data.visible_distributor,
       });
+      if (visibility.error) {
+        throw new Error(
+          `Product details were saved, but buyer visibility could not be updated: ${visibility.error.message}`,
+        );
+      }
     }
     await writeAudit({
       actorUserId: actor.userId,
