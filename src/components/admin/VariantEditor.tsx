@@ -2754,6 +2754,12 @@ function ShippingTab({
 }) {
   const scope = DIMENSION_SCOPES.find((entry) => entry.id === initialScope)!;
   const packageLabel = scope.label;
+  const packSizeField: "pack_size" | "retailer_pack_size" | "distributor_pack_size" =
+    initialScope === "retailer"
+      ? "retailer_pack_size"
+      : initialScope === "distributor"
+        ? "distributor_pack_size"
+        : "pack_size";
   const unitFields: Array<{ key: DimensionKey; label: string; placeholder: string }> = [
     { key: "weight_g", label: "Weight (g)", placeholder: "Weight" },
     { key: "dim_l", label: "Length (cm)", placeholder: "Length" },
@@ -2767,7 +2773,10 @@ function ShippingTab({
     { key: scope.fields.h, label: "Package Height (cm)", placeholder: "Height" },
   ];
 
-  const copyDown = (field: DimensionKey | "pack_size", index: number) => {
+  const copyDown = (
+    field: DimensionKey | "pack_size" | "retailer_pack_size" | "distributor_pack_size",
+    index: number,
+  ) => {
     const value = rows[index]?.[field] as number | null;
     for (const row of rows.slice(index + 1)) {
       updateRow(row.id, { [field]: value } as Partial<Variant>);
@@ -2780,7 +2789,7 @@ function ShippingTab({
   const inputCell = (
     row: Variant,
     index: number,
-    field: DimensionKey | "pack_size",
+    field: DimensionKey | "pack_size" | "retailer_pack_size" | "distributor_pack_size",
     label: string,
     placeholder: string,
     integer = false,
@@ -2884,7 +2893,7 @@ function ShippingTab({
                   <Td className={FREEZE_2}>
                     <div className="min-w-[180px] break-all font-mono text-xs font-medium text-slate-600">{row.sku}</div>
                   </Td>
-                  {inputCell(row, index, "pack_size", "Pack Size", "Pack size", true)}
+                  {inputCell(row, index, packSizeField, "Pack Size", "Pack size", true)}
                   {fields.map((field) =>
                     inputCell(row, index, field.key, field.label, field.placeholder),
                   )}
