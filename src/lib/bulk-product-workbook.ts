@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { generateVariantSku, variantName, type VariationSelection } from "./sku-generation";
 import {
   PRODUCT_MASTER_COLUMNS,
+  PRODUCT_MASTER_COLUMN_INDEX,
   PRODUCT_MASTER_DETAIL_HEADERS,
   PRODUCT_MASTER_SERIALS,
   PRODUCT_MASTER_TOP_HEADERS,
@@ -60,15 +61,32 @@ const PRODUCT_MASTER_MERGES = [
 export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   if (config.variations.length > 3) throw new Error("The supplied template supports up to three variation slots.");
   const rows = config.combinations.map((combination, index) => {
+    const values = Array(PRODUCT_MASTER_COLUMNS.length).fill("");
+    const set = (key: keyof typeof PRODUCT_MASTER_COLUMN_INDEX, value: unknown) => {
+      values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value ?? "";
+    };
     const attributes = Object.fromEntries(combination.map((item) => [item.name, item.value]));
-    const fixed = [
-      index + 1, "Create", config.categoryName, config.productName, "", config.mainSku,
-      config.brandName || "AURONA", config.unit || "Pc", config.modelName || "",
-      variantName(combination), generateVariantSku(config.mainSku, combination), "", "",
-    ];
-    for (let slot = 0; slot < 3; slot += 1) fixed.push(combination[slot]?.name || "", combination[slot]?.value || "");
-    fixed.push(JSON.stringify(attributes));
-    return [...fixed, ...Array(PRODUCT_MASTER_COLUMNS.length - fixed.length).fill("")];
+
+    set("sr_no", index + 1);
+    set("function", "Create");
+    set("category_name", config.categoryName);
+    set("product_name", config.productName);
+    set("main_sku", config.mainSku);
+    set("brand", config.brandName || "AURONA");
+    set("unit", config.unit || "Pc");
+    set("model", config.modelName || "");
+    set("variant_name", variantName(combination));
+    set("variant_sku", generateVariantSku(config.mainSku, combination));
+
+    combination.slice(0, 3).forEach((selection, slot) => {
+      const nameKey = `variation_${slot + 1}_name` as keyof typeof PRODUCT_MASTER_COLUMN_INDEX;
+      const valueKey = `variation_${slot + 1}_value` as keyof typeof PRODUCT_MASTER_COLUMN_INDEX;
+      set(nameKey, selection.name);
+      set(valueKey, selection.value);
+    });
+
+    set("attributes_json", JSON.stringify(attributes));
+    return values;
   });
   const ws = XLSX.utils.aoa_to_sheet([groupHeader, detailHeader, PRODUCT_MASTER_SERIALS, ...rows]);
   // Supplied master freezes below Row 2 (serial-number row stays scrollable).
