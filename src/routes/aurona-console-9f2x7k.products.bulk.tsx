@@ -79,36 +79,17 @@ function BulkCatalog() {
   const availableVariations = useMemo<VariationOption[]>(() => {
     if (!categoryId || !config.data) return [];
 
+    // Bulk Upload must be category-specific. Never fall back to every global
+    // catalog attribute, because that can show variations that do not belong
+    // to the selected category.
     const categorySpecific = (
       (config.data as any).categoryVariations?.[categoryId] ?? []
     ) as VariationOption[];
-    if (categorySpecific.length) {
-      return categorySpecific.map((option) => ({
-        ...option,
-        values: uniqueValues(option.values ?? []),
-      }));
-    }
 
-    const colourValues = uniqueValues(
-      ((config.data as any).variations ?? [])
-        .filter((row: any) => row.kind === "colour")
-        .map((row: any) => row.name),
-    );
-
-    return (((config.data as any).variations ?? []) as any[])
-      .filter((row) => row.kind === "attribute")
-      .map((row) => {
-        const detailValues = Array.isArray(row.details?.values) ? row.details.values : [];
-        const values = /colou?r/i.test(String(row.name ?? "")) && !detailValues.length
-          ? colourValues
-          : detailValues;
-        return {
-          id: String(row.id),
-          axisKey: String(row.code || row.name),
-          name: String(row.name),
-          values: uniqueValues(values),
-        };
-      });
+    return categorySpecific.map((option) => ({
+      ...option,
+      values: uniqueValues(option.values ?? []),
+    }));
   }, [categoryId, config.data]);
 
   const variations = choices.map((choice) => ({
@@ -391,7 +372,7 @@ function BulkCatalog() {
 
         {categoryId && availableVariations.length === 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            No saved variation axes/values were found for this category. Configure the category's product variations first; Bulk Upload will not invent values.
+            No configured variation axes/values were found for this category. Bulk Upload will not show global or unrelated variation values.
           </div>
         )}
 
