@@ -23,6 +23,7 @@ import {
 import {
   generateVariantSku,
   generateVariationCombinations,
+  normalizeMainSku,
   variantName,
 } from "@/lib/sku-generation";
 
@@ -319,12 +320,12 @@ function BulkCatalog() {
       set("function", "Create");
       set("category_name", category.name);
       set("product_name", productName.trim());
-      set("main_sku", mainSku.trim().toUpperCase());
+      set("main_sku", normalizeMainSku(mainSku));
       set("brand", brandName.trim() || "AURONA");
       set("unit", unit.trim() || "Pc");
       set("model", modelName.trim());
       set("variant_name", variantName(combination));
-      set("variant_sku", generateVariantSku(mainSku, combination));
+      set("variant_sku", generateVariantSku(normalizeMainSku(mainSku), combination));
       combination.slice(0, 3).forEach((selection, slot) => {
         const nameKey = (`variation_${slot + 1}_name`) as ProductMasterColumnKey;
         const valueKey = (`variation_${slot + 1}_value`) as ProductMasterColumnKey;
@@ -384,7 +385,7 @@ function BulkCatalog() {
           template_version: "aurona-product-master-v1",
           category_id: categoryId,
           category_name: category.name,
-          main_sku: mainSku.trim().toUpperCase(),
+          main_sku: normalizeMainSku(mainSku),
           variation_configuration: variations,
           source: "online",
         },
@@ -488,7 +489,7 @@ function BulkCatalog() {
         categoryId,
         categoryName: category.name,
         productName: productName.trim(),
-        mainSku: mainSku.trim().toUpperCase(),
+        mainSku: normalizeMainSku(mainSku),
         brandName: brandName.trim() || "AURONA",
         unit: unit.trim() || "Pc",
         modelName: modelName.trim(),
