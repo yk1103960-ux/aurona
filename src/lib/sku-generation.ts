@@ -119,10 +119,16 @@ export function variantName(selection: VariationSelection[]): string {
   return selection.map((item) => item.value).join(" / ");
 }
 
-/** SKU for a combination: MAIN-SKU + one token per option, in selection order. */
-export function generateVariantSku(mainSku: string, selection: VariationSelection[]): string {
+/** Canonical approved SKU base used by preview, Excel, validation and import. */
+export function normalizeMainSku(mainSku: string): string {
   const base = mainSku.trim().toUpperCase();
   if (!base) throw new Error("Main SKU is required to generate variant SKUs.");
+  return base;
+}
+
+/** SKU for a combination: MAIN-SKU + one token per option, in selection order. */
+export function generateVariantSku(mainSku: string, selection: VariationSelection[]): string {
+  const base = normalizeMainSku(mainSku);
   const suffix = selection.map((item) => optionToken(item.value, item.name)).join("-");
   return suffix ? `${base}-${suffix}` : base;
 }
