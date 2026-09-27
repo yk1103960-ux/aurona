@@ -16,8 +16,10 @@ import {
   type TemplateConfig,
 } from "@/lib/bulk-product-workbook";
 import {
+  buildProductMasterColumnIndex,
+  buildProductMasterColumns,
   PRODUCT_MASTER_COLUMNS,
-  PRODUCT_MASTER_COLUMN_INDEX,
+  type ProductMasterColumn,
   type ProductMasterColumnKey,
 } from "@/lib/bulk-product-columns";
 import {
@@ -26,23 +28,20 @@ import {
   variantName,
 } from "@/lib/sku-generation";
 import { expectedBulkVariantSku } from "@/lib/bulk-product-identity";
+import {
+  parsePastedValues,
+  PRODUCT_VARIATION_PRESETS,
+  variationAxisKey,
+} from "@/lib/variant-options";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/bulk")({
   component: BulkCatalog,
 });
 
-type VariationOption = {
-  id: string;
-  axisKey?: string;
-  name: string;
-  values: string[];
-};
-
 type Choice = {
   id: string;
-  axisKey?: string;
+  axisKey: string;
   name: string;
-  availableValues: string[];
   selectedValues: string[];
 };
 
@@ -52,13 +51,13 @@ type OnlineRow = {
 };
 
 const ONLINE_GROUPS = [
-  { id: "basic", label: "Basic Details", from: 1, to: 26 },
-  { id: "single", label: "Single PC", from: 27, to: 31 },
-  { id: "customer", label: "Customer", from: 32, to: 41 },
-  { id: "retailer", label: "Retailer", from: 42, to: 51 },
-  { id: "distributor", label: "Distributor", from: 52, to: 61 },
-  { id: "commission", label: "Commission", from: 62, to: 65 },
-  { id: "seo", label: "SEO & Other", from: 66, to: 70 },
+  { id: "basic", label: "Basic Details", groups: ["Product / Variant"] },
+  { id: "single", label: "Single PC", groups: ["Single PC Details"] },
+  { id: "customer", label: "Customer", groups: ["Customer Details"] },
+  { id: "retailer", label: "Retailer", groups: ["Retailer Details"] },
+  { id: "distributor", label: "Distributor", groups: ["Distributor Details"] },
+  { id: "commission", label: "Commission", groups: ["Commission Details"] },
+  { id: "seo", label: "SEO & Other", groups: ["SEO Details", "Shipping", "Warranty", "Frequently Bought Category"] },
 ] as const;
 
 const ONLINE_READ_ONLY_KEYS = new Set<ProductMasterColumnKey>([
@@ -72,13 +71,10 @@ const ONLINE_READ_ONLY_KEYS = new Set<ProductMasterColumnKey>([
   "model",
   "variant_name",
   "variant_sku",
-  "variation_1_name",
-  "variation_1_value",
-  "variation_2_name",
-  "variation_2_value",
-  "variation_3_name",
-  "variation_3_value",
 ]);
+
+const isOnlineReadOnlyKey = (key: ProductMasterColumnKey) =>
+  ONLINE_READ_ONLY_KEYS.has(key) || /^variation_\d+_(?:name|value)$/.test(key);
 
 const ONLINE_NUMERIC_KEYS = new Set<ProductMasterColumnKey>([
   "mrp",
@@ -121,17 +117,17 @@ const ONLINE_NUMERIC_KEYS = new Set<ProductMasterColumnKey>([
   "shipping_days",
 ]);
 
-const onlineFieldLabel = (column: (typeof PRODUCT_MASTER_COLUMNS)[number]) =>
+const onlineFieldLabel = (column: ProductMasterColumn) =>
   (column.detailHeader || column.topHeader).replace(/\s+/g, " ").trim();
 
 function BulkApplyBar({
   columns,
   onApply,
 }: {
-  columns: Array<(typeof PRODUCT_MASTER_COLUMNS)[number]>;
+  columns: ProductMasterColumn[];
   onApply: (key: ProductMasterColumnKey, value: string) => void;
 }) {
-  const editable = columns.filter((column) => !ONLINE_READ_ONLY_KEYS.has(column.key));
+  const editable = columns.filter((column) => !isOnlineReadOnlyKey(column.key));
   const [field, setField] = useState<ProductMasterColumnKey>(editable[0]?.key ?? "mrp");
   const [value, setValue] = useState("");
 
@@ -178,7 +174,7 @@ function OnlineGroupEditor({
   open,
 }: {
   label: string;
-  columns: Array<(typeof PRODUCT_MASTER_COLUMNS)[number]>;
+  columns: ProductMasterColumn[];
   rows: OnlineRow[];
   setCell: (rowIndex: number, key: ProductMasterColumnKey, value: string) => void;
   applyAll: (key: ProductMasterColumnKey, value: string) => void;
@@ -210,7 +206,7 @@ function OnlineGroupEditor({
                   <td className="sticky left-0 z-10 border-r bg-white p-2 font-mono">{row.excelRow}</td>
                   {columns.map((column) => {
                     const value = row.values[PRODUCT_MASTER_COLUMN_INDEX[column.key]] ?? "";
-                    const readOnly = ONLINE_READ_ONLY_KEYS.has(column.key);
+                    const readOnly = isOnlineReadOnlyKey(column.key);
                     return (
                       <td key={column.key} className="border-r p-1.5">
                         <input
@@ -273,22 +269,14 @@ function BulkCatalog() {
   const [onlineMode, setOnlineMode] = useState(false);
 
   const category = config.data?.categories?.find((row: any) => row.id === categoryId);
-
-  const availableVariations = useMemo<VariationOption[]>(() => {
-    if (!categoryId || !config.data) return [];
-
-    // Bulk Upload must be category-specific. Never fall back to every global
-    // catalog attribute, because that can show variations that do not belong
-    // to the selected category.
-    const categorySpecific = (
-      (config.data as any).categoryVariations?.[categoryId] ?? []
-    ) as VariationOption[];
-
-    return categorySpecific.map((option) => ({
-      ...option,
-      values: uniqueValues(option.values ?? []),
-    }));
-  }, [categoryId, config.data]);
+  const activeColumns = useMemo(
+    () => buildProductMasterColumns(choices.length || 3),
+    [choices.length],
+  );
+  const activeColumnIndex = useMemo(
+    () => buildProductMasterColumnIndex(activeColumns),
+    [activeColumns],
+  );
 
   const variations = choices.map((choice) => ({
     name: choice.name,
@@ -304,16 +292,16 @@ function BulkCatalog() {
   const readyToGenerate =
     Boolean(category && productName.trim() && mainSku.trim()) &&
     choices.length > 0 &&
-    choices.every((choice) => choice.selectedValues.length > 0) &&
+    choices.every((choice) => choice.name.trim() && choice.selectedValues.length > 0) &&
     combinations.length > 0;
 
   const buildOnlineRows = (): OnlineRow[] => {
     if (!category) return [];
 
     return combinations.map((combination, index) => {
-      const values = Array(PRODUCT_MASTER_COLUMNS.length).fill("");
+      const values = Array(activeColumns.length).fill("");
       const set = (key: ProductMasterColumnKey, value: unknown) => {
-        values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value ?? "";
+        values[activeColumnIndex[key]] = value ?? "";
       };
 
       set("sr_no", index + 1);
@@ -326,7 +314,7 @@ function BulkCatalog() {
       set("model", modelName.trim());
       set("variant_name", variantName(combination));
       set("variant_sku", expectedBulkVariantSku(normalizeMainSku(mainSku), combination));
-      combination.slice(0, 3).forEach((selection, slot) => {
+      combination.forEach((selection, slot) => {
         const nameKey = (`variation_${slot + 1}_name`) as ProductMasterColumnKey;
         const valueKey = (`variation_${slot + 1}_value`) as ProductMasterColumnKey;
         set(nameKey, selection.name);
@@ -357,7 +345,7 @@ function BulkCatalog() {
       current.map((row, index) => {
         if (index !== rowIndex) return row;
         const values = [...row.values];
-        values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value;
+        values[activeColumnIndex[key]] = value;
         return { ...row, values };
       }),
     );
@@ -367,12 +355,12 @@ function BulkCatalog() {
     setOnlineRows((current) =>
       current.map((row) => {
         const values = [...row.values];
-        values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value;
+        values[activeColumnIndex[key]] = value;
         return { ...row, values };
       }),
     );
     toast.success(
-      `${onlineFieldLabel(PRODUCT_MASTER_COLUMNS[PRODUCT_MASTER_COLUMN_INDEX[key]])} applied to all variants`,
+      `${onlineFieldLabel(activeColumns[activeColumnIndex[key]])} applied to all variants`,
     );
   };
 
@@ -387,6 +375,8 @@ function BulkCatalog() {
           category_name: category.name,
           main_sku: normalizeMainSku(mainSku),
           variation_configuration: variations,
+          variation_count: choices.length,
+          column_keys: activeColumns.map((column) => column.key),
           source: "online",
         },
         rows: onlineRows,
@@ -434,18 +424,39 @@ function BulkCatalog() {
     setOnlineMode(false);
     setParsed(undefined);
     setPreview(undefined);
-    const option = availableVariations.find((row) => row.id === id);
-    if (!option || choices.length >= 3 || choices.some((choice) => choice.id === id)) return;
+
+    if (id === "__other__") {
+      const customId = `custom-${crypto.randomUUID()}`;
+      setChoices((current) => [
+        ...current,
+        { id: customId, axisKey: `custom_${current.length + 1}`, name: "", selectedValues: [] },
+      ]);
+      return;
+    }
+
+    const preset = PRODUCT_VARIATION_PRESETS.find(([key]) => key === id);
+    if (!preset || choices.some((choice) => choice.axisKey === preset[0])) return;
     setChoices((current) => [
       ...current,
       {
-        id: option.id,
-        axisKey: option.axisKey,
-        name: option.name,
-        availableValues: option.values,
+        id: preset[0],
+        axisKey: preset[0],
+        name: preset[1],
         selectedValues: [],
       },
     ]);
+  };
+
+  const updateChoice = (choiceIndex: number, patch: Partial<Choice>) => {
+    invalidateOnlineDraft();
+    setChoices((current) =>
+      current.map((choice, index) => {
+        if (index !== choiceIndex) return choice;
+        const next = { ...choice, ...patch };
+        if (patch.name !== undefined) next.axisKey = variationAxisKey(patch.name) || choice.axisKey;
+        return next;
+      }),
+    );
   };
 
   const moveChoice = (index: number, direction: -1 | 1) => {
@@ -460,22 +471,6 @@ function BulkCatalog() {
       [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
       return next;
     });
-  };
-
-  const toggleValue = (choiceIndex: number, value: string) => {
-    setOnlineRows([]);
-    setOnlineMode(false);
-    setParsed(undefined);
-    setPreview(undefined);
-    setChoices((current) =>
-      current.map((choice, index) => {
-        if (index !== choiceIndex) return choice;
-        const selected = choice.selectedValues.includes(value)
-          ? choice.selectedValues.filter((item) => item !== value)
-          : [...choice.selectedValues, value];
-        return { ...choice, selectedValues: selected };
-      }),
-    );
   };
 
   const generate = () => {
@@ -596,7 +591,7 @@ function BulkCatalog() {
         <div>
           <h2 className="font-semibold">Step 1 – Select Category</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Select one product category. The variation choices in Step 2 are loaded from that category's saved product axes.
+            Select one product category. Variation types are chosen manually in Step 2, just like Create Product.
           </p>
         </div>
 
@@ -694,28 +689,23 @@ function BulkCatalog() {
           <select
             className="h-10 rounded-md border px-3"
             value=""
-            disabled={!categoryId || choices.length >= 3}
+            disabled={!categoryId}
             onChange={(event) => addChoice(event.target.value)}
           >
             <option value="">Add variation…</option>
-            {availableVariations
-              .filter((option) => !choices.some((choice) => choice.id === option.id))
-              .map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
+            {PRODUCT_VARIATION_PRESETS
+              .filter(([key]) => !choices.some((choice) => choice.axisKey === key))
+              .map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
                 </option>
               ))}
+            <option value="__other__">Other option…</option>
           </select>
           <span className="text-xs text-slate-500">
-            The supplied Product Master template has 3 variation slots.
+            Choose only what this product needs. Excel variation columns expand or contract automatically.
           </span>
         </div>
-
-        {categoryId && availableVariations.length === 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            No configured variation axes/values were found for this category. Bulk Upload will not show global or unrelated variation values.
-          </div>
-        )}
 
         {choices.length > 0 && (
           <div className="space-y-2">
@@ -779,41 +769,50 @@ function BulkCatalog() {
           <div className="grid gap-4 lg:grid-cols-3">
             {choices.map((choice, choiceIndex) => (
               <div key={choice.id} className="rounded-lg border p-4">
-                <div className="font-medium">
-                  {choiceIndex + 1}. {choice.name}
+                <div className="grid gap-3 md:grid-cols-[200px_1fr]">
+                  <label className="space-y-1 text-sm">
+                    <span className="font-medium">{choiceIndex + 1}. Option</span>
+                    <input
+                      className="h-10 w-full rounded-md border px-3"
+                      value={choice.name}
+                      placeholder="Example: Watt"
+                      onChange={(event) => updateChoice(choiceIndex, { name: event.target.value })}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span className="font-medium">Values</span>
+                    <textarea
+                      className="min-h-[80px] w-full rounded-md border px-3 py-2"
+                      value={choice.selectedValues.join(", ")}
+                      placeholder={
+                        /watt/i.test(choice.name)
+                          ? "5W, 7W, 9W"
+                          : /output colou?r/i.test(choice.name)
+                            ? "Red, White"
+                            : /pack size/i.test(choice.name)
+                              ? "6, 12"
+                              : "Enter comma-separated values"
+                      }
+                      onChange={(event) =>
+                        updateChoice(choiceIndex, {
+                          selectedValues: parsePastedValues(event.target.value),
+                        })
+                      }
+                    />
+                    <span className="block text-xs text-slate-500">
+                      Same entry style as Create Product: comma, line, tab or semicolon separated.
+                    </span>
+                  </label>
                 </div>
-                {choice.availableValues.length ? (
+                {choice.selectedValues.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {choice.availableValues.map((value) => {
-                      const selected = choice.selectedValues.includes(value);
-                      return (
-                        <label
-                          key={value}
-                          className={`cursor-pointer rounded-md border px-3 py-2 text-sm ${
-                            selected
-                              ? "border-slate-900 bg-slate-900 text-white"
-                              : "border-slate-200 bg-white text-slate-700"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            checked={selected}
-                            onChange={() => toggleValue(choiceIndex, value)}
-                          />
-                          {value}
-                        </label>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="mt-3 rounded-md bg-amber-50 p-2 text-xs text-amber-900">
-                    No saved values are available for this variation in the selected category.
+                    {choice.selectedValues.map((value) => (
+                      <span key={value} className="rounded-full border bg-slate-50 px-3 py-1 text-xs">
+                        {value}
+                      </span>
+                    ))}
                   </div>
                 )}
-                <div className="mt-3 text-xs text-slate-500">
-                  {choice.selectedValues.length} value{choice.selectedValues.length === 1 ? "" : "s"} selected
-                </div>
               </div>
             ))}
           </div>
@@ -856,7 +855,7 @@ function BulkCatalog() {
           <div>
             <h2 className="font-semibold">Choose how to enter product details</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Both options use the same Product Master 70-column source-of-truth mapping.
+              Both options use the same dynamic Product Master mapping. Only variation Name/Value pairs change with your selection.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -897,8 +896,8 @@ function BulkCatalog() {
 
           <div className="space-y-3">
             {ONLINE_GROUPS.map((group) => {
-              const columns = PRODUCT_MASTER_COLUMNS.filter(
-                (column) => column.serial >= group.from && column.serial <= group.to,
+              const columns = activeColumns.filter((column) =>
+                group.groups.includes(column.group as any),
               );
               return (
                 <OnlineGroupEditor
@@ -927,11 +926,11 @@ function BulkCatalog() {
 
       <details className="rounded-xl border bg-white">
         <summary className="cursor-pointer select-none p-5 font-semibold">
-          View Technical Column Mapping (70 columns)
+          View Technical Column Mapping ({activeColumns.length} columns)
         </summary>
         <div className="space-y-4 border-t p-5">
           <p className="text-xs text-slate-500">
-            Reference only. The exact same 70-column definition drives online entry, Excel generation, upload validation,
+            Reference only. This exact dynamic column definition drives online entry, Excel generation, upload validation,
             preview and database import.
           </p>
           <div className="max-h-[560px] overflow-auto rounded-lg border" tabIndex={0}>
@@ -945,7 +944,7 @@ function BulkCatalog() {
                 </tr>
               </thead>
               <tbody>
-                {PRODUCT_MASTER_COLUMNS.map((column) => (
+                {activeColumns.map((column) => (
                   <tr key={column.serial} className="border-t bg-white align-top">
                     <td className="p-2 font-mono font-semibold">{column.serial}</td>
                     <td className="p-2">{column.group}</td>
@@ -972,7 +971,7 @@ function BulkCatalog() {
         <div>
           <h2 className="font-semibold">Step 4 – Generate Excel Template</h2>
           <p className="mt-1 text-xs text-slate-500">
-            The workbook keeps the exact 70-column Product Master header structure and fills one row per selected combination.
+            The workbook keeps every existing Product Master field unchanged and creates exactly {choices.length} Variation Name/Value pair{choices.length === 1 ? "" : "s"} for this product.
           </p>
         </div>
         <Button onClick={generate} disabled={!readyToGenerate}>
