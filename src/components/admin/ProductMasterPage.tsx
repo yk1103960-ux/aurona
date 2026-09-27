@@ -1102,6 +1102,13 @@ export function ProductMaster() {
         </div>
       )}
 
+      {(() => {
+        const imageColumn = columns.find((column) => column.key === "image");
+        const stickyImageLeft = imageColumn ? 44 : undefined;
+        const stickyFamilyLeft =
+          44 + (imageColumn ? (widths[imageColumn.key] ?? imageColumn.width) : 0);
+
+        return (
       <div
         className="scrollbar-visible relative isolate max-h-[calc(100vh-270px)] overflow-auto overscroll-contain rounded-xl border border-slate-200 bg-white shadow-sm"
         tabIndex={0}
@@ -1136,6 +1143,13 @@ export function ProductMaster() {
                   key={column.key}
                   column={column}
                   width={widths[column.key] ?? column.width}
+                  stickyLeft={
+                    column.key === "image"
+                      ? stickyImageLeft
+                      : column.key === "family"
+                        ? stickyFamilyLeft
+                        : undefined
+                  }
                   setWidth={(width) =>
                     setWidths((current) => ({ ...current, [column.key]: width }))
                   }
@@ -1152,6 +1166,8 @@ export function ProductMaster() {
                   family={family}
                   open={open}
                   columns={columns}
+                  stickyImageLeft={stickyImageLeft}
+                  stickyFamilyLeft={stickyFamilyLeft}
                   selected={selected}
                   drafts={drafts}
                   effective={effective}
@@ -1221,6 +1237,8 @@ export function ProductMaster() {
           </tbody>
         </table>
       </div>
+        );
+      })()}
 
       <div className="flex items-center justify-between text-sm text-slate-600">
         <span>
@@ -1299,16 +1317,18 @@ export function ProductMaster() {
 function MasterHead({
   column,
   width,
+  stickyLeft,
   setWidth,
 }: {
   column: Column;
   width: number;
+  stickyLeft?: number;
   setWidth: (width: number) => void;
 }) {
   return (
     <th
-      className={`sticky top-0 ${column.key === "family" ? "left-[44px] z-[95]" : "z-[80]"} border-b border-r bg-slate-100 px-2 py-3 text-left font-semibold shadow-[0_1px_0_0_rgb(226_232_240)]`}
-      style={{ width }}
+      className={`sticky top-0 ${stickyLeft != null ? "z-[95]" : "z-[80]"} border-b border-r bg-slate-100 px-2 py-3 text-left font-semibold shadow-[0_1px_0_0_rgb(226_232_240)]`}
+      style={{ width, left: stickyLeft }}
     >
       {column.label}
       <span
@@ -1335,6 +1355,8 @@ function FamilyRows({
   family,
   open,
   columns,
+  stickyImageLeft,
+  stickyFamilyLeft,
   selected,
   drafts,
   effective,
@@ -1354,6 +1376,8 @@ function FamilyRows({
   family: Family;
   open: boolean;
   columns: Column[];
+  stickyImageLeft?: number;
+  stickyFamilyLeft: number;
   selected: Set<string>;
   drafts: Drafts;
   effective: (variant: Variant) => Variant;
@@ -1388,7 +1412,15 @@ function FamilyRows({
         {columns.map((column, index) => (
           <td
             key={column.key}
-            className={`${column.key === "family" ? "sticky left-[44px] z-20 bg-slate-50" : ""} border-r p-2 align-middle`}
+            className={`${column.key === "image" || column.key === "family" ? "sticky z-20 bg-slate-50" : ""} border-r p-2 align-middle`}
+            style={{
+              left:
+                column.key === "image"
+                  ? stickyImageLeft
+                  : column.key === "family"
+                    ? stickyFamilyLeft
+                    : undefined,
+            }}
           >
             {index === 0 && column.key !== "family" ? null : column.key === "family" ? (
               <button
@@ -1548,6 +1580,13 @@ function FamilyRows({
                 <MasterCell
                   key={column.key}
                   column={column}
+                  stickyLeft={
+                    column.key === "image"
+                      ? stickyImageLeft
+                      : column.key === "family"
+                        ? stickyFamilyLeft
+                        : undefined
+                  }
                   family={family}
                   source={source}
                   row={row}
@@ -1570,6 +1609,7 @@ function FamilyRows({
 
 function MasterCell({
   column,
+  stickyLeft,
   family,
   source,
   row,
@@ -1583,6 +1623,7 @@ function MasterCell({
   onVariantDeletePermanent,
 }: {
   column: Column;
+  stickyLeft?: number;
   family: Family;
   source: Variant;
   row: Variant;
@@ -1595,10 +1636,11 @@ function MasterCell({
   onVariantState: (action: "archive" | "restore") => void;
   onVariantDeletePermanent: () => void;
 }) {
-  const common = `${column.key === "family" ? "sticky left-[44px] z-10 bg-inherit" : ""} border-r p-1.5 align-middle`;
+  const common = `${stickyLeft != null ? "sticky z-10 bg-white" : ""} border-r p-1.5 align-middle`;
+  const stickyStyle = stickyLeft != null ? { left: stickyLeft } : undefined;
   if (column.key === "image")
     return (
-      <td className={common}>
+      <td className={common} style={stickyStyle}>
         {image ? (
           <img
             src={image.image_url}
@@ -1615,7 +1657,7 @@ function MasterCell({
     );
   if (column.key === "family")
     return (
-      <td className={common}>
+      <td className={common} style={stickyStyle}>
         <div className="truncate font-medium text-slate-800">{family.name}</div>
         <div className="truncate text-[10px] text-slate-500">
           {categoryOf(family) ?? "Uncategorised"}
@@ -1623,14 +1665,14 @@ function MasterCell({
       </td>
     );
   if (column.key === "discount")
-    return <td className={common}>{discount(row.mrp, row.price).toFixed(2)}%</td>;
+    return <td className={common} style={stickyStyle}>{discount(row.mrp, row.price).toFixed(2)}%</td>;
   if (column.key === "retailer_margin")
-    return <td className={common}>{discount(row.mrp, row.retailer_price).toFixed(2)}%</td>;
+    return <td className={common} style={stickyStyle}>{discount(row.mrp, row.retailer_price).toFixed(2)}%</td>;
   if (column.key === "distributor_margin")
-    return <td className={common}>{discount(row.mrp, row.distributor_price).toFixed(2)}%</td>;
+    return <td className={common} style={stickyStyle}>{discount(row.mrp, row.distributor_price).toFixed(2)}%</td>;
   if (column.key === "stock")
     return (
-      <td className={common}>
+      <td className={common} style={stickyStyle}>
         <button
           type="button"
           className="rounded-md px-2 py-1 text-left hover:bg-sky-100"
@@ -1645,7 +1687,7 @@ function MasterCell({
     );
   if (column.key === "status")
     return (
-      <td className={common}>
+      <td className={common} style={stickyStyle}>
         <button type="button" onClick={() => change(source, "is_active", !row.is_active)} disabled={Boolean(row.archived_at)}>
           <StatusBadge
             active={row.is_active && !row.archived_at}
@@ -1656,7 +1698,7 @@ function MasterCell({
     );
   if (column.key === "available_for")
     return (
-      <td className={common}>
+      <td className={common} style={stickyStyle}>
         <div className="flex items-center gap-1">
           {([
             ["available_customer", "C", "Available to Customers"],
@@ -1684,7 +1726,7 @@ function MasterCell({
     );
   if (column.key === "actions")
     return (
-      <td className={common}>
+      <td className={common} style={stickyStyle}>
         <div className="flex gap-1">
           <Button
             size="icon"
@@ -1789,7 +1831,7 @@ function MasterCell({
       </td>
     );
   }
-  return <td className={common}>{column.key === "mrp" ? money(row.mrp) : "—"}</td>;
+  return <td className={common} style={stickyStyle}>{column.key === "mrp" ? money(row.mrp) : "—"}</td>;
 }
 
 function StatusBadge({ active, label }: { active: boolean; label: string }) {
