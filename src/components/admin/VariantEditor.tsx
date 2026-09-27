@@ -263,13 +263,10 @@ export function VariantEditor({
   priceSegment?: PriceSegment;
   buyerWorkflow?: PriceSegment;
 }) {
-  const sharedBuyerWorkflow = buyerWorkflow === "retailer" || buyerWorkflow === "distributor";
   const [rows, setRows] = useState<Variant[]>([]);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>(
-    sharedBuyerWorkflow
-      ? "customer"
-      : displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
+    displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [axesDirty, setAxesDirty] = useState(false);
@@ -369,11 +366,7 @@ export function VariantEditor({
   }, [q.data, axesDirty]);
 
   useEffect(() => {
-    setTab(
-      buyerWorkflow === "retailer" || buyerWorkflow === "distributor"
-        ? "customer"
-        : displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
-    );
+    setTab(displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab));
   }, [initialTab, displayOnly, buyerWorkflow]);
 
   const family = q.data?.family;
@@ -719,7 +712,9 @@ export function VariantEditor({
             ...row,
             id: row.id.startsWith("new-") ? undefined : row.id,
             sku: row.sku.trim(),
-            discount_pct: discountPercent(row.mrp, row.price),
+            discount_pct: priceSegment === "retailer" || priceSegment === "distributor"
+              ? row.discount_pct
+              : discountPercent(row.mrp, row.price),
             low_stock_threshold: row.low_stock_threshold ?? 10,
           })),
         },
@@ -919,7 +914,6 @@ export function VariantEditor({
         : buyerWorkflow === "customer"
           ? "Customer"
           : null;
-  const usesSharedSkuSet = buyerWorkflow === "retailer" || buyerWorkflow === "distributor";
 
   const sectionTitle =
     workflowLabel
@@ -938,9 +932,7 @@ export function VariantEditor({
 
   const sectionDescription =
     workflowLabel
-      ? usesSharedSkuSet
-        ? `Use the existing shared SKUs to enter independent ${workflowLabel.toLowerCase()} pricing, stock, pack size and package dimensions. Other buyer-type values are not changed.`
-        : `Create shared variations once, enter ${workflowLabel.toLowerCase()} price and stock, then add weight and dimensions.`
+      ? `Create or edit shared variations, enter ${workflowLabel.toLowerCase()} price and stock, then add weight and dimensions.`
       : displayOnly === "quick"
         ? "Create, edit or archive variation combinations and their shared SKUs."
         : displayOnly === "shipping"
@@ -978,7 +970,7 @@ export function VariantEditor({
           </div>
 
           <div className="flex gap-2">
-            {(!displayOnly || displayOnly === "quick") && !usesSharedSkuSet && (
+            {(!displayOnly || displayOnly === "quick") && (
               <Button size="sm" variant="outline" type="button" onClick={addRow}>
                 <Plus className="mr-1 h-4 w-4" />
                 Add Variation
@@ -996,7 +988,7 @@ export function VariantEditor({
       {!displayOnly && (
         <div className="overflow-x-auto border-b border-slate-200">
           <div className="flex min-w-max gap-1 p-2">
-            {!customerPricingOnly && !usesSharedSkuSet && (
+            {!customerPricingOnly && (
               <TabButton
                 active={tab === "quick"}
                 onClick={() => setTab("quick")}
@@ -1011,11 +1003,11 @@ export function VariantEditor({
               onClick={() => setTab("customer")}
               icon={<Users className="h-4 w-4" />}
             >
-              {buyerWorkflow ? (usesSharedSkuSet ? "1. Price & Stock" : "2. Price & Stock") : "Customer Price & Stock"}
+              {buyerWorkflow ? "2. Price & Stock" : "Customer Price & Stock"}
             </TabButton>
 
             <TabButton active={tab === "shipping"} onClick={() => setTab("shipping")} icon={<Truck className="h-4 w-4" />}>
-              {buyerWorkflow ? (usesSharedSkuSet ? "2. Weight & Dimensions" : "3. Weight & Dimensions") : "Weight & Dimensions"}
+              {buyerWorkflow ? "3. Weight & Dimensions" : "Weight & Dimensions"}
             </TabButton>
           </div>
         </div>
