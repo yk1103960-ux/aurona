@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useCompare } from "@/hooks/useCompare";
 import { useCart } from "@/hooks/useCart";
-import { useVisiblePrices } from "@/lib/pricing";
+import { useVisibleInventory, useVisiblePrices } from "@/lib/pricing";
 import { inr } from "@/lib/format";
 import { ProductImage } from "@/components/product/ProductImage";
 import type { Product } from "@/lib/queries";
@@ -95,7 +95,9 @@ function ComparePage() {
 
   const rows = (q.data ?? []).slice().sort((a, b) => slugs.indexOf(a.slug) - slugs.indexOf(b.slug));
 
-  const { data: priceMap } = useVisiblePrices(rows.map((r) => r.sku).filter(Boolean));
+  const compareSkus = rows.map((r) => r.sku).filter(Boolean);
+  const { data: priceMap } = useVisiblePrices(compareSkus);
+  const { data: inventoryMap } = useVisibleInventory(compareSkus);
 
   /*
    * Load images from product_images table
@@ -113,7 +115,12 @@ function ComparePage() {
     const raw = (p as unknown as Record<string, unknown>)[key];
 
     if (key === "stock") {
-      return Number(raw) > 0 ? "In stock" : "Out of stock";
+      const visibleInventory = inventoryMap?.[p.sku];
+      const available = Math.max(
+        0,
+        Number(visibleInventory?.stock ?? raw) - Number(visibleInventory?.reserved_stock ?? 0),
+      );
+      return available > 0 ? "In stock" : "Out of stock";
     }
 
     if (key === "rating") {
@@ -195,7 +202,12 @@ function ComparePage() {
 
                     const price = rp?.price ?? Number(p.price);
 
-                    const stock = Number((p as unknown as Record<string, unknown>).stock);
+                    const visibleInventory = inventoryMap?.[p.sku];
+                    const stock = Math.max(
+                      0,
+                      Number(visibleInventory?.stock ?? (p as unknown as Record<string, unknown>).stock) -
+                        Number(visibleInventory?.reserved_stock ?? 0),
+                    );
 
                     const rating = Number((p as unknown as Record<string, unknown>).rating);
 
