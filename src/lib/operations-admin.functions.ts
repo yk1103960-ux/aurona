@@ -1023,8 +1023,14 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
           `Unknown Commission Set on: ${row.commission_set_on}. Expected ${COMMISSION_ALL_VARIANTS_LABEL}, a selected variation axis, or an existing partner program.`,
         );
       }
+      if (row.commission_set_on && commissionPrograms.length === 0) {
+        errors.push("No partner programs exist for the selected Commission Set on value");
+      }
       if (row.commission_set_on && !row.commission_type) {
         errors.push("Commission Type is required when Commission Set on is filled");
+      }
+      if (row.commission_set_on && row.commission_value == null) {
+        errors.push("Commission Value is required when Commission Set on is filled");
       }
       if (row.commission_type && !['percentage','fixed'].includes(row.commission_type)) errors.push("Commission Type must be Percentage or Fixed");
       if (row.commission_type === 'percentage' && row.commission_value != null && row.commission_value > 100) errors.push("Percentage commission cannot exceed 100");
