@@ -1,3 +1,19 @@
+/** The exact option shortcuts used by Create/Edit Product → Create product variations. */
+export const PRODUCT_VARIATION_PRESETS = [
+  ["wattage", "Watts Available"],
+  ["output_colour", "Output Colour Option/s"],
+  ["shape", "Shape"],
+  ["body_colour", "Body Colour/s"],
+  ["pack_size", "Pack Size"],
+  ["oscillation", "Oscillation"],
+  ["tank_capacity", "Tank Capacities"],
+  ["size", "Size Option/s"],
+  ["reflector_colour", "Reflector Colour"],
+] as const;
+
+export const variationAxisKey = (label: string) =>
+  label.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+
 /** Pure, category-independent rules shared by variant administration and selection. */
 export type OptionAxis = { axis_key: string; values: string[] };
 
