@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Papa from "papaparse";
+import { createProductMasterExport } from "@/lib/product-master-export";
 import {
   Archive,
   ChevronDown,
@@ -30,6 +30,7 @@ import { useRealtime } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import {
   adminAdjustInventory,
+  adminExportProductMasterRows,
   adminBulkProductFamilyAction,
   adminDeleteProductFamilyPermanent,
   adminDeleteProductVariantPermanent,
@@ -828,51 +829,25 @@ export function ProductMaster() {
     }
   };
 
-  const exportView = () => {
-    const rows = shownFamilies.flatMap((family) =>
-      family.variants.map((variant) => {
-        const row = effective(variant);
-        return {
-          family_id: family.id,
-          product_id: family.legacy_product_id ?? "",
-          variant_id: row.id,
-          family: family.name,
-          category: categoryOf(family) ?? "",
-          brand: family.brand,
-          sku: row.sku,
-          barcode: row.barcode,
-          attributes_json: JSON.stringify(row.attributes ?? {}),
-          mrp: row.mrp,
-          customer_price: row.price,
-          retailer_price: row.retailer_price,
-          distributor_price: row.distributor_price,
-          pack_size: row.pack_size,
-          customer_moq: row.moq,
-          retailer_moq: row.retailer_moq,
-          distributor_moq: row.distributor_moq,
-          stock: row.stock,
-          reserved_stock: row.reserved_stock,
-          unit_weight_g: row.weight_g,
-          unit_length_cm: row.dim_l,
-          unit_width_cm: row.dim_w,
-          unit_height_cm: row.dim_h,
-          package_weight_g: row.pack_weight_g,
-          package_length_cm: row.pack_l,
-          package_width_cm: row.pack_w,
-          package_height_cm: row.pack_h,
-          active: row.is_active,
-        };
-      }),
-    );
-    const blob = new Blob([Papa.unparse(rows)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `aurona-product-master-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const exportView = async () => {
+    try {
+      const result = await adminExportProductMasterRows({
+        data: { familyIds: shownFamilies.map((family) => family.id) },
+      });
+      const bytes = await createProductMasterExport(result);
+      const blob = new Blob([bytes as BlobPart], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `aurona-product-master-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not export Product Master");
+    }
   };
-
   return (
     <div className="min-w-0 space-y-4 pb-12">
       <div className="flex flex-wrap items-end justify-between gap-3">
