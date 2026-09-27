@@ -22,13 +22,13 @@ export function productMasterExportRows(data: ExportData) {
     : 3;
   const columns = buildProductMasterColumns(variationCount);
   const indices = buildProductMasterColumnIndex(columns);
-  const rows: Array<Array<string | number>> = [];
+  const rows: Array<Array<string | number | boolean>> = [];
   for (const family of families) {
     const axes = [...family.axes].sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
     for (const variant of family.variants) {
-      const values: Array<string | number> = Array(columns.length).fill("");
+      const values: Array<string | number | boolean> = Array(columns.length).fill("");
       const set = (key: ProductMasterColumnKey, value: unknown) => {
-        values[indices[key]] = value == null ? "" : value as string | number;
+        values[indices[key]] = value == null ? "" : value as string | number | boolean;
       };
       const commission = data.commissions.find((item) => item.variant_id === variant.id && item.is_active !== false);
       const program = data.programs.find((item) => item.id === commission?.program_id);
@@ -55,7 +55,7 @@ export function productMasterExportRows(data: ExportData) {
       set("features", Array.isArray(family.features) ? family.features.join("\n") : family.features);
       set("refundable", family.refundable == null ? "" : family.refundable ? "YES" : "NO");
       set("sale_status", family.is_sale ? "Deal" : "For Sale");
-      set("active_status", variant.is_active && !variant.archived_at ? "True" : "False");
+      set("active_status", Boolean(variant.is_active && !variant.archived_at));
       for (const [key, field] of Object.entries({
         mrp: "mrp", weight_g: "weight_g", dim_l: "dim_l", dim_w: "dim_w", dim_h: "dim_h",
         customer_discount: "discount_pct", customer_price: "price", customer_moq: "moq",
@@ -74,7 +74,9 @@ export function productMasterExportRows(data: ExportData) {
         distributor_pack_w: "distributor_pack_w", distributor_pack_h: "distributor_pack_h",
       })) set(key as ProductMasterColumnKey, number(variant[field]));
       set("commission_program", commission ? (program?.name ?? "All Variants") : "");
-      set("commission_type", commission?.commission_kind);
+      set("commission_type", commission?.commission_kind
+        ? String(commission.commission_kind).replace(/^./, (letter) => letter.toUpperCase())
+        : "");
       set("commission_value", number(commission?.commission_value));
       set("max_commission", number(commission?.max_commission));
       set("seo_title", family.meta_title);
