@@ -637,6 +637,9 @@ export const adminDeleteProductVariantPermanent = createServerFn({ method: "POST
       .maybeSingle();
     if (variant.error) throw new Error(variant.error.message);
     if (!variant.data) throw new Error("Product variant not found");
+    if (!variant.data.archived_at) {
+      throw new Error("Archive this variant before deleting it permanently.");
+    }
     const orderItems = await db
       .from("order_items")
       .select("id,product_snapshot,sku,price,variant_attributes")
