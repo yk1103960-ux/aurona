@@ -889,7 +889,9 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
     const categories = new Map((categoriesResult.data ?? []).map((x: any) => [String(x.name).toLowerCase(), x.id]));
     const familiesBySku = new Map((familiesResult.data ?? []).map((x: any) => [String(x.main_sku).toUpperCase(), x]));
+    const familiesById = new Map((familiesResult.data ?? []).map((x: any) => [String(x.id), x]));
     const variantsBySku = new Map((variantsResult.data ?? []).map((x: any) => [String(x.sku).toUpperCase(), x]));
+    const variantsById = new Map((variantsResult.data ?? []).map((x: any) => [String(x.id), x]));
     const programs = new Set((programsResult.data ?? []).map((x: any) => String(x.name).toLowerCase()));
     const metadataCategory = textCell(data.metadata.category_name).toLowerCase();
     let configuredVariations: Array<{ name: string; values: string[] }> = [];
@@ -916,6 +918,25 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       seen.add(row.variant_sku);
       const family = familiesBySku.get(row.main_sku);
       const variant = variantsBySku.get(row.variant_sku);
+      if (row.family_id) {
+        const familyById = familiesById.get(row.family_id);
+        if (!familyById) errors.push(`family_id ${row.family_id} was not found`);
+        else if (String((familyById as any).main_sku).toUpperCase() !== row.main_sku) {
+          errors.push("family_id does not belong to the supplied Main SKU");
+        }
+      }
+      if (row.variant_id) {
+        const variantById = variantsById.get(row.variant_id);
+        if (!variantById) errors.push(`variant_id ${row.variant_id} was not found`);
+        else {
+          if (String((variantById as any).sku).toUpperCase() !== row.variant_sku) {
+            errors.push("variant_id does not match the supplied Variant SKU");
+          }
+          if (family && (variantById as any).family_id !== (family as any).id) {
+            errors.push("variant_id does not belong to the supplied Main SKU");
+          }
+        }
+      }
       if (row.function === 'create' && variant) errors.push("Variant SKU already belongs to an existing variant");
       if (row.function === 'create' && row.main_sku && row.variant_sku && row.variation_axes.length) {
         try {
@@ -953,11 +974,6 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
         ["Distributor", row.distributor_discount],
       ] as const) {
         if (discount != null && discount > 100) errors.push(`${label} Discount cannot exceed 100`);
-      }
-      if (row.frequently_bought_category) {
-        errors.push(
-          "Frequently Bought Category is not auto-imported because Frequently Bought Together is admin-selected products only. Leave this column blank and select products in the product editor.",
-        );
       }
       if (row.commission_program && !programs.has(row.commission_program.toLowerCase())) errors.push(`Unknown Partner Program: ${row.commission_program}`);
       if (row.commission_type && !['percentage','fixed'].includes(row.commission_type)) errors.push("Commission Type must be Percentage or Fixed");
