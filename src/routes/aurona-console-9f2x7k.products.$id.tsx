@@ -1487,7 +1487,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
               for (const variant of variants) {
                 if (!allowed.has(variant.id)) continue;
                 for (const program of programs) {
-                  if (programId !== "__all" && program.id !== programId) continue;
+                  if (programId !== COMMISSION_ALL_VARIANTS_VALUE && program.id !== programId) continue;
                   updateRule(variant.id, program.id, patch);
                   count += 1;
                 }
@@ -1708,18 +1708,18 @@ function GroupCommissionPanel({
     return [...configured, ...discovered];
   }, [productAxes, variants]);
 
-  const [programId, setProgramId] = useState("__all");
+  const [programId, setProgramId] = useState(COMMISSION_ALL_VARIANTS_VALUE);
   const [axis, setAxis] = useState("");
   const [drafts, setDrafts] = useState<Record<string, { kind: CommissionKind; value: string; cap: string }>>({});
 
   useEffect(() => {
-    if (!axis) setAxis("__all");
-    if (axis !== "__all" && !axes.some((item) => item.key === axis)) setAxis("__all");
+    if (!axis) setAxis(COMMISSION_ALL_VARIANTS_VALUE);
+    if (axis !== COMMISSION_ALL_VARIANTS_VALUE && !axes.some((item) => item.key === axis)) setAxis(COMMISSION_ALL_VARIANTS_VALUE);
   }, [axes, axis]);
 
   const groups = useMemo(() => {
     if (!axis) return [] as { value: string; variantIds: string[] }[];
-    if (axis === "__all") return [{ value: "All Variants", variantIds: variants.map((variant) => variant.id) }];
+    if (axis === COMMISSION_ALL_VARIANTS_VALUE) return [{ value: COMMISSION_ALL_VARIANTS_LABEL, variantIds: variants.map((variant) => variant.id) }];
     const map = new Map<string, string[]>();
     for (const variant of variants) {
       const value = variant.attributes[axis];
@@ -1764,7 +1764,7 @@ function GroupCommissionPanel({
     return null;
   }
   const axisLabel =
-    axis === "__all" ? "All Variants" : axes.find((item) => item.key === axis)?.label ?? axis;
+    axis === COMMISSION_ALL_VARIANTS_VALUE ? COMMISSION_ALL_VARIANTS_LABEL : axes.find((item) => item.key === axis)?.label ?? axis;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -1785,7 +1785,7 @@ function GroupCommissionPanel({
               value={programId}
               onChange={(event) => setProgramId(event.target.value)}
             >
-              <option value="__all">All programs</option>
+              <option value=COMMISSION_ALL_VARIANTS_VALUE>All programs</option>
               {programs.map((program) => (
                 <option key={program.id} value={program.id}>
                   {program.name}
@@ -1801,7 +1801,7 @@ function GroupCommissionPanel({
               value={axis}
               onChange={(event) => setAxis(event.target.value)}
             >
-              <option value="__all">All Variants</option>
+              <option value=COMMISSION_ALL_VARIANTS_VALUE>All Variants</option>
               {axes.map((item) => (
                 <option key={item.key} value={item.key}>
                   {item.label}
