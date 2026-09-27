@@ -1888,12 +1888,10 @@ function RelatedProducts({ familyId }: { familyId: string }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const loaded = useRef(false);
-  const autoFill = useRef(false);
   const qc = useQueryClient();
 
   useEffect(() => {
     loaded.current = false;
-    autoFill.current = false;
     setSelected([]);
     setSearch("");
     setCategoryId("");
@@ -1947,12 +1945,6 @@ function RelatedProducts({ familyId }: { familyId: string }) {
       loaded.current = true;
       return;
     }
-    // Picking a category should immediately fill in that category's products,
-    // so saving shows them on the live product page.
-    if (autoFill.current) {
-      autoFill.current = false;
-      setSelected((q.data.products ?? []).map((item: any) => item.id as string).slice(0, 24));
-    }
   }, [q.data]);
   const visibleIds = useMemo(() => (q.data?.products ?? []).map((item: any) => item.id as string), [q.data?.products]);
   const selectVisible = () => setSelected((current) => [...new Set([...current, ...visibleIds])].slice(0, 24));
@@ -1978,7 +1970,6 @@ function RelatedProducts({ familyId }: { familyId: string }) {
           className="h-10 min-w-[220px] rounded-md border border-slate-200 bg-white px-3 text-sm"
           value={categoryId}
           onChange={(event) => {
-            autoFill.current = true;
             setCategoryId(event.target.value);
           }}
         >
