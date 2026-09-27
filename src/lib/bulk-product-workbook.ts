@@ -1,23 +1,19 @@
 import * as XLSX from "xlsx";
 import { generateVariantSku, variantName, type VariationSelection } from "./sku-generation";
+import {
+  PRODUCT_MASTER_COLUMNS,
+  PRODUCT_MASTER_DETAIL_HEADERS,
+  PRODUCT_MASTER_SERIALS,
+  PRODUCT_MASTER_TOP_HEADERS,
+} from "./bulk-product-columns";
 
 export const BULK_TEMPLATE_VERSION = "aurona-product-master-v1";
 
-export const PRODUCT_MASTER_HEADERS = [
-  "Sr No", "Function", "Product Category", "Product Name", "family_id", "Main SKU", "Brand Name", "Unit", "Model Name",
-  "Variants Name", "Variants SKU", "variant_id", "barcode", "Variations 1 Name", "Variation 1 Value",
-  "Variations 2 Name", "Variation 2 Value", "Variations 3 Name", "Variation 3 Value", "attributes_json",
-  "Short Description", "Description", "Key Features", "Refundable (YES/NO)", "Status (For Sale/ Deal )",
-  "Status (Active-True / Inactive-False)", "MRP", "Single PC’s Weight", "Single PC’s Length", "Single PC’s Width", "Single PC’s Height",
-  "Customer’s Discount", "Customer’s Price", "Customer’s MOQ", "Customer’s Stock", "Customer’s Reserved Stock", "Customer’s Pack Size",
-  "Customer’s Package’s Weight", "Customer’s Package’s Length", "Customer’s Package’s Width", "Customer’s Package’s Height",
-  "Retailer’s Discount", "Retailer’s Price", "Retailer’s MOQ", "Retailer’s Stock", "Retailer’s Reserved Stock", "Retailer’s Pack Size",
-  "Retailer’s Package’s Weight", "Retailer’s Package’s Length", "Retailer’s Package’s Width", "Retailer’s Package’s Height",
-  "Distributor’s Discount", "Distributor’s Price", "Distributor’s MOQ", "Distributor’s Stock", "Distributor’s Reserved Stock", "Distributor’s Pack Size",
-  "Distributor’s Package’s Weight", "Distributor’s Package’s Length", "Distributor’s Package’s Width", "Distributor’s Package’s Height",
-  "Commission Set on", "Commission Type", "Commission Value", "Max commission", "SEO Meta Title", "SEO Description",
-  "Shipping Estimated Days", "Warranty", "Frequently Bought Category",
-] as const;
+export const PRODUCT_MASTER_HEADERS = PRODUCT_MASTER_COLUMNS.map(
+  (column) => column.detailHeader || column.topHeader,
+);
+
+
 
 export type TemplateConfig = {
   categoryId: string;
@@ -31,19 +27,12 @@ export type TemplateConfig = {
   combinations: VariationSelection[][];
 };
 
-const groupHeader = [
-  "Sr No", "Function", "Product Category", "Product Name", "family_id", "Main SKU", "Brand Name", "Unit", "Model Name",
-  "Variants Name", "Variants SKU", "variant_id", "barcode", "Variations 1 Name", "Variation 1 Value", "Variations 2 Name",
-  "Variation 2 Value", "Variations 3 Name", "Variation 3 Value", "attributes_json", "Short Description", "Description",
-  "Key Features", "Refundable (YES/NO)", "Status (For Sale/ Deal )", "Status (Active-True / Inactive-False)",
-  "Single PC Details", "", "", "", "", "Details For Customer's", "", "", "", "", "", "", "", "", "",
-  "Details for Retailors", "", "", "", "", "", "", "", "", "", "Details for Distributors", "", "", "", "", "", "", "", "", "",
-  "Commission Details", "", "", "", "SEO Details", "", "Shipping Estimated Days", "Warranty", "Frequently Bought Category",
-];
+const groupHeader = PRODUCT_MASTER_TOP_HEADERS;
+const detailHeader = PRODUCT_MASTER_DETAIL_HEADERS;
+
 
 export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   if (config.variations.length > 3) throw new Error("The supplied template supports up to three variation slots.");
-  const detailHeader = PRODUCT_MASTER_HEADERS.map((header, index) => index < 26 ? "" : header);
   const rows = config.combinations.map((combination, index) => {
     const attributes = Object.fromEntries(combination.map((item) => [item.name, item.value]));
     const fixed = [
@@ -53,11 +42,14 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     ];
     for (let slot = 0; slot < 3; slot += 1) fixed.push(combination[slot]?.name || "", combination[slot]?.value || "");
     fixed.push(JSON.stringify(attributes));
-    return [...fixed, ...Array(PRODUCT_MASTER_HEADERS.length - fixed.length).fill("")];
+    return [...fixed, ...Array(PRODUCT_MASTER_COLUMNS.length - fixed.length).fill("")];
   });
-  const ws = XLSX.utils.aoa_to_sheet([groupHeader, detailHeader, PRODUCT_MASTER_HEADERS.map((_, index) => index + 1), ...rows]);
+  const ws = XLSX.utils.aoa_to_sheet([groupHeader, detailHeader, PRODUCT_MASTER_SERIALS, ...rows]);
   ws["!freeze"] = { xSplit: 0, ySplit: 3 };
-  ws["!cols"] = PRODUCT_MASTER_HEADERS.map((header, index) => ({ wch: Math.min(28, Math.max(11, header.length * 0.72 + (index < 13 ? 2 : 0))) }));
+  ws["!cols"] = PRODUCT_MASTER_COLUMNS.map((column, index) => {
+    const header = column.detailHeader || column.topHeader;
+    return { wch: Math.min(28, Math.max(11, header.length * 0.72 + (index < 13 ? 2 : 0))) };
+  });
   ws["!merges"] = [
     ...Array.from({ length: 26 }, (_, i) => ({ s: { r: 0, c: i }, e: { r: 1, c: i } })),
     { s: { r: 0, c: 26 }, e: { r: 0, c: 30 } }, { s: { r: 0, c: 31 }, e: { r: 0, c: 40 } },
@@ -86,9 +78,25 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
   const metadata = Object.fromEntries(metadataRows.filter((row) => row[0]).map((row) => [String(row[0]), row[1]]));
   if (metadata.template_version !== BULK_TEMPLATE_VERSION) throw new Error("Wrong or unsupported Aurona template version.");
   const matrix = XLSX.utils.sheet_to_json<unknown[]>(productSheet, { header: 1, defval: "", raw: true });
-  const numericHeader = matrix[2]?.map(String);
-  if (!numericHeader || numericHeader.length !== PRODUCT_MASTER_HEADERS.length || numericHeader.some((v, i) => v !== String(i + 1))) {
-    throw new Error("The Product Master column structure was changed. Download a fresh template.");
+  const normalizeHeader = (value: unknown) => String(value ?? "").replace(/\r\n/g, "\n");
+  const topHeader = (matrix[0] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(normalizeHeader);
+  const detailHeader = (matrix[1] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(normalizeHeader);
+  const numericHeader = (matrix[2] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(String);
+  const headerMismatch = PRODUCT_MASTER_COLUMNS.find((column, index) =>
+    topHeader[index] !== column.topHeader ||
+    detailHeader[index] !== column.detailHeader ||
+    numericHeader[index] !== String(column.serial),
+  );
+  if (
+    matrix[0]?.length !== PRODUCT_MASTER_COLUMNS.length ||
+    matrix[1]?.length !== PRODUCT_MASTER_COLUMNS.length ||
+    matrix[2]?.length !== PRODUCT_MASTER_COLUMNS.length ||
+    headerMismatch
+  ) {
+    const detail = headerMismatch
+      ? ` Column ${headerMismatch.serial} must remain "${headerMismatch.detailHeader || headerMismatch.topHeader}".`
+      : "";
+    throw new Error(`The Product Master column order/header structure does not match the master template.${detail}`);
   }
   const rows = matrix.slice(3).filter((row) => row.some((value) => value !== "" && value != null));
   return { metadata, rows: rows.map((row, index) => ({ excelRow: index + 4, values: row })) };
