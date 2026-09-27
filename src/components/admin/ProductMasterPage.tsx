@@ -619,7 +619,9 @@ export function ProductMaster() {
             const family = families.find((item) => item.id === familyId)!;
             return {
               familyId,
-              variants: family.variants.map((variant) => variantPayload(effective(variant))),
+              variants: family.variants
+                .filter((variant) => !variant.archived_at)
+                .map((variant) => variantPayload(effective(variant))),
               axes: family.axes.map((axis) => ({
                 axis_key: axis.axis_key,
                 label: axis.label,
@@ -632,7 +634,7 @@ export function ProductMaster() {
       });
       const savedVariantIds = families
         .filter((family) => familyIds.includes(family.id))
-        .flatMap((family) => family.variants.map((variant) => variant.id));
+        .flatMap((family) => family.variants.filter((variant) => !variant.archived_at).map((variant) => variant.id));
       setDrafts((current) => {
         const next = { ...current };
         for (const id of savedVariantIds) delete next[id];
