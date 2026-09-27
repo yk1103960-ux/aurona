@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createProductMasterExport } from "@/lib/product-master-export";
+import { createProductMasterExport, productMasterExportRows } from "@/lib/product-master-export";
 import {
   Archive,
   ChevronDown,
@@ -369,6 +369,7 @@ export function ProductMaster() {
   const [drafts, setDrafts] = useState<Drafts>({});
   const [saving, setSaving] = useState(false);
   const [preset, setPreset] = useState<Preset>("essential");
+  const [templateMode, setTemplateMode] = useState(true);
   const [visible, setVisible] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set(PRESETS.essential);
     try {
@@ -426,7 +427,7 @@ export function ProductMaster() {
           page,
           pageSize: PAGE_SIZE,
         },
-      }) as Promise<{ families: Family[]; count: number }>,
+      }) as Promise<{ families: Family[]; count: number; commissions: Record<string, unknown>[]; programs: Record<string, unknown>[] }>,
   });
 
   const families = useMemo(() => q.data?.families ?? [], [q.data]);
@@ -453,6 +454,12 @@ export function ProductMaster() {
         : families,
     [families, missingDimensions],
   );
+
+  const templateGrid = useMemo(() => productMasterExportRows({
+    families: shownFamilies,
+    commissions: q.data?.commissions ?? [],
+    programs: q.data?.programs ?? [],
+  }), [shownFamilies, q.data?.commissions, q.data?.programs]);
 
   const attributeColumns = useMemo<Column[]>(() => {
     const labels = new Map<string, string>();
@@ -666,6 +673,7 @@ export function ProductMaster() {
 
   const applyPreset = (next: Preset) => {
     setPreset(next);
+    setTemplateMode(false);
     setVisible(new Set(PRESETS[next]));
   };
 
@@ -983,6 +991,12 @@ export function ProductMaster() {
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">View</span>
+          <Button size="sm" variant={templateMode ? "default" : "outline"} onClick={() => setTemplateMode(true)}>
+            Excel columns (1–{templateGrid.columns.length})
+          </Button>
+          <Button size="sm" variant={!templateMode ? "default" : "outline"} onClick={() => setTemplateMode(false)}>
+            Edit grid
+          </Button>
           {(["essential", "pricing", "inventory", "variations", "shipping", "all"] as Preset[]).map(
             (item) => (
               <Button
@@ -1103,7 +1117,31 @@ export function ProductMaster() {
         </div>
       )}
 
-      {(() => {
+      {templateMode && (
+        <div className="scrollbar-visible relative isolate max-h-[calc(100vh-270px)] overflow-auto overscroll-contain rounded-xl border border-slate-200 bg-white shadow-sm" role="region" aria-label="Product Master Excel columns">
+          <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
+            <thead className="sticky top-0 z-40 bg-slate-100 text-slate-700">
+              <tr>{templateGrid.columns.map((column) => (
+                <th key={column.key} className="min-w-[130px] max-w-[260px] border-b border-r bg-slate-100 px-3 py-2 text-left align-top font-semibold" title={column.productManagerField}>
+                  <span className="block text-[10px] text-sky-700">{column.serial}</span>
+                  <span className="whitespace-pre-line">{column.detailHeader || column.topHeader}</span>
+                </th>
+              ))}</tr>
+            </thead>
+            <tbody>{templateGrid.rows.map((values, rowIndex) => (
+              <tr key={rowIndex} className="hover:bg-sky-50/40">{values.map((value, columnIndex) => (
+                <td key={templateGrid.columns[columnIndex].key} className="max-w-[260px] border-b border-r px-3 py-2 align-top" title={String(value ?? "")}>
+                  <span className="block max-w-[250px] truncate">{typeof value === "boolean" ? String(value) : value === "" ? "—" : String(value)}</span>
+                </td>
+              ))}</tr>
+            ))}
+            {!q.isLoading && !templateGrid.rows.length && <tr><td colSpan={templateGrid.columns.length} className="p-12 text-center text-slate-500">No matching product variants.</td></tr>}
+            {q.isLoading && <tr><td colSpan={templateGrid.columns.length} className="p-12 text-center text-slate-500">Loading Product Master…</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {!templateMode && (() => {
         const imageColumn = columns.find((column) => column.key === "image");
         const stickyImageLeft = imageColumn ? 44 : undefined;
         const stickyFamilyLeft =
