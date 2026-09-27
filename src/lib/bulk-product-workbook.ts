@@ -104,6 +104,14 @@ function variationCountFromWorkbook(matrix: unknown[][], metadata: Record<string
 
 export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   if (!config.variations.length) throw new Error("Select at least one variation before generating Excel.");
+  if (config.variations.some((variation) =>
+    !variation.name.trim() || !variation.values.some((value) => value.trim())
+  ) || config.combinations.some((combination) =>
+    combination.length !== config.variations.length ||
+    combination.some((selection) => !selection.name.trim() || !selection.value.trim())
+  ) || !config.combinations.length) {
+    throw new Error("Please add at least one value for this variation.");
+  }
   const columns = buildProductMasterColumns(config.variations.length);
   const columnIndex = buildProductMasterColumnIndex(columns);
   const mainSku = normalizeMainSku(config.mainSku);
