@@ -14,6 +14,7 @@ test("bulk category lookup uses real category records with harmless normalizatio
   ]);
 
   assert.equal(normalizeBulkCategoryName("  CONCEALED   LIGHTS  "), "concealed lights");
+  assert.equal(normalizeBulkCategoryName("\uFEFFConcealed\u00A0Lights\u200B"), "concealed lights");
   assert.deepEqual(resolveBulkCategory(lookups, " concealed lights "), {
     id: "cat-1",
     name: "Concealed Lights",
