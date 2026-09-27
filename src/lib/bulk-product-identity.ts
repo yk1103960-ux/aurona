@@ -3,6 +3,8 @@ import { generateVariantSku, normalizeMainSku, type VariationSelection } from ".
 export const normalizeBulkCategoryName = (value: unknown) =>
   String(value ?? "")
     .normalize("NFKC")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+    .replace(/\u00A0/g, " ")
     .trim()
     .replace(/\s+/g, " ")
     .toLocaleLowerCase("en-IN");
