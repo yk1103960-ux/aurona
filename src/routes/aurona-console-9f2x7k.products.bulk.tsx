@@ -15,6 +15,7 @@ import {
   parseBulkProductWorkbook,
   type TemplateConfig,
 } from "@/lib/bulk-product-workbook";
+import { PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
 import {
   generateVariantSku,
   generateVariationCombinations,
@@ -508,6 +509,54 @@ function BulkCatalog() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="space-y-4 rounded-xl border bg-white p-5">
+        <div>
+          <h2 className="font-semibold">Product Master Column Mapping / Template Structure</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            This is the exact 70-column Product Master order used by Excel generation, upload validation, preview and import mapping.
+            The same source-of-truth definition drives every stage, so a column cannot be silently remapped by position.
+          </p>
+        </div>
+
+        <div className="max-h-[560px] overflow-auto rounded-lg border" tabIndex={0}>
+          <table className="min-w-[1180px] w-full border-collapse text-sm">
+            <thead className="sticky top-0 z-20 bg-slate-100 shadow-sm">
+              <tr>
+                <th className="w-16 border-b p-2 text-left">#</th>
+                <th className="w-52 border-b p-2 text-left">Group</th>
+                <th className="w-72 border-b p-2 text-left">Excel field</th>
+                <th className="border-b p-2 text-left">Product Manager / Database mapping</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PRODUCT_MASTER_COLUMNS.map((column) => (
+                <tr key={column.serial} className="border-t bg-white align-top">
+                  <td className="p-2 font-mono font-semibold">{column.serial}</td>
+                  <td className="p-2">{column.group}</td>
+                  <td className="p-2">
+                    <div className="font-medium">
+                      {column.detailHeader || column.topHeader.replace(/\s+/g, " ").trim()}
+                    </div>
+                    {column.detailHeader && column.topHeader && (
+                      <div className="mt-0.5 text-xs text-slate-500">
+                        Excel group: {column.topHeader.replace(/\s+/g, " ").trim()}
+                      </div>
+                    )}
+                    <div className="mt-0.5 font-mono text-[11px] text-slate-400">{column.key}</div>
+                  </td>
+                  <td className="p-2 font-mono text-xs text-slate-700">{column.productManagerField}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-xs text-slate-500">
+          The visible Excel workbook still preserves Manu's grouped Row 1 headers, Row 2 field headers and Row 3 serial numbers 1–70.
+          This mapping table explains where each exact Excel column is written; it does not alter the Step 1–5 workflow.
+        </p>
       </section>
 
       <section className="space-y-4 rounded-xl border bg-white p-5">
