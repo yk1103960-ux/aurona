@@ -700,7 +700,7 @@ export const adminSetProductVariantState = createServerFn({ method: "POST" })
 
 export const adminDeleteProductVariantPermanent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ variantId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ variantId: z.string().uuid(), fromVariationEditor: z.boolean().optional() }).parse(input))
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -713,7 +713,7 @@ export const adminDeleteProductVariantPermanent = createServerFn({ method: "POST
       .maybeSingle();
     if (variant.error) throw new Error(variant.error.message);
     if (!variant.data) throw new Error("Product variant not found");
-    if (!variant.data.archived_at) {
+    if (!variant.data.archived_at && !data.fromVariationEditor) {
       throw new Error("Archive this variant before deleting it permanently.");
     }
     const orderItems = await db
@@ -1296,16 +1296,16 @@ export const adminLoadVariantMatrix = createServerFn({ method: "POST" })
     const pick = async (column: string, value: string) => {
       const res = await db
         .from("product_families")
-        .select("id, name")
+        .select("*")
         .eq(column, value)
         .maybeSingle();
       if (res.error && !/legacy_product_id|schema cache/i.test(res.error.message)) {
         throw new Error(res.error.message);
       }
-      return (res.data as { id: string; name: string } | null) ?? null;
+      return (res.data as Record<string, any> | null) ?? null;
     };
 
-    let family: { id: string; name: string } | null = null;
+    let family: Record<string, any> | null = null;
     if (data.familyId) family = await pick("id", data.familyId);
     if (!family && data.productSku) family = await pick("main_sku", data.productSku);
     if (!family && data.productId && data.productId !== "new") {
@@ -1314,7 +1314,7 @@ export const adminLoadVariantMatrix = createServerFn({ method: "POST" })
     if (!family && data.productSku) {
       const viaVariant = await db
         .from("product_variants")
-        .select("family_id, product_families(id, name)")
+        .select("family_id, product_families(*)")
         .eq("sku", data.productSku)
         .maybeSingle();
       if (viaVariant.error) throw new Error(viaVariant.error.message);
