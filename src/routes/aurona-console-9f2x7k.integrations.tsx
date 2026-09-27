@@ -480,11 +480,19 @@ function TaxShippingCard() {
   const qc = useQueryClient();
   const { data: tax } = useQuery({
     queryKey: ["admin-tax-rules"],
-    queryFn: async () => (await supabase.from("tax_rules").select("*").order("created_at")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tax_rules").select("*").order("created_at");
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
   });
   const { data: zones } = useQuery({
     queryKey: ["admin-shipping-zones"],
-    queryFn: async () => (await supabase.from("shipping_zones").select("*").order("sort_order")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("shipping_zones").select("*").order("sort_order");
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
   });
 
   const patchTax = async (id: string, patch: Record<string, unknown>) => {
