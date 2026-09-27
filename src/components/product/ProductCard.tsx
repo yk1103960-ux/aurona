@@ -76,8 +76,10 @@ export function ProductCard({
     0,
     Number(visibleInventory?.stock ?? product.stock ?? 0) - Number(visibleInventory?.reserved_stock ?? 0),
   );
+  const visiblePackSize = Math.max(1, Number(visibleInventory?.pack_size ?? 1));
+  const maxCartQty = Math.max(0, Math.floor(stock / visiblePackSize));
   const lowStock = stock > 0 && stock <= 8;
-  const outOfStock = stock <= 0;
+  const outOfStock = maxCartQty <= 0;
   const spec = product.wattage ?? product.size ?? null;
 
   const handleAdd = () => {
@@ -276,8 +278,9 @@ export function ProductCard({
             </span>
             <button
               type="button"
-              onClick={() => cart.updateQty.mutate({ id: line!.id, quantity: qty + 1 })}
-              className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition hover:bg-white/30"
+              onClick={() => cart.updateQty.mutate({ id: line!.id, quantity: Math.min(maxCartQty, qty + 1) })}
+              disabled={qty >= maxCartQty}
+              className="grid h-7 w-7 place-items-center rounded-full bg-white/20 transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Increase quantity"
             >
               <Plus className="h-3.5 w-3.5" />
