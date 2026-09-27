@@ -53,6 +53,7 @@ import {
   type Variant,
   type Axis,
 } from "@/lib/variant-workflow";
+import { createProductOptionToken } from "@/lib/sku-generation";
 import { persistVariationPhotos, validateVariationPhoto, type VariationPhotoDraft } from "@/lib/variant-photo-drafts";
 
 type Tab = "quick" | "options" | "customer" | "shipping";
@@ -195,17 +196,6 @@ const selectCurrentVariantRows = (rows: Variant[], axes: Axis[]) => {
   return Array.from(byCombination.values()).sort(
     (a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0),
   );
-};
-
-const optionToken = (value: string) => {
-  const pack = value.trim().match(/^pack\s*(?:of)?\s*(\d+)$/i);
-  if (pack) return `P${pack[1]}`;
-  return value
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 24);
 };
 
 export function VariantEditor({
@@ -478,7 +468,7 @@ export function VariantEditor({
         sourceRows.find((row) => !row.id.startsWith("new-")) ??
         sourceRows[0];
       const added = combinations.map((attributes, index) => {
-        const suffix = sourceAxes.map((axis) => optionToken(attributes[axis.axis_key])).join("-");
+        const suffix = sourceAxes.map((axis) => createProductOptionToken(attributes[axis.axis_key])).join("-");
         const base = `${productSku}-${suffix}`;
         let sku = base.slice(0, 120);
         let attempt = 2;
