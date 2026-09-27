@@ -78,13 +78,16 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
   const metadata = Object.fromEntries(metadataRows.filter((row) => row[0]).map((row) => [String(row[0]), row[1]]));
   if (metadata.template_version !== BULK_TEMPLATE_VERSION) throw new Error("Wrong or unsupported Aurona template version.");
   const matrix = XLSX.utils.sheet_to_json<unknown[]>(productSheet, { header: 1, defval: "", raw: true });
-  const normalizeHeader = (value: unknown) => String(value ?? "").replace(/\r\n/g, "\n");
+  // Keep serial positions strict. Header whitespace is normalized only so
+  // previously downloaded Aurona templates (for example a line break versus
+  // a space in "Refundable (YES/NO)") remain upload-compatible.
+  const normalizeHeader = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
   const topHeader = (matrix[0] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(normalizeHeader);
   const detailHeader = (matrix[1] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(normalizeHeader);
   const numericHeader = (matrix[2] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(String);
   const headerMismatch = PRODUCT_MASTER_COLUMNS.find((column, index) =>
-    topHeader[index] !== column.topHeader ||
-    detailHeader[index] !== column.detailHeader ||
+    topHeader[index] !== normalizeHeader(column.topHeader) ||
+    detailHeader[index] !== normalizeHeader(column.detailHeader) ||
     numericHeader[index] !== String(column.serial),
   );
   if (
