@@ -1523,12 +1523,21 @@ function FamilyRows({
                       )}
                     </Button>
                     <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Archive product"
+                      title="Archive product (can be restored)"
+                      onClick={() => onState("archive")}
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                    <Button
                       size="sm"
                       variant="destructive"
                       className="gap-1 px-2"
-                      aria-label="Delete product (archive)"
-                      title="Delete product (archive; can be restored)"
-                      onClick={() => onState("archive")}
+                      aria-label="Delete product permanently (archive first)"
+                      title="Archive this product first, then delete permanently"
+                      onClick={onDeletePermanent}
                     >
                       <Trash2 className="h-4 w-4" /> Delete
                     </Button>
