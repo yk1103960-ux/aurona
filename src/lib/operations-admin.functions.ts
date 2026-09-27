@@ -678,7 +678,7 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [categories, options, programs] = await Promise.all([
+    const [categories, options, programs, families] = await Promise.all([
       (supabaseAdmin as any)
         .from("categories")
         .select("id,name,slug")
@@ -695,13 +695,70 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
         .select("id,name")
         .eq("is_active", true)
         .order("name"),
+      (supabaseAdmin as any)
+        .from("product_families")
+        .select("id,category_id,axes:product_variant_axes(axis_key,label,values,sort_order)")
+        .is("archived_at", null),
     ]);
-    for (const result of [categories, options, programs]) {
+    for (const result of [categories, options, programs, families]) {
       if (result.error) throw new Error(result.error.message);
     }
+
+    const byCategory = new Map<
+      string,
+      Map<string, { id: string; axisKey: string; name: string; values: string[]; sortOrder: number }>
+    >();
+
+    for (const family of families.data ?? []) {
+      const categoryId = String((family as any).category_id ?? "");
+      if (!categoryId) continue;
+      const categoryAxes = byCategory.get(categoryId) ?? new Map();
+      for (const axis of ((family as any).axes ?? []) as Array<{
+        axis_key?: string;
+        label?: string;
+        values?: unknown;
+        sort_order?: number;
+      }>) {
+        const axisKey = String(axis.axis_key ?? "").trim();
+        const name = String(axis.label ?? axisKey).trim();
+        if (!axisKey || !name) continue;
+        const key = axisKey.toLowerCase();
+        const current = categoryAxes.get(key) ?? {
+          id: axisKey,
+          axisKey,
+          name,
+          values: [],
+          sortOrder: Number(axis.sort_order ?? 0),
+        };
+        const seen = new Set(current.values.map((value) => value.toLowerCase()));
+        for (const rawValue of Array.isArray(axis.values) ? axis.values : []) {
+          const value = String(rawValue ?? "").trim();
+          if (!value || seen.has(value.toLowerCase())) continue;
+          current.values.push(value);
+          seen.add(value.toLowerCase());
+        }
+        current.sortOrder = Math.min(current.sortOrder, Number(axis.sort_order ?? current.sortOrder));
+        categoryAxes.set(key, current);
+      }
+      byCategory.set(categoryId, categoryAxes);
+    }
+
+    const categoryVariations = Object.fromEntries(
+      [...byCategory.entries()].map(([categoryId, axes]) => [
+        categoryId,
+        [...axes.values()]
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+          .map(({ sortOrder, ...axis }) => axis),
+      ]),
+    );
+
     return {
       categories: categories.data ?? [],
+      // Reusable attributes remain a fallback for categories that do not yet
+      // have saved variant axes. Existing family axes are authoritative for
+      // category-specific values.
       variations: options.data ?? [],
+      categoryVariations,
       // The existing Partner Program table is authoritative. Bulk Upload does
       // not maintain a second, hardcoded commission-program list.
       partnerPrograms: programs.data ?? [],
