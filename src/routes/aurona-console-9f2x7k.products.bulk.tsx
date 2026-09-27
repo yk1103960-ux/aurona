@@ -16,7 +16,7 @@ function BulkCatalog() {
   const configFn = useServerFn(adminGetBulkUploadConfiguration);
   const previewFn = useServerFn(adminPreviewDynamicCatalogImport);
   const commitFn = useServerFn(adminCommitDynamicCatalogImport);
-  const config = useQuery({ queryKey: ["dynamic-bulk-config"], queryFn: () => configFn() });
+  const config = useQuery({ queryKey: ["admin-dynamic-bulk-config"], queryFn: () => configFn(), retry: false });
   const [categoryId, setCategoryId] = useState("");
   const [productName, setProductName] = useState("");
   const [mainSku, setMainSku] = useState("");
@@ -55,6 +55,23 @@ function BulkCatalog() {
     catch (error) { toast.error(error instanceof Error ? error.message : "Import failed; no changes were committed"); }
     finally { setBusy(false); }
   };
+
+  if (config.isError) {
+    return (
+      <div className="max-w-full space-y-5">
+        <Link to="/aurona-console-9f2x7k/products" className="inline-flex items-center gap-1 text-sm text-slate-500">
+          <ArrowLeft className="h-4 w-4" /> Back to products
+        </Link>
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <div className="font-semibold">Bulk upload configuration could not be loaded</div>
+          <p className="mt-1">{config.error instanceof Error ? config.error.message : "Please retry."}</p>
+          <Button className="mt-3" type="button" variant="outline" onClick={() => config.refetch()}>
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return <div className="max-w-full space-y-5">
     <Link to="/aurona-console-9f2x7k/products" className="inline-flex items-center gap-1 text-sm text-slate-500"><ArrowLeft className="h-4 w-4"/> Back to products</Link>
