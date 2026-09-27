@@ -1,4 +1,4 @@
-import { generateVariantSku, normalizeMainSku, type VariationSelection } from "./sku-generation";
+import { generateCreateProductVariantSku, normalizeMainSku, type VariationSelection } from "./sku-generation";
 
 export const normalizeBulkCategoryName = (value: unknown) =>
   String(value ?? "")
@@ -44,5 +44,5 @@ export function expectedBulkVariantSku(
   mainSku: string,
   axes: VariationSelection[],
 ): string {
-  return generateVariantSku(normalizeMainSku(mainSku), axes);
+  return generateCreateProductVariantSku(normalizeMainSku(mainSku), axes);
 }
