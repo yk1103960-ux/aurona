@@ -167,7 +167,7 @@ export const adminListProductFamilies = createServerFn({ method: "POST" })
       query = query.or(
         `name.ilike.%${data.search}%,main_sku.ilike.%${data.search}%,slug.ilike.%${data.search}%`,
       );
-    if (data.categoryId) query = query.eq("category_id", data.categoryId);
+    if (data.categoryId) query = query.eq("category_id", categoryId);
     if (data.brand) query = query.eq("brand", data.brand);
     if (data.publication === "archived") query = query.not("archived_at", "is", null);
     else {
@@ -428,12 +428,29 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
 export const adminExportProductMasterRows = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ categoryId: z.string().uuid() }).parse(input),
+    z.object({
+      categoryId: z.string().uuid().optional(),
+      // Accept requests from an older open Product Master tab during rollout.
+      familyIds: z.array(z.string().uuid()).max(50).optional(),
+    }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
+    let categoryId = data.categoryId;
+    if (!categoryId) {
+      if (!data.familyIds?.length) throw new Error("Please select a category to export.");
+      const selected = await db.from("product_families")
+        .select("id,category_id")
+        .in("id", data.familyIds);
+      if (selected.error) throw new Error(selected.error.message);
+      const categoryIds = [...new Set((selected.data ?? []).map((family: any) => family.category_id))];
+      if ((selected.data ?? []).length !== data.familyIds.length || categoryIds.length !== 1 || !categoryIds[0]) {
+        throw new Error("Please select a category to export.");
+      }
+      categoryId = String(categoryIds[0]);
+    }
     const families: any[] = [];
     for (let start = 0; ; start += 500) {
       const result = await db.from("product_families")
