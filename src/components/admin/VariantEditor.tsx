@@ -511,7 +511,7 @@ export function VariantEditor({
           distributor_pack_l: template?.distributor_pack_l ?? template?.pack_l ?? null,
           distributor_pack_w: template?.distributor_pack_w ?? template?.pack_w ?? null,
           distributor_pack_h: template?.distributor_pack_h ?? template?.pack_h ?? null,
-          is_active: false,
+          is_active: true,
           sort_order: sourceRows.length + index,
           low_stock_threshold: 10,
           available_customer: template?.available_customer ?? true,
@@ -522,7 +522,7 @@ export function VariantEditor({
       dirty.current = true;
       setRows([...sourceRows, ...added]);
       toast.success(
-        `${added.length} inactive drafts generated. Existing SKUs are unchanged. Enter prices and specifications before activating.`,
+        `${added.length} active variation drafts generated. Existing SKUs are unchanged.`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not generate variations");
@@ -1204,11 +1204,11 @@ function QuickVariantsTab({
                           variant="ghost"
                           disabled={busy}
                           onClick={() => archiveVariant(row)}
-                          title={row.id.startsWith("new-") ? "Remove unsaved variant" : "Archive variant"}
-                          aria-label={`${row.id.startsWith("new-") ? "Remove" : "Archive"} variant ${row.sku}`}
+                          title={row.id.startsWith("new-") ? "Delete unsaved variation" : "Delete variation (archive; can be restored)"}
+                          aria-label={`Delete variation ${row.sku}`}
                           className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         >
-                          <Archive className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
 
@@ -3808,7 +3808,7 @@ function SegmentPriceTable({
                           variant="destructive"
                           aria-label={`Delete variation ${row.sku}`}
                           title="Delete variation"
-                          onClick={() => removeRow(row)}
+                          onClick={() => archiveVariant(row)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
