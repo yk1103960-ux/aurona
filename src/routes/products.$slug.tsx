@@ -36,7 +36,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCompare } from "@/hooks/useCompare";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
-import { useMyRole, useVariantSegment, useVisiblePrices } from "@/lib/pricing";
+import { useMyRole, useVariantSegment, useVisibleInventory, useVisiblePrices } from "@/lib/pricing";
 import { ContactSalesCard, PartnerVerificationBanner } from "@/components/pricing/RolePriceGate";
 import { cn } from "@/lib/utils";
 import { ProductAffiliateBar } from "@/components/affiliate/ProductAffiliateBar";
@@ -162,13 +162,20 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
 
   const role = useMyRole();
   const { data: priceMap } = useVisiblePrices([variant.sku]);
+  const { data: inventoryMap } = useVisibleInventory([variant.sku]);
   const rp = priceMap?.[variant.sku];
+  const inventory = inventoryMap?.[variant.sku];
   const effectivePrice = rp?.price ?? Number(variant.price);
   const effectiveMrp = rp?.mrp ?? Number(variant.mrp);
 
   const off = discountPct(effectiveMrp, effectivePrice);
-  const inStock = variant.stock > 0;
-  const packSize = variant.pack_size ?? variant.moq ?? 1;
+  const availableStock = Math.max(
+    0,
+    Number(inventory?.stock ?? variant.stock) - Number(inventory?.reserved_stock ?? 0),
+  );
+  const inStock = availableStock > 0;
+  const packSize = Math.max(1, Number(inventory?.pack_size ?? variant.pack_size ?? 1));
+  const effectiveMoq = Math.max(1, Number(inventory?.moq ?? variant.moq ?? 1));
   const discountAmount = Math.max(0, effectiveMrp - effectivePrice);
   const pricePerPack = effectivePrice * packSize;
   const totalOrderValue = pricePerPack * qty;
@@ -435,9 +442,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </div>
 
           <div className="mt-8 grid gap-3 border border-border p-4 sm:grid-cols-2">
-            <Spec label="MOQ" value={variant.moq ? String(variant.moq) : null} />
+            <Spec label="MOQ" value={String(effectiveMoq)} />
             <Spec label="Weight" value={weightText} />
-            <Spec label="Pack size" value={variant.pack_size ? String(variant.pack_size) : null} />
+            <Spec label="Pack size" value={String(packSize)} />
             <Spec label="Dimensions (LxWxH)" value={dimsText} />
             <Spec label="Package weight" value={packWeightText} />
             <Spec label="Package dimensions" value={packDimsText} />
@@ -519,10 +526,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                   ["Selected SKU", variant.sku],
                   ["Watt Option", wattOption],
                   ["Output Colour Option", outputColourOption],
-                  ["MOQ", variant.moq != null ? String(variant.moq) : null],
+                  ["MOQ", String(effectiveMoq)],
                   ["Item Weight", weightText],
                   ["Item Dimensions", dimsText],
-                  ["Pack Size", variant.pack_size != null ? String(variant.pack_size) : null],
+                  ["Pack Size", String(packSize)],
                   ["Package Weight", packWeightText],
                   ["Package Dimensions", packDimsText],
                   ["Warranty", family.warranty],
