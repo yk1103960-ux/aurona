@@ -15,7 +15,7 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCompare } from "@/hooks/useCompare";
 import { useAuth } from "@/hooks/useAuth";
-import { useMyRole, useVariantSegment, useVisiblePrices } from "@/lib/pricing";
+import { useMyRole, useVariantSegment, useVisibleInventory, useVisiblePrices } from "@/lib/pricing";
 import { getMyApprovedAffiliateIdentity } from "@/lib/affiliate.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useVariantSelection } from "@/hooks/useVariantSelection";
@@ -59,7 +59,9 @@ export function ProductCard({
   const reduce = useReducedMotion();
   const role = useMyRole();
   const { data: priceMap } = useVisiblePrices(product.sku ? [product.sku] : []);
+  const { data: inventoryMap } = useVisibleInventory(product.sku ? [product.sku] : []);
   const rp = product.sku ? priceMap?.[product.sku] : undefined;
+  const visibleInventory = product.sku ? inventoryMap?.[product.sku] : undefined;
   const shownPrice = rp?.price ?? Number(product.price);
   const shownMrp = rp?.mrp ?? Number(product.mrp);
   const off = discountPct(shownMrp, shownPrice);
@@ -70,7 +72,10 @@ export function ProductCard({
 
   const line = cart.lineFor(product.id, product.sku);
   const qty = line?.quantity ?? 0;
-  const stock = Number(product.stock ?? 0);
+  const stock = Math.max(
+    0,
+    Number(visibleInventory?.stock ?? product.stock ?? 0) - Number(visibleInventory?.reserved_stock ?? 0),
+  );
   const lowStock = stock > 0 && stock <= 8;
   const outOfStock = stock <= 0;
   const spec = product.wattage ?? product.size ?? null;
@@ -463,11 +468,20 @@ function FamilyQuickAddContent({
 
   const { data: productMap } = useQuery(familyProductsQuery(skus));
   const productId = productMap?.[variant.sku]?.id ?? variant.product_id ?? null;
+  const { data: quickPriceMap } = useVisiblePrices([variant.sku]);
+  const { data: quickInventoryMap } = useVisibleInventory([variant.sku]);
+  const quickPrice = quickPriceMap?.[variant.sku];
+  const quickInventory = quickInventoryMap?.[variant.sku];
 
-  const stock = Number(variant.stock ?? 0);
+  const stock = Math.max(
+    0,
+    Number(quickInventory?.stock ?? variant.stock ?? 0) - Number(quickInventory?.reserved_stock ?? 0),
+  );
   const inStock = stock > 0;
-  const packSize = Number(variant.pack_size ?? variant.moq ?? 1);
-  const maxQty = Math.max(1, stock);
+  const packSize = Math.max(1, Number(quickInventory?.pack_size ?? variant.pack_size ?? 1));
+  const shownPrice = quickPrice?.price ?? Number(variant.price ?? 0);
+  const shownMrp = quickPrice?.mrp ?? Number(variant.mrp ?? 0);
+  const maxQty = Math.max(1, Math.floor(stock / packSize));
 
   // REAL related photos from product_images.
   //
@@ -705,9 +719,9 @@ function FamilyQuickAddContent({
         </DialogHeader>
 
         <div className="mt-1.5 flex items-baseline gap-2">
-          <span className="text-lg font-bold">{inr(Number(variant.price ?? 0))}</span>
-          {Number(variant.mrp ?? 0) > Number(variant.price ?? 0) && (
-            <span className="text-xs text-muted-foreground line-through">{inr(Number(variant.mrp ?? 0))}</span>
+          <span className="text-lg font-bold">{inr(shownPrice)}</span>
+          {shownMrp > shownPrice && (
+            <span className="text-xs text-muted-foreground line-through">{inr(shownMrp)}</span>
           )}
         </div>
 
@@ -824,10 +838,20 @@ function LegacyQuickAddContent({
 }) {
   const [quickQty, setQuickQty] = useState(1);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+  const { data: legacyPriceMap } = useVisiblePrices(product.sku ? [product.sku] : []);
+  const { data: legacyInventoryMap } = useVisibleInventory(product.sku ? [product.sku] : []);
+  const legacyPrice = product.sku ? legacyPriceMap?.[product.sku] : undefined;
+  const legacyInventory = product.sku ? legacyInventoryMap?.[product.sku] : undefined;
 
-  const stock = Number(product.stock ?? 0);
+  const stock = Math.max(
+    0,
+    Number(legacyInventory?.stock ?? product.stock ?? 0) - Number(legacyInventory?.reserved_stock ?? 0),
+  );
   const inStock = stock > 0;
-  const maxQty = Math.max(1, stock);
+  const packSize = Math.max(1, Number(legacyInventory?.pack_size ?? 1));
+  const shownPrice = legacyPrice?.price ?? Number(product.price ?? 0);
+  const shownMrp = legacyPrice?.mrp ?? Number(product.mrp ?? 0);
+  const maxQty = Math.max(1, Math.floor(stock / packSize));
 
   const imagesQuery = useQuery({
     queryKey: ["quick-add-legacy-images", product.id, product.sku],
@@ -945,9 +969,9 @@ function LegacyQuickAddContent({
         </DialogHeader>
 
         <div className="mt-1.5 flex items-baseline gap-2">
-          <span className="text-lg font-bold">{inr(Number(product.price ?? 0))}</span>
-          {Number(product.mrp ?? 0) > Number(product.price ?? 0) && (
-            <span className="text-xs text-muted-foreground line-through">{inr(Number(product.mrp ?? 0))}</span>
+          <span className="text-lg font-bold">{inr(shownPrice)}</span>
+          {shownMrp > shownPrice && (
+            <span className="text-xs text-muted-foreground line-through">{inr(shownMrp)}</span>
           )}
         </div>
 
