@@ -109,6 +109,48 @@ test("selected 2x2 values generate exactly four combinations in selected axis or
   );
 });
 
+test("approved Main SKU is the only base used for all eight 2x2x2 generated variant SKUs", () => {
+  const variations = [
+    { name: "Watts", values: ["5W", "9W"] },
+    { name: "Output Colour", values: ["RED", "BLUE"] },
+    { name: "Pack Size", values: ["Pack of 6", "Pack of 12"] },
+  ];
+  const combinations = generateVariationCombinations(variations);
+  assert.equal(combinations.length, 8);
+  assert.deepEqual(
+    combinations.map((combo) => generateVariantSku("CL-NE", combo)),
+    [
+      "CL-NE-5W-RED-P6",
+      "CL-NE-5W-RED-P12",
+      "CL-NE-5W-BLUE-P6",
+      "CL-NE-5W-BLUE-P12",
+      "CL-NE-9W-RED-P6",
+      "CL-NE-9W-RED-P12",
+      "CL-NE-9W-BLUE-P6",
+      "CL-NE-9W-BLUE-P12",
+    ],
+  );
+
+  const bytes = createBulkProductWorkbook({
+    categoryId: "00000000-0000-0000-0000-000000000001",
+    categoryName: "Concealed Lights",
+    productName: "Nexa",
+    mainSku: "CL-NE",
+    brandName: "AURONA",
+    unit: "Pc",
+    modelName: "NEXA",
+    variations,
+    combinations,
+  });
+  const parsed = parseBulkProductWorkbook(bytes);
+  assert.equal(parsed.rows.length, 8);
+  for (const row of parsed.rows) {
+    assert.equal(bulkColumnValue(row.values, "main_sku"), "CL-NE");
+    assert.match(String(bulkColumnValue(row.values, "variant_sku")), /^CL-NE-/);
+    assert.doesNotMatch(String(bulkColumnValue(row.values, "variant_sku")), /^CL-NEXA-/);
+  }
+});
+
 test("generated Product Master workbook preserves all 70 master columns and round-trips exact selected rows", () => {
   const variations = [
     { name: "Watts", values: ["5W", "7W"] },
