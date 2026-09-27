@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
-import { generateVariantSku } from "@/lib/sku-generation";
+import { generateVariantSku, normalizeMainSku } from "@/lib/sku-generation";
 import { bulkColumnValue, PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
 
 const ImportRow = z.object({
@@ -24,6 +24,13 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
+
+const normalizeBulkCategoryName = (value: unknown) =>
+  String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("en-IN");
 
 export const adminPreviewCatalogImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -809,7 +816,7 @@ function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
     category_name: textCell(value("category_name")),
     product_name: textCell(value("product_name")),
     family_id: textCell(value("family_id")) || null,
-    main_sku: textCell(value("main_sku")).toUpperCase(),
+    main_sku: normalizeMainSku(textCell(value("main_sku"))),
     brand: textCell(value("brand")),
     unit: textCell(value("unit")),
     model: textCell(value("model")),
@@ -887,13 +894,18 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       (supabaseAdmin as any).from("referral_programs").select("id,name").eq("is_active", true),
     ]);
     for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
-    const categories = new Map((categoriesResult.data ?? []).map((x: any) => [String(x.name).toLowerCase(), x.id]));
+    const categories = new Map(
+      (categoriesResult.data ?? []).map((x: any) => [
+        normalizeBulkCategoryName(x.name),
+        { id: x.id, name: String(x.name) },
+      ]),
+    );
     const familiesBySku = new Map((familiesResult.data ?? []).map((x: any) => [String(x.main_sku).toUpperCase(), x]));
     const familiesById = new Map((familiesResult.data ?? []).map((x: any) => [String(x.id), x]));
     const variantsBySku = new Map((variantsResult.data ?? []).map((x: any) => [String(x.sku).toUpperCase(), x]));
     const variantsById = new Map((variantsResult.data ?? []).map((x: any) => [String(x.id), x]));
     const programs = new Set((programsResult.data ?? []).map((x: any) => String(x.name).toLowerCase()));
-    const metadataCategory = textCell(data.metadata.category_name).toLowerCase();
+    const metadataCategory = normalizeBulkCategoryName(data.metadata.category_name);
     let configuredVariations: Array<{ name: string; values: string[] }> = [];
     try {
       const raw = data.metadata.variation_configuration;
@@ -909,8 +921,11 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const previewRows = rows.map((row) => {
       const errors: string[] = [];
       if (!['create','update'].includes(row.function)) errors.push("Function must be Create or Update");
-      if (!categories.has(row.category_name.toLowerCase())) errors.push(`Unknown Product Category: ${row.category_name || "(blank)"}`);
-      if (metadataCategory && row.category_name.toLowerCase() !== metadataCategory) errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
+      const categoryKey = normalizeBulkCategoryName(row.category_name);
+      const resolvedCategory = categories.get(categoryKey);
+      if (!resolvedCategory) errors.push(`Unknown Product Category: ${row.category_name || "(blank)"}`);
+      else row.category_name = resolvedCategory.name;
+      if (metadataCategory && categoryKey !== metadataCategory) errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
       if (!row.product_name) errors.push("Product Name is required");
       if (!row.main_sku) errors.push("Main SKU is required");
       if (!row.variant_sku) errors.push("Variant SKU is required");
@@ -1010,7 +1025,45 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v2", { _rows: data.rows, _actor_user_id: actor.userId });
+
+    const categoriesResult = await (supabaseAdmin as any).from("categories").select("id,name");
+    if (categoriesResult.error) throw new Error(categoriesResult.error.message);
+    const categories = new Map(
+      (categoriesResult.data ?? []).map((row: any) => [
+        normalizeBulkCategoryName(row.name),
+        String(row.name),
+      ]),
+    );
+
+    const rows = data.rows.map((rawRow, index) => {
+      const row = { ...rawRow } as Record<string, unknown>;
+      const categoryKey = normalizeBulkCategoryName(row.category_name);
+      const categoryName = categories.get(categoryKey);
+      if (!categoryName) {
+        throw new Error(`Unknown Product Category at import row ${index + 1}: ${String(row.category_name ?? "(blank)")}`);
+      }
+      row.category_name = categoryName;
+
+      const mainSku = normalizeMainSku(String(row.main_sku ?? ""));
+      const axes = Array.isArray(row.variation_axes)
+        ? (row.variation_axes as Array<Record<string, unknown>>).map((axis) => ({
+            name: String(axis.name ?? "").trim(),
+            value: String(axis.value ?? "").trim(),
+          }))
+        : [];
+      const expectedSku = generateVariantSku(mainSku, axes);
+      const suppliedSku = String(row.variant_sku ?? "").trim().toUpperCase();
+      if (expectedSku !== suppliedSku) {
+        throw new Error(
+          `Variant SKU ${suppliedSku || "(blank)"} does not match Main SKU ${mainSku} and selected variation values. Expected ${expectedSku}.`,
+        );
+      }
+      row.main_sku = mainSku;
+      row.variant_sku = expectedSku;
+      return row;
+    });
+
+    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v2", { _rows: rows, _actor_user_id: actor.userId });
     if (error) throw new Error(error.message);
     await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email, action: "catalog.dynamic_bulk_import", entityType: "admin_import_batch", entityId: String(result?.batch_id ?? ""), after: result });
     return result;
