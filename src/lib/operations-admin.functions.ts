@@ -1044,6 +1044,7 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       if (row.excel_row === 4) {
         console.info("[bulk-import:row4]", {
           category: {
+            source: "categories",
             raw: textCell(bulkColumnValue(data.rows[0]?.values ?? [], "category_name")),
             normalized: normalizeBulkCategoryName(row.category_name),
             matchedCategoryId: resolvedCategory?.id ?? null,
