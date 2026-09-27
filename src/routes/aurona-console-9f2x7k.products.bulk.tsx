@@ -204,7 +204,7 @@ function OnlineGroupEditor({
                 <tr key={row.excelRow} className="border-t">
                   <td className="sticky left-0 z-10 border-r bg-white p-2 font-mono">{row.excelRow}</td>
                   {columns.map((column) => {
-                    const value = row.values[PRODUCT_MASTER_COLUMN_INDEX[column.key]] ?? "";
+                    const value = row.values[column.serial - 1] ?? "";
                     const readOnly = isOnlineReadOnlyKey(column.key);
                     return (
                       <td key={column.key} className="border-r p-1.5">
