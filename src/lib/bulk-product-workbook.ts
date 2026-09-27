@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { generateVariantSku, variantName, type VariationSelection } from "./sku-generation";
+import { generateVariantSku, normalizeMainSku, variantName, type VariationSelection } from "./sku-generation";
 import {
   PRODUCT_MASTER_COLUMNS,
   PRODUCT_MASTER_COLUMN_INDEX,
@@ -60,6 +60,7 @@ const PRODUCT_MASTER_MERGES = [
 
 export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   if (config.variations.length > 3) throw new Error("The supplied template supports up to three variation slots.");
+  const mainSku = normalizeMainSku(config.mainSku);
   const rows = config.combinations.map((combination, index) => {
     const values = Array(PRODUCT_MASTER_COLUMNS.length).fill("");
     const set = (key: keyof typeof PRODUCT_MASTER_COLUMN_INDEX, value: unknown) => {
@@ -71,12 +72,12 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     set("function", "Create");
     set("category_name", config.categoryName);
     set("product_name", config.productName);
-    set("main_sku", config.mainSku);
+    set("main_sku", mainSku);
     set("brand", config.brandName || "AURONA");
     set("unit", config.unit || "Pc");
     set("model", config.modelName || "");
     set("variant_name", variantName(combination));
-    set("variant_sku", generateVariantSku(config.mainSku, combination));
+    set("variant_sku", generateVariantSku(mainSku, combination));
 
     combination.slice(0, 3).forEach((selection, slot) => {
       const nameKey = `variation_${slot + 1}_name` as keyof typeof PRODUCT_MASTER_COLUMN_INDEX;
@@ -96,7 +97,7 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   ws["!merges"] = PRODUCT_MASTER_MERGES;
   const metadata = XLSX.utils.aoa_to_sheet([
     ["template_version", BULK_TEMPLATE_VERSION], ["category_id", config.categoryId], ["category_name", config.categoryName],
-    ["main_sku", config.mainSku], ["variation_configuration", JSON.stringify(config.variations)],
+    ["main_sku", mainSku], ["variation_configuration", JSON.stringify(config.variations)],
     ["generated_at", new Date().toISOString()],
   ]);
   const wb = XLSX.utils.book_new();
