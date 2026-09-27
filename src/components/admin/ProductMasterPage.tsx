@@ -830,28 +830,19 @@ export function ProductMaster() {
   };
 
   const exportView = async () => {
-    if (!shownFamilies.length) {
-      toast.error("No products are visible to export.");
+    if (!categoryId) {
+      toast.error("Please select a category to export.");
       return;
     }
     try {
       const result = await adminExportProductMasterRows({
-        data: { familyIds: shownFamilies.map((family) => family.id) },
+        data: { categoryId },
       });
-      const exportFamilies = shownFamilies.map((visibleFamily) => {
-        const storedFamily = result.families.find((family) => family.id === visibleFamily.id);
-        return {
-          ...visibleFamily,
-          ...storedFamily,
-          // The Product Master grid is already showing these variants. Use them
-          // if the supplemental export query returned no variant records.
-          variants: storedFamily?.variants?.length
-            ? storedFamily.variants
-            : visibleFamily.variants,
-          axes: storedFamily?.axes?.length ? storedFamily.axes : visibleFamily.axes,
-        };
-      });
-      const bytes = await createProductMasterExport({ ...result, families: exportFamilies });
+      if (!result.families.some((family) => family.variants.length)) {
+        toast.error("No product variants found in this category to export.");
+        return;
+      }
+      const bytes = await createProductMasterExport(result);
       const blob = new Blob([bytes as BlobPart], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
@@ -1532,14 +1523,13 @@ function FamilyRows({
                       )}
                     </Button>
                     <Button
-                      size="sm"
-                      variant="destructive"
-                      className="gap-1 px-2"
-                      aria-label="Delete product (archive)"
-                      title="Delete product (archive; can be restored)"
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Archive family"
+                      title="Temporarily delete (archive)"
                       onClick={() => onState("archive")}
                     >
-                      <Trash2 className="h-4 w-4" /> Delete
+                      <Archive className="h-4 w-4" />
                     </Button>
                   </>
                 )}
@@ -1753,7 +1743,7 @@ function MasterCell({
               </Button>
             </>
           ) : (
-            <Button size="icon" variant="ghost" aria-label="Delete SKU (archive)" title="Delete SKU (archive; can be restored)" onClick={() => onVariantState("archive")}>
+            <Button size="icon" variant="ghost" aria-label="Archive SKU" title="Archive SKU" onClick={() => onVariantState("archive")}>
               <Archive className="h-4 w-4" />
             </Button>
           )}
