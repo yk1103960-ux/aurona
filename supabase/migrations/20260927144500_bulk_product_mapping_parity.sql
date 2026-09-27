@@ -49,6 +49,10 @@ BEGIN
       barcode = COALESCE(NULLIF(btrim(item->>'barcode'), ''), barcode),
       retailer_discount_pct = COALESCE(NULLIF(item->>'retailer_discount', '')::numeric, retailer_discount_pct),
       distributor_discount_pct = COALESCE(NULLIF(item->>'distributor_discount', '')::numeric, distributor_discount_pct),
+      is_active = CASE
+        WHEN NULLIF(btrim(item->>'active_status'), '') IS NULL THEN is_active
+        ELSE lower(btrim(item->>'active_status')) IN ('true','active','yes','1')
+      END,
       attributes = extra_attrs || COALESCE(item->'attributes', '{}'::jsonb),
       updated_at = now()
     WHERE family_id = fam_id
