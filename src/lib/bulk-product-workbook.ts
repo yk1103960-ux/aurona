@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
-import { generateVariantSku, normalizeMainSku, variantName, type VariationSelection } from "./sku-generation";
+import { normalizeMainSku, variantName, type VariationSelection } from "./sku-generation";
+import { expectedBulkVariantSku } from "./bulk-product-identity";
 import {
   PRODUCT_MASTER_COLUMNS,
   PRODUCT_MASTER_COLUMN_INDEX,
@@ -77,7 +78,7 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     set("unit", config.unit || "Pc");
     set("model", config.modelName || "");
     set("variant_name", variantName(combination));
-    set("variant_sku", generateVariantSku(mainSku, combination));
+    set("variant_sku", expectedBulkVariantSku(mainSku, combination));
 
     combination.slice(0, 3).forEach((selection, slot) => {
       const nameKey = `variation_${slot + 1}_name` as keyof typeof PRODUCT_MASTER_COLUMN_INDEX;
