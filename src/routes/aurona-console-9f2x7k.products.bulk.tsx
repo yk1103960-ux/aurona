@@ -21,11 +21,11 @@ import {
   type ProductMasterColumnKey,
 } from "@/lib/bulk-product-columns";
 import {
-  generateVariantSku,
   generateVariationCombinations,
   normalizeMainSku,
   variantName,
 } from "@/lib/sku-generation";
+import { expectedBulkVariantSku } from "@/lib/bulk-product-identity";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/bulk")({
   component: BulkCatalog,
@@ -325,7 +325,7 @@ function BulkCatalog() {
       set("unit", unit.trim() || "Pc");
       set("model", modelName.trim());
       set("variant_name", variantName(combination));
-      set("variant_sku", generateVariantSku(normalizeMainSku(mainSku), combination));
+      set("variant_sku", expectedBulkVariantSku(normalizeMainSku(mainSku), combination));
       combination.slice(0, 3).forEach((selection, slot) => {
         const nameKey = (`variation_${slot + 1}_name`) as ProductMasterColumnKey;
         const valueKey = (`variation_${slot + 1}_value`) as ProductMasterColumnKey;
@@ -836,11 +836,11 @@ function BulkCatalog() {
                 </thead>
                 <tbody>
                   {combinations.map((combination, index) => (
-                    <tr key={generateVariantSku(mainSku || "SKU", combination)} className="border-t">
+                    <tr key={expectedBulkVariantSku(mainSku || "SKU", combination)} className="border-t">
                       <td className="p-2">{index + 1}</td>
                       <td className="p-2">{variantName(combination)}</td>
                       <td className="p-2 font-mono">
-                        {mainSku.trim() ? generateVariantSku(mainSku, combination) : "Enter Main SKU"}
+                        {mainSku.trim() ? expectedBulkVariantSku(mainSku, combination) : "Enter Main SKU"}
                       </td>
                     </tr>
                   ))}
