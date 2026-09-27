@@ -648,7 +648,10 @@ export function VariantEditor({
       toast.error(error instanceof Error ? error.message : "Review your variation details.");
       return null;
     }
-    const snapshot = synchronizedRows;
+    // Archived variants are managed by the explicit Restore/Delete lifecycle.
+    // Submitting them to admin_save_variant_matrix_v3 would fail because that
+    // routine intentionally accepts only non-archived rows.
+    const snapshot = synchronizedRows.filter((row) => !row.archived_at);
     const pending = photoDrafts;
     setSaving(true);
     let committed = false;
