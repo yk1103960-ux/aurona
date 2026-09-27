@@ -315,7 +315,7 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     let query = (supabaseAdmin as any)
       .from("product_families")
       .select(
-        "id, legacy_product_id, name, main_sku, slug, brand, category_id, model, wattage, color_temp, size, body_type, min_price, max_price, min_mrp, max_mrp, is_published, is_featured, is_bestseller, archived_at, updated_at, total_stock, categories(id,name)",
+        "*,categories(id,name)",
         { count: "exact" },
       );
     if (matchedIds) query = query.in("id", matchedIds);
@@ -377,7 +377,27 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     if (axes.error) throw new Error(axes.error.message);
     if (images.error) throw new Error(images.error.message);
 
+    const legacyIds = (familyRows ?? []).map((family: any) => family.legacy_product_id).filter(Boolean);
+    const variantIds = (variants.data ?? []).map((variant: any) => variant.id).filter(Boolean);
+    const [legacyResult, commissionResult] = await Promise.all([
+      legacyIds.length
+        ? (supabaseAdmin as any).from("products").select("*").in("id", legacyIds)
+        : Promise.resolve({ data: [], error: null }),
+      variantIds.length
+        ? (supabaseAdmin as any).from("variant_program_commissions").select("*").in("variant_id", variantIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (legacyResult.error) throw new Error(legacyResult.error.message);
+    if (commissionResult.error) throw new Error(commissionResult.error.message);
+    const programIds = [...new Set((commissionResult.data ?? []).map((item: any) => item.program_id).filter(Boolean))];
+    const programResult = programIds.length
+      ? await (supabaseAdmin as any).from("referral_programs").select("id,name").in("id", programIds)
+      : { data: [], error: null };
+    if (programResult.error) throw new Error(programResult.error.message);
+
     return {
+      commissions: commissionResult.data ?? [],
+      programs: programResult.data ?? [],
       count: count ?? 0,
       families: (familyRows ?? []).map((family: any) => {
         const familyVariants = (variants.data ?? [])
@@ -408,6 +428,7 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
         const price = range("price");
         return {
           ...family,
+          legacy: (legacyResult.data ?? []).find((item: any) => item.id === family.legacy_product_id) ?? null,
           min_mrp: mrp?.min ?? family.min_mrp,
           max_mrp: mrp?.max ?? family.max_mrp,
           min_price: price?.min ?? family.min_price,
