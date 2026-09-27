@@ -132,8 +132,12 @@ const variantCombinationKey = (row: Variant, axes: Axis[]) =>
     .map((axis) => `${axis.axis_key}=${normalizeOptionValue(row.attributes?.[axis.axis_key])}`)
     .join("||");
 
-const variantMatchesCurrentAxes = (row: Variant, axes: Axis[]) => {
-  if (row.archived_at) return false;
+const variantMatchesCurrentAxes = (
+  row: Variant,
+  axes: Axis[],
+  options: { includeArchived?: boolean } = {},
+) => {
+  if (row.archived_at && !options.includeArchived) return false;
   if (!axes.length) return true;
 
   const attrs = row.attributes ?? {};
@@ -328,6 +332,9 @@ export function VariantEditor({
   const family = q.data?.family;
   const axes = axisRows;
   const currentRows = selectCurrentVariantRows(rows, axes);
+  const archivedCurrentRows = rows.filter(
+    (row) => Boolean(row.archived_at) && variantMatchesCurrentAxes(row, axes, { includeArchived: true }),
+  );
   axisOrder.keys = axes.map((axis) => axis.axis_key);
 
   if (q.isLoading) {
@@ -967,6 +974,7 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={currentRows}
+            archivedRows={archivedCurrentRows}
             axes={axes}
             productSlug={productSlug}
             busy={busy}
@@ -1043,6 +1051,7 @@ export function VariantEditor({
 
 function QuickVariantsTab({
   rows,
+  archivedRows,
   axes,
   productSlug,
   busy,
@@ -1055,6 +1064,7 @@ function QuickVariantsTab({
   optionsEditor,
 }: {
   rows: Variant[];
+  archivedRows: Variant[];
   axes: Axis[];
   productSlug?: string;
   busy: boolean;
@@ -1223,6 +1233,49 @@ function QuickVariantsTab({
             </tbody>
           </table>
         </div>
+      )}
+
+      {archivedRows.length > 0 && (
+        <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+            Archived variants · {archivedRows.length}
+          </summary>
+          <div className="mt-3 space-y-2">
+            {archivedRows.map((row) => (
+              <div
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
+              >
+                <div>
+                  <div className="font-medium text-slate-900">{variantName(row)}</div>
+                  <div className="mt-0.5 font-mono text-xs text-slate-500">{row.sku}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => restoreVariant(row)}
+                  >
+                    <RotateCcw className="mr-1 h-4 w-4" />
+                    Restore
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    disabled={busy}
+                    onClick={() => deleteVariantPermanently(row)}
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Delete Permanently
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
     </div>
   );
