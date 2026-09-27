@@ -26,23 +26,7 @@ export function productMasterExportRows(data: ExportData) {
   for (const family of families) {
     const axes = [...family.axes].sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
     const legacy = family.legacy ?? {};
-    // Some legacy products have a Product Master family row but have not been
-    // materialised as product_variants. Export that stored family as one row
-    // rather than returning a workbook with headers only.
-    const variants = family.variants.length ? family.variants : [{
-      id: "",
-      sku: family.main_sku,
-      attributes: {},
-      mrp: family.min_mrp ?? family.mrp ?? legacy.mrp,
-      price: family.min_price ?? family.price ?? legacy.price,
-      stock: legacy.stock ?? family.total_stock ?? family.stock,
-      is_active: family.is_published,
-      weight_g: family.weight_g ?? legacy.weight_g,
-      dim_l: family.dim_l ?? legacy.dim_l,
-      dim_w: family.dim_w ?? legacy.dim_w,
-      dim_h: family.dim_h ?? legacy.dim_h,
-      pack_size: family.pack_size ?? legacy.pack_size,
-    }];
+    const variants = family.variants.filter((variant) => variant.id && String(variant.sku ?? "").trim());
     for (const variant of variants) {
       const values: Array<string | number | boolean> = Array(columns.length).fill("");
       const set = (key: ProductMasterColumnKey, value: unknown) => {
@@ -123,14 +107,14 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
     const source = styleByKey[column.key] ?? variationStyle(column.key);
     const reference = templateStyles.columns[source];
     sheet.getColumn(index + 1).width = reference.width;
-    for (let row = 1; row <= 4; row += 1) {
+    for (let row = 1; row <= 3; row += 1) {
       sheet.getCell(row, index + 1).style = structuredClone(reference.styles[row - 1]) as unknown as ExcelJS.Style;
     }
     sheet.getCell(1, index + 1).value = column.topHeader || null;
     sheet.getCell(2, index + 1).value = column.detailHeader || null;
     sheet.getCell(3, index + 1).value = column.serial;
   });
-  templateStyles.rowHeights.forEach((height, i) => { sheet.getRow(i + 1).height = height; });
+  templateStyles.rowHeights.slice(0, 3).forEach((height, i) => { sheet.getRow(i + 1).height = height; });
   let index = 0;
   while (index < columns.length) {
     const group = columns[index].group;
@@ -150,7 +134,9 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
     values.forEach((value, columnIndex) => {
       const cell = row.getCell(columnIndex + 1);
       cell.value = value === "" ? null : value;
-      cell.style = structuredClone(sheet.getCell(4, columnIndex + 1).style) as ExcelJS.Style;
+      const styleKey = columns[columnIndex].key;
+      const source = styleByKey[styleKey] ?? variationStyle(styleKey);
+      cell.style = structuredClone(templateStyles.columns[source].styles[3]) as ExcelJS.Style;
     });
   });
   return new Uint8Array(await workbook.xlsx.writeBuffer());
