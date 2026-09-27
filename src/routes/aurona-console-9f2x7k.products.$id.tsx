@@ -883,7 +883,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               priceSegment="retailer"
               workflowSegment="retailer"
               title="Price & Stock for Retailer"
-              text="Use the existing shared SKU combinations to set independent Retailer pricing and Retailer package dimensions. Create or change shared variations only in Price & Stock for Customers."
+              text="Step 1: Create Product Variations using shared SKUs. Step 2: Retailer Price & Stock. Step 3: Weight & Dimensions with independent Retailer package details."
             />
           )}
 
@@ -899,7 +899,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
               priceSegment="distributor"
               workflowSegment="distributor"
               title="Price & Stock for Distributor"
-              text="Use the existing shared SKU combinations to set independent Distributor pricing and Distributor package dimensions. Create or change shared variations only in Price & Stock for Customers."
+              text="Step 1: Create Product Variations using shared SKUs. Step 2: Distributor Price & Stock. Step 3: Weight & Dimensions with independent Distributor package details."
             />
           )}
 
