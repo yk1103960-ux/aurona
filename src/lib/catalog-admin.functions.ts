@@ -167,7 +167,7 @@ export const adminListProductFamilies = createServerFn({ method: "POST" })
       query = query.or(
         `name.ilike.%${data.search}%,main_sku.ilike.%${data.search}%,slug.ilike.%${data.search}%`,
       );
-    if (data.categoryId) query = query.eq("category_id", categoryId);
+    if (data.categoryId) query = query.eq("category_id", data.categoryId);
     if (data.brand) query = query.eq("brand", data.brand);
     if (data.publication === "archived") query = query.not("archived_at", "is", null);
     else {
@@ -455,7 +455,7 @@ export const adminExportProductMasterRows = createServerFn({ method: "POST" })
     for (let start = 0; ; start += 500) {
       const result = await db.from("product_families")
         .select("*,categories(id,name)")
-        .eq("category_id", data.categoryId)
+        .eq("category_id", categoryId)
         .is("archived_at", null)
         .order("id")
         .range(start, start + 499);
