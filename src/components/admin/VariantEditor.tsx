@@ -312,19 +312,28 @@ export function VariantEditor({
         data: { familyId: familyId ?? null, productId, productSku },
       });
 
-      return {
-        family: result.family,
-        variants: (result.variants ?? []).map((row: Partial<Variant>) => ({
-          ...row,
-          barcode: row.barcode ?? "",
-          expected_stock: Number(row.stock ?? 0),
-        })) as Variant[],
-        axes: hydrateSavedAxes(
-          (result.axes ?? []) as Axis[],
-          (result.variants ?? []) as Variant[],
-          result.family as Record<string, unknown> | null,
-        ),
-      };
+      const variants = (result.variants ?? []).map((row: Partial<Variant>) => ({
+        ...row,
+        barcode: row.barcode ?? "",
+        expected_stock: Number(row.stock ?? 0),
+      })) as Variant[];
+      const axes = hydrateSavedAxes(
+        (result.axes ?? []) as Axis[], variants,
+        result.family as Record<string, unknown> | null,
+      );
+      // A legacy product may have one SKU with values saved only on its family.
+      // Prefill that one editor row when every saved option has one unambiguous value.
+      const displayedVariants = variants.length === 1 && axes.every((axis) => axis.values.length === 1)
+        ? variants.map((variant) => ({
+            ...variant,
+            attributes: {
+              ...variant.attributes,
+              ...Object.fromEntries(axes.filter((axis) => !variant.attributes?.[axis.axis_key])
+                .map((axis) => [axis.axis_key, axis.values[0]])),
+            },
+          }))
+        : variants;
+      return { family: result.family, variants: displayedVariants, axes };
     },
   });
 
