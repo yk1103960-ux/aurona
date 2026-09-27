@@ -114,6 +114,30 @@ export function optionToken(value: string, optionName = ""): string {
   return genericToken(raw);
 }
 
+/** Exact token rule historically used by Create/Edit Product variation generation. */
+export function createProductOptionToken(value: string): string {
+  const pack = value.trim().match(/^pack\s*(?:of)?\s*(\d+)$/i);
+  if (pack) return `P${pack[1]}`;
+  const token = value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24);
+  if (!token) throw new Error(`Variation value "${value}" has no usable SKU token.`);
+  return token;
+}
+
+/** Exact Create Product variant SKU rule: Main SKU + option values in selected order. */
+export function generateCreateProductVariantSku(
+  mainSku: string,
+  selection: VariationSelection[],
+): string {
+  const base = normalizeMainSku(mainSku);
+  const suffix = selection.map((item) => createProductOptionToken(item.value)).join("-");
+  return suffix ? `${base}-${suffix}` : base;
+}
+
 /** Display name for a combination, values joined in selection order. */
 export function variantName(selection: VariationSelection[]): string {
   return selection.map((item) => item.value).join(" / ");
