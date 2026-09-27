@@ -880,6 +880,28 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       for (const [field, value] of Object.entries(row)) {
         if ((field.includes('price') || field.includes('stock') || field.includes('dim_') || field.includes('pack_') || field === 'mrp' || field.includes('moq')) && typeof value === 'number' && (!Number.isFinite(value) || value < 0)) errors.push(`${field} must be a valid non-negative number`);
       }
+      if (row.attributes_json) {
+        try {
+          const parsedAttributes = JSON.parse(row.attributes_json);
+          if (!parsedAttributes || Array.isArray(parsedAttributes) || typeof parsedAttributes !== "object") {
+            errors.push("attributes_json must be a JSON object");
+          }
+        } catch {
+          errors.push("attributes_json must contain valid JSON");
+        }
+      }
+      for (const [label, discount] of [
+        ["Customer", row.customer_discount],
+        ["Retailer", row.retailer_discount],
+        ["Distributor", row.distributor_discount],
+      ] as const) {
+        if (discount != null && discount > 100) errors.push(`${label} Discount cannot exceed 100`);
+      }
+      if (row.frequently_bought_category) {
+        errors.push(
+          "Frequently Bought Category is not auto-imported because Frequently Bought Together is admin-selected products only. Leave this column blank and select products in the product editor.",
+        );
+      }
       if (row.commission_program && !programs.has(row.commission_program.toLowerCase())) errors.push(`Unknown Partner Program: ${row.commission_program}`);
       if (row.commission_type && !['percentage','fixed'].includes(row.commission_type)) errors.push("Commission Type must be Percentage or Fixed");
       if (row.commission_type === 'percentage' && row.commission_value != null && row.commission_value > 100) errors.push("Percentage commission cannot exceed 100");
@@ -915,7 +937,7 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v1", { _rows: data.rows, _actor_user_id: actor.userId });
+    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v2", { _rows: data.rows, _actor_user_id: actor.userId });
     if (error) throw new Error(error.message);
     await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email, action: "catalog.dynamic_bulk_import", entityType: "admin_import_batch", entityId: String(result?.batch_id ?? ""), after: result });
     return result;
