@@ -1134,6 +1134,24 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
       })),
     );
 
+    // Update rows may carry existing approved SKUs that predate the current generator.
+    // Verify their identity against the database instead of rewriting those SKUs.
+    const hasUpdates = data.rows.some((row) => String(row.function ?? "").trim().toLowerCase() === "update");
+    const [familiesResult, variantsResult] = hasUpdates
+      ? await Promise.all([
+          (supabaseAdmin as any).from("product_families").select("id,main_sku"),
+          (supabaseAdmin as any).from("product_variants").select("id,sku,family_id"),
+        ])
+      : [{ data: [], error: null }, { data: [], error: null }];
+    if (familiesResult.error) throw new Error(familiesResult.error.message);
+    if (variantsResult.error) throw new Error(variantsResult.error.message);
+    const familiesBySku = new Map<string, { id: string }>(
+      (familiesResult.data ?? []).map((family: any) => [String(family.main_sku).toUpperCase(), family]),
+    );
+    const variantsBySku = new Map<string, { id: string; family_id: string }>(
+      (variantsResult.data ?? []).map((variant: any) => [String(variant.sku).toUpperCase(), variant]),
+    );
+
     const rows = data.rows.map((rawRow, index) => {
       const row = { ...rawRow } as Record<string, unknown>;
       const categoryRecord = resolveBulkCategory(categoryLookups, row.category_name);
@@ -1151,15 +1169,31 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
             value: String(axis.value ?? "").trim(),
           }))
         : [];
-      const expectedSku = expectedBulkVariantSku(mainSku, axes);
       const suppliedSku = String(row.variant_sku ?? "").trim().toUpperCase();
-      if (expectedSku !== suppliedSku) {
-        throw new Error(
-          `Variant SKU ${suppliedSku || "(blank)"} does not match Main SKU ${mainSku} and selected variation values. Expected ${expectedSku}.`,
-        );
+      const action = String(row.function ?? "").trim().toLowerCase();
+      if (!mainSku || !suppliedSku || !axes.length || axes.some((axis) => !axis.name || !axis.value)) {
+        throw new Error(`Import row ${index + 1} needs a Main SKU, Variant SKU and complete variation values.`);
+      }
+      if (action === "create") {
+        const expectedSku = expectedBulkVariantSku(mainSku, axes);
+        if (expectedSku !== suppliedSku) {
+          throw new Error(
+            `Variant SKU ${suppliedSku} does not match Main SKU ${mainSku} and selected variation values. Expected ${expectedSku}.`,
+          );
+        }
+      } else if (action === "update") {
+        const family = familiesBySku.get(mainSku);
+        const variant = variantsBySku.get(suppliedSku);
+        if (!family || !variant || variant.family_id !== family.id ||
+            (row.family_id && String(row.family_id) !== family.id) ||
+            (row.variant_id && String(row.variant_id) !== variant.id)) {
+          throw new Error(`Import row ${index + 1}: Variant SKU ${suppliedSku} does not belong to Main SKU ${mainSku}.`);
+        }
+      } else {
+        throw new Error(`Import row ${index + 1}: Function must be Create or Update.`);
       }
       row.main_sku = mainSku;
-      row.variant_sku = expectedSku;
+      row.variant_sku = suppliedSku;
       return row;
     });
 
