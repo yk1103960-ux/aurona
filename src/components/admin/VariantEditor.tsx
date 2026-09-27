@@ -1214,18 +1214,6 @@ function QuickVariantsTab({
                         </Button>
                       )}
 
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="destructive"
-                        disabled={busy}
-                        onClick={() => deleteVariantPermanently(row)}
-                        title="Delete variant permanently"
-                        aria-label={`Permanently delete variant ${row.sku}`}
-                        className="h-10 w-10 shadow-sm"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </Td>
                 </tr>
