@@ -65,7 +65,7 @@ export const PRODUCT_MASTER_COLUMNS = [
   { serial: 60, key: "distributor_pack_w", topHeader: "", detailHeader: "Distributor’s Package’s Width", group: "Distributor Details", productManagerField: "product_variants.distributor_pack_w" },
   { serial: 61, key: "distributor_pack_h", topHeader: "", detailHeader: "Distributor’s Package’s Height", group: "Distributor Details", productManagerField: "product_variants.distributor_pack_h" },
 
-  { serial: 62, key: "commission_program", topHeader: "Commission Details", detailHeader: "Commission Set on", group: "Commission Details", productManagerField: "referral_programs.name → variant_program_commissions.program_id" },
+  { serial: 62, key: "commission_program", topHeader: "Commission Details", detailHeader: "Commission Set on", group: "Commission Details", productManagerField: "Product Manager commission grouping: All Variants / selected variation axis; existing partner program name remains supported" },
   { serial: 63, key: "commission_type", topHeader: "", detailHeader: "Commission Type", group: "Commission Details", productManagerField: "variant_program_commissions.commission_kind" },
   { serial: 64, key: "commission_value", topHeader: "", detailHeader: "Commission Value", group: "Commission Details", productManagerField: "variant_program_commissions.commission_value" },
   { serial: 65, key: "max_commission", topHeader: "", detailHeader: "Max commission", group: "Commission Details", productManagerField: "variant_program_commissions.max_commission" },
