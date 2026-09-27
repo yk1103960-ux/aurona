@@ -956,6 +956,41 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
         "Variant save requires the unapplied 20260908130000_variant_save_safety.sql migration. No variant changes were saved. Authorize database setup before retrying.",
       );
     if (error) throw new Error(error.message);
+
+    // v3 persists the shared/customer matrix. Buyer-channel columns were added
+    // later, so save those on the same canonical SKU rows before reporting success.
+    for (const variant of reconciledVariants) {
+      const { data: channelRows, error: channelError } = await (supabaseAdmin as any)
+        .from("product_variants")
+        .update({
+          retailer_mrp: variant.retailer_mrp,
+          retailer_price: variant.retailer_price,
+          retailer_discount_pct: variant.retailer_discount_pct,
+          retailer_stock: variant.retailer_stock,
+          retailer_pack_size: variant.retailer_pack_size,
+          retailer_pack_weight_g: variant.retailer_pack_weight_g,
+          retailer_pack_l: variant.retailer_pack_l,
+          retailer_pack_w: variant.retailer_pack_w,
+          retailer_pack_h: variant.retailer_pack_h,
+          distributor_mrp: variant.distributor_mrp,
+          distributor_price: variant.distributor_price,
+          distributor_discount_pct: variant.distributor_discount_pct,
+          distributor_stock: variant.distributor_stock,
+          distributor_pack_size: variant.distributor_pack_size,
+          distributor_pack_weight_g: variant.distributor_pack_weight_g,
+          distributor_pack_l: variant.distributor_pack_l,
+          distributor_pack_w: variant.distributor_pack_w,
+          distributor_pack_h: variant.distributor_pack_h,
+        })
+        .eq("family_id", data.familyId)
+        .eq("sku", variant.sku.trim().toUpperCase())
+        .select("id");
+      if (channelError) throw new Error(channelError.message);
+      if ((channelRows?.length ?? 0) !== 1) {
+        throw new Error(`Buyer pricing/stock could not be matched to SKU ${variant.sku}. Reload before retrying.`);
+      }
+    }
+
     const segments = await (supabaseAdmin as any).rpc("admin_set_variant_segments", {
       _family_id: data.familyId,
       _segments: reconciledVariants.map((variant) => ({
@@ -1014,7 +1049,7 @@ export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
       }
       if (error) throw new Error(error.message);
       for (const variant of family.variants) {
-        const { error: channelError } = await (supabaseAdmin as any)
+        const { data: channelRows, error: channelError } = await (supabaseAdmin as any)
           .from("product_variants")
           .update({
             retailer_mrp: variant.retailer_mrp,
@@ -1022,18 +1057,30 @@ export const adminSaveProductMasterRows = createServerFn({ method: "POST" })
             retailer_discount_pct: variant.retailer_discount_pct,
             retailer_stock: variant.retailer_stock,
             retailer_pack_size: variant.retailer_pack_size,
+            retailer_pack_weight_g: variant.retailer_pack_weight_g,
+            retailer_pack_l: variant.retailer_pack_l,
+            retailer_pack_w: variant.retailer_pack_w,
+            retailer_pack_h: variant.retailer_pack_h,
             distributor_mrp: variant.distributor_mrp,
             distributor_price: variant.distributor_price,
             distributor_discount_pct: variant.distributor_discount_pct,
             distributor_stock: variant.distributor_stock,
             distributor_pack_size: variant.distributor_pack_size,
+            distributor_pack_weight_g: variant.distributor_pack_weight_g,
+            distributor_pack_l: variant.distributor_pack_l,
+            distributor_pack_w: variant.distributor_pack_w,
+            distributor_pack_h: variant.distributor_pack_h,
             available_customer: variant.available_customer,
             available_retailer: variant.available_retailer,
             available_distributor: variant.available_distributor,
           })
           .eq("family_id", family.familyId)
-          .eq("sku", variant.sku.trim().toUpperCase());
+          .eq("sku", variant.sku.trim().toUpperCase())
+          .select("id");
         if (channelError) throw new Error(channelError.message);
+        if ((channelRows?.length ?? 0) !== 1) {
+          throw new Error(`Buyer pricing/stock could not be matched to SKU ${variant.sku}. Reload before retrying.`);
+        }
       }
     }
 
