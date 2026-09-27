@@ -1108,16 +1108,16 @@ export function ProductMaster() {
         role="region"
         aria-label="Product Master table. Scroll horizontally and vertically to view all columns and rows."
       >
-        <table className="w-max min-w-full border-collapse text-xs">
+        <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
           <colgroup>
             <col style={{ width: 44, minWidth: 44, maxWidth: 44 }} />
             {columns.map((column) => (
               <col key={column.key} style={{ width: widths[column.key] ?? column.width }} />
             ))}
           </colgroup>
-          <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-600">
+          <thead className="sticky top-0 z-[70] bg-slate-100 text-[11px] uppercase tracking-wide text-slate-600">
             <tr>
-              <th className="sticky left-0 top-0 z-[60] w-[44px] min-w-[44px] max-w-[44px] border-b border-r bg-slate-100 p-0 text-center shadow-[0_1px_0_0_rgb(226_232_240)]">
+              <th className="sticky left-0 top-0 z-[100] w-[44px] min-w-[44px] max-w-[44px] border-b border-r bg-slate-100 p-0 text-center shadow-[0_1px_0_0_rgb(226_232_240)]">
                 <input
                   type="checkbox"
                   aria-label="Select visible SKUs"
@@ -1307,7 +1307,7 @@ function MasterHead({
 }) {
   return (
     <th
-      className={`sticky top-0 ${column.key === "family" ? "left-[44px] z-[55]" : "z-50"} border-b border-r bg-slate-100 px-2 py-3 text-left font-semibold shadow-[0_1px_0_0_rgb(226_232_240)]`}
+      className={`sticky top-0 ${column.key === "family" ? "left-[44px] z-[95]" : "z-[80]"} border-b border-r bg-slate-100 px-2 py-3 text-left font-semibold shadow-[0_1px_0_0_rgb(226_232_240)]`}
       style={{ width }}
     >
       {column.label}
