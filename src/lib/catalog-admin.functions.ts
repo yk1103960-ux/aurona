@@ -444,6 +444,16 @@ export const adminExportProductMasterRows = createServerFn({ method: "POST" })
     for (const result of [families, variants, axes]) {
       if (result.error) throw new Error(result.error.message);
     }
+    const legacyIds = (families.data ?? [])
+      .filter((family: any) =>
+        family.legacy_product_id &&
+        !(variants.data ?? []).some((variant: any) => variant.family_id === family.id),
+      )
+      .map((family: any) => family.legacy_product_id);
+    const legacy = legacyIds.length
+      ? await db.from("products").select("*").in("id", legacyIds)
+      : { data: [], error: null };
+    if (legacy.error) throw new Error(legacy.error.message);
     const variantIds = (variants.data ?? []).map((row: any) => row.id);
     const commissions = variantIds.length
       ? await db.from("variant_program_commissions").select("*").in("variant_id", variantIds)
@@ -460,6 +470,7 @@ export const adminExportProductMasterRows = createServerFn({ method: "POST" })
         return family
           ? [{
               ...family,
+              legacy: (legacy.data ?? []).find((item: any) => item.id === family.legacy_product_id) ?? null,
               variants: (variants.data ?? []).filter((item: any) => item.family_id === id),
               axes: (axes.data ?? []).filter((item: any) => item.family_id === id),
             }]
