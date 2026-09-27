@@ -207,7 +207,7 @@ export function variationIssues(row: Variant, rows: Variant[], axes: Axis[]): st
   ] as const) {
     const value = row[key];
     if (
-      value != null &&
+      value !== null &&
       (!Number.isInteger(value) ||
         value <
           (["stock", "retailer_stock", "distributor_stock", "low_stock_threshold", "sort_order"].includes(key)

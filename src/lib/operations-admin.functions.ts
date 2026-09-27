@@ -726,12 +726,7 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
     for (const family of families.data ?? []) {
       const categoryId = String((family as any).category_id ?? "");
       if (!categoryId) continue;
-      const categoryAxes =
-        byCategory.get(categoryId) ??
-        new Map<
-          string,
-          { id: string; axisKey: string; name: string; values: string[]; sortOrder: number }
-        >();
+      const categoryAxes = byCategory.get(categoryId) ?? new Map();
       for (const axis of ((family as any).axes ?? []) as Array<{
         axis_key?: string;
         label?: string;
