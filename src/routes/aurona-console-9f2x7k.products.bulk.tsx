@@ -918,7 +918,7 @@ function BulkCatalog() {
           <div className="space-y-3">
             {ONLINE_GROUPS.map((group) => {
               const columns = activeColumns.filter((column) =>
-                group.groups.includes(column.group as any),
+                (group.groups as readonly string[]).includes(column.group),
               );
               return (
                 <OnlineGroupEditor
