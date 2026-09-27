@@ -1785,7 +1785,7 @@ function GroupCommissionPanel({
               value={programId}
               onChange={(event) => setProgramId(event.target.value)}
             >
-              <option value=COMMISSION_ALL_VARIANTS_VALUE>All programs</option>
+              <option value={COMMISSION_ALL_VARIANTS_VALUE}>All programs</option>
               {programs.map((program) => (
                 <option key={program.id} value={program.id}>
                   {program.name}
@@ -1801,7 +1801,7 @@ function GroupCommissionPanel({
               value={axis}
               onChange={(event) => setAxis(event.target.value)}
             >
-              <option value=COMMISSION_ALL_VARIANTS_VALUE>All Variants</option>
+              <option value={COMMISSION_ALL_VARIANTS_VALUE}>All Variants</option>
               {axes.map((item) => (
                 <option key={item.key} value={item.key}>
                   {item.label}
