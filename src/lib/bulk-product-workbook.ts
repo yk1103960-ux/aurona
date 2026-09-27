@@ -2,11 +2,11 @@ import * as XLSX from "xlsx";
 import { normalizeMainSku, variantName, type VariationSelection } from "./sku-generation";
 import { expectedBulkVariantSku } from "./bulk-product-identity";
 import {
+  buildProductMasterColumnIndex,
+  buildProductMasterColumns,
   PRODUCT_MASTER_COLUMNS,
-  PRODUCT_MASTER_COLUMN_INDEX,
-  PRODUCT_MASTER_DETAIL_HEADERS,
-  PRODUCT_MASTER_SERIALS,
-  PRODUCT_MASTER_TOP_HEADERS,
+  type ProductMasterColumn,
+  type ProductMasterColumnKey,
 } from "./bulk-product-columns";
 
 export const BULK_TEMPLATE_VERSION = "aurona-product-master-v1";
@@ -14,8 +14,6 @@ export const BULK_TEMPLATE_VERSION = "aurona-product-master-v1";
 export const PRODUCT_MASTER_HEADERS = PRODUCT_MASTER_COLUMNS.map(
   (column) => column.detailHeader || column.topHeader,
 );
-
-
 
 export type TemplateConfig = {
   categoryId: string;
@@ -29,13 +27,7 @@ export type TemplateConfig = {
   combinations: VariationSelection[][];
 };
 
-const groupHeader = PRODUCT_MASTER_TOP_HEADERS;
-const detailHeader = PRODUCT_MASTER_DETAIL_HEADERS;
-
-// These widths/heights and merged ranges were copied column-by-column from
-// Manu's supplied Product_Master_Template. Keep them stable so generated files
-// preserve the same visual/grouped structure as the master workbook.
-const PRODUCT_MASTER_COLUMN_WIDTHS = [
+const LEGACY_COLUMN_WIDTHS = [
   8.88671875, 8.88671875, 15.77734375, 13.21875, 8.77734375, 9.21875, 11.44140625, 4.5546875,
   11.88671875, 26.109375, 20.44140625, 9.44140625, 7.88671875, 11.21875, 10.109375, 16.44140625,
   10, 10.77734375, 10.33203125, 15.44140625, 15.5546875, 10.44140625, 11.6640625, 11.21875,
@@ -47,25 +39,81 @@ const PRODUCT_MASTER_COLUMN_WIDTHS = [
   15.21875, 13.33203125, 14.33203125, 15.33203125, 8.88671875, 13.44140625,
 ] as const;
 
-const PRODUCT_MASTER_MERGES = [
-  ...Array.from({ length: 26 }, (_, i) => ({ s: { r: 0, c: i }, e: { r: 1, c: i } })),
-  { s: { r: 0, c: 26 }, e: { r: 0, c: 30 } },
-  { s: { r: 0, c: 31 }, e: { r: 0, c: 40 } },
-  { s: { r: 0, c: 41 }, e: { r: 0, c: 50 } },
-  { s: { r: 0, c: 51 }, e: { r: 0, c: 60 } },
-  { s: { r: 0, c: 61 }, e: { r: 0, c: 64 } },
-  { s: { r: 0, c: 65 }, e: { r: 0, c: 66 } },
-  ...[67, 68, 69].map((col) => ({ s: { r: 0, c: col }, e: { r: 1, c: col } })),
-];
+const LEGACY_WIDTH_BY_KEY = new Map(
+  PRODUCT_MASTER_COLUMNS.map((column, index) => [column.key, LEGACY_COLUMN_WIDTHS[index] ?? 12]),
+);
 
+function columnWidth(column: ProductMasterColumn) {
+  const saved = LEGACY_WIDTH_BY_KEY.get(column.key);
+  if (saved) return saved;
+  if (/^variation_\d+_name$/.test(column.key)) return 12;
+  if (/^variation_\d+_value$/.test(column.key)) return 12;
+  return Math.min(28, Math.max(10, (column.detailHeader || column.topHeader).length * 0.72 + 2));
+}
+
+const HORIZONTAL_GROUPS = new Set([
+  "Single PC Details",
+  "Customer Details",
+  "Retailer Details",
+  "Distributor Details",
+  "Commission Details",
+  "SEO Details",
+]);
+
+function productMasterMerges(columns: ProductMasterColumn[]) {
+  const merges: XLSX.Range[] = [];
+  let index = 0;
+  while (index < columns.length) {
+    const column = columns[index];
+    if (!HORIZONTAL_GROUPS.has(column.group)) {
+      merges.push({ s: { r: 0, c: index }, e: { r: 1, c: index } });
+      index += 1;
+      continue;
+    }
+    let end = index;
+    while (end + 1 < columns.length && columns[end + 1].group === column.group) end += 1;
+    merges.push({ s: { r: 0, c: index }, e: { r: 0, c: end } });
+    index = end + 1;
+  }
+  return merges;
+}
+
+function variationCountFromWorkbook(matrix: unknown[][], metadata: Record<string, unknown>) {
+  const rawConfig = metadata.variation_configuration;
+  if (Array.isArray(rawConfig) && rawConfig.length) return rawConfig.length;
+  if (typeof rawConfig === "string" && rawConfig.trim()) {
+    try {
+      const parsed = JSON.parse(rawConfig);
+      if (Array.isArray(parsed) && parsed.length) return parsed.length;
+    } catch {
+      // Header inference below will provide the validation error if needed.
+    }
+  }
+
+  const totalColumns = Math.max(
+    matrix[0]?.length ?? 0,
+    matrix[1]?.length ?? 0,
+    matrix[2]?.length ?? 0,
+  );
+  const count = (totalColumns - 64) / 2;
+  if (!Number.isInteger(count) || count < 1 || count > 20) {
+    throw new Error("Could not determine the dynamic variation-column count from this Product Master workbook.");
+  }
+  return count;
+}
 
 export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
-  if (config.variations.length > 3) throw new Error("The supplied template supports up to three variation slots.");
+  if (!config.variations.length) throw new Error("Select at least one variation before generating Excel.");
+  const columns = buildProductMasterColumns(config.variations.length);
+  const columnIndex = buildProductMasterColumnIndex(columns);
   const mainSku = normalizeMainSku(config.mainSku);
+
   const rows = config.combinations.map((combination, index) => {
-    const values = Array(PRODUCT_MASTER_COLUMNS.length).fill("");
-    const set = (key: keyof typeof PRODUCT_MASTER_COLUMN_INDEX, value: unknown) => {
-      values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value ?? "";
+    const values = Array(columns.length).fill("");
+    const set = (key: ProductMasterColumnKey, value: unknown) => {
+      const position = columnIndex[key];
+      if (position == null) throw new Error(`Product Master mapping is missing ${key}.`);
+      values[position] = value ?? "";
     };
     const attributes = Object.fromEntries(combination.map((item) => [item.name, item.value]));
 
@@ -80,25 +128,31 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     set("variant_name", variantName(combination));
     set("variant_sku", expectedBulkVariantSku(mainSku, combination));
 
-    combination.slice(0, 3).forEach((selection, slot) => {
-      const nameKey = `variation_${slot + 1}_name` as keyof typeof PRODUCT_MASTER_COLUMN_INDEX;
-      const valueKey = `variation_${slot + 1}_value` as keyof typeof PRODUCT_MASTER_COLUMN_INDEX;
-      set(nameKey, selection.name);
-      set(valueKey, selection.value);
+    combination.forEach((selection, slot) => {
+      set(`variation_${slot + 1}_name`, selection.name);
+      set(`variation_${slot + 1}_value`, selection.value);
     });
 
     set("attributes_json", JSON.stringify(attributes));
     return values;
   });
-  const ws = XLSX.utils.aoa_to_sheet([groupHeader, detailHeader, PRODUCT_MASTER_SERIALS, ...rows]);
-  // Supplied master freezes below Row 2 (serial-number row stays scrollable).
+
+  const topHeader = columns.map((column) => column.topHeader);
+  const detailHeader = columns.map((column) => column.detailHeader);
+  const serials = columns.map((column) => column.serial);
+  const ws = XLSX.utils.aoa_to_sheet([topHeader, detailHeader, serials, ...rows]);
   ws["!freeze"] = { xSplit: 0, ySplit: 2 };
-  ws["!cols"] = PRODUCT_MASTER_COLUMN_WIDTHS.map((width) => ({ width }));
+  ws["!cols"] = columns.map((column) => ({ width: columnWidth(column) }));
   ws["!rows"] = [{ hpt: 14.4 }, { hpt: 54.6 }, { hpt: 14.4 }];
-  ws["!merges"] = PRODUCT_MASTER_MERGES;
+  ws["!merges"] = productMasterMerges(columns);
+
   const metadata = XLSX.utils.aoa_to_sheet([
-    ["template_version", BULK_TEMPLATE_VERSION], ["category_id", config.categoryId], ["category_name", config.categoryName],
-    ["main_sku", mainSku], ["variation_configuration", JSON.stringify(config.variations)],
+    ["template_version", BULK_TEMPLATE_VERSION],
+    ["category_id", config.categoryId],
+    ["category_name", config.categoryName],
+    ["main_sku", mainSku],
+    ["variation_count", config.variations.length],
+    ["variation_configuration", JSON.stringify(config.variations)],
     ["generated_at", new Date().toISOString()],
   ]);
   const wb = XLSX.utils.book_new();
@@ -113,64 +167,85 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
   const configSheet = wb.Sheets._Aurona_Config;
   const productSheet = wb.Sheets["Product Master"];
   if (!productSheet) throw new Error('Workbook must contain the "Product Master" sheet.');
+
   const metadataRows = configSheet
     ? XLSX.utils.sheet_to_json<unknown[]>(configSheet, { header: 1, raw: false })
     : [];
-  const metadata = Object.fromEntries(metadataRows.filter((row) => row[0]).map((row) => [String(row[0]), row[1]]));
+  const metadata = Object.fromEntries(
+    metadataRows.filter((row) => row[0]).map((row) => [String(row[0]), row[1]]),
+  ) as Record<string, unknown>;
+
   if (metadata.template_version && metadata.template_version !== BULK_TEMPLATE_VERSION) {
     throw new Error("Wrong or unsupported Aurona template version.");
   }
-  const matrix = XLSX.utils.sheet_to_json<unknown[]>(productSheet, { header: 1, defval: "", raw: true });
-  // Keep serial positions strict. Header whitespace is normalized only so
-  // previously downloaded Aurona templates (for example a line break versus
-  // a space in "Refundable (YES/NO)") remain upload-compatible.
+
+  const matrix = XLSX.utils.sheet_to_json<unknown[]>(productSheet, {
+    header: 1,
+    defval: "",
+    raw: true,
+  });
+  const variationCount = variationCountFromWorkbook(matrix, metadata);
+  const columns = buildProductMasterColumns(variationCount);
+  const columnIndex = buildProductMasterColumnIndex(columns);
   const normalizeHeader = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
-  const topHeader = (matrix[0] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(normalizeHeader);
-  const detailHeader = (matrix[1] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(normalizeHeader);
-  const numericHeader = (matrix[2] ?? []).slice(0, PRODUCT_MASTER_COLUMNS.length).map(String);
-  const headerMismatch = PRODUCT_MASTER_COLUMNS.find((column, index) =>
+
+  const topHeader = (matrix[0] ?? []).slice(0, columns.length).map(normalizeHeader);
+  const detailHeader = (matrix[1] ?? []).slice(0, columns.length).map(normalizeHeader);
+  const numericHeader = (matrix[2] ?? []).slice(0, columns.length).map(String);
+  const headerMismatch = columns.find((column, index) =>
     topHeader[index] !== normalizeHeader(column.topHeader) ||
     detailHeader[index] !== normalizeHeader(column.detailHeader) ||
     numericHeader[index] !== String(column.serial),
   );
+
   if (
-    matrix[0]?.length !== PRODUCT_MASTER_COLUMNS.length ||
-    matrix[1]?.length !== PRODUCT_MASTER_COLUMNS.length ||
-    matrix[2]?.length !== PRODUCT_MASTER_COLUMNS.length ||
+    matrix[0]?.length !== columns.length ||
+    matrix[1]?.length !== columns.length ||
+    matrix[2]?.length !== columns.length ||
     headerMismatch
   ) {
     const detail = headerMismatch
       ? ` Column ${headerMismatch.serial} must remain "${headerMismatch.detailHeader || headerMismatch.topHeader}".`
       : "";
-    throw new Error(`The Product Master column order/header structure does not match the master template.${detail}`);
+    throw new Error(
+      `The Product Master column order/header structure does not match the generated dynamic template.${detail}`,
+    );
   }
-  const rows = matrix.slice(3).filter((row) => row.some((value) => value !== "" && value != null));
+
+  const rows = matrix
+    .slice(3)
+    .filter((row) => row.some((value) => value !== "" && value != null))
+    .map((row) => row.slice(0, columns.length));
+
+  metadata.variation_count = variationCount;
+  metadata.column_keys = columns.map((column) => column.key);
 
   if (!metadata.category_name && rows.length) {
-    const categories = [...new Set(rows.map((row) => String(row[2] ?? "").trim()).filter(Boolean))];
+    const index = columnIndex.category_name;
+    const categories = [...new Set(rows.map((row) => String(row[index] ?? "").trim()).filter(Boolean))];
     if (categories.length === 1) metadata.category_name = categories[0];
   }
   if (!metadata.main_sku && rows.length) {
-    const mainSkus = [...new Set(rows.map((row) => String(row[5] ?? "").trim()).filter(Boolean))];
+    const index = columnIndex.main_sku;
+    const mainSkus = [...new Set(rows.map((row) => String(row[index] ?? "").trim()).filter(Boolean))];
     if (mainSkus.length === 1) metadata.main_sku = mainSkus[0];
   }
   if (!metadata.variation_configuration && rows.length) {
-    const slots = [
-      [13, 14],
-      [15, 16],
-      [17, 18],
-    ] as const;
-    const configuration = slots.flatMap(([nameIndex, valueIndex]) => {
+    const configuration = Array.from({ length: variationCount }, (_, slot) => {
+      const nameIndex = columnIndex[`variation_${slot + 1}_name`];
+      const valueIndex = columnIndex[`variation_${slot + 1}_value`];
       const names = [...new Set(rows.map((row) => String(row[nameIndex] ?? "").trim()).filter(Boolean))];
-      if (!names.length) return [];
       if (names.length > 1) {
-        throw new Error(`Variation column ${nameIndex + 1} contains multiple option names.`);
+        throw new Error(`Variation slot ${slot + 1} contains multiple option names.`);
       }
       const values = [...new Set(rows.map((row) => String(row[valueIndex] ?? "").trim()).filter(Boolean))];
-      return [{ name: names[0], values }];
-    });
+      return names.length ? { name: names[0], values } : null;
+    }).filter(Boolean);
     metadata.variation_configuration = configuration;
   }
 
-  return { metadata, rows: rows.map((row, index) => ({ excelRow: index + 4, values: row })) };
+  return {
+    metadata,
+    rows: rows.map((row, index) => ({ excelRow: index + 4, values: row })),
+  };
 }
