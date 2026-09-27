@@ -96,3 +96,31 @@ export const visiblePricesQuery = (skus: string[]) =>
 export function useVisiblePrices(skus: string[]) {
   return useQuery(visiblePricesQuery(skus));
 }
+
+export type VisibleInventory = {
+  sku: string;
+  stock: number;
+  reserved_stock: number;
+  pack_size: number;
+  moq: number;
+  role: PricingRole;
+};
+
+export const visibleInventoryQuery = (skus: string[]) =>
+  queryOptions({
+    queryKey: ["visible-inventory", [...skus].sort().join(",")],
+    enabled: skus.length > 0,
+    staleTime: 30 * 1000,
+    queryFn: async (): Promise<Record<string, VisibleInventory>> => {
+      if (skus.length === 0) return {};
+      const { data, error } = await supabase.rpc("get_visible_inventory", { _skus: skus });
+      if (error) throw error;
+      const map: Record<string, VisibleInventory> = {};
+      for (const row of (data ?? []) as VisibleInventory[]) map[row.sku] = row;
+      return map;
+    },
+  });
+
+export function useVisibleInventory(skus: string[]) {
+  return useQuery(visibleInventoryQuery(skus));
+}
