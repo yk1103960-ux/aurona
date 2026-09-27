@@ -702,9 +702,9 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
         .order("name"),
       (supabaseAdmin as any)
         .from("referral_programs")
-        .select("id,name")
-        .eq("is_active", true)
-        .order("name"),
+        .select("id,name,is_active")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true }),
       (supabaseAdmin as any)
         .from("product_families")
         .select("id,category_id,axes:product_variant_axes(axis_key,label,values,sort_order)")
@@ -769,8 +769,7 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
       // category-specific values.
       variations: options.data ?? [],
       categoryVariations,
-      // The existing Partner Program table is authoritative. Bulk Upload does
-      // not maintain a second, hardcoded commission-program list.
+      // Same Partner Program source used by Product Manager commission settings.
       partnerPrograms: programs.data ?? [],
       templateVersion: "aurona-product-master-v1",
     };
