@@ -125,18 +125,66 @@ const variantName = (row: Variant) => {
   return values.length ? values.join(" / ") : row.sku;
 };
 
+const normalizeOptionValue = (value: unknown) => String(value ?? "").trim().toLocaleLowerCase();
+
+const variantCombinationKey = (row: Variant, axes: Axis[]) =>
+  axes
+    .map((axis) => `${axis.axis_key}=${normalizeOptionValue(row.attributes?.[axis.axis_key])}`)
+    .join("||");
+
 const variantMatchesCurrentAxes = (row: Variant, axes: Axis[]) => {
+  if (row.archived_at) return false;
   if (!axes.length) return true;
+
   const attrs = row.attributes ?? {};
   const axisKeys = new Set(axes.map((axis) => axis.axis_key));
   const variationKeys = Object.entries(attrs)
-    .filter(([key, value]) => key !== "variant_label" && Boolean(value))
+    .filter(
+      ([key, value]) =>
+        key !== "variant_label" &&
+        !key.startsWith("__") &&
+        normalizeOptionValue(value),
+    )
     .map(([key]) => key);
 
   return (
-    axes.every((axis) => axis.values.includes(attrs[axis.axis_key])) &&
+    axes.every((axis) => {
+      const wanted = new Set(axis.values.map(normalizeOptionValue));
+      return wanted.has(normalizeOptionValue(attrs[axis.axis_key]));
+    }) &&
     variationKeys.length === axes.length &&
     variationKeys.every((key) => axisKeys.has(key))
+  );
+};
+
+/**
+ * The current editable/sellable variation set is one canonical row per valid
+ * Cartesian combination. Historical duplicates/stale rows remain in the DB
+ * for order safety, but never count as current variants.
+ */
+const selectCurrentVariantRows = (rows: Variant[], axes: Axis[]) => {
+  const byCombination = new Map<string, Variant>();
+  for (const row of rows) {
+    if (!variantMatchesCurrentAxes(row, axes)) continue;
+    const key = variantCombinationKey(row, axes);
+    const existing = byCombination.get(key);
+    if (!existing) {
+      byCombination.set(key, row);
+      continue;
+    }
+
+    // Prefer the row that is already active; otherwise prefer a persisted row,
+    // then keep the lower sort-order row for deterministic refresh behavior.
+    const score = (item: Variant) =>
+      (item.is_active ? 1000 : 0) +
+      (!item.id.startsWith("new-") ? 100 : 0) -
+      Number(item.sort_order ?? 0);
+
+    if (score(row) > score(existing)) byCombination.set(key, row);
+  }
+
+  return Array.from(byCombination.values()).sort(
+    (a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0),
   );
 };
 
@@ -279,7 +327,7 @@ export function VariantEditor({
 
   const family = q.data?.family;
   const axes = axisRows;
-  const currentRows = rows.filter((row) => variantMatchesCurrentAxes(row, axes));
+  const currentRows = selectCurrentVariantRows(rows, axes);
   axisOrder.keys = axes.map((axis) => axis.axis_key);
 
   if (q.isLoading) {
@@ -403,7 +451,7 @@ export function VariantEditor({
     selectedCombinations?: Record<string, string>[],
   ) => {
     try {
-      const currentSourceRows = sourceRows.filter((row) => variantMatchesCurrentAxes(row, sourceAxes));
+      const currentSourceRows = selectCurrentVariantRows(sourceRows, sourceAxes);
       const allMissing = missingCombinations(sourceAxes, currentSourceRows);
       const combinationKey = (attributes: Record<string, string>) =>
         sourceAxes.map((axis) => `${axis.axis_key}=${attributes[axis.axis_key] ?? ""}`).join("||");
@@ -568,14 +616,17 @@ export function VariantEditor({
       // The editable/sellable matrix is defined only by the CURRENT option axes/values.
       // Historical rows stay in the database for order/history safety, but they must be
       // inactive and must never block validation or count as part of the current setup.
+      const preliminaryCurrent = selectCurrentVariantRows(rows, axisRows);
+      const preliminaryIds = new Set(preliminaryCurrent.map((row) => row.id));
       const rowsWithStaleInactive = rows.map((row) =>
-        variantMatchesCurrentAxes(row, axisRows) ? row : { ...row, is_active: false },
+        preliminaryIds.has(row.id) ? row : { ...row, is_active: false },
       );
 
       cleaned = prepareVariationAxes(axisRows, q.data?.axes ?? [], rowsWithStaleInactive);
-      currentRowsForSave = rowsWithStaleInactive.filter((row) => variantMatchesCurrentAxes(row, cleaned));
+      currentRowsForSave = selectCurrentVariantRows(rowsWithStaleInactive, cleaned);
+      const currentIds = new Set(currentRowsForSave.map((row) => row.id));
       synchronizedRows = rowsWithStaleInactive.map((row) =>
-        variantMatchesCurrentAxes(row, cleaned) ? row : { ...row, is_active: false },
+        currentIds.has(row.id) ? row : { ...row, is_active: false },
       );
 
       if (!currentRowsForSave.length) {
@@ -2942,7 +2993,7 @@ function AxisEditor({
   let missing: Record<string, string>[] = [];
   try {
     if (activeAxes.length === rows.length && activeAxes.length > 0) {
-      const currentVariants = variants.filter((row) => variantMatchesCurrentAxes(row, activeAxes));
+      const currentVariants = selectCurrentVariantRows(variants, activeAxes);
       allCombinations = missingCombinations(activeAxes, []);
       missing = missingCombinations(activeAxes, currentVariants);
     }
