@@ -1170,7 +1170,9 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
         }))
         .filter((axis: { key: string; values: string[] }) => axis.key && axis.values.length);
 
+      const normalizeOptionValue = (value: unknown) => String(value ?? "").trim().toLocaleLowerCase();
       const matchesCurrentVariationSet = (row: any) => {
+        if (row?.archived_at) return false;
         if (!currentAxes.length) return true;
         const attrs = row?.attributes && typeof row.attributes === "object" ? row.attributes : {};
         const axisKeys = new Set(currentAxes.map((axis: { key: string }) => axis.key));
@@ -1179,23 +1181,44 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
             ([key, value]) =>
               key !== "variant_label" &&
               !key.startsWith("__") &&
-              value !== null &&
-              value !== undefined &&
-              String(value).trim(),
+              normalizeOptionValue(value),
           )
           .map(([key]) => key);
 
         return (
-          currentAxes.every((axis: { key: string; values: string[] }) =>
-            axis.values.includes(String(attrs[axis.key] ?? "").trim()),
-          ) &&
+          currentAxes.every((axis: { key: string; values: string[] }) => {
+            const allowed = new Set(axis.values.map(normalizeOptionValue));
+            return allowed.has(normalizeOptionValue(attrs[axis.key]));
+          }) &&
           variationKeys.length === currentAxes.length &&
           variationKeys.every((key) => axisKeys.has(key))
         );
       };
 
-      const variants: CommissionVariant[] = (matrix.variants ?? [])
-        .filter((row: any) => Boolean(row?.id) && matchesCurrentVariationSet(row))
+      const currentVariantRows = Array.from(
+        (matrix.variants ?? [])
+          .filter((row: any) => Boolean(row?.id) && matchesCurrentVariationSet(row))
+          .reduce((map: Map<string, any>, row: any) => {
+            const attrs = row?.attributes && typeof row.attributes === "object" ? row.attributes : {};
+            const key = currentAxes
+              .map((axis: { key: string }) => `${axis.key}=${normalizeOptionValue(attrs[axis.key])}`)
+              .join("||");
+            const existing = map.get(key);
+            if (!existing) {
+              map.set(key, row);
+              return map;
+            }
+            const score = (item: any) =>
+              (item?.is_active ? 1000 : 0) +
+              (String(item?.id ?? "").startsWith("new-") ? 0 : 100) -
+              Number(item?.sort_order ?? 0);
+            if (score(row) > score(existing)) map.set(key, row);
+            return map;
+          }, new Map<string, any>())
+          .values(),
+      );
+
+      const variants: CommissionVariant[] = currentVariantRows
         .map((row: any) => {
           const attrs = row.attributes && typeof row.attributes === "object" ? row.attributes : {};
           const attributeValues = Object.entries(attrs)
