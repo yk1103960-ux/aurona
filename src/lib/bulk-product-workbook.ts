@@ -73,7 +73,7 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   const ws = XLSX.utils.aoa_to_sheet([groupHeader, detailHeader, PRODUCT_MASTER_SERIALS, ...rows]);
   // Supplied master freezes below Row 2 (serial-number row stays scrollable).
   ws["!freeze"] = { xSplit: 0, ySplit: 2 };
-  ws["!cols"] = PRODUCT_MASTER_COLUMN_WIDTHS.map((wch) => ({ wch }));
+  ws["!cols"] = PRODUCT_MASTER_COLUMN_WIDTHS.map((width) => ({ width }));
   ws["!rows"] = [{ hpt: 14.4 }, { hpt: 54.6 }, { hpt: 14.4 }];
   ws["!merges"] = PRODUCT_MASTER_MERGES;
   const metadata = XLSX.utils.aoa_to_sheet([
