@@ -1263,20 +1263,6 @@ function QuickVariantsTab({
                           size="icon"
                           variant="ghost"
                           disabled={busy}
-                          onClick={() => deleteVariantPermanently(row)}
-                          title="Delete variation permanently"
-                          aria-label={`Delete variation permanently ${row.sku}`}
-                          className="h-10 w-10 text-red-700 hover:bg-red-50 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {!row.archived_at && (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          disabled={busy}
                           onClick={() => archiveVariant(row)}
                           title="Archive variant (can be restored)"
                           aria-label={`Archive variant ${row.sku}`}
@@ -1285,6 +1271,18 @@ function QuickVariantsTab({
                           <Archive className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        disabled={busy}
+                        onClick={() => deleteVariantPermanently(row)}
+                        title="Delete variation permanently"
+                        aria-label={`Delete variation permanently ${row.sku}`}
+                        className="h-10 w-10 rounded-xl bg-red-600 text-white shadow-sm hover:bg-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
 
                     </div>
                   </Td>
