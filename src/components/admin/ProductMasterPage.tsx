@@ -1532,13 +1532,14 @@ function FamilyRows({
                       )}
                     </Button>
                     <Button
-                      size="icon"
+                      size="sm"
                       variant="destructive"
+                      className="gap-1 px-2"
                       aria-label="Delete product (archive)"
                       title="Delete product (archive; can be restored)"
                       onClick={() => onState("archive")}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" /> Delete
                     </Button>
                   </>
                 )}
