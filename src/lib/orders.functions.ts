@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Statuses at which a customer may still ask for a cancellation. */
-const CANCELLABLE = new Set(["pending", "confirmed", "processing"]);
+const CANCELLABLE = new Set(["placed", "pending", "confirmed", "processing", "packed"]);
 
 type OrderRow = {
   id: string;
