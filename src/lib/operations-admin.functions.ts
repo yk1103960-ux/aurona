@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
 import { generateVariantSku } from "@/lib/sku-generation";
+import { bulkColumnValue, PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
 
 const ImportRow = z.object({
   name: z.string().trim().min(1).max(240),
@@ -710,40 +711,108 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
 
 const DynamicBulkInput = z.object({
   metadata: z.record(z.string(), z.unknown()),
-  rows: z.array(z.object({ excelRow: z.number().int().min(4), values: z.array(z.unknown()).max(70) })).min(1).max(2000),
+  rows: z
+    .array(
+      z.object({
+        excelRow: z.number().int().min(4),
+        values: z.array(z.unknown()).length(PRODUCT_MASTER_COLUMNS.length),
+      }),
+    )
+    .min(1)
+    .max(2000),
 });
 
 const textCell = (value: unknown) => String(value ?? "").trim();
 const numericCell = (value: unknown) => value === "" || value == null ? null : Number(value);
 
 function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
-  const v = row.values;
+  const value = (key: Parameters<typeof bulkColumnValue>[1]) => bulkColumnValue(row.values, key);
   const attributes: Record<string, string> = {};
   const variationAxes: Array<{ name: string; value: string; sort_order: number }> = [];
-  for (const [nameIndex, valueIndex] of [[13, 14], [15, 16], [17, 18]] as const) {
-    const name = textCell(v[nameIndex]);
-    const value = textCell(v[valueIndex]);
-    if (name && value) {
-      attributes[name] = value;
-      variationAxes.push({ name, value, sort_order: variationAxes.length });
+
+  const variationSlots = [
+    ["variation_1_name", "variation_1_value"],
+    ["variation_2_name", "variation_2_value"],
+    ["variation_3_name", "variation_3_value"],
+  ] as const;
+
+  for (const [nameKey, valueKey] of variationSlots) {
+    const name = textCell(value(nameKey));
+    const optionValue = textCell(value(valueKey));
+    if (name && optionValue) {
+      attributes[name] = optionValue;
+      variationAxes.push({ name, value: optionValue, sort_order: variationAxes.length });
     }
   }
+
   return {
-    excel_row: row.excelRow, function: textCell(v[1]).toLowerCase(), category_name: textCell(v[2]),
-    product_name: textCell(v[3]), family_id: textCell(v[4]) || null, main_sku: textCell(v[5]).toUpperCase(),
-    brand: textCell(v[6]), unit: textCell(v[7]), model: textCell(v[8]), variant_name: textCell(v[9]),
-    variant_sku: textCell(v[10]).toUpperCase(), variant_id: textCell(v[11]) || null, barcode: textCell(v[12]) || null,
-    attributes, variation_axes: variationAxes, short_description: textCell(v[20]), description: textCell(v[21]), features: textCell(v[22]),
-    refundable: textCell(v[23]), sale_status: textCell(v[24]), active_status: textCell(v[25]),
-    mrp: numericCell(v[26]), weight_g: numericCell(v[27]), dim_l: numericCell(v[28]), dim_w: numericCell(v[29]), dim_h: numericCell(v[30]),
-    customer_discount: numericCell(v[31]), customer_price: numericCell(v[32]), customer_moq: numericCell(v[33]), customer_stock: numericCell(v[34]), customer_reserved_stock: numericCell(v[35]), customer_pack_size: numericCell(v[36]),
-    customer_pack_weight_g: numericCell(v[37]), customer_pack_l: numericCell(v[38]), customer_pack_w: numericCell(v[39]), customer_pack_h: numericCell(v[40]),
-    retailer_discount: numericCell(v[41]), retailer_price: numericCell(v[42]), retailer_moq: numericCell(v[43]), retailer_stock: numericCell(v[44]), retailer_reserved_stock: numericCell(v[45]), retailer_pack_size: numericCell(v[46]),
-    retailer_pack_weight_g: numericCell(v[47]), retailer_pack_l: numericCell(v[48]), retailer_pack_w: numericCell(v[49]), retailer_pack_h: numericCell(v[50]),
-    distributor_discount: numericCell(v[51]), distributor_price: numericCell(v[52]), distributor_moq: numericCell(v[53]), distributor_stock: numericCell(v[54]), distributor_reserved_stock: numericCell(v[55]), distributor_pack_size: numericCell(v[56]),
-    distributor_pack_weight_g: numericCell(v[57]), distributor_pack_l: numericCell(v[58]), distributor_pack_w: numericCell(v[59]), distributor_pack_h: numericCell(v[60]),
-    commission_program: textCell(v[61]), commission_type: textCell(v[62]).toLowerCase(), commission_value: numericCell(v[63]), max_commission: numericCell(v[64]),
-    seo_title: textCell(v[65]), seo_description: textCell(v[66]), shipping_days: numericCell(v[67]), warranty: textCell(v[68]), frequently_bought_category: textCell(v[69]),
+    excel_row: row.excelRow,
+    sr_no: numericCell(value("sr_no")),
+    function: textCell(value("function")).toLowerCase(),
+    category_name: textCell(value("category_name")),
+    product_name: textCell(value("product_name")),
+    family_id: textCell(value("family_id")) || null,
+    main_sku: textCell(value("main_sku")).toUpperCase(),
+    brand: textCell(value("brand")),
+    unit: textCell(value("unit")),
+    model: textCell(value("model")),
+    variant_name: textCell(value("variant_name")),
+    variant_sku: textCell(value("variant_sku")).toUpperCase(),
+    variant_id: textCell(value("variant_id")) || null,
+    barcode: textCell(value("barcode")) || null,
+    attributes_json: textCell(value("attributes_json")),
+    attributes,
+    variation_axes: variationAxes,
+    short_description: textCell(value("short_description")),
+    description: textCell(value("description")),
+    features: textCell(value("features")),
+    refundable: textCell(value("refundable")),
+    sale_status: textCell(value("sale_status")),
+    active_status: textCell(value("active_status")),
+    mrp: numericCell(value("mrp")),
+    weight_g: numericCell(value("weight_g")),
+    dim_l: numericCell(value("dim_l")),
+    dim_w: numericCell(value("dim_w")),
+    dim_h: numericCell(value("dim_h")),
+    customer_discount: numericCell(value("customer_discount")),
+    customer_price: numericCell(value("customer_price")),
+    customer_moq: numericCell(value("customer_moq")),
+    customer_stock: numericCell(value("customer_stock")),
+    customer_reserved_stock: numericCell(value("customer_reserved_stock")),
+    customer_pack_size: numericCell(value("customer_pack_size")),
+    customer_pack_weight_g: numericCell(value("customer_pack_weight_g")),
+    customer_pack_l: numericCell(value("customer_pack_l")),
+    customer_pack_w: numericCell(value("customer_pack_w")),
+    customer_pack_h: numericCell(value("customer_pack_h")),
+    retailer_discount: numericCell(value("retailer_discount")),
+    retailer_price: numericCell(value("retailer_price")),
+    retailer_moq: numericCell(value("retailer_moq")),
+    retailer_stock: numericCell(value("retailer_stock")),
+    retailer_reserved_stock: numericCell(value("retailer_reserved_stock")),
+    retailer_pack_size: numericCell(value("retailer_pack_size")),
+    retailer_pack_weight_g: numericCell(value("retailer_pack_weight_g")),
+    retailer_pack_l: numericCell(value("retailer_pack_l")),
+    retailer_pack_w: numericCell(value("retailer_pack_w")),
+    retailer_pack_h: numericCell(value("retailer_pack_h")),
+    distributor_discount: numericCell(value("distributor_discount")),
+    distributor_price: numericCell(value("distributor_price")),
+    distributor_moq: numericCell(value("distributor_moq")),
+    distributor_stock: numericCell(value("distributor_stock")),
+    distributor_reserved_stock: numericCell(value("distributor_reserved_stock")),
+    distributor_pack_size: numericCell(value("distributor_pack_size")),
+    distributor_pack_weight_g: numericCell(value("distributor_pack_weight_g")),
+    distributor_pack_l: numericCell(value("distributor_pack_l")),
+    distributor_pack_w: numericCell(value("distributor_pack_w")),
+    distributor_pack_h: numericCell(value("distributor_pack_h")),
+    commission_program: textCell(value("commission_program")),
+    commission_type: textCell(value("commission_type")).toLowerCase(),
+    commission_value: numericCell(value("commission_value")),
+    max_commission: numericCell(value("max_commission")),
+    seo_title: textCell(value("seo_title")),
+    seo_description: textCell(value("seo_description")),
+    shipping_days: numericCell(value("shipping_days")),
+    warranty: textCell(value("warranty")),
+    frequently_bought_category: textCell(value("frequently_bought_category")),
   };
 }
 
