@@ -25,7 +25,25 @@ export function productMasterExportRows(data: ExportData) {
   const rows: Array<Array<string | number | boolean>> = [];
   for (const family of families) {
     const axes = [...family.axes].sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
-    for (const variant of family.variants) {
+    const legacy = family.legacy ?? {};
+    // Some legacy products have a Product Master family row but have not been
+    // materialised as product_variants. Export that stored family as one row
+    // rather than returning a workbook with headers only.
+    const variants = family.variants.length ? family.variants : [{
+      id: "",
+      sku: family.main_sku,
+      attributes: {},
+      mrp: family.min_mrp ?? family.mrp ?? legacy.mrp,
+      price: family.min_price ?? family.price ?? legacy.price,
+      stock: legacy.stock ?? family.total_stock ?? family.stock,
+      is_active: family.is_published,
+      weight_g: family.weight_g ?? legacy.weight_g,
+      dim_l: family.dim_l ?? legacy.dim_l,
+      dim_w: family.dim_w ?? legacy.dim_w,
+      dim_h: family.dim_h ?? legacy.dim_h,
+      pack_size: family.pack_size ?? legacy.pack_size,
+    }];
+    for (const variant of variants) {
       const values: Array<string | number | boolean> = Array(columns.length).fill("");
       const set = (key: ProductMasterColumnKey, value: unknown) => {
         values[indices[key]] = value == null ? "" : value as string | number | boolean;
@@ -39,22 +57,24 @@ export function productMasterExportRows(data: ExportData) {
       set("family_id", family.id);
       set("main_sku", family.main_sku);
       set("brand", family.brand);
-      set("unit", family.unit);
-      set("model", family.model);
+      set("unit", family.unit ?? legacy.unit);
+      set("model", family.model ?? legacy.model);
       set("variant_name", variant.attributes?.variant_label ?? axes.map((axis) => attribute(variant, axis)).filter(Boolean).join(" / "));
       set("variant_sku", variant.sku);
-      set("variant_id", variant.id);
+      set("variant_id", variant.id || "");
       set("barcode", variant.barcode);
       axes.forEach((axis, slot) => {
         set(`variation_${slot + 1}_name`, axis.label);
         set(`variation_${slot + 1}_value`, attribute(variant, axis));
       });
       set("attributes_json", JSON.stringify(variant.attributes ?? {}));
-      set("short_description", family.short_description);
-      set("description", family.description);
-      set("features", Array.isArray(family.features) ? family.features.join("\n") : family.features);
-      set("refundable", family.refundable == null ? "" : family.refundable ? "YES" : "NO");
-      set("sale_status", family.is_sale ? "Deal" : "For Sale");
+      set("short_description", family.short_description || legacy.short_description);
+      set("description", family.description || legacy.description);
+      const features = family.features || legacy.features;
+      set("features", Array.isArray(features) ? features.join("\n") : features);
+      const refundable = family.refundable ?? legacy.refundable;
+      set("refundable", refundable == null ? "" : refundable ? "YES" : "NO");
+      set("sale_status", (family.is_sale ?? legacy.is_sale) ? "Deal" : "For Sale");
       set("active_status", Boolean(variant.is_active && !variant.archived_at));
       for (const [key, field] of Object.entries({
         mrp: "mrp", weight_g: "weight_g", dim_l: "dim_l", dim_w: "dim_w", dim_h: "dim_h",
@@ -79,11 +99,11 @@ export function productMasterExportRows(data: ExportData) {
         : "");
       set("commission_value", number(commission?.commission_value));
       set("max_commission", number(commission?.max_commission));
-      set("seo_title", family.meta_title);
-      set("seo_description", family.meta_description);
-      set("shipping_days", number(family.estimated_shipping_days));
-      set("warranty", family.warranty);
-      set("frequently_bought_category", family.frequently_bought_category);
+      set("seo_title", family.meta_title || legacy.meta_title);
+      set("seo_description", family.meta_description || legacy.meta_description);
+      set("shipping_days", number(family.estimated_shipping_days ?? legacy.estimated_shipping_days));
+      set("warranty", family.warranty || legacy.warranty);
+      set("frequently_bought_category", family.frequently_bought_category || legacy.frequently_bought_category);
       rows.push(values);
     }
   }
