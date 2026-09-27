@@ -873,6 +873,24 @@ export function ProductMaster() {
           <Button variant="outline" onClick={exportView}>
             <Download className="h-4 w-4" /> Export view
           </Button>
+          <Button
+            variant={publication === "archived" ? "default" : "outline"}
+            onClick={() => {
+              const showArchived = publication !== "archived";
+              setPublication(showArchived ? "archived" : "all");
+              if (showArchived) {
+                setCategoryId("");
+                setSearch("");
+                setDebouncedSearch("");
+                setStock("all");
+                setMissingDimensions(false);
+              }
+              setPage(0);
+              setSelected(new Set());
+            }}
+          >
+            <Archive className="h-4 w-4" /> {publication === "archived" ? "Back to products" : "Archive"}
+          </Button>
           <Button variant="outline" onClick={() => q.refetch()} disabled={q.isFetching}>
             <RefreshCw className={`h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> Refresh
           </Button>
