@@ -10,6 +10,10 @@ import {
   resolveBulkCategory,
 } from "@/lib/bulk-product-identity";
 import { bulkColumnValue, PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
+import {
+  COMMISSION_ALL_VARIANTS_LABEL,
+  resolveCommissionSetOn,
+} from "@/lib/commission-grouping";
 
 const ImportRow = z.object({
   name: z.string().trim().min(1).max(240),
@@ -30,6 +34,9 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
+
+const productManagerCategoriesQuery = (db: any) =>
+  db.from("categories").select("id,name,slug").order("name");
 
 export const adminPreviewCatalogImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -685,10 +692,7 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [categories, options, programs, families] = await Promise.all([
-      (supabaseAdmin as any)
-        .from("categories")
-        .select("id,name,slug")
-        .order("name"),
+      productManagerCategoriesQuery(supabaseAdmin as any),
       (supabaseAdmin as any)
         .from("catalog_options")
         .select("id,kind,name,code,details,sort_order")
@@ -867,7 +871,10 @@ function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
     distributor_pack_l: numericCell(value("distributor_pack_l")),
     distributor_pack_w: numericCell(value("distributor_pack_w")),
     distributor_pack_h: numericCell(value("distributor_pack_h")),
-    commission_program: textCell(value("commission_program")),
+    commission_set_on: textCell(value("commission_program")),
+    // Kept empty so legacy v1/v2 import code can never misinterpret
+    // "All Variants" as a referral-program name.
+    commission_program: "",
     commission_type: textCell(value("commission_type")).toLowerCase(),
     commission_value: numericCell(value("commission_value")),
     max_commission: numericCell(value("max_commission")),
@@ -887,10 +894,10 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rows = data.rows.map(normalizeDynamicRow);
     const [categoriesResult, familiesResult, variantsResult, programsResult] = await Promise.all([
-      (supabaseAdmin as any).from("categories").select("id,name"),
+      productManagerCategoriesQuery(supabaseAdmin as any),
       (supabaseAdmin as any).from("product_families").select("id,main_sku"),
       (supabaseAdmin as any).from("product_variants").select("id,sku,family_id"),
-      (supabaseAdmin as any).from("referral_programs").select("id,name").eq("is_active", true),
+      (supabaseAdmin as any).from("referral_programs").select("id,name,is_active"),
     ]);
     for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
     const categoryLookups = buildBulkCategoryLookups(
@@ -900,7 +907,10 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const familiesById = new Map((familiesResult.data ?? []).map((x: any) => [String(x.id), x]));
     const variantsBySku = new Map((variantsResult.data ?? []).map((x: any) => [String(x.sku).toUpperCase(), x]));
     const variantsById = new Map((variantsResult.data ?? []).map((x: any) => [String(x.id), x]));
-    const programs = new Set((programsResult.data ?? []).map((x: any) => String(x.name).toLowerCase()));
+    const commissionPrograms = (programsResult.data ?? []).map((x: any) => ({
+      id: String(x.id),
+      name: String(x.name),
+    }));
     const metadataCategory = normalizeBulkCategoryName(data.metadata.category_name);
     const metadataMainSku = textCell(data.metadata.main_sku)
       ? normalizeMainSku(textCell(data.metadata.main_sku))
@@ -1004,7 +1014,19 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       ] as const) {
         if (discount != null && discount > 100) errors.push(`${label} Discount cannot exceed 100`);
       }
-      if (row.commission_program && !programs.has(row.commission_program.toLowerCase())) errors.push(`Unknown Partner Program: ${row.commission_program}`);
+      const commissionResolution = resolveCommissionSetOn(
+        row.commission_set_on,
+        row.variation_axes.map((axis) => ({ name: axis.name })),
+        commissionPrograms,
+      );
+      if (commissionResolution.kind === "unknown") {
+        errors.push(
+          `Unknown Commission Set on: ${row.commission_set_on}. Expected ${COMMISSION_ALL_VARIANTS_LABEL}, a selected variation axis, or an existing partner program.`,
+        );
+      }
+      if (row.commission_set_on && !row.commission_type) {
+        errors.push("Commission Type is required when Commission Set on is filled");
+      }
       if (row.commission_type && !['percentage','fixed'].includes(row.commission_type)) errors.push("Commission Type must be Percentage or Fixed");
       if (row.commission_type === 'percentage' && row.commission_value != null && row.commission_value > 100) errors.push("Percentage commission cannot exceed 100");
       if (row.refundable && !['yes','no','true','false','1','0'].includes(row.refundable.toLowerCase())) errors.push("Refundable must be YES or NO");
@@ -1019,6 +1041,39 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       }
       if (row.mrp != null) for (const [label, price] of [['Customer', row.customer_price], ['Retailer', row.retailer_price], ['Distributor', row.distributor_price]] as const) {
         if (price != null && price > row.mrp) errors.push(`${label} Price cannot exceed MRP`);
+      }
+      if (row.excel_row === 4) {
+        console.info("[bulk-import:row4]", {
+          category: {
+            raw: textCell(bulkColumnValue(data.rows[0]?.values ?? [], "category_name")),
+            normalized: normalizeBulkCategoryName(row.category_name),
+            matchedCategoryId: resolvedCategory?.id ?? null,
+            matchedCategoryName: resolvedCategory?.name ?? null,
+          },
+          sku: {
+            mainSku: row.main_sku,
+            variationValues: row.variation_axes.map((axis) => ({ name: axis.name, value: axis.value })),
+            calculatedVariantSku:
+              row.main_sku && row.variation_axes.length
+                ? expectedBulkVariantSku(
+                    row.main_sku,
+                    row.variation_axes.map((axis) => ({ name: axis.name, value: axis.value })),
+                  )
+                : null,
+            uploadedVariantSku: row.variant_sku,
+          },
+          commission: {
+            raw: row.commission_set_on,
+            normalized:
+              commissionResolution.kind === "none" ? "" : commissionResolution.normalized,
+            resolved:
+              commissionResolution.kind === "group"
+                ? { kind: "group", scope: commissionResolution.scope, label: commissionResolution.label }
+                : commissionResolution.kind === "program"
+                  ? { kind: "program", programId: commissionResolution.programId, label: commissionResolution.label }
+                  : { kind: commissionResolution.kind },
+          },
+        });
       }
       return { excelRow: row.excel_row, mainSku: row.main_sku, variantSku: row.variant_sku, action: row.function, errors };
     });
@@ -1040,7 +1095,7 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const categoriesResult = await (supabaseAdmin as any).from("categories").select("id,name");
+    const categoriesResult = await productManagerCategoriesQuery(supabaseAdmin as any);
     if (categoriesResult.error) throw new Error(categoriesResult.error.message);
     const categoryLookups = buildBulkCategoryLookups(
       (categoriesResult.data ?? []).map((row: any) => ({
@@ -1078,7 +1133,10 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
       return row;
     });
 
-    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v2", { _rows: rows, _actor_user_id: actor.userId });
+    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v3", {
+      _rows: rows,
+      _actor_user_id: actor.userId,
+    });
     if (error) throw new Error(error.message);
     await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email, action: "catalog.dynamic_bulk_import", entityType: "admin_import_batch", entityId: String(result?.batch_id ?? ""), after: result });
     return result;
