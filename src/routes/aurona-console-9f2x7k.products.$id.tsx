@@ -32,6 +32,10 @@ import {
   adminSaveProductFamily,
   adminSaveRelatedProductFamilies,
 } from "@/lib/catalog-admin.functions";
+import {
+  COMMISSION_ALL_VARIANTS_LABEL,
+  COMMISSION_ALL_VARIANTS_VALUE,
+} from "@/lib/commission-grouping";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
   component: ExistingProductEditor,
