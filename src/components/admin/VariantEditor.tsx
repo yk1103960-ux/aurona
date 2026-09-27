@@ -38,7 +38,12 @@ import {
 } from "@/lib/catalog-admin.functions";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { Textarea } from "@/components/ui/textarea";
-import { combinationSummary, missingCombinations, parsePastedValues } from "@/lib/variant-options";
+import {
+  combinationSummary,
+  missingCombinations,
+  parsePastedValues,
+  PRODUCT_VARIATION_PRESETS,
+} from "@/lib/variant-options";
 
 import {
   newVariation,
@@ -3071,17 +3076,7 @@ function AxisEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [combinationSignature]);
 
-  const presets = [
-    ["wattage", "Watts Available"],
-    ["output_colour", "Output Colour Option/s"],
-    ["shape", "Shape"],
-    ["body_colour", "Body Colour/s"],
-    ["pack_size", "Pack Size"],
-    ["oscillation", "Oscillation"],
-    ["tank_capacity", "Tank Capacities"],
-    ["size", "Size Option/s"],
-    ["reflector_colour", "Reflector Colour"],
-  ] as const;
+  const presets = PRODUCT_VARIATION_PRESETS;
 
   const selectedMissing = missing.filter((attributes) => selectedCombinationKeys.has(combinationKey(attributes)));
 
