@@ -279,20 +279,21 @@ function BulkCatalog() {
   );
 
   const variations = choices.map((choice) => ({
-    name: choice.name,
-    values: choice.selectedValues,
+    name: choice.name.trim(),
+    values: uniqueValues(choice.selectedValues),
   }));
+  const validVariations = variations.length > 0 && variations.every(
+    (variation) => variation.name && variation.values.length > 0,
+  );
   const combinations = useMemo(
-    () => (choices.length && choices.every((choice) => choice.selectedValues.length)
-      ? generateVariationCombinations(variations)
-      : []),
+    () => validVariations ? generateVariationCombinations(variations) : [],
     [choices],
   );
 
   const readyToGenerate =
     Boolean(category && productName.trim() && mainSku.trim()) &&
     choices.length > 0 &&
-    choices.every((choice) => choice.name.trim() && choice.selectedValues.length > 0) &&
+    validVariations &&
     new Set(choices.map((choice) => choice.axisKey)).size === choices.length &&
     combinations.length > 0;
 
@@ -823,6 +824,11 @@ function BulkCatalog() {
                     <span className="block text-xs text-slate-500">
                       Same entry style as Create Product: comma, line, tab or semicolon separated.
                     </span>
+                    {variations[choiceIndex].values.length === 0 && (
+                      <span className="block text-xs text-red-700" role="alert">
+                        Please add at least one value for this variation.
+                      </span>
+                    )}
                   </label>
                 </div>
                 {choice.selectedValues.length > 0 && (
