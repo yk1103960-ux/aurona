@@ -15,7 +15,11 @@ import {
   parseBulkProductWorkbook,
   type TemplateConfig,
 } from "@/lib/bulk-product-workbook";
-import { PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
+import {
+  PRODUCT_MASTER_COLUMNS,
+  PRODUCT_MASTER_COLUMN_INDEX,
+  type ProductMasterColumnKey,
+} from "@/lib/bulk-product-columns";
 import {
   generateVariantSku,
   generateVariationCombinations,
@@ -40,6 +44,196 @@ type Choice = {
   availableValues: string[];
   selectedValues: string[];
 };
+
+type OnlineRow = {
+  excelRow: number;
+  values: unknown[];
+};
+
+const ONLINE_GROUPS = [
+  { id: "basic", label: "Basic Details", from: 1, to: 26 },
+  { id: "single", label: "Single PC", from: 27, to: 31 },
+  { id: "customer", label: "Customer", from: 32, to: 41 },
+  { id: "retailer", label: "Retailer", from: 42, to: 51 },
+  { id: "distributor", label: "Distributor", from: 52, to: 61 },
+  { id: "commission", label: "Commission", from: 62, to: 65 },
+  { id: "seo", label: "SEO & Other", from: 66, to: 70 },
+] as const;
+
+const ONLINE_READ_ONLY_KEYS = new Set<ProductMasterColumnKey>([
+  "sr_no",
+  "function",
+  "category_name",
+  "product_name",
+  "main_sku",
+  "brand",
+  "unit",
+  "model",
+  "variant_name",
+  "variant_sku",
+  "variation_1_name",
+  "variation_1_value",
+  "variation_2_name",
+  "variation_2_value",
+  "variation_3_name",
+  "variation_3_value",
+]);
+
+const ONLINE_NUMERIC_KEYS = new Set<ProductMasterColumnKey>([
+  "mrp",
+  "weight_g",
+  "dim_l",
+  "dim_w",
+  "dim_h",
+  "customer_discount",
+  "customer_price",
+  "customer_moq",
+  "customer_stock",
+  "customer_reserved_stock",
+  "customer_pack_size",
+  "customer_pack_weight_g",
+  "customer_pack_l",
+  "customer_pack_w",
+  "customer_pack_h",
+  "retailer_discount",
+  "retailer_price",
+  "retailer_moq",
+  "retailer_stock",
+  "retailer_reserved_stock",
+  "retailer_pack_size",
+  "retailer_pack_weight_g",
+  "retailer_pack_l",
+  "retailer_pack_w",
+  "retailer_pack_h",
+  "distributor_discount",
+  "distributor_price",
+  "distributor_moq",
+  "distributor_stock",
+  "distributor_reserved_stock",
+  "distributor_pack_size",
+  "distributor_pack_weight_g",
+  "distributor_pack_l",
+  "distributor_pack_w",
+  "distributor_pack_h",
+  "commission_value",
+  "max_commission",
+  "shipping_days",
+]);
+
+const onlineFieldLabel = (column: (typeof PRODUCT_MASTER_COLUMNS)[number]) =>
+  (column.detailHeader || column.topHeader).replace(/\s+/g, " ").trim();
+
+function BulkApplyBar({
+  columns,
+  onApply,
+}: {
+  columns: Array<(typeof PRODUCT_MASTER_COLUMNS)[number]>;
+  onApply: (key: ProductMasterColumnKey, value: string) => void;
+}) {
+  const editable = columns.filter((column) => !ONLINE_READ_ONLY_KEYS.has(column.key));
+  const [field, setField] = useState<ProductMasterColumnKey>(editable[0]?.key ?? "mrp");
+  const [value, setValue] = useState("");
+
+  if (!editable.length) return null;
+
+  return (
+    <div className="flex flex-wrap items-end gap-2 rounded-lg border bg-slate-50 p-3">
+      <label className="space-y-1 text-xs">
+        <span className="font-medium text-slate-600">Apply field to all variants</span>
+        <select
+          className="h-9 min-w-[220px] rounded-md border bg-white px-2"
+          value={field}
+          onChange={(event) => setField(event.target.value as ProductMasterColumnKey)}
+        >
+          {editable.map((column) => (
+            <option key={column.key} value={column.key}>
+              #{column.serial} {onlineFieldLabel(column)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="space-y-1 text-xs">
+        <span className="font-medium text-slate-600">Value</span>
+        <input
+          className="h-9 min-w-[180px] rounded-md border bg-white px-2"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          placeholder="Enter value"
+        />
+      </label>
+      <Button type="button" size="sm" variant="outline" onClick={() => onApply(field, value)}>
+        Apply to All ↓
+      </Button>
+    </div>
+  );
+}
+
+function OnlineGroupEditor({
+  label,
+  columns,
+  rows,
+  setCell,
+  applyAll,
+  open,
+}: {
+  label: string;
+  columns: Array<(typeof PRODUCT_MASTER_COLUMNS)[number]>;
+  rows: OnlineRow[];
+  setCell: (rowIndex: number, key: ProductMasterColumnKey, value: string) => void;
+  applyAll: (key: ProductMasterColumnKey, value: string) => void;
+  open?: boolean;
+}) {
+  return (
+    <details className="rounded-xl border bg-white" open={open}>
+      <summary className="cursor-pointer select-none px-4 py-3 font-semibold">{label}</summary>
+      <div className="space-y-3 border-t p-4">
+        <BulkApplyBar columns={columns} onApply={applyAll} />
+        <div className="max-h-[420px] overflow-auto rounded-lg border" tabIndex={0}>
+          <table className="min-w-max border-collapse text-xs">
+            <thead className="sticky top-0 z-10 bg-slate-100">
+              <tr>
+                <th className="sticky left-0 z-20 min-w-[56px] border-b border-r bg-slate-100 p-2 text-left">
+                  Row
+                </th>
+                {columns.map((column) => (
+                  <th key={column.key} className="min-w-[150px] max-w-[240px] border-b border-r p-2 text-left">
+                    <div className="font-semibold">{onlineFieldLabel(column)}</div>
+                    <div className="mt-0.5 font-mono text-[10px] text-slate-400">#{column.serial}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={row.excelRow} className="border-t">
+                  <td className="sticky left-0 z-10 border-r bg-white p-2 font-mono">{row.excelRow}</td>
+                  {columns.map((column) => {
+                    const value = row.values[PRODUCT_MASTER_COLUMN_INDEX[column.key]] ?? "";
+                    const readOnly = ONLINE_READ_ONLY_KEYS.has(column.key);
+                    return (
+                      <td key={column.key} className="border-r p-1.5">
+                        <input
+                          className={`h-9 w-full min-w-[140px] rounded-md border px-2 ${
+                            readOnly ? "bg-slate-50 text-slate-500" : "bg-white"
+                          }`}
+                          type={ONLINE_NUMERIC_KEYS.has(column.key) ? "number" : "text"}
+                          value={String(value)}
+                          readOnly={readOnly}
+                          onChange={(event) => setCell(rowIndex, column.key, event.target.value)}
+                          title={column.productManagerField}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  );
+}
 
 const uniqueValues = (values: unknown[]) => {
   const seen = new Set<string>();
@@ -74,6 +268,8 @@ function BulkCatalog() {
   const [parsed, setParsed] = useState<any>();
   const [preview, setPreview] = useState<any>();
   const [busy, setBusy] = useState(false);
+  const [onlineRows, setOnlineRows] = useState<OnlineRow[]>([]);
+  const [onlineMode, setOnlineMode] = useState(false);
 
   const category = config.data?.categories?.find((row: any) => row.id === categoryId);
 
@@ -110,15 +306,120 @@ function BulkCatalog() {
     choices.every((choice) => choice.selectedValues.length > 0) &&
     combinations.length > 0;
 
+  const buildOnlineRows = (): OnlineRow[] => {
+    if (!category) return [];
+
+    return combinations.map((combination, index) => {
+      const values = Array(PRODUCT_MASTER_COLUMNS.length).fill("");
+      const set = (key: ProductMasterColumnKey, value: unknown) => {
+        values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value ?? "";
+      };
+
+      set("sr_no", index + 1);
+      set("function", "Create");
+      set("category_name", category.name);
+      set("product_name", productName.trim());
+      set("main_sku", mainSku.trim().toUpperCase());
+      set("brand", brandName.trim() || "AURONA");
+      set("unit", unit.trim() || "Pc");
+      set("model", modelName.trim());
+      set("variant_name", variantName(combination));
+      set("variant_sku", generateVariantSku(mainSku, combination));
+      combination.slice(0, 3).forEach((selection, slot) => {
+        const nameKey = (`variation_${slot + 1}_name`) as ProductMasterColumnKey;
+        const valueKey = (`variation_${slot + 1}_value`) as ProductMasterColumnKey;
+        set(nameKey, selection.name);
+        set(valueKey, selection.value);
+      });
+      set(
+        "attributes_json",
+        JSON.stringify(Object.fromEntries(combination.map((item) => [item.name, item.value]))),
+      );
+
+      return { excelRow: index + 4, values };
+    });
+  };
+
+  const openOnlineEditor = () => {
+    if (!readyToGenerate) {
+      toast.error("Complete Steps 1–3 before entering product details.");
+      return;
+    }
+    setOnlineRows(buildOnlineRows());
+    setOnlineMode(true);
+    setParsed(undefined);
+    setPreview(undefined);
+  };
+
+  const setOnlineCell = (rowIndex: number, key: ProductMasterColumnKey, value: string) => {
+    setOnlineRows((current) =>
+      current.map((row, index) => {
+        if (index !== rowIndex) return row;
+        const values = [...row.values];
+        values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value;
+        return { ...row, values };
+      }),
+    );
+  };
+
+  const applyOnlineAll = (key: ProductMasterColumnKey, value: string) => {
+    setOnlineRows((current) =>
+      current.map((row) => {
+        const values = [...row.values];
+        values[PRODUCT_MASTER_COLUMN_INDEX[key]] = value;
+        return { ...row, values };
+      }),
+    );
+    toast.success(
+      `${onlineFieldLabel(PRODUCT_MASTER_COLUMNS[PRODUCT_MASTER_COLUMN_INDEX[key]])} applied to all variants`,
+    );
+  };
+
+  const previewOnline = async () => {
+    if (!onlineRows.length || !category) return;
+    setBusy(true);
+    try {
+      const payload = {
+        metadata: {
+          template_version: "aurona-product-master-v1",
+          category_id: categoryId,
+          category_name: category.name,
+          main_sku: mainSku.trim().toUpperCase(),
+          variation_configuration: variations,
+          source: "online",
+        },
+        rows: onlineRows,
+      };
+      const nextPreview = await previewFn({ data: payload as any });
+      setParsed(payload);
+      setPreview(nextPreview);
+      toast.success(
+        nextPreview.errorCount
+          ? "Validation completed with errors"
+          : "Online details validated and ready to preview",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Online validation failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const resetCategory = (nextCategoryId: string) => {
     setCategoryId(nextCategoryId);
     setChoices([]);
     setParsed(undefined);
     setPreview(undefined);
+    setOnlineRows([]);
+    setOnlineMode(false);
   };
 
   const addChoice = (id: string) => {
     if (!id) return;
+    setOnlineRows([]);
+    setOnlineMode(false);
+    setParsed(undefined);
+    setPreview(undefined);
     const option = availableVariations.find((row) => row.id === id);
     if (!option || choices.length >= 3 || choices.some((choice) => choice.id === id)) return;
     setChoices((current) => [
@@ -135,6 +436,10 @@ function BulkCatalog() {
 
   const moveChoice = (index: number, direction: -1 | 1) => {
     const nextIndex = index + direction;
+    setOnlineRows([]);
+    setOnlineMode(false);
+    setParsed(undefined);
+    setPreview(undefined);
     if (nextIndex < 0 || nextIndex >= choices.length) return;
     setChoices((current) => {
       const next = [...current];
@@ -144,6 +449,10 @@ function BulkCatalog() {
   };
 
   const toggleValue = (choiceIndex: number, value: string) => {
+    setOnlineRows([]);
+    setOnlineMode(false);
+    setParsed(undefined);
+    setPreview(undefined);
     setChoices((current) =>
       current.map((choice, index) => {
         if (index !== choiceIndex) return choice;
@@ -214,6 +523,8 @@ function BulkCatalog() {
       );
       setParsed(undefined);
       setPreview(undefined);
+      setOnlineRows([]);
+      setOnlineMode(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Import failed; no changes were committed");
     } finally {
@@ -511,53 +822,122 @@ function BulkCatalog() {
         )}
       </section>
 
-      <section className="space-y-4 rounded-xl border bg-white p-5">
-        <div>
-          <h2 className="font-semibold">Product Master Column Mapping / Template Structure</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            This is the exact 70-column Product Master order used by Excel generation, upload validation, preview and import mapping.
-            The same source-of-truth definition drives every stage, so a column cannot be silently remapped by position.
+      {combinations.length > 0 && (
+        <section className="space-y-4 rounded-xl border bg-white p-5">
+          <div>
+            <h2 className="font-semibold">Choose how to enter product details</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Both options use the same Product Master 70-column source-of-truth mapping.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={openOnlineEditor}
+              className="rounded-xl border-2 border-slate-900 bg-slate-900 p-4 text-left text-white transition hover:bg-slate-800"
+            >
+              <div className="text-base font-semibold">📝 Fill Product Details Online</div>
+              <div className="mt-1 text-xs text-slate-200">Recommended for a few products</div>
+            </button>
+            <button
+              type="button"
+              onClick={generate}
+              disabled={!readyToGenerate}
+              className="rounded-xl border-2 border-slate-200 bg-white p-4 text-left transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <div className="text-base font-semibold">📥 Download Excel for Bulk Entry</div>
+              <div className="mt-1 text-xs text-slate-500">Recommended for many products</div>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {onlineMode && onlineRows.length > 0 && (
+        <section className="space-y-4 rounded-xl border bg-white p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Enter Product Details</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                One row per generated variant. Generated product/SKU/variation fields are prefilled; fill only the remaining details.
+              </p>
+            </div>
+            <div className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700">
+              {onlineRows.length} variant{onlineRows.length === 1 ? "" : "s"}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {ONLINE_GROUPS.map((group) => {
+              const columns = PRODUCT_MASTER_COLUMNS.filter(
+                (column) => column.serial >= group.from && column.serial <= group.to,
+              );
+              return (
+                <OnlineGroupEditor
+                  key={group.id}
+                  label={group.label}
+                  columns={columns}
+                  rows={onlineRows}
+                  setCell={setOnlineCell}
+                  applyAll={applyOnlineAll}
+                  open={group.id === "basic"}
+                />
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" onClick={previewOnline} disabled={busy}>
+              {busy ? "Validating…" : "Validate & Preview Online Details"}
+            </Button>
+            <span className="text-xs text-slate-500">
+              Uses the same validation and import path as an uploaded Product Master Excel file.
+            </span>
+          </div>
+        </section>
+      )}
+
+      <details className="rounded-xl border bg-white">
+        <summary className="cursor-pointer select-none p-5 font-semibold">
+          View Technical Column Mapping (70 columns)
+        </summary>
+        <div className="space-y-4 border-t p-5">
+          <p className="text-xs text-slate-500">
+            Reference only. The exact same 70-column definition drives online entry, Excel generation, upload validation,
+            preview and database import.
           </p>
-        </div>
-
-        <div className="max-h-[560px] overflow-auto rounded-lg border" tabIndex={0}>
-          <table className="min-w-[1180px] w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-20 bg-slate-100 shadow-sm">
-              <tr>
-                <th className="w-16 border-b p-2 text-left">#</th>
-                <th className="w-52 border-b p-2 text-left">Group</th>
-                <th className="w-72 border-b p-2 text-left">Excel field</th>
-                <th className="border-b p-2 text-left">Product Manager / Database mapping</th>
-              </tr>
-            </thead>
-            <tbody>
-              {PRODUCT_MASTER_COLUMNS.map((column) => (
-                <tr key={column.serial} className="border-t bg-white align-top">
-                  <td className="p-2 font-mono font-semibold">{column.serial}</td>
-                  <td className="p-2">{column.group}</td>
-                  <td className="p-2">
-                    <div className="font-medium">
-                      {column.detailHeader || column.topHeader.replace(/\s+/g, " ").trim()}
-                    </div>
-                    {column.detailHeader && column.topHeader && (
-                      <div className="mt-0.5 text-xs text-slate-500">
-                        Excel group: {column.topHeader.replace(/\s+/g, " ").trim()}
-                      </div>
-                    )}
-                    <div className="mt-0.5 font-mono text-[11px] text-slate-400">{column.key}</div>
-                  </td>
-                  <td className="p-2 font-mono text-xs text-slate-700">{column.productManagerField}</td>
+          <div className="max-h-[560px] overflow-auto rounded-lg border" tabIndex={0}>
+            <table className="min-w-[1180px] w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-20 bg-slate-100 shadow-sm">
+                <tr>
+                  <th className="w-16 border-b p-2 text-left">#</th>
+                  <th className="w-52 border-b p-2 text-left">Group</th>
+                  <th className="w-72 border-b p-2 text-left">Excel field</th>
+                  <th className="border-b p-2 text-left">Product Manager / Database mapping</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {PRODUCT_MASTER_COLUMNS.map((column) => (
+                  <tr key={column.serial} className="border-t bg-white align-top">
+                    <td className="p-2 font-mono font-semibold">{column.serial}</td>
+                    <td className="p-2">{column.group}</td>
+                    <td className="p-2">
+                      <div className="font-medium">
+                        {column.detailHeader || column.topHeader.replace(/\s+/g, " ").trim()}
+                      </div>
+                      {column.detailHeader && column.topHeader && (
+                        <div className="mt-0.5 text-xs text-slate-500">
+                          Excel group: {column.topHeader.replace(/\s+/g, " ").trim()}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2 font-mono text-xs text-slate-700">{column.productManagerField}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <p className="text-xs text-slate-500">
-          The visible Excel workbook still preserves Manu's grouped Row 1 headers, Row 2 field headers and Row 3 serial numbers 1–70.
-          This mapping table explains where each exact Excel column is written; it does not alter the Step 1–5 workflow.
-        </p>
-      </section>
+      </details>
 
       <section className="space-y-4 rounded-xl border bg-white p-5">
         <div>
@@ -567,7 +947,7 @@ function BulkCatalog() {
           </p>
         </div>
         <Button onClick={generate} disabled={!readyToGenerate}>
-          <Download className="mr-1 h-4 w-4" /> Generate Excel Template
+          <Download className="mr-1 h-4 w-4" /> Download Excel Template
         </Button>
       </section>
 
@@ -590,7 +970,7 @@ function BulkCatalog() {
           />
           <Button asChild disabled={busy}>
             <span>
-              <Upload className="mr-1 h-4 w-4" /> Choose completed Excel
+              <Upload className="mr-1 h-4 w-4" /> Upload Completed Excel
             </span>
           </Button>
         </label>
