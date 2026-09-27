@@ -46,6 +46,22 @@ const MASTER_MERGES = [
 ].sort();
 
 
+test("Product Master source-of-truth has one explicit Product Manager/database mapping for every column", () => {
+  assert.equal(PRODUCT_MASTER_COLUMNS.length, 70);
+  assert.deepEqual(
+    PRODUCT_MASTER_COLUMNS.map((column) => column.serial),
+    Array.from({ length: 70 }, (_, index) => index + 1),
+  );
+  for (const column of PRODUCT_MASTER_COLUMNS) {
+    assert.ok(column.key, `Column ${column.serial} must have a stable key`);
+    assert.ok(column.group, `Column ${column.serial} must have a visible group`);
+    assert.ok(
+      column.productManagerField,
+      `Column ${column.serial} must document its Product Manager/database mapping`,
+    );
+  }
+});
+
 test("generated workbook headers exactly match the supplied 70-column Product Master template", () => {
   const variations = [{ name: "Watts", values: ["5W"] }];
   const bytes = createBulkProductWorkbook({
