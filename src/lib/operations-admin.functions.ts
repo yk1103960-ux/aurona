@@ -9,7 +9,11 @@ import {
   normalizeBulkCategoryName,
   resolveBulkCategory,
 } from "@/lib/bulk-product-identity";
-import { bulkColumnValue, PRODUCT_MASTER_COLUMNS } from "@/lib/bulk-product-columns";
+import {
+  bulkColumnValue,
+  PRODUCT_MASTER_COLUMN_INDEX,
+  type ProductMasterColumnKey,
+} from "@/lib/bulk-product-columns";
 import {
   COMMISSION_ALL_VARIANTS_LABEL,
   resolveCommissionSetOn,
@@ -781,26 +785,40 @@ const DynamicBulkInput = z.object({
     .array(
       z.object({
         excelRow: z.number().int().min(4),
-        values: z.array(z.unknown()).length(PRODUCT_MASTER_COLUMNS.length),
+        values: z.array(z.unknown()).min(66).max(104),
       }),
     )
     .min(1)
     .max(2000),
 });
 
+function dynamicBulkColumnIndex(metadata: Record<string, unknown>) {
+  const keys = Array.isArray(metadata.column_keys)
+    ? metadata.column_keys.map((key) => String(key))
+    : [];
+  if (!keys.length) return PRODUCT_MASTER_COLUMN_INDEX;
+  return Object.fromEntries(keys.map((key, index) => [key, index])) as Record<ProductMasterColumnKey, number>;
+}
+
+function dynamicVariationCount(columnIndex: Record<ProductMasterColumnKey, number>) {
+  return Object.keys(columnIndex).filter((key) => /^variation_\d+_name$/.test(key)).length;
+}
+
 const textCell = (value: unknown) => String(value ?? "").trim();
 const numericCell = (value: unknown) => value === "" || value == null ? null : Number(value);
 
-function normalizeDynamicRow(row: { excelRow: number; values: unknown[] }) {
-  const value = (key: Parameters<typeof bulkColumnValue>[1]) => bulkColumnValue(row.values, key);
+function normalizeDynamicRow(
+  row: { excelRow: number; values: unknown[] },
+  columnIndex: Record<ProductMasterColumnKey, number>,
+) {
+  const value = (key: ProductMasterColumnKey) => bulkColumnValue(row.values, key, columnIndex);
   const attributes: Record<string, string> = {};
   const variationAxes: Array<{ name: string; value: string; sort_order: number }> = [];
 
-  const variationSlots = [
-    ["variation_1_name", "variation_1_value"],
-    ["variation_2_name", "variation_2_value"],
-    ["variation_3_name", "variation_3_value"],
-  ] as const;
+  const variationSlots = Array.from({ length: dynamicVariationCount(columnIndex) }, (_, index) => [
+    `variation_${index + 1}_name`,
+    `variation_${index + 1}_value`,
+  ] as const);
 
   for (const [nameKey, valueKey] of variationSlots) {
     const name = textCell(value(nameKey));
@@ -891,7 +909,8 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
   .handler(async ({ data, context }) => {
     await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const rows = data.rows.map(normalizeDynamicRow);
+    const columnIndex = dynamicBulkColumnIndex(data.metadata);
+    const rows = data.rows.map((row) => normalizeDynamicRow(row, columnIndex));
     const [categoriesResult, familiesResult, variantsResult, programsResult] = await Promise.all([
       productManagerCategoriesQuery(supabaseAdmin as any),
       (supabaseAdmin as any).from("product_families").select("id,main_sku"),
