@@ -2560,7 +2560,7 @@ function CustomerTab({
             </button>
           ))}
           <span className="ml-auto text-xs text-slate-500">
-            Each account type keeps its own prices. Stock is shared by all three.
+            Each account type keeps its own prices, stock and pack size. The shared SKU identity remains the same.
           </span>
         </div>
       )}
@@ -3825,7 +3825,7 @@ function SegmentPriceTable({
         </div>
 
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-          Stock belongs to the SKU and is shared by customer, retailer and distributor accounts.
+          Stock shown here belongs to the selected account type and is counted in pieces.
           {segment === "customer" ? "" : " Blank private-channel price or MRP remains unset and does not inherit customer pricing."}
         </div>
       </section>
