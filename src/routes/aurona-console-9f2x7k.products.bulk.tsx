@@ -414,6 +414,19 @@ function BulkCatalog() {
     setOnlineMode(false);
   };
 
+  const invalidateOnlineDraft = () => {
+    if (!onlineRows.length && !onlineMode) return;
+    setOnlineRows([]);
+    setOnlineMode(false);
+    setParsed(undefined);
+    setPreview(undefined);
+  };
+
+  const removeChoice = (index: number) => {
+    invalidateOnlineDraft();
+    setChoices((current) => current.filter((_, choiceIndex) => choiceIndex !== index));
+  };
+
   const addChoice = (id: string) => {
     if (!id) return;
     setOnlineRows([]);
@@ -609,7 +622,10 @@ function BulkCatalog() {
               className="h-10 w-full rounded-md border px-3"
               placeholder="Example: Nexa"
               value={productName}
-              onChange={(event) => setProductName(event.target.value)}
+              onChange={(event) => {
+                invalidateOnlineDraft();
+                setProductName(event.target.value);
+              }}
             />
           </label>
 
@@ -619,7 +635,10 @@ function BulkCatalog() {
               className="h-10 w-full rounded-md border px-3 font-mono uppercase"
               placeholder="Example: CL-NEXA"
               value={mainSku}
-              onChange={(event) => setMainSku(event.target.value)}
+              onChange={(event) => {
+                invalidateOnlineDraft();
+                setMainSku(event.target.value);
+              }}
             />
           </label>
 
@@ -628,7 +647,10 @@ function BulkCatalog() {
             <input
               className="h-10 w-full rounded-md border px-3"
               value={brandName}
-              onChange={(event) => setBrandName(event.target.value)}
+              onChange={(event) => {
+                invalidateOnlineDraft();
+                setBrandName(event.target.value);
+              }}
             />
           </label>
 
@@ -637,7 +659,10 @@ function BulkCatalog() {
             <input
               className="h-10 w-full rounded-md border px-3"
               value={unit}
-              onChange={(event) => setUnit(event.target.value)}
+              onChange={(event) => {
+                invalidateOnlineDraft();
+                setUnit(event.target.value);
+              }}
             />
           </label>
 
@@ -647,7 +672,10 @@ function BulkCatalog() {
               className="h-10 w-full rounded-md border px-3"
               placeholder="Example: NEXA"
               value={modelName}
-              onChange={(event) => setModelName(event.target.value)}
+              onChange={(event) => {
+                invalidateOnlineDraft();
+                setModelName(event.target.value);
+              }}
             />
           </label>
         </div>
@@ -724,7 +752,7 @@ function BulkCatalog() {
                     type="button"
                     size="icon"
                     variant="outline"
-                    onClick={() => setChoices((current) => current.filter((_, i) => i !== index))}
+                    onClick={() => removeChoice(index)}
                     title="Remove variation"
                   >
                     <X className="h-4 w-4" />
