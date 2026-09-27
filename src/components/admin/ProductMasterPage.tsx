@@ -1110,13 +1110,14 @@ export function ProductMaster() {
       >
         <table className="w-max min-w-full border-collapse text-xs">
           <colgroup>
+            <col style={{ width: 44, minWidth: 44, maxWidth: 44 }} />
             {columns.map((column) => (
               <col key={column.key} style={{ width: widths[column.key] ?? column.width }} />
             ))}
           </colgroup>
           <thead className="sticky top-0 z-30 bg-slate-100 text-[11px] uppercase tracking-wide text-slate-600 shadow-sm">
             <tr>
-              <th className="sticky left-0 z-40 w-10 border-b border-r bg-slate-100 p-2">
+              <th className="sticky left-0 z-40 w-[44px] min-w-[44px] max-w-[44px] border-b border-r bg-slate-100 p-0 text-center">
                 <input
                   type="checkbox"
                   aria-label="Select visible SKUs"
@@ -1374,7 +1375,7 @@ function FamilyRows({
   return (
     <>
       <tr className="border-b border-slate-200 bg-slate-50/90">
-        <td className="sticky left-0 z-20 border-r bg-slate-50 p-2 text-center">
+        <td className="sticky left-0 z-20 w-[44px] min-w-[44px] max-w-[44px] border-r bg-slate-50 p-0 text-center">
           <input
             type="checkbox"
             aria-label={`Select ${family.name}`}
@@ -1387,7 +1388,7 @@ function FamilyRows({
         {columns.map((column, index) => (
           <td
             key={column.key}
-            className={`${column.key === "family" ? "sticky left-10 z-20 bg-slate-50" : ""} border-r p-2 align-middle`}
+            className={`${column.key === "family" ? "sticky left-[44px] z-20 bg-slate-50" : ""} border-r p-2 align-middle`}
           >
             {index === 0 && column.key !== "family" ? null : column.key === "family" ? (
               <button
@@ -1535,7 +1536,7 @@ function FamilyRows({
               key={row.id}
               className={`${drafts[row.id] ? "bg-amber-50/70" : "bg-white hover:bg-sky-50/40"} border-b`}
             >
-              <td className="sticky left-0 z-10 border-r bg-inherit p-2 text-center">
+              <td className="sticky left-0 z-10 w-[44px] min-w-[44px] max-w-[44px] border-r bg-inherit p-0 text-center">
                 <input
                   type="checkbox"
                   aria-label={`Select ${row.sku}`}
@@ -1594,7 +1595,7 @@ function MasterCell({
   onVariantState: (action: "archive" | "restore") => void;
   onVariantDeletePermanent: () => void;
 }) {
-  const common = `${column.key === "family" ? "sticky left-10 z-10 bg-inherit" : ""} border-r p-1.5 align-middle`;
+  const common = `${column.key === "family" ? "sticky left-[44px] z-10 bg-inherit" : ""} border-r p-1.5 align-middle`;
   if (column.key === "image")
     return (
       <td className={common}>
