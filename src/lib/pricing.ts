@@ -46,6 +46,7 @@ export function useRolePricingRealtime() {
     const refresh = () => {
       qc.invalidateQueries({ queryKey: ["my-role-status"] });
       qc.invalidateQueries({ queryKey: ["visible-prices"] });
+      qc.invalidateQueries({ queryKey: ["visible-inventory"] });
     };
     (async () => {
       const { data } = await supabase.auth.getUser();
