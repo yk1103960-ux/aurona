@@ -21,7 +21,15 @@ function CategoriesAdmin() {
 
   const q = useQuery({
     queryKey: ["admin-categories"],
-    queryFn: async () => (await supabase.from("categories").select("*").order("parent_group").order("sort_order")).data as Cat[] ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("parent_group")
+        .order("sort_order");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as Cat[];
+    },
   });
   useRealtime(["categories"], () => q.refetch());
 
@@ -54,6 +62,16 @@ function CategoriesAdmin() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Categories</h1>
+
+      {q.isError && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <div className="font-semibold">Could not load categories</div>
+          <p className="mt-1">{q.error instanceof Error ? q.error.message : "Please retry."}</p>
+          <Button className="mt-3" type="button" variant="outline" onClick={() => q.refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
