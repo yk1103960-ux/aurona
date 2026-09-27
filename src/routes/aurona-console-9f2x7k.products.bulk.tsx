@@ -18,7 +18,6 @@ import {
 import {
   buildProductMasterColumnIndex,
   buildProductMasterColumns,
-  PRODUCT_MASTER_COLUMNS,
   type ProductMasterColumn,
   type ProductMasterColumnKey,
 } from "@/lib/bulk-product-columns";
@@ -267,6 +266,7 @@ function BulkCatalog() {
   const [busy, setBusy] = useState(false);
   const [onlineRows, setOnlineRows] = useState<OnlineRow[]>([]);
   const [onlineMode, setOnlineMode] = useState(false);
+  const [variationValueDrafts, setVariationValueDrafts] = useState<Record<string, string>>({});
 
   const category = config.data?.categories?.find((row: any) => row.id === categoryId);
   const activeColumns = useMemo(
@@ -293,6 +293,7 @@ function BulkCatalog() {
     Boolean(category && productName.trim() && mainSku.trim()) &&
     choices.length > 0 &&
     choices.every((choice) => choice.name.trim() && choice.selectedValues.length > 0) &&
+    new Set(choices.map((choice) => choice.axisKey)).size === choices.length &&
     combinations.length > 0;
 
   const buildOnlineRows = (): OnlineRow[] => {
@@ -399,6 +400,7 @@ function BulkCatalog() {
   const resetCategory = (nextCategoryId: string) => {
     setCategoryId(nextCategoryId);
     setChoices([]);
+    setVariationValueDrafts({});
     setParsed(undefined);
     setPreview(undefined);
     setOnlineRows([]);
@@ -415,7 +417,17 @@ function BulkCatalog() {
 
   const removeChoice = (index: number) => {
     invalidateOnlineDraft();
-    setChoices((current) => current.filter((_, choiceIndex) => choiceIndex !== index));
+    setChoices((current) => {
+      const removed = current[index];
+      if (removed) {
+        setVariationValueDrafts((drafts) => {
+          const next = { ...drafts };
+          delete next[removed.id];
+          return next;
+        });
+      }
+      return current.filter((_, choiceIndex) => choiceIndex !== index);
+    });
   };
 
   const addChoice = (id: string) => {
@@ -783,7 +795,7 @@ function BulkCatalog() {
                     <span className="font-medium">Values</span>
                     <textarea
                       className="min-h-[80px] w-full rounded-md border px-3 py-2"
-                      value={choice.selectedValues.join(", ")}
+                      value={variationValueDrafts[choice.id] ?? choice.selectedValues.join(", ")}
                       placeholder={
                         /watt/i.test(choice.name)
                           ? "5W, 7W, 9W"
@@ -793,9 +805,18 @@ function BulkCatalog() {
                               ? "6, 12"
                               : "Enter comma-separated values"
                       }
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const raw = event.target.value;
+                        setVariationValueDrafts((current) => ({ ...current, [choice.id]: raw }));
                         updateChoice(choiceIndex, {
-                          selectedValues: parsePastedValues(event.target.value),
+                          selectedValues: parsePastedValues(raw),
+                        });
+                      }}
+                      onBlur={() =>
+                        setVariationValueDrafts((current) => {
+                          const next = { ...current };
+                          delete next[choice.id];
+                          return next;
                         })
                       }
                     />
