@@ -1123,8 +1123,8 @@ export function ProductMaster() {
             ))}
           </colgroup>
           <thead className="sticky top-0 z-[70] bg-slate-100 text-[11px] uppercase tracking-wide text-slate-600">
-            <tr>
-              <th className="sticky left-0 top-0 z-[100] w-[44px] min-w-[44px] max-w-[44px] border-b border-r bg-slate-100 p-0 text-center shadow-[0_1px_0_0_rgb(226_232_240)]">
+            <tr className="bg-slate-100">
+              <th className="sticky left-0 z-[90] w-[44px] min-w-[44px] max-w-[44px] border-b border-r bg-slate-100 p-0 text-center shadow-[0_1px_0_0_rgb(226_232_240)]">
                 <input
                   type="checkbox"
                   aria-label="Select visible SKUs"
@@ -1157,7 +1157,7 @@ export function ProductMaster() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="relative z-0">
             {shownFamilies.map((family) => {
               const open = expanded.has(family.id);
               return (
@@ -1327,7 +1327,7 @@ function MasterHead({
 }) {
   return (
     <th
-      className={`sticky top-0 ${stickyLeft != null ? "z-[95]" : "z-[80]"} border-b border-r bg-slate-100 px-2 py-3 text-left font-semibold shadow-[0_1px_0_0_rgb(226_232_240)]`}
+      className={`${stickyLeft != null ? "sticky z-[90]" : "relative z-[75]"} border-b border-r bg-slate-100 px-2 py-3 text-left font-semibold shadow-[0_1px_0_0_rgb(226_232_240)]`}
       style={{ width, left: stickyLeft }}
     >
       {column.label}
