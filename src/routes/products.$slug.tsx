@@ -173,8 +173,9 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
     0,
     Number(inventory?.stock ?? variant.stock) - Number(inventory?.reserved_stock ?? 0),
   );
-  const inStock = availableStock > 0;
   const packSize = Math.max(1, Number(inventory?.pack_size ?? variant.pack_size ?? 1));
+  const maxPackQty = Math.floor(availableStock / packSize);
+  const inStock = maxPackQty > 0;
   const effectiveMoq = Math.max(1, Number(inventory?.moq ?? variant.moq ?? 1));
   const discountAmount = Math.max(0, effectiveMrp - effectivePrice);
   const pricePerPack = effectivePrice * packSize;
@@ -413,7 +414,11 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                   <Minus className="h-4 w-4" />
                 </button>
                 <div className="w-12 text-center text-sm font-semibold">{qty}</div>
-                <button onClick={() => setQty(qty + 1)} className="grid h-10 w-10 place-items-center hover:bg-surface">
+                <button
+                  onClick={() => setQty(Math.min(maxPackQty, qty + 1))}
+                  disabled={!inStock || qty >= maxPackQty}
+                  className="grid h-10 w-10 place-items-center hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                >
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
