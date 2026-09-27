@@ -881,7 +881,7 @@ export function VariantEditor({
   const sectionDescription =
     workflowLabel
       ? usesSharedSkuSet
-        ? `Use the existing shared SKUs to enter independent ${workflowLabel.toLowerCase()} pricing and package dimensions. Customer pricing and shared stock are not changed.`
+        ? `Use the existing shared SKUs to enter independent ${workflowLabel.toLowerCase()} pricing, stock, pack size and package dimensions. Other buyer-type values are not changed.`
         : `Create shared variations once, enter ${workflowLabel.toLowerCase()} price and stock, then add weight and dimensions.`
       : displayOnly === "quick"
         ? "Create, edit or archive variation combinations and their shared SKUs."
