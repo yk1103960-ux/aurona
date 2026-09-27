@@ -151,6 +151,31 @@ test("approved Main SKU is the only base used for all eight 2x2x2 generated vari
   }
 });
 
+test("generated workbook variant SKU is based only on Main SKU, never product/model name", () => {
+  const variations = [
+    { name: "Watts", values: ["5W"] },
+    { name: "Output Colour", values: ["RED"] },
+    { name: "Pack Size", values: ["Pack of 6"] },
+  ];
+  const combinations = generateVariationCombinations(variations);
+  const bytes = createBulkProductWorkbook({
+    categoryId: "00000000-0000-0000-0000-000000000001",
+    categoryName: "Concealed Lights",
+    productName: "NEXA",
+    mainSku: "CL-NE",
+    brandName: "AURONA",
+    unit: "Pc",
+    modelName: "NEXA",
+    variations,
+    combinations,
+  });
+
+  const parsed = parseBulkProductWorkbook(bytes);
+  assert.equal(parsed.rows.length, 1);
+  assert.equal(bulkColumnValue(parsed.rows[0].values, "main_sku"), "CL-NE");
+  assert.equal(bulkColumnValue(parsed.rows[0].values, "variant_sku"), "CL-NE-5W-RED-P6");
+});
+
 test("generated Product Master workbook preserves all 70 master columns and round-trips exact selected rows", () => {
   const variations = [
     { name: "Watts", values: ["5W", "7W"] },
