@@ -194,18 +194,25 @@ export function variationIssues(row: Variant, rows: Variant[], axes: Axis[]): st
       issues.push(`${key.replaceAll("_", " ")} must be zero or more.`);
   for (const key of [
     "stock",
+    "retailer_stock",
+    "distributor_stock",
     "low_stock_threshold",
     "sort_order",
     "moq",
     "retailer_moq",
     "distributor_moq",
     "pack_size",
+    "retailer_pack_size",
+    "distributor_pack_size",
   ] as const) {
     const value = row[key];
     if (
       value !== null &&
       (!Number.isInteger(value) ||
-        value < (["stock", "low_stock_threshold", "sort_order"].includes(key) ? 0 : 1))
+        value <
+          (["stock", "retailer_stock", "distributor_stock", "low_stock_threshold", "sort_order"].includes(key)
+            ? 0
+            : 1))
     )
       issues.push(`${key.replaceAll("_", " ")} must be a valid whole number.`);
   }
