@@ -749,16 +749,15 @@ export function ProductMaster() {
   };
 
   const deleteFamilyPermanently = async (family: Family) => {
+    if (!family.archived_at) {
+      toast.error("Archive this product before deleting it permanently.");
+      return;
+    }
     const confirmed = window.confirm(
-      `Permanently delete "${family.name}" and its ${family.variants.length} SKU/variant record(s)?\n\nThis cannot be undone. Existing order history will be preserved as a snapshot.${
-        family.archived_at ? "" : "\n\nThe product will be archived first, then deleted."
-      }`,
+      `Permanently delete "${family.name}" and its ${family.variants.length} SKU/variant record(s)?\n\nThis cannot be undone. Existing order history will be preserved as a snapshot.`,
     );
     if (!confirmed) return;
     try {
-      if (!family.archived_at) {
-        await adminBulkProductFamilyAction({ data: { familyIds: [family.id], action: "archive" } });
-      }
       await adminDeleteProductFamilyPermanent({ data: { familyId: family.id } });
       toast.success(`${family.name} permanently deleted`);
       setSelected((current) => {
@@ -1513,15 +1512,6 @@ function FamilyRows({
                       onClick={() => onState("archive")}
                     >
                       <Archive className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      aria-label="Delete product permanently"
-                      title="Delete permanently — cannot be undone"
-                      onClick={onDeletePermanent}
-                    >
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </>
                 )}
