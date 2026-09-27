@@ -133,7 +133,7 @@ const variantName = (row: Variant) => {
 
 const savedOptionLabel = (key: string) =>
   PRODUCT_VARIATION_PRESETS.find(([presetKey]) => presetKey === key)?.[1] ??
-  key.replace(/_/g, " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+  key.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 /** Fill option inputs only from persisted axes, attributes, or legacy family fields. */
 const hydrateSavedAxes = (
