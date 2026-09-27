@@ -424,60 +424,62 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     };
   });
 
-// Export reads the full stored fields separately from the compact grid query.
-// The UI's filters, pagination and visible columns are unchanged.
+// Export reads every stored variant in the selected category, independent of grid pagination.
 export const adminExportProductMasterRows = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ familyIds: z.array(z.string().uuid()).max(50) }).parse(input),
+    z.object({ categoryId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdminPermission(context, "catalog.manage");
-    if (!data.familyIds.length) return { families: [], commissions: [], programs: [] };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
-    const [families, variants, axes] = await Promise.all([
-      db.from("product_families").select("*,categories(id,name)").in("id", data.familyIds),
-      db.from("product_variants").select("*").in("family_id", data.familyIds).order("sort_order"),
-      db.from("product_variant_axes").select("*").in("family_id", data.familyIds).order("sort_order"),
-    ]);
-    for (const result of [families, variants, axes]) {
+    const families: any[] = [];
+    for (let start = 0; ; start += 500) {
+      const result = await db.from("product_families")
+        .select("*,categories(id,name)")
+        .eq("category_id", data.categoryId)
+        .is("archived_at", null)
+        .order("id")
+        .range(start, start + 499);
       if (result.error) throw new Error(result.error.message);
+      families.push(...(result.data ?? []));
+      if ((result.data ?? []).length < 500) break;
     }
-    const legacyIds = (families.data ?? [])
-      .filter((family: any) =>
-        family.legacy_product_id &&
-        !(variants.data ?? []).some((variant: any) => variant.family_id === family.id),
-      )
-      .map((family: any) => family.legacy_product_id);
-    const legacy = legacyIds.length
-      ? await db.from("products").select("*").in("id", legacyIds)
-      : { data: [], error: null };
-    if (legacy.error) throw new Error(legacy.error.message);
-    const variantIds = (variants.data ?? []).map((row: any) => row.id);
-    const commissions = variantIds.length
-      ? await db.from("variant_program_commissions").select("*").in("variant_id", variantIds)
-      : { data: [], error: null };
-    if (commissions.error) throw new Error(commissions.error.message);
-    const programIds = [...new Set((commissions.data ?? []).map((row: any) => row.program_id).filter(Boolean))];
-    const programs = programIds.length
-      ? await db.from("referral_programs").select("id,name").in("id", programIds)
-      : { data: [], error: null };
-    if (programs.error) throw new Error(programs.error.message);
+    const fetchByIds = async (table: string, field: string, ids: string[], selection = "*") => {
+      const resultRows: any[] = [];
+      for (let start = 0; start < ids.length; start += 200) {
+        for (let offset = 0; ; offset += 500) {
+          const result = await db.from(table).select(selection)
+            .in(field, ids.slice(start, start + 200))
+            .order("id")
+            .range(offset, offset + 499);
+          if (result.error) throw new Error(result.error.message);
+          resultRows.push(...(result.data ?? []));
+          if ((result.data ?? []).length < 500) break;
+        }
+      }
+      return resultRows;
+    };
+    const familyIds = families.map((family) => family.id);
+    const [variants, axes] = await Promise.all([
+      fetchByIds("product_variants", "family_id", familyIds),
+      fetchByIds("product_variant_axes", "family_id", familyIds),
+    ]);
+    const actualVariants = variants.filter((variant) => !variant.archived_at && variant.id && String(variant.sku ?? "").trim());
+    const legacy = await fetchByIds("products", "id", families.map((family) => family.legacy_product_id).filter(Boolean));
+    const commissions = await fetchByIds("variant_program_commissions", "variant_id", actualVariants.map((row) => row.id));
+    const programs = await fetchByIds("referral_programs", "id", [...new Set(commissions.map((row) => row.program_id).filter(Boolean))], "id,name");
     return {
-      families: data.familyIds.flatMap((id) => {
-        const family = (families.data ?? []).find((item: any) => item.id === id);
-        return family
-          ? [{
-              ...family,
-              legacy: (legacy.data ?? []).find((item: any) => item.id === family.legacy_product_id) ?? null,
-              variants: (variants.data ?? []).filter((item: any) => item.family_id === id),
-              axes: (axes.data ?? []).filter((item: any) => item.family_id === id),
-            }]
-          : [];
-      }),
-      commissions: commissions.data ?? [],
-      programs: programs.data ?? [],
+      families: families.filter((family) => actualVariants.some((variant) => variant.family_id === family.id))
+        .map((family) => ({
+          ...family,
+          legacy: legacy.find((item) => item.id === family.legacy_product_id) ?? null,
+          variants: actualVariants.filter((item) => item.family_id === family.id),
+          axes: axes.filter((item) => item.family_id === family.id),
+        })),
+      commissions,
+      programs,
     };
   });
 
