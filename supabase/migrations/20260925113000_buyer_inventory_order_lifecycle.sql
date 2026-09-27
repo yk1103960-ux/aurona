@@ -1,5 +1,10 @@
 BEGIN;
 
+-- Required by the one-time return restock trigger below. Older return-table
+-- migrations did not create this marker.
+ALTER TABLE public.return_requests
+  ADD COLUMN IF NOT EXISTS restocked_at timestamptz;
+
 ALTER TABLE public.order_items
   ADD COLUMN IF NOT EXISTS buyer_type text NOT NULL DEFAULT 'customer' CHECK (buyer_type IN ('customer','retailer','distributor')),
   ADD COLUMN IF NOT EXISTS stock_units integer CHECK (stock_units IS NULL OR stock_units > 0);
@@ -75,10 +80,26 @@ BEGIN
       IF rec.variant_id IS NOT NULL THEN
         SELECT * INTO v FROM public.product_variants WHERE id=rec.variant_id FOR UPDATE;
         units:=LEAST(rec.return_qty,rec.quantity)*GREATEST(1,COALESCE(rec.stock_units/NULLIF(rec.quantity,0),1));
-        UPDATE public.product_variants SET stock=GREATEST(0,stock-LEAST(rec.return_qty,rec.quantity)),updated_at=now() WHERE id=v.id;
-        IF rec.buyer_type='customer' THEN UPDATE public.product_variants SET stock=stock+units WHERE id=v.id;
-        ELSIF rec.buyer_type='retailer' THEN UPDATE public.product_variants SET retailer_stock=retailer_stock+units WHERE id=v.id;
-        ELSE UPDATE public.product_variants SET distributor_stock=distributor_stock+units WHERE id=v.id; END IF;
+        IF rec.buyer_type='customer' THEN
+          UPDATE public.product_variants SET stock=stock+units,updated_at=now() WHERE id=v.id;
+        ELSIF rec.buyer_type='retailer' THEN
+          UPDATE public.product_variants SET retailer_stock=retailer_stock+units,updated_at=now() WHERE id=v.id;
+        ELSE
+          UPDATE public.product_variants SET distributor_stock=distributor_stock+units,updated_at=now() WHERE id=v.id;
+        END IF;
+        INSERT INTO public.inventory_ledger(
+          variant_id,sku,delta,quantity_after,reason,source,reference_type,reference_id,buyer_type
+        )
+        SELECT
+          v.id,v.sku,units,
+          CASE rec.buyer_type
+            WHEN 'retailer' THEN retailer_stock
+            WHEN 'distributor' THEN distributor_stock
+            ELSE stock
+          END,
+          'Return received','admin','return',NEW.id,rec.buyer_type
+        FROM public.product_variants
+        WHERE id=v.id;
       END IF;
     END LOOP;
   END IF;
