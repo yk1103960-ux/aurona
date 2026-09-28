@@ -508,7 +508,7 @@ function BulkCatalog() {
         combinations,
       };
       const url = URL.createObjectURL(
-        new Blob([await createBulkProductWorkbook(input)], {
+        new Blob([new Uint8Array(await createBulkProductWorkbook(input))], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
       );
