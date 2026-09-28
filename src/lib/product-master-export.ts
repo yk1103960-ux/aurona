@@ -17,10 +17,7 @@ const attribute = (variant: RecordData, axis: RecordData) =>
 
 export function productMasterExportRows(data: ExportData) {
   const families = data.families;
-  const variationCount = families.length
-    ? Math.max(1, ...families.map((family) => family.axes.length))
-    : 3;
-  const columns = buildProductMasterColumns(variationCount);
+  const columns = buildProductMasterColumns();
   const indices = buildProductMasterColumnIndex(columns);
   const rows: Array<Array<string | number | boolean>> = [];
   for (const family of families) {
@@ -47,7 +44,7 @@ export function productMasterExportRows(data: ExportData) {
       set("variant_sku", variant.sku);
       set("variant_id", variant.id || "");
       set("barcode", variant.barcode);
-      axes.forEach((axis, slot) => {
+      axes.slice(0, 3).forEach((axis, slot) => {
         set(`variation_${slot + 1}_name`, axis.label);
         set(`variation_${slot + 1}_value`, attribute(variant, axis));
       });
@@ -107,9 +104,6 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
     const source = styleByKey[column.key] ?? variationStyle(column.key);
     const reference = templateStyles.columns[source];
     sheet.getColumn(index + 1).width = reference.width;
-    for (let row = 1; row <= 3; row += 1) {
-      sheet.getCell(row, index + 1).style = structuredClone(reference.styles[row - 1]) as unknown as ExcelJS.Style;
-    }
     sheet.getCell(1, index + 1).value = column.topHeader || null;
     sheet.getCell(2, index + 1).value = column.detailHeader || null;
     sheet.getCell(3, index + 1).value = column.serial;
@@ -128,6 +122,13 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
       index++;
     }
   }
+  columns.forEach((column, columnIndex) => {
+    const source = styleByKey[column.key] ?? variationStyle(column.key);
+    const reference = templateStyles.columns[source];
+    for (let row = 1; row <= 3; row += 1) {
+      sheet.getCell(row, columnIndex + 1).style = structuredClone(reference.styles[row - 1]) as ExcelJS.Style;
+    }
+  });
   rows.forEach((values, rowIndex) => {
     const row = sheet.getRow(rowIndex + 4);
     row.height = templateStyles.rowHeights[3];
