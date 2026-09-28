@@ -1218,11 +1218,13 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       }
       return { excelRow: row.excel_row, mainSku: row.main_sku, variantSku: row.variant_sku, action: row.function, errors, changes };
     });
+    const blockedProductSkus = new Set(previewRows.filter((row) => row.errors.length > 0).map((row) => row.mainSku));
     return {
       rows: previewRows, normalizedRows: rows,
       productsDetected: new Set(rows.map((row) => row.main_sku)).size,
-      productsToCreate: new Set(previewRows.filter((row) => row.action === 'create' && row.errors.length === 0).map((row) => row.mainSku)).size,
-      productsToUpdate: new Set(previewRows.filter((row) => row.action === 'update' && row.errors.length === 0).map((row) => row.mainSku)).size,
+      productsToCreate: new Set(previewRows.filter((row) => row.action === 'create' && !blockedProductSkus.has(row.mainSku)).map((row) => row.mainSku)).size,
+      productsToUpdate: new Set(previewRows.filter((row) => row.action === 'update' && !blockedProductSkus.has(row.mainSku)).map((row) => row.mainSku)).size,
+      blockedProducts: blockedProductSkus.size,
       variantsToCreate: rows.filter((row) => row.function === 'create').length,
       variantsToUpdate: rows.filter((row) => row.function === 'update').length,
       validRows: previewRows.filter((row) => row.errors.length === 0).length,
