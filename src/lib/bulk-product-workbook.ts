@@ -220,10 +220,10 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
     );
   }
 
-  const rows = matrix
-    .slice(3)
-    .filter((row) => row.some((value) => value !== "" && value != null))
-    .map((row) => row.slice(0, columns.length));
+  const populatedRows = matrix.slice(3)
+    .map((row, index) => ({ excelRow: index + 4, values: row.slice(0, columns.length) }))
+    .filter(({ values }) => values.some((value) => value !== "" && value != null));
+  const rows = populatedRows.map(({ values }) => values);
 
   metadata.variation_count = variationCount;
   metadata.column_keys = columns.map((column) => column.key);
@@ -254,6 +254,6 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
 
   return {
     metadata,
-    rows: rows.map((row, index) => ({ excelRow: index + 4, values: row })),
+    rows: populatedRows,
   };
 }
