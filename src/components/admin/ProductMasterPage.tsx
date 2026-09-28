@@ -838,16 +838,12 @@ export function ProductMaster() {
   };
 
   const exportView = async () => {
-    if (!categoryId) {
-      toast.error("Please select a category to export.");
-      return;
-    }
     try {
       const result = await adminExportProductMasterRows({
-        data: { categoryId },
+        data: categoryId ? { categoryId } : { allCategories: true },
       });
       if (!result.families.some((family) => family.variants.length)) {
-        toast.error("No product variants found in this category to export.");
+        toast.error("No product variants found to export.");
         return;
       }
       const bytes = await createProductMasterExport(result);
