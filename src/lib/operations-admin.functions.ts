@@ -933,8 +933,22 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => DynamicBulkInput.parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdminPermission(context, "catalog.manage");
+    const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // The importer rejects an empty batch before any writes. Check the exact RPC
+    // during preview so "Ready" cannot be shown when a migration is missing.
+    const { error: importProbeError } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v3", {
+      _rows: [],
+      _actor_user_id: actor.userId,
+    });
+    if (importProbeError && !/Import must contain 1 to 2000 rows/i.test(importProbeError.message)) {
+      if (importProbeError.code === "PGRST202") {
+        throw new Error(
+          "Bulk import is unavailable: apply the 20260927162000_bulk_commission_grouping_parity.sql migration to the active database and reload the PostgREST schema cache.",
+        );
+      }
+      throw new Error(`Bulk import database check failed: ${importProbeError.message}`);
+    }
     const columnIndex = dynamicBulkColumnIndex(data.metadata);
     const rows = data.rows.map((row) => normalizeDynamicRow(row, columnIndex));
     const [categoriesResult, familiesResult, variantsResult, programsResult] = await Promise.all([
