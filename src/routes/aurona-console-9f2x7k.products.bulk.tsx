@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowUp, Download, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -652,6 +652,8 @@ function BulkCatalog() {
 
       {showHistory ? <BulkHistory /> : <>
 
+      <h2 className="text-lg font-semibold">CREATE NEW PRODUCTS</h2>
+
       <section className="space-y-5 rounded-xl border bg-white p-5">
         <div>
           <h2 className="font-semibold">Step 1 – Select Category</h2>
@@ -1064,9 +1066,11 @@ function BulkCatalog() {
         const currentBusy = mode === "create" ? busy : updateBusy;
         const currentResult = mode === "create" ? importResult : updateResult;
         const currentFileName = mode === "create" ? fileName : updateFileName;
-        return <section key={mode} className="space-y-4 rounded-xl border bg-white p-5">
+        return <Fragment key={mode}>
+        {mode === "update" && <div role="separator" className="border-t border-slate-300 pt-5" />}
+        <section className="space-y-4 rounded-xl border bg-white p-5">
         <div>
-          <h2 className="font-semibold">{mode === "create" ? "Step 5 – CREATE PRODUCTS IN BULK" : "UPDATE PRODUCTS IN BULK"}</h2>
+          <h2 className="font-semibold">{mode === "create" ? "Step 5 – CREATE PRODUCTS IN BULK" : "UPDATE EXISTING PRODUCTS IN BULK"}</h2>
           <p className="mt-1 text-xs text-slate-500">
             {mode === "create"
               ? "Upload a new-products Excel file made from the same Product Master template. Existing products are blocked."
@@ -1161,11 +1165,12 @@ function BulkCatalog() {
               disabled={currentBusy || currentPreview.errorCount > 0 || !currentParsed}
               onClick={() => commit(mode)}
             >
-              {currentBusy ? "Importing…" : mode === "create" ? "Create Products" : "Update Products"}
+              {currentBusy ? "Importing…" : mode === "create" ? "Confirm & Create Products" : "Confirm & Update Products"}
             </Button>
           </>
         )}
-      </section>;
+      </section>
+      </Fragment>;
       })}
       </>}
     </div>
