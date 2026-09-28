@@ -146,10 +146,6 @@ export async function createBulkProductWorkbook(config: TemplateConfig): Promise
   columns.forEach((column, index) => {
     const reference = templateStyles.columns[index];
     ws.getColumn(index + 1).width = reference.width;
-    for (let row = 1; row <= 3; row += 1) {
-      const cell = ws.getCell(row, index + 1);
-      cell.style = structuredClone(reference.styles[row - 1]) as any;
-    }
     ws.getCell(1, index + 1).value = column.topHeader || null;
     ws.getCell(2, index + 1).value = column.detailHeader || null;
     ws.getCell(3, index + 1).value = column.serial;
@@ -160,6 +156,12 @@ export async function createBulkProductWorkbook(config: TemplateConfig): Promise
   for (const merge of productMasterMerges(columns)) {
     ws.mergeCells(merge.s.r + 1, merge.s.c + 1, merge.e.r + 1, merge.e.c + 1);
   }
+  columns.forEach((_, index) => {
+    const reference = templateStyles.columns[index];
+    for (let row = 1; row <= 3; row += 1) {
+      ws.getCell(row, index + 1).style = structuredClone(reference.styles[row - 1]) as any;
+    }
+  });
   rows.forEach((values, rowIndex) => {
     const row = ws.getRow(rowIndex + 4);
     row.height = templateStyles.rowHeights[3];
