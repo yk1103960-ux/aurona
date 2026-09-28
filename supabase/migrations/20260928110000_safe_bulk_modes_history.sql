@@ -224,17 +224,17 @@ BEGIN
     END;
   END LOOP;
 
-  IF success_count > 0 THEN
-    INSERT INTO public.admin_bulk_history(
+  INSERT INTO public.admin_bulk_history(
       action, file_name, category_name, products_processed, successful,
       failed, skipped, status, details, created_by, actor_email
     ) VALUES (
       mode_value, COALESCE(NULLIF(btrim(_file_name), ''), 'Online entry'),
       NULLIF(btrim(_category), ''), processed_count, success_count,
-      fail_count, skip_count, CASE WHEN fail_count + skip_count > 0 THEN 'partial' ELSE 'completed' END,
+      fail_count, skip_count,
+      CASE WHEN success_count = 0 THEN 'failed'
+           WHEN fail_count + skip_count > 0 THEN 'partial' ELSE 'completed' END,
       history_details, _actor_user_id, _actor_email
     ) RETURNING id INTO history_id_value;
-  END IF;
   RETURN jsonb_build_object(
     'history_id', history_id_value, 'action', mode_value, 'products_processed', processed_count,
     'successful', success_count, 'failed', fail_count, 'skipped', skip_count, 'details', history_details
