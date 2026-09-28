@@ -39,6 +39,7 @@ import {
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  combinationKey,
   combinationSummary,
   missingCombinations,
   parsePastedValues,
@@ -148,15 +149,23 @@ const hydrateSavedAxes = (
     values: Array.isArray(axis.values) ? axis.values.map(String).filter((value) => value.trim()) : [],
     sort_order: axis.sort_order ?? index,
   }));
+  // Saved axes define the current setup. Historical inactive variants must not
+  // reintroduce values that the admin removed on a previous regeneration.
+  const inferAxes = axes.size === 0;
+  const emptySavedAxes = new Set(savedAxes.filter((axis) => !Array.isArray(axis.values) || !axis.values.some((value) => String(value).trim())).map((axis) => axis.axis_key));
   for (const variant of savedVariants) {
+    if (!variant.is_active || variant.archived_at) continue;
     for (const [key, raw] of Object.entries(variant.attributes ?? {})) {
       const value = String(raw ?? "").trim();
       if (!value || key === "variant_label" || key.startsWith("__")) continue;
-      if (!axes.has(key)) axes.set(key, {
-        id: `new-${key}`, axis_key: key, label: savedOptionLabel(key), values: [], sort_order: axes.size,
-      });
+      if (!axes.has(key)) {
+        if (!inferAxes) continue;
+        axes.set(key, {
+          id: `new-${key}`, axis_key: key, label: savedOptionLabel(key), values: [], sort_order: axes.size,
+        });
+      }
       const axis = axes.get(key)!;
-      if (!axis.values.includes(value)) axis.values.push(value);
+      if ((inferAxes || emptySavedAxes.has(key)) && !axis.values.includes(value)) axis.values.push(value);
     }
   }
   if (!axes.size && family) {
@@ -176,9 +185,7 @@ const hydrateSavedAxes = (
 const normalizeOptionValue = (value: unknown) => String(value ?? "").trim().toLocaleLowerCase();
 
 const variantCombinationKey = (row: Variant, axes: Axis[]) =>
-  axes
-    .map((axis) => `${axis.axis_key}=${normalizeOptionValue(row.attributes?.[axis.axis_key])}`)
-    .join("||");
+  combinationKey(axes, row.attributes ?? {});
 
 const variantMatchesCurrentAxes = (
   row: Variant,
@@ -264,6 +271,8 @@ export function VariantEditor({
   buyerWorkflow?: PriceSegment;
 }) {
   const [rows, setRows] = useState<Variant[]>([]);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>(
     displayOnly ?? (initialTab === "options" || initialTab === "quick" ? "quick" : initialTab),
@@ -493,24 +502,37 @@ export function VariantEditor({
   };
 
   const generateCombinations = (
-    sourceAxes: Axis[] = axes,
-    sourceRows: Variant[] = rows,
+    sourceAxes: Axis[],
     selectedCombinations?: Record<string, string>[],
   ) => {
     try {
+      const sourceRows = rowsRef.current;
       const currentSourceRows = selectCurrentVariantRows(sourceRows, sourceAxes);
+      const currentIds = new Set(currentSourceRows.map((row) => row.id));
       const allMissing = missingCombinations(sourceAxes, currentSourceRows);
-      const combinationKey = (attributes: Record<string, string>) =>
-        sourceAxes.map((axis) => `${axis.axis_key}=${attributes[axis.axis_key] ?? ""}`).join("||");
-      const selectedKeys = selectedCombinations ? new Set(selectedCombinations.map(combinationKey)) : null;
+      const selectedKeys = selectedCombinations
+        ? new Set(selectedCombinations.map((attributes) => combinationKey(sourceAxes, attributes)))
+        : null;
       const combinations = selectedKeys
-        ? allMissing.filter((attributes) => selectedKeys.has(combinationKey(attributes)))
+        ? allMissing.filter((attributes) => selectedKeys.has(combinationKey(sourceAxes, attributes)))
         : allMissing;
-      if (!combinations.length) return toast.info("All selected combinations already exist");
+      // Keep historical saved rows for orders and reactivation, but make stale
+      // combinations inactive. Obsolete unsaved drafts have no history to keep.
+      const synchronized = sourceRows
+        .filter((row) => !row.id.startsWith("new-") || currentIds.has(row.id))
+        .map((row) => currentIds.has(row.id) || !row.is_active ? row : { ...row, is_active: false });
+      const deactivated = sourceRows.filter((row) =>
+        !row.id.startsWith("new-") && row.is_active && !currentIds.has(row.id),
+      ).length;
+      if (!combinations.length && !deactivated && synchronized.length === sourceRows.length) {
+        toast.info("All selected combinations already exist");
+        return;
+      }
       const usedSkus = new Set(sourceRows.map((row) => row.sku.trim().toUpperCase()));
       const template =
+        currentSourceRows.find((row) => row.is_active) ??
+        currentSourceRows.find((row) => !row.id.startsWith("new-")) ??
         sourceRows.find((row) => row.is_active) ??
-        sourceRows.find((row) => !row.id.startsWith("new-")) ??
         sourceRows[0];
       const added = combinations.map((attributes, index) => {
         const suffix = sourceAxes.map((axis) => createProductOptionToken(attributes[axis.axis_key])).join("-");
@@ -557,17 +579,19 @@ export function VariantEditor({
           distributor_pack_w: template?.distributor_pack_w ?? template?.pack_w ?? null,
           distributor_pack_h: template?.distributor_pack_h ?? template?.pack_h ?? null,
           is_active: true,
-          sort_order: sourceRows.length + index,
+          sort_order: synchronized.length + index,
           low_stock_threshold: 10,
           available_customer: template?.available_customer ?? true,
           available_retailer: template?.available_retailer ?? true,
           available_distributor: template?.available_distributor ?? true,
         } satisfies Variant;
       });
+      const nextRows = [...synchronized, ...added];
+      rowsRef.current = nextRows;
       dirty.current = true;
-      setRows([...sourceRows, ...added]);
+      setRows(nextRows);
       toast.success(
-        `${added.length} active variation drafts generated. Existing SKUs are unchanged.`,
+        `${added.length} new variation${added.length === 1 ? "" : "s"} generated; ${deactivated} stale variation${deactivated === 1 ? "" : "s"} made inactive. Existing SKUs are unchanged.`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not generate variations");
@@ -843,40 +867,27 @@ export function VariantEditor({
     let generationAxes: Axis[];
     let cleaned: Axis[];
     try {
-      cleaned = prepareVariationAxes(axisRows, q.data?.axes ?? [], rows);
-      generationAxes = cleaned.map((axis) => ({
+      const validated = prepareVariationAxes(axisRows, [], []);
+      generationAxes = validated.map((axis) => ({
         ...axis,
         values: axis.values.filter((value) => !(excluded[axis.id] ?? []).includes(value)),
       }));
-      if (generate) missingCombinations(generationAxes, rows);
+      if (generate) missingCombinations(generationAxes, []);
+      const currentIds = new Set(selectCurrentVariantRows(rowsRef.current, generationAxes).map((row) => row.id));
+      const safelyInactive = rowsRef.current.map((row) =>
+        currentIds.has(row.id) || !row.is_active ? row : { ...row, is_active: false },
+      );
+      cleaned = prepareVariationAxes(validated, q.data?.axes ?? [], safelyInactive);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Review the options.");
       return;
     }
-    // Generating options must stay a local draft first. Saving the old matrix before
-    // generation can fail when a legacy/base SKU does not yet have values for newly
-    // added axes. Keep those legacy rows, but safely make incomplete ones inactive.
+    // Regeneration changes the local matrix in place; saving persists one
+    // synchronized shared SKU set for every buyer channel.
     if (generate) {
-      const safeRows = rows.map((row) => {
-        const missingNewOption = generationAxes.some(
-          (axis) => !axis.values.includes(row.attributes?.[axis.axis_key] ?? ""),
-        );
-        return row.is_active && missingNewOption ? { ...row, is_active: false } : row;
-      });
-      const deactivated = safeRows.filter((row, index) => rows[index]?.is_active && !row.is_active).length;
-
       setAxisRows(cleaned);
       setAxesDirty(true);
-      if (deactivated) {
-        dirty.current = true;
-        setRows(safeRows);
-        toast.info(
-          `${deactivated} old/base SKU${deactivated === 1 ? " was" : "s were"} kept but made inactive because it did not have values for the new options.`,
-        );
-      }
-      generateCombinations(generationAxes, safeRows, selectedCombinations);
-      setEditingId(null);
-      setTab("customer");
+      generateCombinations(generationAxes, selectedCombinations);
       return;
     }
 
