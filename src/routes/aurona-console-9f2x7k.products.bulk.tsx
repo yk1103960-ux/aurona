@@ -32,6 +32,7 @@ import {
   PRODUCT_VARIATION_PRESETS,
   variationAxisKey,
 } from "@/lib/variant-options";
+import { BulkHistory } from "@/components/admin/BulkHistory";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/bulk")({
   component: BulkCatalog,
@@ -267,6 +268,10 @@ function BulkCatalog() {
   const [onlineRows, setOnlineRows] = useState<OnlineRow[]>([]);
   const [onlineMode, setOnlineMode] = useState(false);
   const [variationValueDrafts, setVariationValueDrafts] = useState<Record<string, string>>({});
+  const [importMode, setImportMode] = useState<"create" | "update">("create");
+  const [showHistory, setShowHistory] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [importResult, setImportResult] = useState<Awaited<ReturnType<typeof commitFn>> | null>(null);
 
   const category = config.data?.categories?.find((row: any) => row.id === categoryId);
   const activeColumns = useMemo(() => buildProductMasterColumns(), []);
@@ -370,6 +375,7 @@ function BulkCatalog() {
     setBusy(true);
     try {
       const payload = {
+        mode: importMode,
         metadata: {
           template_version: "aurona-product-master-v1",
           category_id: categoryId,
@@ -384,6 +390,7 @@ function BulkCatalog() {
       };
       const nextPreview = await previewFn({ data: payload as any });
       setParsed(payload);
+      setFileName("Online entry");
       setPreview(nextPreview);
       toast.success(
         nextPreview.errorCount
@@ -527,9 +534,11 @@ function BulkCatalog() {
     setBusy(true);
     setPreview(undefined);
     try {
-      const next = parseBulkProductWorkbook(await file.arrayBuffer());
-      setParsed(next);
-      setPreview(await previewFn({ data: next as any }));
+      const next = parseBulkProductWorkbook(await file.arrayBuffer(), importMode);
+      const payload = { ...next, mode: importMode };
+      setFileName(file.name);
+      setParsed(payload);
+      setPreview(await previewFn({ data: payload }));
     } catch (error) {
       setParsed(undefined);
       toast.error(error instanceof Error ? error.message : "Excel validation failed");
@@ -542,10 +551,16 @@ function BulkCatalog() {
     if (!preview || preview.errorCount || !parsed) return;
     setBusy(true);
     try {
-      const result = await commitFn({ data: { rows: preview.normalizedRows } as any });
-      toast.success(
-        `Import complete: ${result.created_variants ?? 0} created, ${result.updated_variants ?? 0} updated`,
-      );
+      const result = await commitFn({ data: {
+        mode: importMode,
+        fileName: fileName || "Online entry",
+        categoryName: String(parsed.metadata?.category_name ?? ""),
+        rows: preview.normalizedRows,
+      } });
+      setImportResult(result);
+      const summary = `${result.action}: ${result.successful} succeeded, ${result.failed} failed, ${result.skipped} skipped`;
+      if (result.successful) toast.success(summary);
+      else toast.error(summary);
       setParsed(undefined);
       setPreview(undefined);
       setOnlineRows([]);
@@ -602,6 +617,33 @@ function BulkCatalog() {
           Category → Variations → Variation Values → Excel Template → Validate, Preview and Import.
         </p>
       </div>
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Bulk product actions">
+        <Button type="button" variant={!showHistory && importMode === "create" ? "default" : "outline"}
+          onClick={() => { setImportMode("create"); setShowHistory(false); setParsed(undefined); setPreview(undefined); setImportResult(null); }}>
+          Create Products
+        </Button>
+        <Button type="button" variant={!showHistory && importMode === "update" ? "default" : "outline"}
+          onClick={() => { setImportMode("update"); setShowHistory(false); setParsed(undefined); setPreview(undefined); setImportResult(null); }}>
+          Update Products
+        </Button>
+        <Button type="button" variant={showHistory ? "default" : "outline"} onClick={() => setShowHistory(true)}>
+          History
+        </Button>
+      </div>
+
+      {showHistory ? <BulkHistory /> : <>
+      {importResult && <div role="status" className="rounded-xl border bg-white p-5">
+        <strong>{importResult.action} {importResult.successful ? "COMPLETED" : "NOT IMPORTED"}</strong>
+        <div>Successful: {importResult.successful} · Failed: {importResult.failed} · Skipped: {importResult.skipped}</div>
+        {importResult.details.filter((item) => item.outcome !== "success").map((item) =>
+          <p key={item.main_sku} className="text-sm text-red-700">{item.main_sku}: {item.error}</p>)}
+      </div>}
+      {importMode === "update" && <p className="rounded-xl border bg-white p-4 text-sm text-slate-700">
+        Export existing products from Product Master, edit their values in the same workbook, then upload it below.
+        Existing Main and Variant SKUs identify the records to update.
+      </p>}
+      {importMode === "create" && <>
 
       <section className="space-y-5 rounded-xl border bg-white p-5">
         <div>
@@ -1008,11 +1050,12 @@ function BulkCatalog() {
           <Download className="mr-1 h-4 w-4" /> Download Excel Template
         </Button>
       </section>
+      </>}
 
       <section className="space-y-4 rounded-xl border bg-white p-5">
         <div>
           <h2 className="font-semibold">
-            Step 5 – Upload Completed Excel → Validate → Preview → Import
+            Step 5 – Upload Completed Excel → Validate → Preview → {importMode === "create" ? "Create" : "Update"}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             Uploads are accepted only when the Product Master header names, serial numbers and column order match the master template.
@@ -1038,6 +1081,8 @@ function BulkCatalog() {
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {[
                 ["Products", preview.productsDetected],
+                ["Rows valid", preview.validRows],
+                ["Rows blocked", preview.blockedRows],
                 ["New products", preview.productsToCreate],
                 ["Product updates", preview.productsToUpdate],
                 ["New variants", preview.variantsToCreate],
@@ -1058,7 +1103,7 @@ function BulkCatalog() {
               <table className="min-w-[850px] w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-slate-100">
                   <tr>
-                    {["Row", "Function", "Main SKU", "Variant SKU", "Validation"].map((label) => (
+                    {["Row", "Function", "Main SKU", "Variant SKU", "Validation", "Changes"].map((label) => (
                       <th key={label} className="p-2 text-left">
                         {label}
                       </th>
@@ -1079,6 +1124,7 @@ function BulkCatalog() {
                       >
                         {row.errors.join("; ") || "Ready"}
                       </td>
+                      <td className="p-2 text-xs">{row.changes?.join("; ") || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1089,11 +1135,12 @@ function BulkCatalog() {
               disabled={busy || preview.errorCount > 0 || !parsed}
               onClick={commit}
             >
-              {busy ? "Importing…" : "Confirm Import"}
+              {busy ? "Importing…" : `Confirm ${importMode === "create" ? "Create Products" : "Update Products"}`}
             </Button>
           </>
         )}
       </section>
+      </>}
     </div>
   );
 }
