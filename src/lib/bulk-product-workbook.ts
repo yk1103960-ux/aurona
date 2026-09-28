@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import type ExcelJS from "exceljs";
 import templateStyles from "./product-master-template-style.json";
 import { normalizeMainSku, variantName, type VariationSelection } from "./sku-generation";
 import { expectedBulkVariantSku } from "./bulk-product-identity";
@@ -151,7 +152,7 @@ export async function createBulkProductWorkbook(config: TemplateConfig): Promise
     ws.getCell(3, index + 1).value = column.serial;
   });
   templateStyles.rowHeights.slice(0, 3).forEach((height, index) => {
-    ws.getRow(index + 1).height = height;
+    if (height !== null) ws.getRow(index + 1).height = height;
   });
   for (const merge of productMasterMerges(columns)) {
     ws.mergeCells(merge.s.r + 1, merge.s.c + 1, merge.e.r + 1, merge.e.c + 1);
@@ -159,16 +160,17 @@ export async function createBulkProductWorkbook(config: TemplateConfig): Promise
   columns.forEach((_, index) => {
     const reference = templateStyles.columns[index];
     for (let row = 1; row <= 3; row += 1) {
-      ws.getCell(row, index + 1).style = structuredClone(reference.styles[row - 1]) as any;
+      ws.getCell(row, index + 1).style = structuredClone(reference.styles[row - 1]) as Partial<ExcelJS.Style>;
     }
   });
   rows.forEach((values, rowIndex) => {
     const row = ws.getRow(rowIndex + 4);
-    row.height = templateStyles.rowHeights[3];
+    const dataHeight = templateStyles.rowHeights[3];
+    if (dataHeight !== null) row.height = dataHeight;
     values.forEach((value, index) => {
       const cell = row.getCell(index + 1);
       cell.value = value === "" ? null : value as string | number;
-      cell.style = structuredClone(templateStyles.columns[index].styles[3]) as any;
+      cell.style = structuredClone(templateStyles.columns[index].styles[3]) as Partial<ExcelJS.Style>;
     });
   });
 
