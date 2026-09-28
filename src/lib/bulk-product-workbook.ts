@@ -189,7 +189,7 @@ export async function createBulkProductWorkbook(config: TemplateConfig): Promise
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 
-export function parseBulkProductWorkbook(data: ArrayBuffer) {
+export function parseBulkProductWorkbook(data: ArrayBuffer, mode: "create" | "update" = "create") {
   const wb = XLSX.read(data, { type: "array", cellDates: true });
   const configSheet = wb.Sheets._Aurona_Config;
   const productSheet = wb.Sheets["Product Master"];
@@ -262,14 +262,18 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
       const nameIndex = columnIndex[`variation_${slot + 1}_name`];
       const valueIndex = columnIndex[`variation_${slot + 1}_value`];
       const names = [...new Set(rows.map((row) => String(row[nameIndex] ?? "").trim()).filter(Boolean))];
-      if (names.length > 1) {
+      if (names.length > 1 && mode === "create") {
         throw new Error(`Variation slot ${slot + 1} contains multiple option names.`);
       }
       const values = [...new Set(rows.map((row) => String(row[valueIndex] ?? "").trim()).filter(Boolean))];
-      return names.length ? { name: names[0], values } : null;
+      return names.length === 1 ? { name: names[0], values } : null;
     }).filter(Boolean);
     metadata.variation_configuration = configuration;
   }
+  // Product Master exports can contain several existing products with different
+  // axes in the same fixed-column sheet. Their identifiers, not one file-wide
+  // variation configuration, define Update targets.
+  if (mode === "update" && !configSheet) metadata.variation_configuration = [];
 
   return {
     metadata,
