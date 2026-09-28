@@ -446,12 +446,13 @@ export const adminListProductMaster = createServerFn({ method: "POST" })
     };
   });
 
-// Export reads every stored variant in the selected category, independent of grid pagination.
+// Export reads stored variants across the selected category or all categories, independent of grid pagination.
 export const adminExportProductMasterRows = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
       categoryId: z.string().uuid().optional(),
+      allCategories: z.boolean().optional(),
       // Accept requests from an older open Product Master tab during rollout.
       familyIds: z.array(z.string().uuid()).max(50).optional(),
     }).parse(input),
@@ -461,7 +462,7 @@ export const adminExportProductMasterRows = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     let categoryId = data.categoryId;
-    if (!categoryId) {
+    if (!categoryId && !data.allCategories) {
       if (!data.familyIds?.length) throw new Error("Please select a category to export.");
       const selected = await db.from("product_families")
         .select("id,category_id")
@@ -475,12 +476,11 @@ export const adminExportProductMasterRows = createServerFn({ method: "POST" })
     }
     const families: any[] = [];
     for (let start = 0; ; start += 500) {
-      const result = await db.from("product_families")
+      let query = db.from("product_families")
         .select("*,categories(id,name)")
-        .eq("category_id", categoryId)
-        .is("archived_at", null)
-        .order("id")
-        .range(start, start + 499);
+        .is("archived_at", null);
+      if (categoryId) query = query.eq("category_id", categoryId);
+      const result = await query.order("id").range(start, start + 499);
       if (result.error) throw new Error(result.error.message);
       families.push(...(result.data ?? []));
       if ((result.data ?? []).length < 500) break;
