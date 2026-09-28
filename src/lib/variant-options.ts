@@ -18,7 +18,7 @@ export const variationAxisKey = (label: string) =>
 export type OptionAxis = { axis_key: string; values: string[] };
 
 export function combinationKey(axes: OptionAxis[], attributes: Record<string, string>) {
-  return JSON.stringify(axes.map((axis) => [axis.axis_key, attributes[axis.axis_key] ?? ""]));
+  return JSON.stringify(axes.map((axis) => [axis.axis_key, String(attributes[axis.axis_key] ?? "").normalize("NFKC").trim().toLocaleLowerCase()]));
 }
 
 export function buildCombinations(axes: OptionAxis[], limit = 200) {
@@ -28,7 +28,13 @@ export function buildCombinations(axes: OptionAxis[], limit = 200) {
   const normalized = axes.map((axis) => {
     if (!axis.axis_key || keys.has(axis.axis_key)) throw new Error("Option keys must be unique");
     keys.add(axis.axis_key);
-    const values = [...new Set(axis.values.map((value) => value.trim()).filter(Boolean))];
+    const seenValues = new Set<string>();
+    const values = axis.values.map((value) => value.trim()).filter((value) => {
+      const key = value.normalize("NFKC").toLocaleLowerCase();
+      if (!key || seenValues.has(key)) return false;
+      seenValues.add(key);
+      return true;
+    });
     if (!values.length) throw new Error("Select at least one value for every option");
     count *= values.length;
     if (count > limit)
