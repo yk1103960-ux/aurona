@@ -1055,11 +1055,11 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       }
       const family = familiesBySku.get(row.main_sku);
       const variant = variantsBySku.get(row.variant_sku);
-      if (data.mode === "create" && family) errors.push(`Product already exists. Please use Update Products to modify this product. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
-      if (data.mode === "create" && resolvedCategory && (familiesResult.data ?? []).some((candidate) =>
+      if (data.mode === "create" && family) errors.push(`Product already exists. Please use Update Products in Bulk to modify this product. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
+      if (data.mode === "create" && !family && resolvedCategory && (familiesResult.data ?? []).some((candidate) =>
         candidate.category_id === resolvedCategory.id && candidate.name?.trim().toLowerCase() === row.product_name.toLowerCase()
-      )) errors.push(`Product already exists in ${resolvedCategory.name}: ${row.product_name}. Please use Update Products.`);
-      if (data.mode === "update" && !family) errors.push(`Product does not exist. Please use Create Products first. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
+      )) errors.push(`Product already exists. Please use Update Products in Bulk to modify this product. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
+      if (data.mode === "update" && !family) errors.push(`Product does not exist. Please use Create Products in Bulk first. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
       if (row.family_id) {
         const familyById = familiesById.get(row.family_id);
         if (!familyById) errors.push(`family_id ${row.family_id} was not found`);
