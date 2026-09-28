@@ -112,7 +112,10 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
   ) || !config.combinations.length) {
     throw new Error("Please add at least one value for this variation.");
   }
-  const columns = buildProductMasterColumns(config.variations.length);
+  if (config.variations.length > 3) {
+    throw new Error("The Product Master template supports up to three variations.");
+  }
+  const columns = buildProductMasterColumns();
   const columnIndex = buildProductMasterColumnIndex(columns);
   const mainSku = normalizeMainSku(config.mainSku);
 
@@ -159,7 +162,7 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     ["category_id", config.categoryId],
     ["category_name", config.categoryName],
     ["main_sku", mainSku],
-    ["variation_count", config.variations.length],
+    ["variation_count", 3],
     ["variation_configuration", JSON.stringify(config.variations)],
     ["generated_at", new Date().toISOString()],
   ]);
