@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import templateStyles from "./product-master-template-style.json";
 import { normalizeMainSku, variantName, type VariationSelection } from "./sku-generation";
 import { expectedBulkVariantSku } from "./bulk-product-identity";
 import {
@@ -93,7 +94,7 @@ function variationCountFromWorkbook(matrix: unknown[][]) {
   return count;
 }
 
-export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
+export async function createBulkProductWorkbook(config: TemplateConfig): Promise<Uint8Array> {
   if (!config.variations.length) throw new Error("Select at least one variation before generating Excel.");
   if (config.variations.some((variation) =>
     !variation.name.trim() || !variation.values.some((value) => value.trim())
@@ -139,16 +140,37 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     return values;
   });
 
-  const topHeader = columns.map((column) => column.topHeader);
-  const detailHeader = columns.map((column) => column.detailHeader);
-  const serials = columns.map((column) => column.serial);
-  const ws = XLSX.utils.aoa_to_sheet([topHeader, detailHeader, serials, ...rows]);
-  ws["!freeze"] = { xSplit: 0, ySplit: 2 };
-  ws["!cols"] = columns.map((column) => ({ width: columnWidth(column) }));
-  ws["!rows"] = [{ hpt: 14.4 }, { hpt: 54.6 }, { hpt: 14.4 }];
-  ws["!merges"] = productMasterMerges(columns);
+  const { default: ExcelJS } = await import("exceljs");
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Product Master", { views: [{ state: "frozen", ySplit: 3 }] });
+  columns.forEach((column, index) => {
+    const reference = templateStyles.columns[index];
+    ws.getColumn(index + 1).width = reference.width;
+    for (let row = 1; row <= 3; row += 1) {
+      const cell = ws.getCell(row, index + 1);
+      cell.style = structuredClone(reference.styles[row - 1]) as any;
+    }
+    ws.getCell(1, index + 1).value = column.topHeader || null;
+    ws.getCell(2, index + 1).value = column.detailHeader || null;
+    ws.getCell(3, index + 1).value = column.serial;
+  });
+  templateStyles.rowHeights.slice(0, 3).forEach((height, index) => {
+    ws.getRow(index + 1).height = height;
+  });
+  for (const merge of productMasterMerges(columns)) {
+    ws.mergeCells(merge.s.r + 1, merge.s.c + 1, merge.e.r + 1, merge.e.c + 1);
+  }
+  rows.forEach((values, rowIndex) => {
+    const row = ws.getRow(rowIndex + 4);
+    row.height = templateStyles.rowHeights[3];
+    values.forEach((value, index) => {
+      const cell = row.getCell(index + 1);
+      cell.value = value === "" ? null : value as string | number;
+      cell.style = structuredClone(templateStyles.columns[index].styles[3]) as any;
+    });
+  });
 
-  const metadata = XLSX.utils.aoa_to_sheet([
+  const metadataRows = [
     ["template_version", BULK_TEMPLATE_VERSION],
     ["category_id", config.categoryId],
     ["category_name", config.categoryName],
@@ -156,12 +178,11 @@ export function createBulkProductWorkbook(config: TemplateConfig): ArrayBuffer {
     ["variation_count", 3],
     ["variation_configuration", JSON.stringify(config.variations)],
     ["generated_at", new Date().toISOString()],
-  ]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Product Master");
-  XLSX.utils.book_append_sheet(wb, metadata, "_Aurona_Config");
-  wb.Workbook = { Sheets: [{ name: "Product Master" }, { name: "_Aurona_Config", Hidden: 1 }] };
-  return XLSX.write(wb, { type: "array", bookType: "xlsx", compression: true });
+  ];
+  const metadata = wb.addWorksheet("_Aurona_Config");
+  metadataRows.forEach((row) => metadata.addRow(row));
+  metadata.state = "hidden";
+  return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 
 export function parseBulkProductWorkbook(data: ArrayBuffer) {
