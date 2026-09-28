@@ -785,6 +785,7 @@ export const adminGetBulkUploadConfiguration = createServerFn({ method: "GET" })
   });
 
 const DynamicBulkInput = z.object({
+  mode: z.enum(["create", "update"]),
   metadata: z.record(z.string(), z.unknown()),
   rows: z
     .array(
@@ -937,14 +938,18 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // The importer rejects an empty batch before any writes. Check the exact RPC
     // during preview so "Ready" cannot be shown when a migration is missing.
-    const { error: importProbeError } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v3", {
+    const { error: importProbeError } = await supabaseAdmin.rpc("admin_import_dynamic_products_safe_v1", {
       _rows: [],
       _actor_user_id: actor.userId,
+      _mode: data.mode.toUpperCase(),
+      _file_name: "preview.xlsx",
+      _category: "",
+      _actor_email: actor.email ?? "",
     });
     if (importProbeError && !/Import must contain 1 to 2000 rows/i.test(importProbeError.message)) {
       if (importProbeError.code === "PGRST202") {
         throw new Error(
-          "Bulk import is unavailable: apply the 20260927162000_bulk_commission_grouping_parity.sql migration to the active database and reload the PostgREST schema cache.",
+          "Bulk import is unavailable: apply the safe bulk modes/history migration to the active database and reload the PostgREST schema cache.",
         );
       }
       throw new Error(`Bulk import database check failed: ${importProbeError.message}`);
@@ -953,8 +958,8 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const rows = data.rows.map((row) => normalizeDynamicRow(row, columnIndex));
     const [categoriesResult, familiesResult, variantsResult, programsResult] = await Promise.all([
       productManagerCategoriesQuery(supabaseAdmin as any),
-      (supabaseAdmin as any).from("product_families").select("id,main_sku"),
-      (supabaseAdmin as any).from("product_variants").select("id,sku,family_id"),
+      (supabaseAdmin as any).from("product_families").select("id,main_sku,name,category_id"),
+      (supabaseAdmin as any).from("product_variants").select("id,sku,family_id,mrp,price,stock,retailer_price,retailer_stock,distributor_price,distributor_stock,is_active"),
       (supabaseAdmin as any).from("referral_programs").select("id,name,is_active"),
     ]);
     for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
@@ -985,9 +990,10 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       new Set((axis.values ?? []).map((value) => textCell(value).toLowerCase())),
     ]));
     const seen = new Set<string>();
+    const seenCombinations = new Set<string>();
     const previewRows = rows.map((row) => {
       const errors: string[] = [];
-      if (!['create','update'].includes(row.function)) errors.push("Function must be Create or Update");
+      if (row.function !== data.mode) errors.push(`Row Function must be ${data.mode} for ${data.mode === "create" ? "Create Products" : "Update Products"}`);
       const categoryKey = normalizeBulkCategoryName(row.category_name);
       const resolvedCategory = resolveBulkCategory(
         categoryLookups,
@@ -1011,8 +1017,20 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       if (!row.variant_sku) errors.push("Variant SKU is required");
       if (seen.has(row.variant_sku)) errors.push("Duplicate Variant SKU in this workbook");
       seen.add(row.variant_sku);
+      if (row.variation_axes.length) {
+        const combinationKey = `${row.main_sku}::${JSON.stringify(row.variation_axes
+          .map((axis) => [axis.name.trim().toLowerCase(), axis.value.trim().toLowerCase()])
+          .sort(([left], [right]) => left.localeCompare(right)))}`;
+        if (seenCombinations.has(combinationKey)) errors.push("Duplicate variation combination in this workbook");
+        seenCombinations.add(combinationKey);
+      }
       const family = familiesBySku.get(row.main_sku);
       const variant = variantsBySku.get(row.variant_sku);
+      if (data.mode === "create" && family) errors.push(`Product already exists. Please use Update Products to modify this product. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
+      if (data.mode === "create" && resolvedCategory && (familiesResult.data ?? []).some((candidate: { name: string; category_id: string }) =>
+        candidate.category_id === resolvedCategory.id && candidate.name?.trim().toLowerCase() === row.product_name.toLowerCase()
+      )) errors.push(`Product already exists in ${resolvedCategory.name}: ${row.product_name}. Please use Update Products.`);
+      if (data.mode === "update" && !family) errors.push(`Product does not exist. Please use Create Products first. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
       if (row.family_id) {
         const familyById = familiesById.get(row.family_id);
         if (!familyById) errors.push(`family_id ${row.family_id} was not found`);
@@ -1047,12 +1065,14 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       if (row.function === 'update' && !family) errors.push("Update target Main SKU was not found");
       if (row.function === 'update' && !variant) errors.push("Update target Variant SKU was not found");
       if (row.function === 'update' && family && variant && (variant as { family_id?: string }).family_id !== (family as { id?: string }).id) errors.push("Variant SKU does not belong to the supplied Main SKU");
-      for (const axis of row.variation_axes) {
-        const allowed = allowedVariations.get(axis.name.toLowerCase());
-        if (!allowed) errors.push(`Variation ${axis.name} is not part of this template`);
-        else if (!allowed.has(axis.value.toLowerCase())) errors.push(`${axis.value} is not an allowed ${axis.name}. Allowed values: ${[...allowed].join(", ")}`);
+      if (data.mode === "create") {
+        for (const axis of row.variation_axes) {
+          const allowed = allowedVariations.get(axis.name.toLowerCase());
+          if (!allowed) errors.push(`Variation ${axis.name} is not part of this template`);
+          else if (!allowed.has(axis.value.toLowerCase())) errors.push(`${axis.value} is not an allowed ${axis.name}. Allowed values: ${[...allowed].join(", ")}`);
+        }
+        if (row.variation_axes.length !== configuredVariations.length) errors.push(`Expected ${configuredVariations.length} variation values, found ${row.variation_axes.length}`);
       }
-      if (row.variation_axes.length !== configuredVariations.length) errors.push(`Expected ${configuredVariations.length} variation values, found ${row.variation_axes.length}`);
       for (const [field, value] of Object.entries(row)) {
         if (typeof value === 'number' && (!Number.isFinite(value) || value < 0)) errors.push(`${field} must be a valid non-negative number`);
       }
@@ -1104,6 +1124,13 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
         const value = row[field];
         if (value != null && (!Number.isInteger(value) || value < 1)) errors.push(`${field} must be a positive whole number`);
       }
+      for (const buyer of ["customer", "retailer", "distributor"] as const) {
+        const packageFields = ["pack_weight_g", "pack_l", "pack_w", "pack_h"] as const;
+        const values = packageFields.map((field) => row[`${buyer}_${field}`]);
+        if (values.some((value) => value != null) && values.some((value) => value == null || value <= 0)) {
+          errors.push(`${buyer} packaging requires positive Weight, Length, Width and Height`);
+        }
+      }
       if (row.mrp != null) for (const [label, price] of [['Customer', row.customer_price], ['Retailer', row.retailer_price], ['Distributor', row.distributor_price]] as const) {
         if (price != null && price > row.mrp) errors.push(`${label} Price cannot exceed MRP`);
       }
@@ -1141,22 +1168,48 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
           },
         });
       }
-      return { excelRow: row.excel_row, mainSku: row.main_sku, variantSku: row.variant_sku, action: row.function, errors };
+      const changes: string[] = [];
+      if (data.mode === "update" && variant) {
+        const current = variant as Record<string, unknown>;
+        for (const [label, field, next] of [
+          ["MRP", "mrp", row.mrp],
+          ["Customer Price", "price", row.customer_price],
+          ["Customer Stock", "stock", row.customer_stock],
+          ["Retailer Price", "retailer_price", row.retailer_price],
+          ["Retailer Stock", "retailer_stock", row.retailer_stock],
+          ["Distributor Price", "distributor_price", row.distributor_price],
+          ["Distributor Stock", "distributor_stock", row.distributor_stock],
+        ] as const) {
+          if (next != null && Number(current[field]) !== next) changes.push(`${label}: ${current[field] ?? "blank"} → ${next}`);
+        }
+        if (row.active_status) {
+          const newStatus = ["active", "yes", "true", "1"].includes(row.active_status.toLowerCase());
+          if (newStatus !== current.is_active) changes.push(`Status: ${current.is_active ? "Active" : "Inactive"} → ${newStatus ? "Active" : "Inactive"}`);
+        }
+      }
+      return { excelRow: row.excel_row, mainSku: row.main_sku, variantSku: row.variant_sku, action: row.function, errors, changes };
     });
     return {
       rows: previewRows, normalizedRows: rows,
       productsDetected: new Set(rows.map((row) => row.main_sku)).size,
-      productsToCreate: new Set(rows.filter((row) => row.function === 'create' && !familiesBySku.has(row.main_sku)).map((row) => row.main_sku)).size,
-      productsToUpdate: new Set(rows.filter((row) => row.function === 'update').map((row) => row.main_sku)).size,
+      productsToCreate: new Set(previewRows.filter((row) => row.action === 'create' && row.errors.length === 0).map((row) => row.mainSku)).size,
+      productsToUpdate: new Set(previewRows.filter((row) => row.action === 'update' && row.errors.length === 0).map((row) => row.mainSku)).size,
       variantsToCreate: rows.filter((row) => row.function === 'create').length,
       variantsToUpdate: rows.filter((row) => row.function === 'update').length,
+      validRows: previewRows.filter((row) => row.errors.length === 0).length,
+      blockedRows: previewRows.filter((row) => row.errors.length > 0).length,
       errorCount: previewRows.reduce((sum, row) => sum + row.errors.length, 0),
     };
   });
 
 export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ rows: z.array(z.record(z.string(), z.unknown())).min(1).max(2000) }).parse(input))
+  .inputValidator((input: unknown) => z.object({
+    mode: z.enum(["create", "update"]),
+    fileName: z.string().trim().min(1).max(255),
+    categoryName: z.string().trim().max(240),
+    rows: z.array(z.record(z.string(), z.unknown())).min(1).max(2000),
+  }).parse(input))
   .handler(async ({ data, context }) => {
     const actor = await assertAdminPermission(context, "catalog.manage");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -1172,7 +1225,7 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
 
     // Update rows may carry existing approved SKUs that predate the current generator.
     // Verify their identity against the database instead of rewriting those SKUs.
-    const hasUpdates = data.rows.some((row) => String(row.function ?? "").trim().toLowerCase() === "update");
+    const hasUpdates = data.mode === "update";
     const [familiesResult, variantsResult] = hasUpdates
       ? await Promise.all([
           (supabaseAdmin as any).from("product_families").select("id,main_sku"),
@@ -1210,8 +1263,11 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
         : [];
       const suppliedSku = String(row.variant_sku ?? "").trim().toUpperCase();
       const action = String(row.function ?? "").trim().toLowerCase();
-      if (!mainSku || !suppliedSku || !axes.length || axes.some((axis) => !axis.name || !axis.value)) {
-        throw new Error(`Import row ${index + 1} needs a Main SKU, Variant SKU and complete variation values.`);
+      if (action !== data.mode) {
+        throw new Error(`Import row ${index + 1}: this workbook row is ${action || "blank"}; select ${data.mode === "create" ? "Create Products" : "Update Products"} only for matching rows.`);
+      }
+      if (!mainSku || !suppliedSku || (action === "create" && !axes.length) || axes.some((axis) => !axis.name || !axis.value)) {
+        throw new Error(`Import row ${index + 1} needs a Main SKU, Variant SKU and complete variation values when selected.`);
       }
       if (action === "create") {
         const expectedSku = expectedBulkVariantSku(mainSku, axes);
@@ -1236,11 +1292,30 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
       return row;
     });
 
-    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_import_dynamic_products_v3", {
-      _rows: rows,
+    const { data: result, error } = await supabaseAdmin.rpc("admin_import_dynamic_products_safe_v1", {
+      _rows: rows as unknown as import("@/integrations/supabase/types").Json,
       _actor_user_id: actor.userId,
+      _mode: data.mode.toUpperCase(),
+      _file_name: data.fileName,
+      _category: data.categoryName,
+      _actor_email: actor.email ?? "",
     });
     if (error) throw new Error(error.message);
-    await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email, action: "catalog.dynamic_bulk_import", entityType: "admin_import_batch", entityId: String(result?.batch_id ?? ""), after: result });
-    return result;
+    const outcome = z.object({
+      history_id: z.string().uuid().nullable(),
+      action: z.enum(["CREATE", "UPDATE"]),
+      products_processed: z.number(),
+      successful: z.number(),
+      failed: z.number(),
+      skipped: z.number(),
+      details: z.array(z.object({
+        main_sku: z.string(),
+        product_name: z.string().nullable(),
+        outcome: z.enum(["success", "failed", "skipped"]),
+        error: z.string().optional(),
+        rows: z.array(z.object({ excel_row: z.coerce.number().optional(), variant_sku: z.string().optional() })),
+      })),
+    }).parse(result);
+    await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email, action: "catalog.dynamic_bulk_import", entityType: "admin_bulk_history", entityId: outcome.history_id ?? "", after: outcome });
+    return outcome;
   });
