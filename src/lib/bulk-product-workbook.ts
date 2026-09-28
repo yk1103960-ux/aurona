@@ -78,18 +78,7 @@ function productMasterMerges(columns: ProductMasterColumn[]) {
   return merges;
 }
 
-function variationCountFromWorkbook(matrix: unknown[][], metadata: Record<string, unknown>) {
-  const rawConfig = metadata.variation_configuration;
-  if (Array.isArray(rawConfig) && rawConfig.length) return rawConfig.length;
-  if (typeof rawConfig === "string" && rawConfig.trim()) {
-    try {
-      const parsed = JSON.parse(rawConfig);
-      if (Array.isArray(parsed) && parsed.length) return parsed.length;
-    } catch {
-      // Header inference below will provide the validation error if needed.
-    }
-  }
-
+function variationCountFromWorkbook(matrix: unknown[][]) {
   const totalColumns = Math.max(
     matrix[0]?.length ?? 0,
     matrix[1]?.length ?? 0,
@@ -99,6 +88,8 @@ function variationCountFromWorkbook(matrix: unknown[][], metadata: Record<string
   if (!Number.isInteger(count) || count < 1 || count > 20) {
     throw new Error("Could not determine the dynamic variation-column count from this Product Master workbook.");
   }
+  // Variation configuration contains the selected axes, while the Product
+  // Master always retains all three physical variation column pairs.
   return count;
 }
 
@@ -195,7 +186,7 @@ export function parseBulkProductWorkbook(data: ArrayBuffer) {
     defval: "",
     raw: true,
   });
-  const variationCount = variationCountFromWorkbook(matrix, metadata);
+  const variationCount = variationCountFromWorkbook(matrix);
   const columns = buildProductMasterColumns(variationCount);
   const columnIndex = buildProductMasterColumnIndex(columns);
   const normalizeHeader = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
