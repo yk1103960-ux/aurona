@@ -71,6 +71,13 @@
       "when": 1790582523063,
       "tag": "0009_bulk_import_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790589200000,
+      "tag": "0010_safe_bulk_modes_history",
+      "breakpoints": true
     }
   ]
 }
