@@ -242,6 +242,9 @@ export function parseBulkProductWorkbook(data: ArrayBuffer, mode: "create" | "up
   const populatedRows = matrix.slice(3)
     .map((row, index) => ({ excelRow: index + 4, values: row.slice(0, columns.length) }))
     .filter(({ values }) => values.some((value) => value !== "" && value != null));
+  if (populatedRows.length === 0) {
+    throw new Error("This Excel file has no product rows. Fill the Product Master sheet from row 4, then upload it again.");
+  }
   const rows = populatedRows.map(({ values }) => values);
 
   metadata.variation_count = variationCount;
