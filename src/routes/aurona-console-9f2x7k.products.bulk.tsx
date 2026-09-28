@@ -1066,7 +1066,7 @@ function BulkCatalog() {
         const currentFileName = mode === "create" ? fileName : updateFileName;
         return <section key={mode} className="space-y-4 rounded-xl border bg-white p-5">
         <div>
-          <h2 className="font-semibold">{mode === "create" ? "CREATE PRODUCTS IN BULK" : "UPDATE PRODUCTS IN BULK"}</h2>
+          <h2 className="font-semibold">{mode === "create" ? "Step 5 – CREATE PRODUCTS IN BULK" : "UPDATE PRODUCTS IN BULK"}</h2>
           <p className="mt-1 text-xs text-slate-500">
             {mode === "create"
               ? "Upload a new-products Excel file made from the same Product Master template. Existing products are blocked."
