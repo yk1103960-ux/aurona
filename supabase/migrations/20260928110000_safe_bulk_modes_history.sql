@@ -88,9 +88,9 @@ BEGIN
       FROM public.product_families f WHERE upper(f.main_sku) = sku_value
       LIMIT 1 FOR UPDATE;
       IF mode_value = 'CREATE' AND family_id_value IS NOT NULL THEN
-        RAISE EXCEPTION 'Product already exists. Please use Update Products to modify this product. Main SKU: %', sku_value;
+        RAISE EXCEPTION 'Product already exists. Please use Update Products in Bulk to modify this product. Main SKU: %', sku_value;
       ELSIF mode_value = 'UPDATE' AND family_id_value IS NULL THEN
-        RAISE EXCEPTION 'Product does not exist. Please use Create Products first. Main SKU: %', sku_value;
+        RAISE EXCEPTION 'Product does not exist. Please use Create Products in Bulk first. Main SKU: %', sku_value;
       END IF;
       IF mode_value = 'CREATE' AND EXISTS (
         SELECT 1 FROM public.product_variants v WHERE upper(v.sku) = sku_value
@@ -102,7 +102,7 @@ BEGIN
         WHERE lower(btrim(f.name)) = lower(btrim(product_group.group_rows->0->>'product_name'))
           AND lower(btrim(c.name)) = lower(btrim(product_group.group_rows->0->>'category_name'))
       ) THEN
-        RAISE EXCEPTION 'Product already exists. Please use Update Products to modify this product. Name: %',
+        RAISE EXCEPTION 'Product already exists. Please use Update Products in Bulk to modify this product. Name: %',
           product_group.group_rows->0->>'product_name';
       END IF;
 
