@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
+import { buildCombinations, combinationKey } from "@/lib/variant-options";
 
 const nullableNumber = z.number().finite().nullable();
 
@@ -1027,10 +1028,49 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
     const existingBySku = new Map(
       (existing.data ?? []).map((row: any) => [String(row.sku).toUpperCase(), row]),
     );
+    const familyRows = await (supabaseAdmin as any)
+      .from("product_variants")
+      .select("id,attributes,archived_at")
+      .eq("family_id", data.familyId);
+    if (familyRows.error) throw new Error(familyRows.error.message);
+    const persisted = (familyRows.data ?? []).filter((row: any) => !row.archived_at);
+    const submittedIds = new Set(data.variants.map((row) => row.id).filter(Boolean));
+    if (persisted.some((row: any) => !submittedIds.has(row.id))) {
+      throw new Error("Variant matrix changed while editing. Reload before regenerating.");
+    }
+    const keys = data.axes.length
+      ? new Set(buildCombinations(data.axes, 500).map((attributes) => combinationKey(data.axes, attributes)))
+      : null;
+    const exactKey = (attributes: Record<string, string>) => {
+      const optionKeys = Object.entries(attributes ?? {})
+        .filter(([key, value]) => key !== "variant_label" && !key.startsWith("__") && String(value ?? "").trim())
+        .map(([key]) => key);
+      if (optionKeys.length !== data.axes.length ||
+          optionKeys.some((key) => !data.axes.some((axis) => axis.axis_key === key))) return null;
+      const key = combinationKey(data.axes, attributes ?? {});
+      return keys?.has(key) ? key : null;
+    };
+    const persistedByCombination = new Map<string, string>();
+    if (keys) for (const row of persisted) {
+      const key = exactKey(row.attributes ?? {});
+      if (key && !persistedByCombination.has(key)) persistedByCombination.set(key, row.id);
+    }
+    const activeKeys = new Set<string>();
     const reconciledVariants = data.variants.map((variant) => {
       const match = existingBySku.get(variant.sku.trim().toUpperCase()) as
         { id: string; family_id: string; archived_at: string | null } | undefined;
-      if (!match) return variant;
+      const key = keys ? exactKey(variant.attributes) : null;
+      if (!variant.id && key && persistedByCombination.has(key)) {
+        throw new Error(`This combination already has a saved SKU. Reload and reuse it before generating again.`);
+      }
+      const synchronized = variant.is_active && keys && !key
+        ? { ...variant, is_active: false }
+        : variant;
+      if (synchronized.is_active && key) {
+        if (activeKeys.has(key)) throw new Error("Two active variants have the same option combination.");
+        activeKeys.add(key);
+      }
+      if (!match) return synchronized;
       if (match.family_id !== data.familyId) {
         throw new Error(`SKU ${variant.sku} already belongs to another product family`);
       }
@@ -1040,7 +1080,7 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
       if (!variant.id || variant.id !== match.id) {
         throw new Error(`SKU ${variant.sku} is already used by another variation in this family`);
       }
-      return variant;
+      return synchronized;
     });
     const { error } = await (supabaseAdmin as any).rpc("admin_save_variant_matrix_v3", {
       _family_id: data.familyId,
