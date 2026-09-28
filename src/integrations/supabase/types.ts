@@ -2233,6 +2233,7 @@ export type Database = {
           dim_w: number | null
           estimated_shipping_days: number | null
           features: Json
+          frequently_bought_category: string | null
           id: string
           image_seed: string | null
           is_bestseller: boolean
@@ -2293,6 +2294,7 @@ export type Database = {
           dim_w?: number | null
           estimated_shipping_days?: number | null
           features?: Json
+          frequently_bought_category?: string | null
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -2353,6 +2355,7 @@ export type Database = {
           dim_w?: number | null
           estimated_shipping_days?: number | null
           features?: Json
+          frequently_bought_category?: string | null
           id?: string
           image_seed?: string | null
           is_bestseller?: boolean
@@ -2620,13 +2623,17 @@ export type Database = {
           dim_l: number | null
           dim_w: number | null
           discount_pct: number | null
+          distributor_discount_pct: number | null
           distributor_moq: number | null
           distributor_mrp: number | null
           distributor_pack_h: number | null
           distributor_pack_l: number | null
+          distributor_pack_size: number | null
           distributor_pack_w: number | null
           distributor_pack_weight_g: number | null
           distributor_price: number | null
+          distributor_reserved_stock: number
+          distributor_stock: number
           family_id: string
           id: string
           image_seed: string | null
@@ -2641,13 +2648,17 @@ export type Database = {
           pack_weight_g: number | null
           price: number
           reserved_stock: number
+          retailer_discount_pct: number | null
           retailer_moq: number | null
           retailer_mrp: number | null
           retailer_pack_h: number | null
           retailer_pack_l: number | null
+          retailer_pack_size: number | null
           retailer_pack_w: number | null
           retailer_pack_weight_g: number | null
           retailer_price: number | null
+          retailer_reserved_stock: number
+          retailer_stock: number
           sku: string
           sort_order: number
           stock: number
@@ -2666,13 +2677,17 @@ export type Database = {
           dim_l?: number | null
           dim_w?: number | null
           discount_pct?: number | null
+          distributor_discount_pct?: number | null
           distributor_moq?: number | null
           distributor_mrp?: number | null
           distributor_pack_h?: number | null
           distributor_pack_l?: number | null
+          distributor_pack_size?: number | null
           distributor_pack_w?: number | null
           distributor_pack_weight_g?: number | null
           distributor_price?: number | null
+          distributor_reserved_stock?: number
+          distributor_stock?: number
           family_id: string
           id?: string
           image_seed?: string | null
@@ -2687,13 +2702,17 @@ export type Database = {
           pack_weight_g?: number | null
           price: number
           reserved_stock?: number
+          retailer_discount_pct?: number | null
           retailer_moq?: number | null
           retailer_mrp?: number | null
           retailer_pack_h?: number | null
           retailer_pack_l?: number | null
+          retailer_pack_size?: number | null
           retailer_pack_w?: number | null
           retailer_pack_weight_g?: number | null
           retailer_price?: number | null
+          retailer_reserved_stock?: number
+          retailer_stock?: number
           sku: string
           sort_order?: number
           stock?: number
@@ -2712,13 +2731,17 @@ export type Database = {
           dim_l?: number | null
           dim_w?: number | null
           discount_pct?: number | null
+          distributor_discount_pct?: number | null
           distributor_moq?: number | null
           distributor_mrp?: number | null
           distributor_pack_h?: number | null
           distributor_pack_l?: number | null
+          distributor_pack_size?: number | null
           distributor_pack_w?: number | null
           distributor_pack_weight_g?: number | null
           distributor_price?: number | null
+          distributor_reserved_stock?: number
+          distributor_stock?: number
           family_id?: string
           id?: string
           image_seed?: string | null
@@ -2733,13 +2756,17 @@ export type Database = {
           pack_weight_g?: number | null
           price?: number
           reserved_stock?: number
+          retailer_discount_pct?: number | null
           retailer_moq?: number | null
           retailer_mrp?: number | null
           retailer_pack_h?: number | null
           retailer_pack_l?: number | null
+          retailer_pack_size?: number | null
           retailer_pack_w?: number | null
           retailer_pack_weight_g?: number | null
           retailer_price?: number | null
+          retailer_reserved_stock?: number
+          retailer_stock?: number
           sku?: string
           sort_order?: number
           stock?: number
@@ -3925,6 +3952,18 @@ export type Database = {
       }
       admin_duplicate_product_family: {
         Args: { _family_id: string }
+        Returns: Json
+      }
+      admin_import_dynamic_products_v1: {
+        Args: { _actor_user_id: string; _rows: Json }
+        Returns: Json
+      }
+      admin_import_dynamic_products_v2: {
+        Args: { _actor_user_id: string; _rows: Json }
+        Returns: Json
+      }
+      admin_import_dynamic_products_v3: {
+        Args: { _actor_user_id: string; _rows: Json }
         Returns: Json
       }
       admin_import_new_families: {
