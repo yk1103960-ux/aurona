@@ -145,6 +145,57 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_bulk_history: {
+        Row: {
+          action: string
+          actor_email: string | null
+          archived_at: string | null
+          category_name: string | null
+          created_at: string
+          created_by: string | null
+          details: Json
+          failed: number
+          file_name: string
+          id: string
+          products_processed: number
+          skipped: number
+          status: string
+          successful: number
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          archived_at?: string | null
+          category_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          failed?: number
+          file_name: string
+          id?: string
+          products_processed?: number
+          skipped?: number
+          status: string
+          successful?: number
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          archived_at?: string | null
+          category_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          failed?: number
+          file_name?: string
+          id?: string
+          products_processed?: number
+          skipped?: number
+          status?: string
+          successful?: number
+        }
+        Relationships: []
+      }
       admin_import_batches: {
         Row: {
           created_at: string
@@ -3952,6 +4003,17 @@ export type Database = {
       }
       admin_duplicate_product_family: {
         Args: { _family_id: string }
+        Returns: Json
+      }
+      admin_import_dynamic_products_safe_v1: {
+        Args: {
+          _actor_email: string
+          _actor_user_id: string
+          _category: string
+          _file_name: string
+          _mode: string
+          _rows: Json
+        }
         Returns: Json
       }
       admin_import_dynamic_products_v1: {

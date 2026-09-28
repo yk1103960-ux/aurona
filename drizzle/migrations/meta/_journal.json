@@ -78,6 +78,13 @@
       "when": 1790589200000,
       "tag": "0010_safe_bulk_modes_history",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790590676814,
+      "tag": "0011_safe_bulk_modes_history",
+      "breakpoints": true
     }
   ]
 }
