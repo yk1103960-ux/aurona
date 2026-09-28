@@ -810,7 +810,28 @@ function dynamicVariationCount(columnIndex: Record<ProductMasterColumnKey, numbe
 }
 
 const textCell = (value: unknown) => String(value ?? "").trim();
-const numericCell = (value: unknown) => value === "" || value == null ? null : Number(value);
+const numericCell = (value: unknown) =>
+  value == null || String(value).trim() === "" ? null : Number(value);
+
+const BULK_SUBSTANTIVE_FIELDS = [
+  "barcode", "short_description", "description", "features", "mrp",
+  "weight_g", "dim_l", "dim_w", "dim_h",
+  "customer_price", "customer_stock", "customer_pack_weight_g",
+  "retailer_price", "retailer_stock", "retailer_pack_weight_g",
+  "distributor_price", "distributor_stock", "distributor_pack_weight_g",
+  "seo_title", "seo_description", "warranty",
+] as const;
+
+function hasBulkProductDetails(row: Record<string, unknown>) {
+  return BULK_SUBSTANTIVE_FIELDS.some((field) => {
+    const value = row[field];
+    return typeof value === "number"
+      ? Number.isFinite(value) && value > 0
+      : typeof value === "string" && value.trim().length > 0;
+  });
+}
+
+const BULK_BLANK_ROW_ERROR = "Fill product details before import; an untouched generated template row cannot be imported.";
 
 function normalizeDynamicRow(
   row: { excelRow: number; values: unknown[] },
@@ -968,6 +989,7 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
         errors.push(`Wrong template/category. Expected ${data.metadata.category_name}`);
       }
       if (!row.product_name) errors.push("Product Name is required");
+      if (row.function === "create" && !hasBulkProductDetails(row)) errors.push(BULK_BLANK_ROW_ERROR);
       if (!row.main_sku) errors.push("Main SKU is required");
       if (metadataMainSku && row.main_sku !== metadataMainSku) {
         errors.push(`Main SKU was changed after template generation. Expected ${metadataMainSku}`);
@@ -1018,7 +1040,7 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       }
       if (row.variation_axes.length !== configuredVariations.length) errors.push(`Expected ${configuredVariations.length} variation values, found ${row.variation_axes.length}`);
       for (const [field, value] of Object.entries(row)) {
-        if ((field.includes('price') || field.includes('stock') || field.includes('dim_') || field.includes('pack_') || field === 'mrp' || field.includes('moq')) && typeof value === 'number' && (!Number.isFinite(value) || value < 0)) errors.push(`${field} must be a valid non-negative number`);
+        if (typeof value === 'number' && (!Number.isFinite(value) || value < 0)) errors.push(`${field} must be a valid non-negative number`);
       }
       if (row.attributes_json) {
         try {
@@ -1161,6 +1183,9 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
         );
       }
       row.category_name = categoryRecord.name;
+      if (String(row.function ?? "").trim().toLowerCase() === "create" && !hasBulkProductDetails(row)) {
+        throw new Error(`Import row ${index + 1}: ${BULK_BLANK_ROW_ERROR}`);
+      }
 
       const mainSku = normalizeMainSku(String(row.main_sku ?? ""));
       const axes = Array.isArray(row.variation_axes)
