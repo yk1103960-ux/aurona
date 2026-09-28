@@ -108,7 +108,9 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
     sheet.getCell(2, index + 1).value = column.detailHeader || null;
     sheet.getCell(3, index + 1).value = column.serial;
   });
-  templateStyles.rowHeights.slice(0, 3).forEach((height, i) => { sheet.getRow(i + 1).height = height; });
+  templateStyles.rowHeights.slice(0, 3).forEach((height, i) => {
+    if (height !== null) sheet.getRow(i + 1).height = height;
+  });
   let index = 0;
   while (index < columns.length) {
     const group = columns[index].group;
@@ -126,18 +128,19 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
     const source = styleByKey[column.key] ?? variationStyle(column.key);
     const reference = templateStyles.columns[source];
     for (let row = 1; row <= 3; row += 1) {
-      sheet.getCell(row, columnIndex + 1).style = structuredClone(reference.styles[row - 1]) as ExcelJS.Style;
+      sheet.getCell(row, columnIndex + 1).style = structuredClone(reference.styles[row - 1]) as Partial<ExcelJS.Style>;
     }
   });
   rows.forEach((values, rowIndex) => {
     const row = sheet.getRow(rowIndex + 4);
-    row.height = templateStyles.rowHeights[3];
+    const dataHeight = templateStyles.rowHeights[3];
+    if (dataHeight !== null) row.height = dataHeight;
     values.forEach((value, columnIndex) => {
       const cell = row.getCell(columnIndex + 1);
       cell.value = value === "" ? null : value;
       const styleKey = columns[columnIndex].key;
       const source = styleByKey[styleKey] ?? variationStyle(styleKey);
-      cell.style = structuredClone(templateStyles.columns[source].styles[3]) as ExcelJS.Style;
+      cell.style = structuredClone(templateStyles.columns[source].styles[3]) as Partial<ExcelJS.Style>;
     });
   });
   return new Uint8Array(await workbook.xlsx.writeBuffer());
