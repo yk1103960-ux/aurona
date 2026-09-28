@@ -64,6 +64,13 @@
       "when": 1790358225504,
       "tag": "0008_restrict_tax_rules_read",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790582523063,
+      "tag": "0009_bulk_import_functions",
+      "breakpoints": true
     }
   ]
 }
