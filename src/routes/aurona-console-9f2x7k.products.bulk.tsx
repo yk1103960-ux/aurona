@@ -489,7 +489,7 @@ function BulkCatalog() {
     });
   };
 
-  const generate = () => {
+  const generate = async () => {
     if (!readyToGenerate || !category) {
       toast.error("Complete Steps 1–3 before generating the Excel template.");
       return;
@@ -508,7 +508,7 @@ function BulkCatalog() {
         combinations,
       };
       const url = URL.createObjectURL(
-        new Blob([createBulkProductWorkbook(input)], {
+        new Blob([await createBulkProductWorkbook(input)], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
       );
