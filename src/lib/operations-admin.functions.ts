@@ -42,6 +42,35 @@ function slugify(value: string) {
 const productManagerCategoriesQuery = (db: any) =>
   db.from("categories").select("id,name,slug").order("name");
 
+type BulkAdminDb = typeof import("@/integrations/supabase/client.server").supabaseAdmin;
+
+async function bulkFamilies(db: BulkAdminDb) {
+  const rows: Array<{ id: string; main_sku: string; name: string; category_id: string | null }> = [];
+  for (let start = 0; ; start += 1000) {
+    const { data, error } = await db.from("product_families")
+      .select("id,main_sku,name,category_id").order("id").range(start, start + 999);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < 1000) break;
+  }
+  return { data: rows, error: null };
+}
+
+async function bulkVariants(db: BulkAdminDb) {
+  const rows: Array<{ id: string; sku: string; family_id: string; mrp: number; price: number;
+    stock: number; retailer_price: number | null; retailer_stock: number;
+    distributor_price: number | null; distributor_stock: number; is_active: boolean }> = [];
+  for (let start = 0; ; start += 1000) {
+    const { data, error } = await db.from("product_variants")
+      .select("id,sku,family_id,mrp,price,stock,retailer_price,retailer_stock,distributor_price,distributor_stock,is_active")
+      .order("id").range(start, start + 999);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < 1000) break;
+  }
+  return { data: rows, error: null };
+}
+
 export const adminPreviewCatalogImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -958,8 +987,8 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const rows = data.rows.map((row) => normalizeDynamicRow(row, columnIndex));
     const [categoriesResult, familiesResult, variantsResult, programsResult] = await Promise.all([
       productManagerCategoriesQuery(supabaseAdmin as any),
-      (supabaseAdmin as any).from("product_families").select("id,main_sku,name,category_id"),
-      (supabaseAdmin as any).from("product_variants").select("id,sku,family_id,mrp,price,stock,retailer_price,retailer_stock,distributor_price,distributor_stock,is_active"),
+      bulkFamilies(supabaseAdmin),
+      bulkVariants(supabaseAdmin),
       (supabaseAdmin as any).from("referral_programs").select("id,name,is_active"),
     ]);
     for (const result of [categoriesResult, familiesResult, variantsResult, programsResult]) if (result.error) throw new Error(result.error.message);
@@ -1027,7 +1056,7 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
       const family = familiesBySku.get(row.main_sku);
       const variant = variantsBySku.get(row.variant_sku);
       if (data.mode === "create" && family) errors.push(`Product already exists. Please use Update Products to modify this product. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
-      if (data.mode === "create" && resolvedCategory && (familiesResult.data ?? []).some((candidate: { name: string; category_id: string }) =>
+      if (data.mode === "create" && resolvedCategory && (familiesResult.data ?? []).some((candidate) =>
         candidate.category_id === resolvedCategory.id && candidate.name?.trim().toLowerCase() === row.product_name.toLowerCase()
       )) errors.push(`Product already exists in ${resolvedCategory.name}: ${row.product_name}. Please use Update Products.`);
       if (data.mode === "update" && !family) errors.push(`Product does not exist. Please use Create Products first. ${row.product_name} / ${row.main_sku} / Excel row ${row.excel_row}`);
@@ -1228,12 +1257,10 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
     const hasUpdates = data.mode === "update";
     const [familiesResult, variantsResult] = hasUpdates
       ? await Promise.all([
-          (supabaseAdmin as any).from("product_families").select("id,main_sku"),
-          (supabaseAdmin as any).from("product_variants").select("id,sku,family_id"),
+          bulkFamilies(supabaseAdmin),
+          bulkVariants(supabaseAdmin),
         ])
       : [{ data: [], error: null }, { data: [], error: null }];
-    if (familiesResult.error) throw new Error(familiesResult.error.message);
-    if (variantsResult.error) throw new Error(variantsResult.error.message);
     const familiesBySku = new Map<string, { id: string }>(
       (familiesResult.data ?? []).map((family: any) => [String(family.main_sku).toUpperCase(), family]),
     );
