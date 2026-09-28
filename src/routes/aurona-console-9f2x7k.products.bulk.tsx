@@ -269,10 +269,7 @@ function BulkCatalog() {
   const [variationValueDrafts, setVariationValueDrafts] = useState<Record<string, string>>({});
 
   const category = config.data?.categories?.find((row: any) => row.id === categoryId);
-  const activeColumns = useMemo(
-    () => buildProductMasterColumns(choices.length || 3),
-    [choices.length],
-  );
+  const activeColumns = useMemo(() => buildProductMasterColumns(), []);
   const activeColumnIndex = useMemo(
     () => buildProductMasterColumnIndex(activeColumns),
     [activeColumns],
@@ -280,19 +277,21 @@ function BulkCatalog() {
 
   const variations = choices.map((choice) => ({
     name: choice.name.trim(),
-    values: uniqueValues(choice.selectedValues),
+    values: uniqueValues(parsePastedValues(
+      variationValueDrafts[choice.id] ?? choice.selectedValues.join(", "),
+    )),
   }));
   const validVariations = variations.length > 0 && variations.every(
     (variation) => variation.name && variation.values.length > 0,
   );
   const combinations = useMemo(
     () => validVariations ? generateVariationCombinations(variations) : [],
-    [choices],
+    [choices, variationValueDrafts],
   );
 
   const readyToGenerate =
     Boolean(category && productName.trim() && mainSku.trim()) &&
-    choices.length > 0 &&
+    choices.length > 0 && choices.length <= 3 &&
     validVariations &&
     new Set(choices.map((choice) => choice.axisKey)).size === choices.length &&
     combinations.length > 0;
@@ -433,6 +432,10 @@ function BulkCatalog() {
 
   const addChoice = (id: string) => {
     if (!id) return;
+    if (choices.length >= 3) {
+      toast.error("The Product Master template supports up to three variations.");
+      return;
+    }
     setOnlineRows([]);
     setOnlineMode(false);
     setParsed(undefined);
@@ -716,7 +719,7 @@ function BulkCatalog() {
             <option value="__other__">Other option…</option>
           </select>
           <span className="text-xs text-slate-500">
-            Choose only what this product needs. Excel variation columns expand or contract automatically.
+            Choose only what this product needs. The three Product Master variation pairs stay in the same columns.
           </span>
         </div>
 
