@@ -8,7 +8,7 @@ END $$;
 
 -- This audit table deliberately has no foreign keys to catalog tables. Removing
 -- an audit record cannot cascade to a product, variant, SKU or stock record.
-CREATE TABLE public.admin_bulk_history (
+CREATE TABLE IF NOT EXISTS public.admin_bulk_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   action text NOT NULL CHECK (action IN ('CREATE', 'UPDATE')),
   file_name text NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE public.admin_bulk_history (
   created_at timestamptz NOT NULL DEFAULT now(),
   archived_at timestamptz
 );
-CREATE INDEX admin_bulk_history_created_at_idx ON public.admin_bulk_history(created_at DESC);
+CREATE INDEX IF NOT EXISTS admin_bulk_history_created_at_idx ON public.admin_bulk_history(created_at DESC);
 ALTER TABLE public.admin_bulk_history ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.admin_bulk_history FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.admin_bulk_history TO service_role;
@@ -32,7 +32,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.admin_bulk_history TO service_rol
 -- Use a new entry point; do not change legacy imports or their migrations.
 -- Each Main SKU is imported in a subtransaction. A failing product rolls back
 -- all its variants, while other product groups can succeed independently.
-CREATE FUNCTION public.admin_import_dynamic_products_safe_v1(
+CREATE OR REPLACE FUNCTION public.admin_import_dynamic_products_safe_v1(
   _rows jsonb, _actor_user_id uuid, _mode text, _file_name text, _category text, _actor_email text
 ) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
