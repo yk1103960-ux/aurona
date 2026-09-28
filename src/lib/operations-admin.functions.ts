@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
 import { normalizeMainSku } from "@/lib/sku-generation";
+import { requiredDynamicRowErrors } from "@/lib/bulk-import-required";
 import {
   buildBulkCategoryLookups,
   expectedBulkVariantSku,
@@ -19,14 +20,17 @@ import {
   resolveCommissionSetOn,
 } from "@/lib/commission-grouping";
 
+const requiredNumberCell = z.union([z.number(), z.string().trim().min(1)])
+  .transform(Number).pipe(z.number().finite().min(0));
+
 const ImportRow = z.object({
   name: z.string().trim().min(1).max(240),
   sku: z.string().trim().min(1).max(120),
   slug: z.string().trim().max(240).optional().default(""),
   category_id: z.string().trim().optional().default(""),
-  price: z.coerce.number().finite().min(0),
-  mrp: z.coerce.number().finite().min(0),
-  stock: z.coerce.number().int().min(0).default(0),
+  price: requiredNumberCell,
+  mrp: requiredNumberCell,
+  stock: requiredNumberCell.pipe(z.number().int()),
   short_description: z.string().max(600).optional().default(""),
   brand: z.string().trim().max(120).optional().default("Aurona"),
 });
@@ -870,6 +874,7 @@ function normalizeDynamicRow(
   const value = (key: ProductMasterColumnKey) => bulkColumnValue(row.values, key, columnIndex);
   const attributes: Record<string, string> = {};
   const variationAxes: Array<{ name: string; value: string; sort_order: number }> = [];
+  const variationCells: Array<{ name: string; value: string }> = [];
 
   const variationSlots = Array.from({ length: dynamicVariationCount(columnIndex) }, (_, index) => [
     `variation_${index + 1}_name`,
@@ -879,6 +884,7 @@ function normalizeDynamicRow(
   for (const [nameKey, valueKey] of variationSlots) {
     const name = textCell(value(nameKey));
     const optionValue = textCell(value(valueKey));
+    variationCells.push({ name, value: optionValue });
     if (name && optionValue) {
       attributes[name] = optionValue;
       variationAxes.push({ name, value: optionValue, sort_order: variationAxes.length });
@@ -903,6 +909,7 @@ function normalizeDynamicRow(
     attributes_json: textCell(value("attributes_json")),
     attributes,
     variation_axes: variationAxes,
+    variation_cells: variationCells,
     short_description: textCell(value("short_description")),
     description: textCell(value("description")),
     features: textCell(value("features")),
@@ -1021,7 +1028,7 @@ export const adminPreviewDynamicCatalogImport = createServerFn({ method: "POST" 
     const seen = new Set<string>();
     const seenCombinations = new Set<string>();
     const previewRows = rows.map((row) => {
-      const errors: string[] = [];
+      const errors = requiredDynamicRowErrors(row);
       if (row.function !== data.mode) errors.push(`Row Function must be ${data.mode} for ${data.mode === "create" ? "Create Products" : "Update Products"}`);
       const categoryKey = normalizeBulkCategoryName(row.category_name);
       const resolvedCategory = resolveBulkCategory(
@@ -1272,6 +1279,9 @@ export const adminCommitDynamicCatalogImport = createServerFn({ method: "POST" }
 
     const rows = data.rows.map((rawRow, index) => {
       const row = { ...rawRow } as Record<string, unknown>;
+      const requiredErrors = requiredDynamicRowErrors(row);
+      if (requiredErrors.length) throw new Error(requiredErrors.join(" "));
+      delete row.variation_cells;
       const categoryRecord = resolveBulkCategory(categoryLookups, row.category_name);
       if (!categoryRecord) {
         throw new Error(
