@@ -3883,7 +3883,7 @@ function SegmentPriceTable({
                           variant="destructive"
                           aria-label={`Delete variation ${row.sku}`}
                           title="Delete variation"
-                          onClick={() => deleteVariantPermanently(row)}
+                          onClick={() => removeRow(row)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
