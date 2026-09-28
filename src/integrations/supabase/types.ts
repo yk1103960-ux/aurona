@@ -145,57 +145,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_bulk_history: {
-        Row: {
-          id: string
-          action: string
-          file_name: string
-          category_name: string | null
-          products_processed: number
-          successful: number
-          failed: number
-          skipped: number
-          status: string
-          details: Json
-          created_by: string | null
-          actor_email: string | null
-          created_at: string
-          archived_at: string | null
-        }
-        Insert: {
-          id?: string
-          action: string
-          file_name: string
-          category_name?: string | null
-          products_processed?: number
-          successful?: number
-          failed?: number
-          skipped?: number
-          status: string
-          details?: Json
-          created_by?: string | null
-          actor_email?: string | null
-          created_at?: string
-          archived_at?: string | null
-        }
-        Update: {
-          id?: string
-          action?: string
-          file_name?: string
-          category_name?: string | null
-          products_processed?: number
-          successful?: number
-          failed?: number
-          skipped?: number
-          status?: string
-          details?: Json
-          created_by?: string | null
-          actor_email?: string | null
-          created_at?: string
-          archived_at?: string | null
-        }
-        Relationships: []
-      }
       admin_import_batches: {
         Row: {
           created_at: string
@@ -4015,10 +3964,6 @@ export type Database = {
       }
       admin_import_dynamic_products_v3: {
         Args: { _actor_user_id: string; _rows: Json }
-        Returns: Json
-      }
-      admin_import_dynamic_products_safe_v1: {
-        Args: { _rows: Json; _actor_user_id: string; _mode: string; _file_name: string; _category: string; _actor_email: string }
         Returns: Json
       }
       admin_import_new_families: {
