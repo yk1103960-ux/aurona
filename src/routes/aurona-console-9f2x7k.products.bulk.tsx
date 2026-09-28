@@ -263,15 +263,19 @@ function BulkCatalog() {
   const [modelName, setModelName] = useState("");
   const [choices, setChoices] = useState<Choice[]>([]);
   const [parsed, setParsed] = useState<any>();
-  const [preview, setPreview] = useState<any>();
+  const [preview, setPreview] = useState<Awaited<ReturnType<typeof previewFn>>>();
   const [busy, setBusy] = useState(false);
   const [onlineRows, setOnlineRows] = useState<OnlineRow[]>([]);
   const [onlineMode, setOnlineMode] = useState(false);
   const [variationValueDrafts, setVariationValueDrafts] = useState<Record<string, string>>({});
-  const [importMode, setImportMode] = useState<"create" | "update">("create");
   const [showHistory, setShowHistory] = useState(false);
   const [fileName, setFileName] = useState("");
   const [importResult, setImportResult] = useState<Awaited<ReturnType<typeof commitFn>> | null>(null);
+  const [updateParsed, setUpdateParsed] = useState<ReturnType<typeof parseBulkProductWorkbook> & { mode: "update" }>();
+  const [updatePreview, setUpdatePreview] = useState<Awaited<ReturnType<typeof previewFn>>>();
+  const [updateFileName, setUpdateFileName] = useState("");
+  const [updateResult, setUpdateResult] = useState<Awaited<ReturnType<typeof commitFn>> | null>(null);
+  const [updateBusy, setUpdateBusy] = useState(false);
 
   const category = config.data?.categories?.find((row: any) => row.id === categoryId);
   const activeColumns = useMemo(() => buildProductMasterColumns(), []);
@@ -375,7 +379,7 @@ function BulkCatalog() {
     setBusy(true);
     try {
       const payload = {
-        mode: importMode,
+        mode: "create" as const,
         metadata: {
           template_version: "aurona-product-master-v1",
           category_id: categoryId,
@@ -530,45 +534,69 @@ function BulkCatalog() {
     }
   };
 
-  const upload = async (file: File) => {
-    setBusy(true);
-    setPreview(undefined);
+  const upload = async (file: File, mode: "create" | "update") => {
+    if (mode === "create") { setBusy(true); setPreview(undefined); setImportResult(null); }
+    else { setUpdateBusy(true); setUpdatePreview(undefined); setUpdateResult(null); }
     try {
-      const next = parseBulkProductWorkbook(await file.arrayBuffer(), importMode);
-      const payload = { ...next, mode: importMode };
-      setFileName(file.name);
-      setParsed(payload);
-      setPreview(await previewFn({ data: payload }));
+      const next = parseBulkProductWorkbook(await file.arrayBuffer(), mode);
+      if (mode === "create") { setFileName(file.name); setParsed({ ...next, mode }); }
+      else { setUpdateFileName(file.name); setUpdateParsed({ ...next, mode }); }
+      toast.success(`${file.name} loaded. Validate and preview before ${mode === "create" ? "creating" : "updating"}.`);
     } catch (error) {
-      setParsed(undefined);
+      if (mode === "create") setParsed(undefined);
+      else setUpdateParsed(undefined);
       toast.error(error instanceof Error ? error.message : "Excel validation failed");
     } finally {
-      setBusy(false);
+      if (mode === "create") setBusy(false);
+      else setUpdateBusy(false);
     }
   };
 
-  const commit = async () => {
-    if (!preview || preview.errorCount || !parsed) return;
-    setBusy(true);
+  const validate = async (mode: "create" | "update") => {
+    const workbook = mode === "create" ? parsed : updateParsed;
+    if (!workbook) return;
+    if (mode === "create") setBusy(true);
+    else setUpdateBusy(true);
+    try {
+      const nextPreview = await previewFn({ data: workbook });
+      if (mode === "create") setPreview(nextPreview);
+      else setUpdatePreview(nextPreview);
+    } catch (error) {
+      if (mode === "create") setPreview(undefined);
+      else setUpdatePreview(undefined);
+      toast.error(error instanceof Error ? error.message : "Validation failed");
+    } finally {
+      if (mode === "create") setBusy(false);
+      else setUpdateBusy(false);
+    }
+  };
+
+  const commit = async (mode: "create" | "update") => {
+    const workbook = mode === "create" ? parsed : updateParsed;
+    const checked = mode === "create" ? preview : updatePreview;
+    if (!checked || checked.errorCount || !workbook) return;
+    if (mode === "create") setBusy(true);
+    else setUpdateBusy(true);
     try {
       const result = await commitFn({ data: {
-        mode: importMode,
-        fileName: fileName || "Online entry",
-        categoryName: String(parsed.metadata?.category_name ?? ""),
-        rows: preview.normalizedRows,
+        mode,
+        fileName: (mode === "create" ? fileName : updateFileName) || "Online entry",
+        categoryName: String(workbook.metadata?.category_name ?? ""),
+        rows: checked.normalizedRows,
       } });
-      setImportResult(result);
+      if (mode === "create") setImportResult(result);
+      else setUpdateResult(result);
       const summary = `${result.action}: ${result.successful} succeeded, ${result.failed} failed, ${result.skipped} skipped`;
       if (result.successful) toast.success(summary);
       else toast.error(summary);
-      setParsed(undefined);
-      setPreview(undefined);
-      setOnlineRows([]);
-      setOnlineMode(false);
+      if (mode === "create") {
+        setParsed(undefined); setPreview(undefined); setOnlineRows([]); setOnlineMode(false);
+      } else { setUpdateParsed(undefined); setUpdatePreview(undefined); }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Import failed; no changes were committed");
     } finally {
-      setBusy(false);
+      if (mode === "create") setBusy(false);
+      else setUpdateBusy(false);
     }
   };
 
@@ -618,32 +646,11 @@ function BulkCatalog() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Bulk product actions">
-        <Button type="button" variant={!showHistory && importMode === "create" ? "default" : "outline"}
-          onClick={() => { setImportMode("create"); setShowHistory(false); setParsed(undefined); setPreview(undefined); setImportResult(null); }}>
-          Create Products
-        </Button>
-        <Button type="button" variant={!showHistory && importMode === "update" ? "default" : "outline"}
-          onClick={() => { setImportMode("update"); setShowHistory(false); setParsed(undefined); setPreview(undefined); setImportResult(null); }}>
-          Update Products
-        </Button>
-        <Button type="button" variant={showHistory ? "default" : "outline"} onClick={() => setShowHistory(true)}>
-          History
-        </Button>
-      </div>
+      <Button type="button" variant="outline" onClick={() => setShowHistory((current) => !current)}>
+        {showHistory ? "Back to Bulk Products" : "History"}
+      </Button>
 
       {showHistory ? <BulkHistory /> : <>
-      {importResult && <div role="status" className="rounded-xl border bg-white p-5">
-        <strong>{importResult.action} {importResult.successful ? "COMPLETED" : "NOT IMPORTED"}</strong>
-        <div>Successful: {importResult.successful} · Failed: {importResult.failed} · Skipped: {importResult.skipped}</div>
-        {importResult.details.filter((item) => item.outcome !== "success").map((item) =>
-          <p key={item.main_sku} className="text-sm text-red-700">{item.main_sku}: {item.error}</p>)}
-      </div>}
-      {importMode === "update" && <p className="rounded-xl border bg-white p-4 text-sm text-slate-700">
-        Export existing products from Product Master, edit their values in the same workbook, then upload it below.
-        Existing Main and Variant SKUs identify the records to update.
-      </p>}
-      {importMode === "create" && <>
 
       <section className="space-y-5 rounded-xl border bg-white p-5">
         <div>
@@ -1050,15 +1057,20 @@ function BulkCatalog() {
           <Download className="mr-1 h-4 w-4" /> Download Excel Template
         </Button>
       </section>
-      </>}
 
-      <section className="space-y-4 rounded-xl border bg-white p-5">
+      {(["create", "update"] as const).map((mode) => {
+        const currentPreview = mode === "create" ? preview : updatePreview;
+        const currentParsed = mode === "create" ? parsed : updateParsed;
+        const currentBusy = mode === "create" ? busy : updateBusy;
+        const currentResult = mode === "create" ? importResult : updateResult;
+        const currentFileName = mode === "create" ? fileName : updateFileName;
+        return <section key={mode} className="space-y-4 rounded-xl border bg-white p-5">
         <div>
-          <h2 className="font-semibold">
-            Step 5 – Upload Completed Excel → Validate → Preview → {importMode === "create" ? "Create" : "Update"}
-          </h2>
+          <h2 className="font-semibold">{mode === "create" ? "CREATE PRODUCTS IN BULK" : "UPDATE PRODUCTS IN BULK"}</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Uploads are accepted only when the Product Master header names, serial numbers and column order match the master template.
+            {mode === "create"
+              ? "Upload a new-products Excel file made from the same Product Master template. Existing products are blocked."
+              : "Export existing products from Product Master, edit that Excel file, then upload it here. Missing products are blocked."}
           </p>
         </div>
 
@@ -1067,27 +1079,41 @@ function BulkCatalog() {
             hidden
             type="file"
             accept=".xlsx"
-            onChange={(event) => event.target.files?.[0] && upload(event.target.files[0])}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void upload(file, mode);
+              event.target.value = "";
+            }}
           />
-          <Button asChild disabled={busy}>
+          <Button asChild disabled={currentBusy}>
             <span>
-              <Upload className="mr-1 h-4 w-4" /> Upload Completed Excel
+              <Upload className="mr-1 h-4 w-4" /> {mode === "create" ? "Choose New Products Excel" : "Choose Updated Existing Products Excel"}
             </span>
           </Button>
         </label>
+        {currentFileName && <p className="text-xs text-slate-600">Selected: {currentFileName}</p>}
+        <Button type="button" variant="outline" disabled={!currentParsed || currentBusy} onClick={() => validate(mode)}>
+          {currentBusy ? "Validating…" : "Validate & Preview"}
+        </Button>
 
-        {preview && (
+        {currentResult && <div role="status" className="rounded-lg border p-3">
+          <strong>{currentResult.action} {currentResult.successful ? "COMPLETED" : "NOT IMPORTED"}</strong>
+          <div>Successful: {currentResult.successful} · Failed: {currentResult.failed} · Skipped: {currentResult.skipped}</div>
+          {currentResult.details.filter((item) => item.outcome !== "success").map((item) =>
+            <p key={item.main_sku} className="text-sm text-red-700">{item.main_sku}: {item.error}</p>)}
+        </div>}
+
+        {currentPreview && (
           <>
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {[
-                ["Products", preview.productsDetected],
-                ["Rows valid", preview.validRows],
-                ["Rows blocked", preview.blockedRows],
-                ["New products", preview.productsToCreate],
-                ["Product updates", preview.productsToUpdate],
-                ["New variants", preview.variantsToCreate],
-                ["Variant updates", preview.variantsToUpdate],
-                ["Errors", preview.errorCount],
+                ["Products", currentPreview.productsDetected],
+                ["Rows valid", currentPreview.validRows],
+                ["Rows blocked", currentPreview.blockedRows],
+                [mode === "create" ? "New products" : "Existing products found", mode === "create" ? currentPreview.productsToCreate : currentPreview.productsToUpdate],
+                ["Blocked products", currentPreview.blockedProducts],
+                [mode === "create" ? "Existing products detected" : "Products not found", new Set(currentPreview.rows.filter((row) => row.errors.some((error) => error.includes(mode === "create" ? "Product already exists" : "Product does not exist"))).map((row) => row.mainSku)).size],
+                ["Errors", currentPreview.errorCount],
               ].map(([label, value]) => (
                 <div key={String(label)} className="rounded-lg border p-3">
                   <div className="text-xs text-slate-500">{label}</div>
@@ -1111,7 +1137,7 @@ function BulkCatalog() {
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.rows.map((row: any) => (
+                  {currentPreview.rows.map((row) => (
                     <tr key={row.excelRow} className="border-t">
                       <td className="p-2">{row.excelRow}</td>
                       <td className="p-2 capitalize">{row.action}</td>
@@ -1132,14 +1158,15 @@ function BulkCatalog() {
             </div>
 
             <Button
-              disabled={busy || preview.errorCount > 0 || !parsed}
-              onClick={commit}
+              disabled={currentBusy || currentPreview.errorCount > 0 || !currentParsed}
+              onClick={() => commit(mode)}
             >
-              {busy ? "Importing…" : `Confirm ${importMode === "create" ? "Create Products" : "Update Products"}`}
+              {currentBusy ? "Importing…" : mode === "create" ? "Create Products" : "Update Products"}
             </Button>
           </>
         )}
-      </section>
+      </section>;
+      })}
       </>}
     </div>
   );
