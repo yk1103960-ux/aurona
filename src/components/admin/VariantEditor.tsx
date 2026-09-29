@@ -380,7 +380,11 @@ export function VariantEditor({
 
   const family = q.data?.family;
   const axes = axisRows;
-  const currentRows = selectCurrentVariantRows(rows, axes);
+  const segmentKey = buyerWorkflow ? (`available_${buyerWorkflow}` as const) : null;
+  // Each buyer workflow shows only the variations offered to that account type.
+  const currentRows = selectCurrentVariantRows(rows, axes).filter(
+    (row) => !segmentKey || row[segmentKey] !== false,
+  );
   const archivedCurrentRows = rows.filter(
     (row) => Boolean(row.archived_at) && variantMatchesCurrentAxes(row, axes, { includeArchived: true }),
   );
@@ -516,15 +520,23 @@ export function VariantEditor({
       const combinations = selectedKeys
         ? allMissing.filter((attributes) => selectedKeys.has(combinationKey(sourceAxes, attributes)))
         : allMissing;
-      // Keep historical saved rows for orders and reactivation, but make stale
-      // combinations inactive. Obsolete unsaved drafts have no history to keep.
-      const synchronized = sourceRows
-        .filter((row) => !row.id.startsWith("new-") || currentIds.has(row.id))
-        .map((row) => currentIds.has(row.id) || !row.is_active ? row : { ...row, is_active: false });
-      const deactivated = sourceRows.filter((row) =>
-        !row.id.startsWith("new-") && row.is_active && !currentIds.has(row.id),
-      ).length;
-      if (!combinations.length && !deactivated && synchronized.length === sourceRows.length) {
+      // Segment workflows (Retailer/Distributor) never touch other segments' rows:
+      // existing matching rows are simply offered to this segment too.
+      const segKey = buyerWorkflow ? (`available_${buyerWorkflow}` as const) : null;
+      const synchronized = segKey
+        ? sourceRows.map((row) => (currentIds.has(row.id) && row[segKey] === false ? { ...row, [segKey]: true } : row))
+        : sourceRows
+            .filter((row) => !row.id.startsWith("new-") || currentIds.has(row.id))
+            .map((row) => currentIds.has(row.id) || !row.is_active ? row : { ...row, is_active: false });
+      const deactivated = segKey
+        ? 0
+        : sourceRows.filter((row) =>
+            !row.id.startsWith("new-") && row.is_active && !currentIds.has(row.id),
+          ).length;
+      const reoffered = segKey
+        ? synchronized.filter((row, i) => row !== sourceRows[i]).length
+        : 0;
+      if (!combinations.length && !deactivated && !reoffered && synchronized.length === sourceRows.length) {
         toast.info("All selected combinations already exist");
         return;
       }
@@ -581,9 +593,10 @@ export function VariantEditor({
           is_active: true,
           sort_order: synchronized.length + index,
           low_stock_threshold: 10,
-          available_customer: template?.available_customer ?? true,
-          available_retailer: template?.available_retailer ?? true,
-          available_distributor: template?.available_distributor ?? true,
+          // Created in a buyer workflow → offered only to that account type.
+          available_customer: buyerWorkflow ? buyerWorkflow === "customer" : true,
+          available_retailer: buyerWorkflow ? buyerWorkflow === "retailer" : true,
+          available_distributor: buyerWorkflow ? buyerWorkflow === "distributor" : true,
         } satisfies Variant;
       });
       const nextRows = [...synchronized, ...added];
