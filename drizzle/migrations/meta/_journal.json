@@ -92,6 +92,13 @@
       "when": 1790697206693,
       "tag": "0012_fix_variant_matrix_save_timeout",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790698943912,
+      "tag": "0013_variant_refresh_only_on_projected_changes",
+      "breakpoints": true
     }
   ]
 }
