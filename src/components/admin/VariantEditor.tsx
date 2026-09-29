@@ -536,7 +536,7 @@ export function VariantEditor({
       const reoffered = segKey
         ? synchronized.filter((row, i) => row !== sourceRows[i]).length
         : 0;
-      if (!combinations.length && !deactivated && synchronized.length === sourceRows.length) {
+      if (!combinations.length && !deactivated && !reoffered && synchronized.length === sourceRows.length) {
         toast.info("All selected combinations already exist");
         return;
       }
@@ -593,9 +593,10 @@ export function VariantEditor({
           is_active: true,
           sort_order: synchronized.length + index,
           low_stock_threshold: 10,
-          available_customer: template?.available_customer ?? true,
-          available_retailer: template?.available_retailer ?? true,
-          available_distributor: template?.available_distributor ?? true,
+          // Created in a buyer workflow → offered only to that account type.
+          available_customer: buyerWorkflow ? buyerWorkflow === "customer" : true,
+          available_retailer: buyerWorkflow ? buyerWorkflow === "retailer" : true,
+          available_distributor: buyerWorkflow ? buyerWorkflow === "distributor" : true,
         } satisfies Variant;
       });
       const nextRows = [...synchronized, ...added];
