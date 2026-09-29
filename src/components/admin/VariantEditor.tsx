@@ -32,6 +32,7 @@ import {
 import {
   adminLoadVariantMatrix,
   adminSaveVariantMatrix,
+  adminSaveBuyerVariantMatrix,
   adminSetPrimaryProductImage,
   adminSetProductVariantState,
   adminDeleteProductVariantPermanent,
@@ -309,13 +310,13 @@ export function VariantEditor({
   });
 
   const q = useQuery({
-    queryKey: ["admin-product-variants", familyId ?? null, productId, productSku],
+    queryKey: ["admin-product-variants", familyId ?? null, productId, productSku, buyerWorkflow ?? "customer"],
     enabled: !!productSku || !!familyId,
     refetchOnWindowFocus: false,
 
     queryFn: async () => {
       const result = await adminLoadVariantMatrix({
-        data: { familyId: familyId ?? null, productId, productSku },
+        data: { familyId: familyId ?? null, productId, productSku, buyerType: buyerWorkflow ?? "customer" },
       });
 
       const variants = (result.variants ?? []).map((row: Partial<Variant>) => ({
@@ -323,10 +324,10 @@ export function VariantEditor({
         barcode: row.barcode ?? "",
         expected_stock: Number(row.stock ?? 0),
       })) as Variant[];
-      const axes = hydrateSavedAxes(
-        (result.axes ?? []) as Axis[], variants,
-        result.family as Record<string, unknown> | null,
-      );
+      const axes = buyerWorkflow === "retailer" || buyerWorkflow === "distributor"
+        ? (result.axes ?? []) as Axis[]
+        : hydrateSavedAxes((result.axes ?? []) as Axis[], variants,
+            result.family as Record<string, unknown> | null);
       // A legacy product may have one SKU with values saved only on its family.
       // Prefill that one editor row when every saved option has one unambiguous value.
       const displayedVariants = variants.length === 1 && axes.every((axis) => axis.values.length === 1)
@@ -339,7 +340,8 @@ export function VariantEditor({
             },
           }))
         : variants;
-      return { family: result.family, variants: displayedVariants, axes };
+      return { family: result.family, variants: displayedVariants, axes,
+        allVariants: (result.allVariants ?? result.variants ?? []) as Variant[] };
     },
   });
 
@@ -380,11 +382,7 @@ export function VariantEditor({
 
   const family = q.data?.family;
   const axes = axisRows;
-  const segmentKey = buyerWorkflow ? (`available_${buyerWorkflow}` as const) : null;
-  // Each buyer workflow shows only the variations offered to that account type.
-  const currentRows = selectCurrentVariantRows(rows, axes).filter(
-    (row) => !segmentKey || row[segmentKey] !== false,
-  );
+  const currentRows = selectCurrentVariantRows(rows, axes);
   const archivedCurrentRows = rows.filter(
     (row) => Boolean(row.archived_at) && variantMatchesCurrentAxes(row, axes, { includeArchived: true }),
   );
@@ -434,7 +432,12 @@ export function VariantEditor({
 
   const addRow = () => {
     if (busy) return;
-    const draft = newVariation(family.id, productSku, rows);
+    const draft = newVariation(family.id, productSku, q.data?.allVariants ?? rows);
+    if (buyerWorkflow) {
+      draft.available_customer = buyerWorkflow === "customer";
+      draft.available_retailer = buyerWorkflow === "retailer";
+      draft.available_distributor = buyerWorkflow === "distributor";
+    }
     dirty.current = true;
     setRows([...rows, draft]);
     setWizardStep(0);
@@ -487,7 +490,12 @@ export function VariantEditor({
         );
         photos = photos.map((photo, index) => ({ ...photo, primary: index === primary }));
       }
-      const draft = newVariation(family.id, productSku, rows, source);
+      const draft = newVariation(family.id, productSku, q.data?.allVariants ?? rows, source);
+      if (buyerWorkflow) {
+        draft.available_customer = buyerWorkflow === "customer";
+        draft.available_retailer = buyerWorkflow === "retailer";
+        draft.available_distributor = buyerWorkflow === "distributor";
+      }
       dirty.current = true;
       setRows([...rows, draft]);
       setPhotoDrafts((current) => ({ ...current, [draft.id]: photos }));
@@ -520,33 +528,29 @@ export function VariantEditor({
       const combinations = selectedKeys
         ? allMissing.filter((attributes) => selectedKeys.has(combinationKey(sourceAxes, attributes)))
         : allMissing;
-      // Segment workflows (Retailer/Distributor) never touch other segments' rows:
-      // existing matching rows are simply offered to this segment too.
-      const segKey = buyerWorkflow ? (`available_${buyerWorkflow}` as const) : null;
-      const synchronized = segKey
-        ? sourceRows.map((row) => (currentIds.has(row.id) && row[segKey] === false ? { ...row, [segKey]: true } : row))
-        : sourceRows
-            .filter((row) => !row.id.startsWith("new-") || currentIds.has(row.id))
-            .map((row) => currentIds.has(row.id) || !row.is_active ? row : { ...row, is_active: false });
-      const deactivated = segKey
-        ? 0
-        : sourceRows.filter((row) =>
-            !row.id.startsWith("new-") && row.is_active && !currentIds.has(row.id),
-          ).length;
-      const reoffered = segKey
-        ? synchronized.filter((row, i) => row !== sourceRows[i]).length
-        : 0;
-      if (!combinations.length && !deactivated && !reoffered && synchronized.length === sourceRows.length) {
+      // Keep historical saved rows for orders and reactivation, but make stale
+      // combinations inactive. Obsolete unsaved drafts have no history to keep.
+      const synchronized = sourceRows
+        .filter((row) => !row.id.startsWith("new-") || currentIds.has(row.id))
+        .map((row) => currentIds.has(row.id) || !row.is_active ? row : { ...row, is_active: false });
+      const deactivated = sourceRows.filter((row) =>
+        !row.id.startsWith("new-") && row.is_active && !currentIds.has(row.id),
+      ).length;
+      if (!combinations.length && !deactivated && synchronized.length === sourceRows.length) {
         toast.info("All selected combinations already exist");
         return;
       }
-      const usedSkus = new Set(sourceRows.map((row) => row.sku.trim().toUpperCase()));
+      const usedSkus = new Set((q.data?.allVariants ?? sourceRows).map((row) => row.sku.trim().toUpperCase()));
       const template =
         currentSourceRows.find((row) => row.is_active) ??
         currentSourceRows.find((row) => !row.id.startsWith("new-")) ??
         sourceRows.find((row) => row.is_active) ??
         sourceRows[0];
       const added = combinations.map((attributes, index) => {
+        const existing = q.data?.allVariants.find((row) =>
+          !row.archived_at && variantMatchesCurrentAxes(row, sourceAxes) &&
+          combinationKey(sourceAxes, row.attributes ?? {}) === combinationKey(sourceAxes, attributes));
+        if (existing) return { ...existing, is_active: true };
         const suffix = sourceAxes.map((axis) => createProductOptionToken(attributes[axis.axis_key])).join("-");
         const base = `${productSku}-${suffix}`;
         let sku = base.slice(0, 120);
@@ -593,10 +597,9 @@ export function VariantEditor({
           is_active: true,
           sort_order: synchronized.length + index,
           low_stock_threshold: 10,
-          // Created in a buyer workflow → offered only to that account type.
-          available_customer: buyerWorkflow ? buyerWorkflow === "customer" : true,
-          available_retailer: buyerWorkflow ? buyerWorkflow === "retailer" : true,
-          available_distributor: buyerWorkflow ? buyerWorkflow === "distributor" : true,
+          available_customer: buyerWorkflow ? buyerWorkflow === "customer" : template?.available_customer ?? true,
+          available_retailer: buyerWorkflow ? buyerWorkflow === "retailer" : template?.available_retailer ?? true,
+          available_distributor: buyerWorkflow ? buyerWorkflow === "distributor" : template?.available_distributor ?? true,
         } satisfies Variant;
       });
       const nextRows = [...synchronized, ...added];
@@ -629,6 +632,12 @@ export function VariantEditor({
 
   const archiveVariant = async (row: Variant) => {
     if (busy) return;
+    if (buyerWorkflow === "retailer" || buyerWorkflow === "distributor") {
+      if (!confirm(`Remove ${row.sku} from ${buyerWorkflow} variations? The SKU and other buyer setups will remain.`)) return;
+      dirty.current = true;
+      setRows((current) => current.filter((item) => item.id !== row.id));
+      return;
+    }
     if (row.id.startsWith("new-")) {
       removeRow(row);
       return;
@@ -665,6 +674,13 @@ export function VariantEditor({
   };
 
   const deleteVariantPermanently = async (row: Variant) => {
+    if (buyerWorkflow === "retailer" || buyerWorkflow === "distributor") {
+      if (!confirm(`Remove ${row.sku} from ${buyerWorkflow} variations? The shared SKU will not be deleted.`)) return;
+      dirty.current = true;
+      setRows((current) => current.filter((item) => item.id !== row.id));
+      setEditingId((current) => current === row.id ? null : current);
+      return;
+    }
     if (busy || !confirm(`Permanently delete variant ${row.sku}? This cannot be restored.`)) return;
     if (row.id.startsWith("new-")) {
       dirty.current = true;
@@ -721,12 +737,13 @@ export function VariantEditor({
         currentIds.has(row.id) ? row : { ...row, is_active: false },
       );
 
-      if (!currentRowsForSave.length) {
+      if (!currentRowsForSave.length && buyerWorkflow !== "retailer" && buyerWorkflow !== "distributor") {
         throw new Error("Generate at least one valid variation for the currently selected option values.");
       }
 
       for (const row of currentRowsForSave) {
-        const issues = variationIssues(row, currentRowsForSave, cleaned);
+        const buyerScoped = buyerWorkflow === "retailer" || buyerWorkflow === "distributor";
+        const issues = variationIssues(buyerScoped ? { ...row, is_active: false } : row, currentRowsForSave, cleaned);
         if (issues.length) throw new Error(`${row.sku || "Variation"}: ${issues[0]}`);
       }
     } catch (error) {
@@ -736,24 +753,30 @@ export function VariantEditor({
     // Archived variants are managed by the explicit Restore/Delete lifecycle.
     // Submitting them to admin_save_variant_matrix_v3 would fail because that
     // routine intentionally accepts only non-archived rows.
-    const snapshot = synchronizedRows.filter((row) => !row.archived_at);
+    const snapshot = (buyerWorkflow === "retailer" || buyerWorkflow === "distributor"
+      ? currentRowsForSave : synchronizedRows).filter((row) => !row.archived_at);
     const pending = photoDrafts;
     setSaving(true);
     let committed = false;
     try {
-      await adminSaveVariantMatrix({
+      const savePayload = {
+        familyId: family.id,
+        axes: cleaned,
+        variants: snapshot.map((row) => ({
+          ...row,
+          id: row.id.startsWith("new-") ? undefined : row.id,
+          sku: row.sku.trim(),
+          discount_pct: priceSegment === "retailer" || priceSegment === "distributor"
+            ? row.discount_pct
+            : discountPercent(row.mrp, row.price),
+          low_stock_threshold: row.low_stock_threshold ?? 10,
+        })),
+      };
+      if (buyerWorkflow === "retailer" || buyerWorkflow === "distributor") {
+        await adminSaveBuyerVariantMatrix({ data: { ...savePayload, buyerType: buyerWorkflow } });
+      } else await adminSaveVariantMatrix({
         data: {
-          familyId: family.id,
-          axes: cleaned,
-          variants: snapshot.map((row) => ({
-            ...row,
-            id: row.id.startsWith("new-") ? undefined : row.id,
-            sku: row.sku.trim(),
-            discount_pct: priceSegment === "retailer" || priceSegment === "distributor"
-              ? row.discount_pct
-              : discountPercent(row.mrp, row.price),
-            low_stock_threshold: row.low_stock_threshold ?? 10,
-          })),
+          ...savePayload,
         },
       });
       committed = true;
@@ -1001,7 +1024,7 @@ export function VariantEditor({
               </Button>
             )}
 
-            <Button size="sm" type="button" onClick={saveAll} disabled={busy || currentRows.length === 0}>
+            <Button size="sm" type="button" onClick={saveAll} disabled={busy || (currentRows.length === 0 && buyerWorkflow !== "retailer" && buyerWorkflow !== "distributor")}>
               <Save className="mr-1 h-4 w-4" />
               {saving ? "Saving…" : saveActionLabel}
             </Button>
@@ -1048,6 +1071,7 @@ export function VariantEditor({
         <div hidden={tab !== "quick"}>
           <QuickVariantsTab
             rows={currentRows}
+            buyerScoped={buyerWorkflow === "retailer" || buyerWorkflow === "distributor"}
             archivedRows={archivedCurrentRows}
             axes={axes}
             productSlug={productSlug}
@@ -1085,7 +1109,7 @@ export function VariantEditor({
       </div>
 
       <div className="flex justify-end border-t border-slate-200 bg-slate-50 p-4">
-        <Button type="button" onClick={saveAll} disabled={busy || currentRows.length === 0}>
+        <Button type="button" onClick={saveAll} disabled={busy || (currentRows.length === 0 && buyerWorkflow !== "retailer" && buyerWorkflow !== "distributor")}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Saving…" : saveActionLabel}
         </Button>
@@ -1125,6 +1149,7 @@ export function VariantEditor({
 
 function QuickVariantsTab({
   rows,
+  buyerScoped,
   archivedRows,
   axes,
   productSlug,
@@ -1138,6 +1163,7 @@ function QuickVariantsTab({
   optionsEditor,
 }: {
   rows: Variant[];
+  buyerScoped: boolean;
   archivedRows: Variant[];
   axes: Axis[];
   productSlug?: string;
@@ -1280,8 +1306,8 @@ function QuickVariantsTab({
                           variant="ghost"
                           disabled={busy}
                           onClick={() => archiveVariant(row)}
-                          title="Archive variant (can be restored)"
-                          aria-label={`Archive variant ${row.sku}`}
+                          title={buyerScoped ? "Remove from this buyer setup" : "Archive variant (can be restored)"}
+                          aria-label={`${buyerScoped ? "Remove" : "Archive"} variant ${row.sku}`}
                           className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         >
                           <Archive className="h-4 w-4" />
@@ -1293,8 +1319,8 @@ function QuickVariantsTab({
                         variant="destructive"
                         disabled={busy}
                         onClick={() => deleteVariantPermanently(row)}
-                        title="Delete variation permanently"
-                        aria-label={`Delete variation permanently ${row.sku}`}
+                        title={buyerScoped ? "Remove from this buyer setup; shared SKU is preserved" : "Delete variation permanently"}
+                        aria-label={`${buyerScoped ? "Remove variation" : "Delete variation permanently"} ${row.sku}`}
                         className="h-10 w-10 rounded-xl bg-red-600 text-white shadow-sm hover:bg-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
