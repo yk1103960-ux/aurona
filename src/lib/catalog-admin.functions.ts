@@ -1030,10 +1030,10 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
     );
     const familyRows = await (supabaseAdmin as any)
       .from("product_variants")
-      .select("id,attributes,archived_at")
+      .select("id,attributes,archived_at,available_customer")
       .eq("family_id", data.familyId);
     if (familyRows.error) throw new Error(familyRows.error.message);
-    const persisted = (familyRows.data ?? []).filter((row: any) => !row.archived_at);
+    const persisted = (familyRows.data ?? []).filter((row: any) => !row.archived_at && row.available_customer !== false);
     const submittedIds = new Set(data.variants.map((row) => row.id).filter(Boolean));
     if (persisted.some((row: any) => !submittedIds.has(row.id))) {
       throw new Error("Variant matrix changed while editing. Reload before regenerating.");
@@ -1094,50 +1094,6 @@ export const adminSaveVariantMatrix = createServerFn({ method: "POST" })
       );
     if (error) throw new Error(error.message);
 
-    // v3 persists the shared/customer matrix. Buyer-channel columns were added
-    // later, so save those on the same canonical SKU rows before reporting success.
-    for (const variant of reconciledVariants) {
-      const { data: channelRows, error: channelError } = await (supabaseAdmin as any)
-        .from("product_variants")
-        .update({
-          retailer_mrp: variant.retailer_mrp,
-          retailer_price: variant.retailer_price,
-          retailer_discount_pct: variant.retailer_discount_pct,
-          retailer_stock: variant.retailer_stock,
-          retailer_pack_size: variant.retailer_pack_size,
-          retailer_pack_weight_g: variant.retailer_pack_weight_g,
-          retailer_pack_l: variant.retailer_pack_l,
-          retailer_pack_w: variant.retailer_pack_w,
-          retailer_pack_h: variant.retailer_pack_h,
-          distributor_mrp: variant.distributor_mrp,
-          distributor_price: variant.distributor_price,
-          distributor_discount_pct: variant.distributor_discount_pct,
-          distributor_stock: variant.distributor_stock,
-          distributor_pack_size: variant.distributor_pack_size,
-          distributor_pack_weight_g: variant.distributor_pack_weight_g,
-          distributor_pack_l: variant.distributor_pack_l,
-          distributor_pack_w: variant.distributor_pack_w,
-          distributor_pack_h: variant.distributor_pack_h,
-        })
-        .eq("family_id", data.familyId)
-        .eq("sku", variant.sku.trim().toUpperCase())
-        .select("id");
-      if (channelError) throw new Error(channelError.message);
-      if ((channelRows?.length ?? 0) !== 1) {
-        throw new Error(`Buyer pricing/stock could not be matched to SKU ${variant.sku}. Reload before retrying.`);
-      }
-    }
-
-    const segments = await (supabaseAdmin as any).rpc("admin_set_variant_segments", {
-      _family_id: data.familyId,
-      _segments: reconciledVariants.map((variant) => ({
-        sku: variant.sku.trim(),
-        available_customer: variant.available_customer,
-        available_retailer: variant.available_retailer,
-        available_distributor: variant.available_distributor,
-      })),
-    });
-    if (segments.error) throw new Error(segments.error.message);
     return { ok: true, compatibility_mode: false };
   });
 
@@ -1346,6 +1302,7 @@ export const adminLoadVariantMatrix = createServerFn({ method: "POST" })
         familyId: z.string().uuid().nullable().optional(),
         productId: z.string().max(80).optional(),
         productSku: z.string().max(120).optional(),
+        buyerType: z.enum(["customer", "retailer", "distributor"]).default("customer"),
       })
       .parse(input),
   )
@@ -1395,9 +1352,54 @@ export const adminLoadVariantMatrix = createServerFn({ method: "POST" })
     if (variants.error) throw new Error(variants.error.message);
     if (axes.error) throw new Error(axes.error.message);
 
+    if (data.buyerType !== "customer") {
+      const setup = await db.from("product_variant_buyer_setups")
+        .select("axes,variant_skus")
+        .eq("family_id", family.id)
+        .eq("buyer_type", data.buyerType)
+        .maybeSingle();
+      if (setup.error) throw new Error(setup.error.message);
+      const selected = new Set<string>((setup.data?.variant_skus ?? []).map((sku: string) => sku.toUpperCase()));
+      return {
+        family,
+        variants: (variants.data ?? [])
+          .filter((row: { sku: string }) => selected.has(row.sku.toUpperCase()))
+          .map((row: { is_active: boolean; available_retailer: boolean; available_distributor: boolean }) => ({
+            ...row,
+            is_active: row.is_active &&
+              (data.buyerType === "retailer" ? row.available_retailer !== false : row.available_distributor !== false),
+          })),
+        allVariants: variants.data ?? [],
+        axes: (setup.data?.axes ?? []) as Array<{ id: string; axis_key: string; label: string; values: string[]; sort_order: number }>,
+      };
+    }
+
     return {
       family,
-      variants: (variants.data ?? []) as any[],
-      axes: (axes.data ?? []) as any[],
+      variants: (variants.data ?? []).filter((row: { available_customer: boolean | null }) => row.available_customer !== false),
+      allVariants: variants.data ?? [],
+      axes: (axes.data ?? []) as Array<{ id: string; axis_key: string; label: string; values: string[]; sort_order: number }>,
     };
+  });
+
+export const adminSaveBuyerVariantMatrix = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    familyId: z.string().uuid(),
+    buyerType: z.enum(["retailer", "distributor"]),
+    axes: z.array(AxisInput).max(20),
+    variants: z.array(VariantInput).max(500),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context, "catalog.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await (supabaseAdmin as any).rpc("admin_save_buyer_variant_matrix_v1", {
+      _family_id: data.familyId,
+      _buyer_type: data.buyerType,
+      _axes: data.axes,
+      _variants: data.variants,
+      _actor_user_id: context.userId,
+    });
+    if (error) throw new Error(error.message);
+    return { skuMapping: result as Record<string, string> };
   });
