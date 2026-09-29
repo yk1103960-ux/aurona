@@ -563,7 +563,7 @@ export function ProductEditor({ productId: id }: { productId: string }) {
                 ? "This admin account needs the catalog.manage permission."
                 : message === "Product not found"
                   ? "The product or product family no longer exists. Return to the product list and choose another record."
-                  : "The product identifier could not be resolved. Retry the request or return to the product list."}
+                  : `The product could not be loaded${message ? ` (${message})` : ""}. Retry the request or return to the product list.`}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => product.refetch()} disabled={product.isFetching}>
