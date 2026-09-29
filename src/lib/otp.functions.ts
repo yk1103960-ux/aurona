@@ -39,6 +39,8 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
       .from("auth_otp_challenges")
       .select("created_at")
       .eq("email", data.email)
+      .eq("purpose", "signup")
+      .is("consumed_at", null)
       .order("created_at", { ascending: false })
       .limit(1);
     const last = recent?.[0]?.created_at ? new Date(recent[0].created_at).getTime() : 0;
