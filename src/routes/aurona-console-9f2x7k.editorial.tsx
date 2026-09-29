@@ -514,11 +514,15 @@ function ReferralProgramsPanel() {
 
   const save = async (row: Partial<ReferralProgram>) => {
     if (!row.name?.trim()) return toast.error("Name is required");
+    const commissionKind = (row.commission_kind || "percentage").trim().toLowerCase();
+    if (commissionKind !== "percentage" && commissionKind !== "fixed") {
+      return toast.error("Choose Percentage or Fixed for the commission type.");
+    }
     const payload = {
       name: row.name.trim(),
       description: row.description ?? "",
       eligibility: row.eligibility || null,
-      commission_kind: row.commission_kind || "percentage",
+      commission_kind: commissionKind,
       commission_value: Number(row.commission_value ?? 0),
       max_commission: row.max_commission === null || row.max_commission === undefined || String(row.max_commission) === "" ? null : Number(row.max_commission),
       min_order_value: Number(row.min_order_value ?? 0),
@@ -558,10 +562,14 @@ function ReferralProgramsPanel() {
               <Input value={draft.name ?? ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             </Field>
             <Field label="Commission type (percentage / fixed)">
-              <Input
-                value={draft.commission_kind ?? ""}
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={draft.commission_kind ?? "percentage"}
                 onChange={(e) => setDraft({ ...draft, commission_kind: e.target.value })}
-              />
+              >
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed (₹)</option>
+              </select>
             </Field>
             <Field label={draft.commission_kind === "fixed" ? "Commission amount (₹)" : "Commission percent (%)"}>
               <Input
