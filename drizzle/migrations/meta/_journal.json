@@ -85,6 +85,13 @@
       "when": 1790590676814,
       "tag": "0011_safe_bulk_modes_history",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790697206693,
+      "tag": "0012_fix_variant_matrix_save_timeout",
+      "breakpoints": true
     }
   ]
 }
