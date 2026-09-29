@@ -17,7 +17,7 @@ import { DASHBOARD_PATHS, roleLabel, useAccessState } from "@/lib/role-routing";
 import { validateEmail } from "@/lib/email-validation";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { validateRegistration, recordLoginAttempt, registerSession, getAuthPolicy } from "@/lib/auth.functions";
-import { sendSignupSmsOtp, verifySignupSmsOtp, sendLoginSmsOtp, verifyLoginSmsOtp } from "@/lib/otp.functions";
+import { sendSignupSmsOtp, cancelSignupSmsOtp, verifySignupSmsOtp, sendLoginSmsOtp, verifyLoginSmsOtp } from "@/lib/otp.functions";
 import {
   beginPasswordLogin,
   beginSessionTwoFactor,
@@ -198,6 +198,7 @@ function AuthPage() {
 
   // OTP state
   const [otpSent, setOtpSent] = useState(false);
+  const [signupChallenge, setSignupChallenge] = useState<{ challengeId: string; email: string; phone: string } | null>(null);
   const [otp, setOtp] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [cooldown, setCooldown] = useState(0);
@@ -333,14 +334,37 @@ function AuthPage() {
   // ---------- Registration ----------
   /** Mobile OTP over MSG91 is the single production verification channel. */
   const deliverSignupOtp = async () => {
-    const res = await sendSignupSmsOtp({ data: { email: roleEmail(email, role), phone } });
+    const signupEmail = roleEmail(email, role);
+    const signupPhone = phone;
+    const res = await sendSignupSmsOtp({ data: { email: signupEmail, phone: signupPhone } });
     if (!res.ok) {
       toast.error(res.message);
       return false;
     }
+    setSignupChallenge({ challengeId: res.challengeId, email: signupEmail, phone: signupPhone });
     startOtp(res.expirySeconds);
     toast.success(res.message);
     return true;
+  };
+
+  const backToSignupDetails = async () => {
+    if (busy || !signupChallenge) return;
+    setBusy(true);
+    try {
+      const result = await cancelSignupSmsOtp({ data: signupChallenge });
+      if (!result.ok) throw new Error("Could not close the verification code. Please try again.");
+      setSignupChallenge(null);
+      setOtpSent(false);
+      setOtp("");
+      setSecondsLeft(0);
+      setCooldown(0);
+      setAttempts(0);
+      setErrors({});
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not return to account details. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const register = async (e: React.FormEvent) => {
@@ -899,6 +923,8 @@ function AuthPage() {
                         cooldown,
                         target: phone,
                       }}
+                      onBack={backToSignupDetails}
+                      backLabel="← Back to edit details"
                     />
                   )}
                 </TabsContent>
@@ -985,6 +1011,7 @@ function OtpPanel(props: {
   target: string;
   masked?: boolean;
   onBack?: () => void;
+  backLabel?: string;
 }) {
   const {
     otp,
@@ -1001,6 +1028,7 @@ function OtpPanel(props: {
     target,
     masked,
     onBack,
+    backLabel,
   } = props;
   return (
     <form onSubmit={verifyOtp} className="mt-1 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
@@ -1063,7 +1091,7 @@ function OtpPanel(props: {
           disabled={busy}
           className="w-full text-center text-[11px] font-medium text-muted-foreground underline disabled:opacity-50"
         >
-          Back to sign in
+          {backLabel ?? "Back to sign in"}
         </button>
       )}
     </form>
