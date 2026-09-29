@@ -82,9 +82,34 @@ export const sendSignupSmsOtp = createServerFn({ method: "POST" })
     return {
       ok: true,
       message: "SMS OTP request accepted.",
+      challengeId: row.id,
       expirySeconds: OTP_EXPIRY_SECONDS,
       maxAttempts: OTP_MAX_ATTEMPTS,
     };
+  });
+
+/** Abandon only the signup challenge returned to this registration form. */
+export const cancelSignupSmsOtp = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({
+      challengeId: z.string().uuid(),
+      email: z.string().trim().toLowerCase().email().max(200),
+      phone: z.string().trim().max(20),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const normalized = normalisePhone(data.phone);
+    if (!normalized.ok || !normalized.e164) return { ok: false };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("auth_otp_challenges")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("id", data.challengeId)
+      .eq("email", data.email)
+      .eq("phone", normalized.e164)
+      .eq("purpose", "signup")
+      .is("consumed_at", null);
+    if (error) throw new Error("Could not close the verification code. Please try again.");
+    return { ok: true };
   });
 
 /**
