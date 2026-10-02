@@ -9,230 +9,95 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WishlistRouteImport } from './routes/wishlist'
-import { Route as RetailerRouteImport } from './routes/retailer'
-import { Route as ProductsRouteImport } from './routes/products'
-import { Route as PaymentStatusRouteImport } from './routes/payment-status'
-import { Route as PaymentRouteImport } from './routes/payment'
-import { Route as PartnerAccessRouteImport } from './routes/partner-access'
-import { Route as PartnerRouteImport } from './routes/partner'
-import { Route as OrderSuccessRouteImport } from './routes/order-success'
-import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
-import { Route as LeadershipRouteImport } from './routes/leadership'
-import { Route as FeaturedRouteImport } from './routes/featured'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as DistributorRouteImport } from './routes/distributor'
-import { Route as DealsRouteImport } from './routes/deals'
-import { Route as CustomerServiceRouteImport } from './routes/customer-service'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as CompareRouteImport } from './routes/compare'
-import { Route as CompanyInformationRouteImport } from './routes/company-information'
-import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as CategoriesRouteImport } from './routes/categories'
-import { Route as CartRouteImport } from './routes/cart'
-import { Route as CareersRouteImport } from './routes/careers'
-import { Route as BestsellersRouteImport } from './routes/bestsellers'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuronaConsole9f2x7kRouteImport } from './routes/aurona-console-9f2x7k'
-import { Route as AffiliateRouteImport } from './routes/affiliate'
-import { Route as AddressRouteImport } from './routes/address'
-import { Route as AccountRouteImport } from './routes/account'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProductsIndexRouteImport } from './routes/products.index'
-import { Route as PartnerIndexRouteImport } from './routes/partner.index'
-import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as AddressRouteImport } from './routes/address'
+import { Route as AffiliateRouteImport } from './routes/affiliate'
+import { Route as AuronaConsole9f2x7kRouteImport } from './routes/aurona-console-9f2x7k'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BestsellersRouteImport } from './routes/bestsellers'
+import { Route as CareersRouteImport } from './routes/careers'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CompanyInformationRouteImport } from './routes/company-information'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CustomerServiceRouteImport } from './routes/customer-service'
+import { Route as DealsRouteImport } from './routes/deals'
+import { Route as DistributorRouteImport } from './routes/distributor'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FeaturedRouteImport } from './routes/featured'
+import { Route as LeadershipRouteImport } from './routes/leadership'
+import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
+import { Route as OrderSuccessRouteImport } from './routes/order-success'
+import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as PartnerAccessRouteImport } from './routes/partner-access'
+import { Route as PaymentRouteImport } from './routes/payment'
+import { Route as PaymentStatusRouteImport } from './routes/payment-status'
+import { Route as ProductsRouteImport } from './routes/products'
+import { Route as RetailerRouteImport } from './routes/retailer'
+import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-console-9f2x7k.index'
-import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
-import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
-import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
-import { Route as PartnerProgramIdRouteImport } from './routes/partner-program.$id'
-import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
-import { Route as CategorySlugRouteImport } from './routes/category.$slug'
-import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
-import { Route as AuronaConsole9f2x7kSupportRouteImport } from './routes/aurona-console-9f2x7k.support'
-import { Route as AuronaConsole9f2x7kShippingRulesRouteImport } from './routes/aurona-console-9f2x7k.shipping-rules'
-import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
-import { Route as AuronaConsole9f2x7kSettingsRouteImport } from './routes/aurona-console-9f2x7k.settings'
-import { Route as AuronaConsole9f2x7kSecurityRouteImport } from './routes/aurona-console-9f2x7k.security'
-import { Route as AuronaConsole9f2x7kRolesRouteImport } from './routes/aurona-console-9f2x7k.roles'
-import { Route as AuronaConsole9f2x7kReviewsRouteImport } from './routes/aurona-console-9f2x7k.reviews'
-import { Route as AuronaConsole9f2x7kReturnsRouteImport } from './routes/aurona-console-9f2x7k.returns'
-import { Route as AuronaConsole9f2x7kReportsRouteImport } from './routes/aurona-console-9f2x7k.reports'
-import { Route as AuronaConsole9f2x7kPaymentsRouteImport } from './routes/aurona-console-9f2x7k.payments'
-import { Route as AuronaConsole9f2x7kOrdersRouteImport } from './routes/aurona-console-9f2x7k.orders'
-import { Route as AuronaConsole9f2x7kMediaRouteImport } from './routes/aurona-console-9f2x7k.media'
-import { Route as AuronaConsole9f2x7kInventoryRouteImport } from './routes/aurona-console-9f2x7k.inventory'
-import { Route as AuronaConsole9f2x7kIntegrationsRouteImport } from './routes/aurona-console-9f2x7k.integrations'
-import { Route as AuronaConsole9f2x7kEditorialRouteImport } from './routes/aurona-console-9f2x7k.editorial'
-import { Route as AuronaConsole9f2x7kCustomersRouteImport } from './routes/aurona-console-9f2x7k.customers'
-import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-console-9f2x7k.coupons'
-import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
-import { Route as AuronaConsole9f2x7kCategoriesRouteImport } from './routes/aurona-console-9f2x7k.categories'
-import { Route as AuronaConsole9f2x7kCartsRouteImport } from './routes/aurona-console-9f2x7k.carts'
-import { Route as AuronaConsole9f2x7kCareersRouteImport } from './routes/aurona-console-9f2x7k.careers'
-import { Route as AuronaConsole9f2x7kCampaignsRouteImport } from './routes/aurona-console-9f2x7k.campaigns'
-import { Route as AuronaConsole9f2x7kAuditRouteImport } from './routes/aurona-console-9f2x7k.audit'
-import { Route as AuronaConsole9f2x7kApplicationsRouteImport } from './routes/aurona-console-9f2x7k.applications'
 import { Route as AuronaConsole9f2x7kAffiliatesRouteImport } from './routes/aurona-console-9f2x7k.affiliates'
-import { Route as AuronaConsole9f2x7kProductsIndexRouteImport } from './routes/aurona-console-9f2x7k.products.index'
-import { Route as AuronaConsole9f2x7kProductsPhotosRouteImport } from './routes/aurona-console-9f2x7k.products.photos'
-import { Route as AuronaConsole9f2x7kProductsOptionsRouteImport } from './routes/aurona-console-9f2x7k.products.options'
-import { Route as AuronaConsole9f2x7kProductsNewRouteImport } from './routes/aurona-console-9f2x7k.products.new'
-import { Route as AuronaConsole9f2x7kProductsMasterRouteImport } from './routes/aurona-console-9f2x7k.products.master'
-import { Route as AuronaConsole9f2x7kProductsBulkRouteImport } from './routes/aurona-console-9f2x7k.products.bulk'
-import { Route as AuronaConsole9f2x7kProductsIdRouteImport } from './routes/aurona-console-9f2x7k.products.$id'
-import { Route as AuronaConsole9f2x7kOrdersIdRouteImport } from './routes/aurona-console-9f2x7k.orders.$id'
-import { Route as ApiPublicSyncShipmentsRouteImport } from './routes/api/public/sync-shipments'
-import { Route as ApiPublicShiprocketWebhookRouteImport } from './routes/api/public/shiprocket-webhook'
-import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
-import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
-import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public/delivery-status'
+import { Route as AuronaConsole9f2x7kApplicationsRouteImport } from './routes/aurona-console-9f2x7k.applications'
+import { Route as AuronaConsole9f2x7kAuditRouteImport } from './routes/aurona-console-9f2x7k.audit'
+import { Route as AuronaConsole9f2x7kCampaignsRouteImport } from './routes/aurona-console-9f2x7k.campaigns'
+import { Route as AuronaConsole9f2x7kCareersRouteImport } from './routes/aurona-console-9f2x7k.careers'
+import { Route as AuronaConsole9f2x7kCartsRouteImport } from './routes/aurona-console-9f2x7k.carts'
+import { Route as AuronaConsole9f2x7kCategoriesRouteImport } from './routes/aurona-console-9f2x7k.categories'
+import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
+import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-console-9f2x7k.coupons'
+import { Route as AuronaConsole9f2x7kCustomersRouteImport } from './routes/aurona-console-9f2x7k.customers'
+import { Route as AuronaConsole9f2x7kEditorialRouteImport } from './routes/aurona-console-9f2x7k.editorial'
+import { Route as AuronaConsole9f2x7kIntegrationsRouteImport } from './routes/aurona-console-9f2x7k.integrations'
+import { Route as AuronaConsole9f2x7kInventoryRouteImport } from './routes/aurona-console-9f2x7k.inventory'
+import { Route as AuronaConsole9f2x7kMediaRouteImport } from './routes/aurona-console-9f2x7k.media'
+import { Route as AuronaConsole9f2x7kOrdersRouteImport } from './routes/aurona-console-9f2x7k.orders'
+import { Route as AuronaConsole9f2x7kPaymentsRouteImport } from './routes/aurona-console-9f2x7k.payments'
+import { Route as AuronaConsole9f2x7kReportsRouteImport } from './routes/aurona-console-9f2x7k.reports'
+import { Route as AuronaConsole9f2x7kReturnsRouteImport } from './routes/aurona-console-9f2x7k.returns'
+import { Route as AuronaConsole9f2x7kReviewsRouteImport } from './routes/aurona-console-9f2x7k.reviews'
+import { Route as AuronaConsole9f2x7kRolesRouteImport } from './routes/aurona-console-9f2x7k.roles'
+import { Route as AuronaConsole9f2x7kSecurityRouteImport } from './routes/aurona-console-9f2x7k.security'
+import { Route as AuronaConsole9f2x7kSettingsRouteImport } from './routes/aurona-console-9f2x7k.settings'
+import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
+import { Route as AuronaConsole9f2x7kShippingRulesRouteImport } from './routes/aurona-console-9f2x7k.shipping-rules'
+import { Route as AuronaConsole9f2x7kSupportRouteImport } from './routes/aurona-console-9f2x7k.support'
+import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
+import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
+import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
+import { Route as PartnerProgramIdRouteImport } from './routes/partner-program.$id'
+import { Route as PartnerIndexRouteImport } from './routes/partner.index'
+import { Route as PartnerTypeRouteImport } from './routes/partner.$type'
+import { Route as PoliciesSlugRouteImport } from './routes/policies.$slug'
+import { Route as ProductsIndexRouteImport } from './routes/products.index'
+import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as ApiPublicCartRemindersRouteImport } from './routes/api/public/cart-reminders'
-import { Route as AuronaConsole9f2x7kProductsIdVariationsRouteImport } from './routes/aurona-console-9f2x7k.products.$id_.variations'
-import { Route as ApiPublicProductImageSplatRouteImport } from './routes/api/public/product-image.$'
-import { Route as ApiPublicFastrrProductsRouteImport } from './routes/api/public/fastrr/products'
+import { Route as ApiPublicDeliveryStatusRouteImport } from './routes/api/public/delivery-status'
+import { Route as ApiPublicPhonepeCallbackRouteImport } from './routes/api/public/phonepe-callback'
+import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
+import { Route as ApiPublicShiprocketWebhookRouteImport } from './routes/api/public/shiprocket-webhook'
+import { Route as ApiPublicSyncShipmentsRouteImport } from './routes/api/public/sync-shipments'
+import { Route as AuronaConsole9f2x7kOrdersIdRouteImport } from './routes/aurona-console-9f2x7k.orders.$id'
+import { Route as AuronaConsole9f2x7kProductsIndexRouteImport } from './routes/aurona-console-9f2x7k.products.index'
+import { Route as AuronaConsole9f2x7kProductsIdRouteImport } from './routes/aurona-console-9f2x7k.products.$id'
+import { Route as AuronaConsole9f2x7kProductsBulkRouteImport } from './routes/aurona-console-9f2x7k.products.bulk'
+import { Route as AuronaConsole9f2x7kProductsMasterRouteImport } from './routes/aurona-console-9f2x7k.products.master'
+import { Route as AuronaConsole9f2x7kProductsNewRouteImport } from './routes/aurona-console-9f2x7k.products.new'
+import { Route as AuronaConsole9f2x7kProductsOptionsRouteImport } from './routes/aurona-console-9f2x7k.products.options'
+import { Route as AuronaConsole9f2x7kProductsPhotosRouteImport } from './routes/aurona-console-9f2x7k.products.photos'
 import { Route as ApiPublicFastrrCollectionsRouteImport } from './routes/api/public/fastrr/collections'
+import { Route as ApiPublicFastrrProductsRouteImport } from './routes/api/public/fastrr/products'
+import { Route as ApiPublicProductImageSplatRouteImport } from './routes/api/public/product-image.$'
+import { Route as AuronaConsole9f2x7kProductsIdVariationsRouteImport } from './routes/aurona-console-9f2x7k.products.$id_.variations'
 import { Route as ApiPublicFastrrCollectionsIdProductsRouteImport } from './routes/api/public/fastrr/collections.$id.products'
 
-const WishlistRoute = WishlistRouteImport.update({
-  id: '/wishlist',
-  path: '/wishlist',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RetailerRoute = RetailerRouteImport.update({
-  id: '/retailer',
-  path: '/retailer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProductsRoute = ProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PaymentStatusRoute = PaymentStatusRouteImport.update({
-  id: '/payment-status',
-  path: '/payment-status',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PaymentRoute = PaymentRouteImport.update({
-  id: '/payment',
-  path: '/payment',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PartnerAccessRoute = PartnerAccessRouteImport.update({
-  id: '/partner-access',
-  path: '/partner-access',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PartnerRoute = PartnerRouteImport.update({
-  id: '/partner',
-  path: '/partner',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrderSuccessRoute = OrderSuccessRouteImport.update({
-  id: '/order-success',
-  path: '/order-success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewArrivalsRoute = NewArrivalsRouteImport.update({
-  id: '/new-arrivals',
-  path: '/new-arrivals',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LeadershipRoute = LeadershipRouteImport.update({
-  id: '/leadership',
-  path: '/leadership',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeaturedRoute = FeaturedRouteImport.update({
-  id: '/featured',
-  path: '/featured',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DistributorRoute = DistributorRouteImport.update({
-  id: '/distributor',
-  path: '/distributor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DealsRoute = DealsRouteImport.update({
-  id: '/deals',
-  path: '/deals',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CustomerServiceRoute = CustomerServiceRouteImport.update({
-  id: '/customer-service',
-  path: '/customer-service',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompareRoute = CompareRouteImport.update({
-  id: '/compare',
-  path: '/compare',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompanyInformationRoute = CompanyInformationRouteImport.update({
-  id: '/company-information',
-  path: '/company-information',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CategoriesRoute = CategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CartRoute = CartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CareersRoute = CareersRouteImport.update({
-  id: '/careers',
-  path: '/careers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BestsellersRoute = BestsellersRouteImport.update({
-  id: '/bestsellers',
-  path: '/bestsellers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuronaConsole9f2x7kRoute = AuronaConsole9f2x7kRouteImport.update({
-  id: '/aurona-console-9f2x7k',
-  path: '/aurona-console-9f2x7k',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AffiliateRoute = AffiliateRouteImport.update({
-  id: '/affiliate',
-  path: '/affiliate',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AddressRoute = AddressRouteImport.update({
-  id: '/address',
-  path: '/address',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountRoute = AccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -240,24 +105,144 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProductsIndexRoute = ProductsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProductsRoute,
+const AddressRoute = AddressRouteImport.update({
+  id: '/address',
+  path: '/address',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const PartnerIndexRoute = PartnerIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PartnerRoute,
+const AffiliateRoute = AffiliateRouteImport.update({
+  id: '/affiliate',
+  path: '/affiliate',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const BlogsIndexRoute = BlogsIndexRouteImport.update({
-  id: '/blogs/',
-  path: '/blogs/',
+const AuronaConsole9f2x7kRoute = AuronaConsole9f2x7kRouteImport.update({
+  id: '/aurona-console-9f2x7k',
+  path: '/aurona-console-9f2x7k',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BestsellersRoute = BestsellersRouteImport.update({
+  id: '/bestsellers',
+  path: '/bestsellers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareersRoute = CareersRouteImport.update({
+  id: '/careers',
+  path: '/careers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompanyInformationRoute = CompanyInformationRouteImport.update({
+  id: '/company-information',
+  path: '/company-information',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerServiceRoute = CustomerServiceRouteImport.update({
+  id: '/customer-service',
+  path: '/customer-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DealsRoute = DealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributorRoute = DistributorRouteImport.update({
+  id: '/distributor',
+  path: '/distributor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturedRoute = FeaturedRouteImport.update({
+  id: '/featured',
+  path: '/featured',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadershipRoute = LeadershipRouteImport.update({
+  id: '/leadership',
+  path: '/leadership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewArrivalsRoute = NewArrivalsRouteImport.update({
+  id: '/new-arrivals',
+  path: '/new-arrivals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderSuccessRoute = OrderSuccessRouteImport.update({
+  id: '/order-success',
+  path: '/order-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerRoute = PartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerAccessRoute = PartnerAccessRouteImport.update({
+  id: '/partner-access',
+  path: '/partner-access',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentRoute = PaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentStatusRoute = PaymentStatusRouteImport.update({
+  id: '/payment-status',
+  path: '/payment-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RetailerRoute = RetailerRouteImport.update({
+  id: '/retailer',
+  path: '/retailer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuronaConsole9f2x7kIndexRoute =
@@ -266,177 +251,10 @@ const AuronaConsole9f2x7kIndexRoute =
     path: '/',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const ProductsSlugRoute = ProductsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ProductsRoute,
-} as any)
-const PoliciesSlugRoute = PoliciesSlugRouteImport.update({
-  id: '/policies/$slug',
-  path: '/policies/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PartnerTypeRoute = PartnerTypeRouteImport.update({
-  id: '/$type',
-  path: '/$type',
-  getParentRoute: () => PartnerRoute,
-} as any)
-const PartnerProgramIdRoute = PartnerProgramIdRouteImport.update({
-  id: '/partner-program/$id',
-  path: '/partner-program/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
-  id: '/orders/$orderId',
-  path: '/orders/$orderId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CategorySlugRoute = CategorySlugRouteImport.update({
-  id: '/category/$slug',
-  path: '/category/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogsSlugRoute = BlogsSlugRouteImport.update({
-  id: '/blogs/$slug',
-  path: '/blogs/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuronaConsole9f2x7kSupportRoute =
-  AuronaConsole9f2x7kSupportRouteImport.update({
-    id: '/support',
-    path: '/support',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kShippingRulesRoute =
-  AuronaConsole9f2x7kShippingRulesRouteImport.update({
-    id: '/shipping-rules',
-    path: '/shipping-rules',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kShippingRoute =
-  AuronaConsole9f2x7kShippingRouteImport.update({
-    id: '/shipping',
-    path: '/shipping',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kSettingsRoute =
-  AuronaConsole9f2x7kSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kSecurityRoute =
-  AuronaConsole9f2x7kSecurityRouteImport.update({
-    id: '/security',
-    path: '/security',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kRolesRoute =
-  AuronaConsole9f2x7kRolesRouteImport.update({
-    id: '/roles',
-    path: '/roles',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kReviewsRoute =
-  AuronaConsole9f2x7kReviewsRouteImport.update({
-    id: '/reviews',
-    path: '/reviews',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kReturnsRoute =
-  AuronaConsole9f2x7kReturnsRouteImport.update({
-    id: '/returns',
-    path: '/returns',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kReportsRoute =
-  AuronaConsole9f2x7kReportsRouteImport.update({
-    id: '/reports',
-    path: '/reports',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kPaymentsRoute =
-  AuronaConsole9f2x7kPaymentsRouteImport.update({
-    id: '/payments',
-    path: '/payments',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kOrdersRoute =
-  AuronaConsole9f2x7kOrdersRouteImport.update({
-    id: '/orders',
-    path: '/orders',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kMediaRoute =
-  AuronaConsole9f2x7kMediaRouteImport.update({
-    id: '/media',
-    path: '/media',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kInventoryRoute =
-  AuronaConsole9f2x7kInventoryRouteImport.update({
-    id: '/inventory',
-    path: '/inventory',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kIntegrationsRoute =
-  AuronaConsole9f2x7kIntegrationsRouteImport.update({
-    id: '/integrations',
-    path: '/integrations',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kEditorialRoute =
-  AuronaConsole9f2x7kEditorialRouteImport.update({
-    id: '/editorial',
-    path: '/editorial',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kCustomersRoute =
-  AuronaConsole9f2x7kCustomersRouteImport.update({
-    id: '/customers',
-    path: '/customers',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kCouponsRoute =
-  AuronaConsole9f2x7kCouponsRouteImport.update({
-    id: '/coupons',
-    path: '/coupons',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kContentRoute =
-  AuronaConsole9f2x7kContentRouteImport.update({
-    id: '/content',
-    path: '/content',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kCategoriesRoute =
-  AuronaConsole9f2x7kCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kCartsRoute =
-  AuronaConsole9f2x7kCartsRouteImport.update({
-    id: '/carts',
-    path: '/carts',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kCareersRoute =
-  AuronaConsole9f2x7kCareersRouteImport.update({
-    id: '/careers',
-    path: '/careers',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kCampaignsRoute =
-  AuronaConsole9f2x7kCampaignsRouteImport.update({
-    id: '/campaigns',
-    path: '/campaigns',
-    getParentRoute: () => AuronaConsole9f2x7kRoute,
-  } as any)
-const AuronaConsole9f2x7kAuditRoute =
-  AuronaConsole9f2x7kAuditRouteImport.update({
-    id: '/audit',
-    path: '/audit',
+const AuronaConsole9f2x7kAffiliatesRoute =
+  AuronaConsole9f2x7kAffiliatesRouteImport.update({
+    id: '/affiliates',
+    path: '/affiliates',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const AuronaConsole9f2x7kApplicationsRoute =
@@ -445,69 +263,208 @@ const AuronaConsole9f2x7kApplicationsRoute =
     path: '/applications',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kAffiliatesRoute =
-  AuronaConsole9f2x7kAffiliatesRouteImport.update({
-    id: '/affiliates',
-    path: '/affiliates',
+const AuronaConsole9f2x7kAuditRoute =
+  AuronaConsole9f2x7kAuditRouteImport.update({
+    id: '/audit',
+    path: '/audit',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsIndexRoute =
-  AuronaConsole9f2x7kProductsIndexRouteImport.update({
-    id: '/products/',
-    path: '/products/',
+const AuronaConsole9f2x7kCampaignsRoute =
+  AuronaConsole9f2x7kCampaignsRouteImport.update({
+    id: '/campaigns',
+    path: '/campaigns',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsPhotosRoute =
-  AuronaConsole9f2x7kProductsPhotosRouteImport.update({
-    id: '/products/photos',
-    path: '/products/photos',
+const AuronaConsole9f2x7kCareersRoute =
+  AuronaConsole9f2x7kCareersRouteImport.update({
+    id: '/careers',
+    path: '/careers',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsOptionsRoute =
-  AuronaConsole9f2x7kProductsOptionsRouteImport.update({
-    id: '/products/options',
-    path: '/products/options',
+const AuronaConsole9f2x7kCartsRoute =
+  AuronaConsole9f2x7kCartsRouteImport.update({
+    id: '/carts',
+    path: '/carts',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsNewRoute =
-  AuronaConsole9f2x7kProductsNewRouteImport.update({
-    id: '/products/new',
-    path: '/products/new',
+const AuronaConsole9f2x7kCategoriesRoute =
+  AuronaConsole9f2x7kCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsMasterRoute =
-  AuronaConsole9f2x7kProductsMasterRouteImport.update({
-    id: '/products/master',
-    path: '/products/master',
+const AuronaConsole9f2x7kContentRoute =
+  AuronaConsole9f2x7kContentRouteImport.update({
+    id: '/content',
+    path: '/content',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsBulkRoute =
-  AuronaConsole9f2x7kProductsBulkRouteImport.update({
-    id: '/products/bulk',
-    path: '/products/bulk',
+const AuronaConsole9f2x7kCouponsRoute =
+  AuronaConsole9f2x7kCouponsRouteImport.update({
+    id: '/coupons',
+    path: '/coupons',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kProductsIdRoute =
-  AuronaConsole9f2x7kProductsIdRouteImport.update({
-    id: '/products/$id',
-    path: '/products/$id',
+const AuronaConsole9f2x7kCustomersRoute =
+  AuronaConsole9f2x7kCustomersRouteImport.update({
+    id: '/customers',
+    path: '/customers',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const AuronaConsole9f2x7kOrdersIdRoute =
-  AuronaConsole9f2x7kOrdersIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuronaConsole9f2x7kOrdersRoute,
+const AuronaConsole9f2x7kEditorialRoute =
+  AuronaConsole9f2x7kEditorialRouteImport.update({
+    id: '/editorial',
+    path: '/editorial',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const ApiPublicSyncShipmentsRoute = ApiPublicSyncShipmentsRouteImport.update({
-  id: '/api/public/sync-shipments',
-  path: '/api/public/sync-shipments',
+const AuronaConsole9f2x7kIntegrationsRoute =
+  AuronaConsole9f2x7kIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kInventoryRoute =
+  AuronaConsole9f2x7kInventoryRouteImport.update({
+    id: '/inventory',
+    path: '/inventory',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kMediaRoute =
+  AuronaConsole9f2x7kMediaRouteImport.update({
+    id: '/media',
+    path: '/media',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kOrdersRoute =
+  AuronaConsole9f2x7kOrdersRouteImport.update({
+    id: '/orders',
+    path: '/orders',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kPaymentsRoute =
+  AuronaConsole9f2x7kPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kReportsRoute =
+  AuronaConsole9f2x7kReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kReturnsRoute =
+  AuronaConsole9f2x7kReturnsRouteImport.update({
+    id: '/returns',
+    path: '/returns',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kReviewsRoute =
+  AuronaConsole9f2x7kReviewsRouteImport.update({
+    id: '/reviews',
+    path: '/reviews',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kRolesRoute =
+  AuronaConsole9f2x7kRolesRouteImport.update({
+    id: '/roles',
+    path: '/roles',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kSecurityRoute =
+  AuronaConsole9f2x7kSecurityRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kSettingsRoute =
+  AuronaConsole9f2x7kSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kShippingRoute =
+  AuronaConsole9f2x7kShippingRouteImport.update({
+    id: '/shipping',
+    path: '/shipping',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kShippingRulesRoute =
+  AuronaConsole9f2x7kShippingRulesRouteImport.update({
+    id: '/shipping-rules',
+    path: '/shipping-rules',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kSupportRoute =
+  AuronaConsole9f2x7kSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const BlogsIndexRoute = BlogsIndexRouteImport.update({
+  id: '/blogs/',
+  path: '/blogs/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicShiprocketWebhookRoute =
-  ApiPublicShiprocketWebhookRouteImport.update({
-    id: '/api/public/shiprocket-webhook',
-    path: '/api/public/shiprocket-webhook',
+const BlogsSlugRoute = BlogsSlugRouteImport.update({
+  id: '/blogs/$slug',
+  path: '/blogs/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategorySlugRoute = CategorySlugRouteImport.update({
+  id: '/category/$slug',
+  path: '/category/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/orders/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerProgramIdRoute = PartnerProgramIdRouteImport.update({
+  id: '/partner-program/$id',
+  path: '/partner-program/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerIndexRoute = PartnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerTypeRoute = PartnerTypeRouteImport.update({
+  id: '/$type',
+  path: '/$type',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PoliciesSlugRoute = PoliciesSlugRouteImport.update({
+  id: '/policies/$slug',
+  path: '/policies/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductsIndexRoute = ProductsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProductsRoute,
+} as any)
+const ProductsSlugRoute = ProductsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ProductsRoute,
+} as any)
+const ApiPublicCartRemindersRoute = ApiPublicCartRemindersRouteImport.update({
+  id: '/api/public/cart-reminders',
+  path: '/api/public/cart-reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicDeliveryStatusRoute = ApiPublicDeliveryStatusRouteImport.update({
+  id: '/api/public/delivery-status',
+  path: '/api/public/delivery-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPhonepeCallbackRoute =
+  ApiPublicPhonepeCallbackRouteImport.update({
+    id: '/api/public/phonepe-callback',
+    path: '/api/public/phonepe-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicRazorpayWebhookRoute =
@@ -516,32 +473,69 @@ const ApiPublicRazorpayWebhookRoute =
     path: '/api/public/razorpay-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicPhonepeCallbackRoute =
-  ApiPublicPhonepeCallbackRouteImport.update({
-    id: '/api/public/phonepe-callback',
-    path: '/api/public/phonepe-callback',
+const ApiPublicShiprocketWebhookRoute =
+  ApiPublicShiprocketWebhookRouteImport.update({
+    id: '/api/public/shiprocket-webhook',
+    path: '/api/public/shiprocket-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicDeliveryStatusRoute = ApiPublicDeliveryStatusRouteImport.update({
-  id: '/api/public/delivery-status',
-  path: '/api/public/delivery-status',
+const ApiPublicSyncShipmentsRoute = ApiPublicSyncShipmentsRouteImport.update({
+  id: '/api/public/sync-shipments',
+  path: '/api/public/sync-shipments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicCartRemindersRoute = ApiPublicCartRemindersRouteImport.update({
-  id: '/api/public/cart-reminders',
-  path: '/api/public/cart-reminders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuronaConsole9f2x7kProductsIdVariationsRoute =
-  AuronaConsole9f2x7kProductsIdVariationsRouteImport.update({
-    id: '/products/$id_/variations',
-    path: '/products/$id/variations',
+const AuronaConsole9f2x7kOrdersIdRoute =
+  AuronaConsole9f2x7kOrdersIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuronaConsole9f2x7kOrdersRoute,
+  } as any)
+const AuronaConsole9f2x7kProductsIndexRoute =
+  AuronaConsole9f2x7kProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
-const ApiPublicProductImageSplatRoute =
-  ApiPublicProductImageSplatRouteImport.update({
-    id: '/api/public/product-image/$',
-    path: '/api/public/product-image/$',
+const AuronaConsole9f2x7kProductsIdRoute =
+  AuronaConsole9f2x7kProductsIdRouteImport.update({
+    id: '/products/$id',
+    path: '/products/$id',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kProductsBulkRoute =
+  AuronaConsole9f2x7kProductsBulkRouteImport.update({
+    id: '/products/bulk',
+    path: '/products/bulk',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kProductsMasterRoute =
+  AuronaConsole9f2x7kProductsMasterRouteImport.update({
+    id: '/products/master',
+    path: '/products/master',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kProductsNewRoute =
+  AuronaConsole9f2x7kProductsNewRouteImport.update({
+    id: '/products/new',
+    path: '/products/new',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kProductsOptionsRoute =
+  AuronaConsole9f2x7kProductsOptionsRouteImport.update({
+    id: '/products/options',
+    path: '/products/options',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kProductsPhotosRoute =
+  AuronaConsole9f2x7kProductsPhotosRouteImport.update({
+    id: '/products/photos',
+    path: '/products/photos',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const ApiPublicFastrrCollectionsRoute =
+  ApiPublicFastrrCollectionsRouteImport.update({
+    id: '/api/public/fastrr/collections',
+    path: '/api/public/fastrr/collections',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicFastrrProductsRoute = ApiPublicFastrrProductsRouteImport.update({
@@ -549,11 +543,17 @@ const ApiPublicFastrrProductsRoute = ApiPublicFastrrProductsRouteImport.update({
   path: '/api/public/fastrr/products',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicFastrrCollectionsRoute =
-  ApiPublicFastrrCollectionsRouteImport.update({
-    id: '/api/public/fastrr/collections',
-    path: '/api/public/fastrr/collections',
+const ApiPublicProductImageSplatRoute =
+  ApiPublicProductImageSplatRouteImport.update({
+    id: '/api/public/product-image/$',
+    path: '/api/public/product-image/$',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuronaConsole9f2x7kProductsIdVariationsRoute =
+  AuronaConsole9f2x7kProductsIdVariationsRouteImport.update({
+    id: '/products/$id_/variations',
+    path: '/products/$id/variations',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const ApiPublicFastrrCollectionsIdProductsRoute =
   ApiPublicFastrrCollectionsIdProductsRouteImport.update({
@@ -1132,200 +1132,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/wishlist': {
-      id: '/wishlist'
-      path: '/wishlist'
-      fullPath: '/wishlist'
-      preLoaderRoute: typeof WishlistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/retailer': {
-      id: '/retailer'
-      path: '/retailer'
-      fullPath: '/retailer'
-      preLoaderRoute: typeof RetailerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/products': {
-      id: '/products'
-      path: '/products'
-      fullPath: '/products'
-      preLoaderRoute: typeof ProductsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/payment-status': {
-      id: '/payment-status'
-      path: '/payment-status'
-      fullPath: '/payment-status'
-      preLoaderRoute: typeof PaymentStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/payment': {
-      id: '/payment'
-      path: '/payment'
-      fullPath: '/payment'
-      preLoaderRoute: typeof PaymentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/partner-access': {
-      id: '/partner-access'
-      path: '/partner-access'
-      fullPath: '/partner-access'
-      preLoaderRoute: typeof PartnerAccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/partner': {
-      id: '/partner'
-      path: '/partner'
-      fullPath: '/partner'
-      preLoaderRoute: typeof PartnerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/order-success': {
-      id: '/order-success'
-      path: '/order-success'
-      fullPath: '/order-success'
-      preLoaderRoute: typeof OrderSuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/new-arrivals': {
-      id: '/new-arrivals'
-      path: '/new-arrivals'
-      fullPath: '/new-arrivals'
-      preLoaderRoute: typeof NewArrivalsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/leadership': {
-      id: '/leadership'
-      path: '/leadership'
-      fullPath: '/leadership'
-      preLoaderRoute: typeof LeadershipRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/featured': {
-      id: '/featured'
-      path: '/featured'
-      fullPath: '/featured'
-      preLoaderRoute: typeof FeaturedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/distributor': {
-      id: '/distributor'
-      path: '/distributor'
-      fullPath: '/distributor'
-      preLoaderRoute: typeof DistributorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/deals': {
-      id: '/deals'
-      path: '/deals'
-      fullPath: '/deals'
-      preLoaderRoute: typeof DealsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/customer-service': {
-      id: '/customer-service'
-      path: '/customer-service'
-      fullPath: '/customer-service'
-      preLoaderRoute: typeof CustomerServiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compare': {
-      id: '/compare'
-      path: '/compare'
-      fullPath: '/compare'
-      preLoaderRoute: typeof CompareRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/company-information': {
-      id: '/company-information'
-      path: '/company-information'
-      fullPath: '/company-information'
-      preLoaderRoute: typeof CompanyInformationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/categories': {
-      id: '/categories'
-      path: '/categories'
-      fullPath: '/categories'
-      preLoaderRoute: typeof CategoriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cart': {
-      id: '/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof CartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/careers': {
-      id: '/careers'
-      path: '/careers'
-      fullPath: '/careers'
-      preLoaderRoute: typeof CareersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bestsellers': {
-      id: '/bestsellers'
-      path: '/bestsellers'
-      fullPath: '/bestsellers'
-      preLoaderRoute: typeof BestsellersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aurona-console-9f2x7k': {
-      id: '/aurona-console-9f2x7k'
-      path: '/aurona-console-9f2x7k'
-      fullPath: '/aurona-console-9f2x7k'
-      preLoaderRoute: typeof AuronaConsole9f2x7kRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/affiliate': {
-      id: '/affiliate'
-      path: '/affiliate'
-      fullPath: '/affiliate'
-      preLoaderRoute: typeof AffiliateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/address': {
-      id: '/address'
-      path: '/address'
-      fullPath: '/address'
-      preLoaderRoute: typeof AddressRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account': {
-      id: '/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AccountRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -1335,32 +1146,200 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/products/': {
-      id: '/products/'
-      path: '/'
-      fullPath: '/products/'
-      preLoaderRoute: typeof ProductsIndexRouteImport
-      parentRoute: typeof ProductsRoute
+    '/address': {
+      id: '/address'
+      path: '/address'
+      fullPath: '/address'
+      preLoaderRoute: typeof AddressRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/partner/': {
-      id: '/partner/'
-      path: '/'
-      fullPath: '/partner/'
-      preLoaderRoute: typeof PartnerIndexRouteImport
-      parentRoute: typeof PartnerRoute
+    '/affiliate': {
+      id: '/affiliate'
+      path: '/affiliate'
+      fullPath: '/affiliate'
+      preLoaderRoute: typeof AffiliateRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/blogs/': {
-      id: '/blogs/'
-      path: '/blogs'
-      fullPath: '/blogs/'
-      preLoaderRoute: typeof BlogsIndexRouteImport
+    '/aurona-console-9f2x7k': {
+      id: '/aurona-console-9f2x7k'
+      path: '/aurona-console-9f2x7k'
+      fullPath: '/aurona-console-9f2x7k'
+      preLoaderRoute: typeof AuronaConsole9f2x7kRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bestsellers': {
+      id: '/bestsellers'
+      path: '/bestsellers'
+      fullPath: '/bestsellers'
+      preLoaderRoute: typeof BestsellersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/careers': {
+      id: '/careers'
+      path: '/careers'
+      fullPath: '/careers'
+      preLoaderRoute: typeof CareersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/company-information': {
+      id: '/company-information'
+      path: '/company-information'
+      fullPath: '/company-information'
+      preLoaderRoute: typeof CompanyInformationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer-service': {
+      id: '/customer-service'
+      path: '/customer-service'
+      fullPath: '/customer-service'
+      preLoaderRoute: typeof CustomerServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deals': {
+      id: '/deals'
+      path: '/deals'
+      fullPath: '/deals'
+      preLoaderRoute: typeof DealsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distributor': {
+      id: '/distributor'
+      path: '/distributor'
+      fullPath: '/distributor'
+      preLoaderRoute: typeof DistributorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/featured': {
+      id: '/featured'
+      path: '/featured'
+      fullPath: '/featured'
+      preLoaderRoute: typeof FeaturedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leadership': {
+      id: '/leadership'
+      path: '/leadership'
+      fullPath: '/leadership'
+      preLoaderRoute: typeof LeadershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new-arrivals': {
+      id: '/new-arrivals'
+      path: '/new-arrivals'
+      fullPath: '/new-arrivals'
+      preLoaderRoute: typeof NewArrivalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-success': {
+      id: '/order-success'
+      path: '/order-success'
+      fullPath: '/order-success'
+      preLoaderRoute: typeof OrderSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner': {
+      id: '/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner-access': {
+      id: '/partner-access'
+      path: '/partner-access'
+      fullPath: '/partner-access'
+      preLoaderRoute: typeof PartnerAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment': {
+      id: '/payment'
+      path: '/payment'
+      fullPath: '/payment'
+      preLoaderRoute: typeof PaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-status': {
+      id: '/payment-status'
+      path: '/payment-status'
+      fullPath: '/payment-status'
+      preLoaderRoute: typeof PaymentStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/retailer': {
+      id: '/retailer'
+      path: '/retailer'
+      fullPath: '/retailer'
+      preLoaderRoute: typeof RetailerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wishlist': {
+      id: '/wishlist'
+      path: '/wishlist'
+      fullPath: '/wishlist'
+      preLoaderRoute: typeof WishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aurona-console-9f2x7k/': {
@@ -1370,214 +1349,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kIndexRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/products/$slug': {
-      id: '/products/$slug'
-      path: '/$slug'
-      fullPath: '/products/$slug'
-      preLoaderRoute: typeof ProductsSlugRouteImport
-      parentRoute: typeof ProductsRoute
-    }
-    '/policies/$slug': {
-      id: '/policies/$slug'
-      path: '/policies/$slug'
-      fullPath: '/policies/$slug'
-      preLoaderRoute: typeof PoliciesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/partner/$type': {
-      id: '/partner/$type'
-      path: '/$type'
-      fullPath: '/partner/$type'
-      preLoaderRoute: typeof PartnerTypeRouteImport
-      parentRoute: typeof PartnerRoute
-    }
-    '/partner-program/$id': {
-      id: '/partner-program/$id'
-      path: '/partner-program/$id'
-      fullPath: '/partner-program/$id'
-      preLoaderRoute: typeof PartnerProgramIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orders/$orderId': {
-      id: '/orders/$orderId'
-      path: '/orders/$orderId'
-      fullPath: '/orders/$orderId'
-      preLoaderRoute: typeof OrdersOrderIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/category/$slug': {
-      id: '/category/$slug'
-      path: '/category/$slug'
-      fullPath: '/category/$slug'
-      preLoaderRoute: typeof CategorySlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blogs/$slug': {
-      id: '/blogs/$slug'
-      path: '/blogs/$slug'
-      fullPath: '/blogs/$slug'
-      preLoaderRoute: typeof BlogsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aurona-console-9f2x7k/support': {
-      id: '/aurona-console-9f2x7k/support'
-      path: '/support'
-      fullPath: '/aurona-console-9f2x7k/support'
-      preLoaderRoute: typeof AuronaConsole9f2x7kSupportRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/shipping-rules': {
-      id: '/aurona-console-9f2x7k/shipping-rules'
-      path: '/shipping-rules'
-      fullPath: '/aurona-console-9f2x7k/shipping-rules'
-      preLoaderRoute: typeof AuronaConsole9f2x7kShippingRulesRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/shipping': {
-      id: '/aurona-console-9f2x7k/shipping'
-      path: '/shipping'
-      fullPath: '/aurona-console-9f2x7k/shipping'
-      preLoaderRoute: typeof AuronaConsole9f2x7kShippingRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/settings': {
-      id: '/aurona-console-9f2x7k/settings'
-      path: '/settings'
-      fullPath: '/aurona-console-9f2x7k/settings'
-      preLoaderRoute: typeof AuronaConsole9f2x7kSettingsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/security': {
-      id: '/aurona-console-9f2x7k/security'
-      path: '/security'
-      fullPath: '/aurona-console-9f2x7k/security'
-      preLoaderRoute: typeof AuronaConsole9f2x7kSecurityRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/roles': {
-      id: '/aurona-console-9f2x7k/roles'
-      path: '/roles'
-      fullPath: '/aurona-console-9f2x7k/roles'
-      preLoaderRoute: typeof AuronaConsole9f2x7kRolesRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/reviews': {
-      id: '/aurona-console-9f2x7k/reviews'
-      path: '/reviews'
-      fullPath: '/aurona-console-9f2x7k/reviews'
-      preLoaderRoute: typeof AuronaConsole9f2x7kReviewsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/returns': {
-      id: '/aurona-console-9f2x7k/returns'
-      path: '/returns'
-      fullPath: '/aurona-console-9f2x7k/returns'
-      preLoaderRoute: typeof AuronaConsole9f2x7kReturnsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/reports': {
-      id: '/aurona-console-9f2x7k/reports'
-      path: '/reports'
-      fullPath: '/aurona-console-9f2x7k/reports'
-      preLoaderRoute: typeof AuronaConsole9f2x7kReportsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/payments': {
-      id: '/aurona-console-9f2x7k/payments'
-      path: '/payments'
-      fullPath: '/aurona-console-9f2x7k/payments'
-      preLoaderRoute: typeof AuronaConsole9f2x7kPaymentsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/orders': {
-      id: '/aurona-console-9f2x7k/orders'
-      path: '/orders'
-      fullPath: '/aurona-console-9f2x7k/orders'
-      preLoaderRoute: typeof AuronaConsole9f2x7kOrdersRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/media': {
-      id: '/aurona-console-9f2x7k/media'
-      path: '/media'
-      fullPath: '/aurona-console-9f2x7k/media'
-      preLoaderRoute: typeof AuronaConsole9f2x7kMediaRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/inventory': {
-      id: '/aurona-console-9f2x7k/inventory'
-      path: '/inventory'
-      fullPath: '/aurona-console-9f2x7k/inventory'
-      preLoaderRoute: typeof AuronaConsole9f2x7kInventoryRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/integrations': {
-      id: '/aurona-console-9f2x7k/integrations'
-      path: '/integrations'
-      fullPath: '/aurona-console-9f2x7k/integrations'
-      preLoaderRoute: typeof AuronaConsole9f2x7kIntegrationsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/editorial': {
-      id: '/aurona-console-9f2x7k/editorial'
-      path: '/editorial'
-      fullPath: '/aurona-console-9f2x7k/editorial'
-      preLoaderRoute: typeof AuronaConsole9f2x7kEditorialRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/customers': {
-      id: '/aurona-console-9f2x7k/customers'
-      path: '/customers'
-      fullPath: '/aurona-console-9f2x7k/customers'
-      preLoaderRoute: typeof AuronaConsole9f2x7kCustomersRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/coupons': {
-      id: '/aurona-console-9f2x7k/coupons'
-      path: '/coupons'
-      fullPath: '/aurona-console-9f2x7k/coupons'
-      preLoaderRoute: typeof AuronaConsole9f2x7kCouponsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/content': {
-      id: '/aurona-console-9f2x7k/content'
-      path: '/content'
-      fullPath: '/aurona-console-9f2x7k/content'
-      preLoaderRoute: typeof AuronaConsole9f2x7kContentRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/categories': {
-      id: '/aurona-console-9f2x7k/categories'
-      path: '/categories'
-      fullPath: '/aurona-console-9f2x7k/categories'
-      preLoaderRoute: typeof AuronaConsole9f2x7kCategoriesRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/carts': {
-      id: '/aurona-console-9f2x7k/carts'
-      path: '/carts'
-      fullPath: '/aurona-console-9f2x7k/carts'
-      preLoaderRoute: typeof AuronaConsole9f2x7kCartsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/careers': {
-      id: '/aurona-console-9f2x7k/careers'
-      path: '/careers'
-      fullPath: '/aurona-console-9f2x7k/careers'
-      preLoaderRoute: typeof AuronaConsole9f2x7kCareersRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/campaigns': {
-      id: '/aurona-console-9f2x7k/campaigns'
-      path: '/campaigns'
-      fullPath: '/aurona-console-9f2x7k/campaigns'
-      preLoaderRoute: typeof AuronaConsole9f2x7kCampaignsRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kRoute
-    }
-    '/aurona-console-9f2x7k/audit': {
-      id: '/aurona-console-9f2x7k/audit'
-      path: '/audit'
-      fullPath: '/aurona-console-9f2x7k/audit'
-      preLoaderRoute: typeof AuronaConsole9f2x7kAuditRouteImport
+    '/aurona-console-9f2x7k/affiliates': {
+      id: '/aurona-console-9f2x7k/affiliates'
+      path: '/affiliates'
+      fullPath: '/aurona-console-9f2x7k/affiliates'
+      preLoaderRoute: typeof AuronaConsole9f2x7kAffiliatesRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/aurona-console-9f2x7k/applications': {
@@ -1587,95 +1363,242 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kApplicationsRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/affiliates': {
-      id: '/aurona-console-9f2x7k/affiliates'
-      path: '/affiliates'
-      fullPath: '/aurona-console-9f2x7k/affiliates'
-      preLoaderRoute: typeof AuronaConsole9f2x7kAffiliatesRouteImport
+    '/aurona-console-9f2x7k/audit': {
+      id: '/aurona-console-9f2x7k/audit'
+      path: '/audit'
+      fullPath: '/aurona-console-9f2x7k/audit'
+      preLoaderRoute: typeof AuronaConsole9f2x7kAuditRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/': {
-      id: '/aurona-console-9f2x7k/products/'
-      path: '/products'
-      fullPath: '/aurona-console-9f2x7k/products/'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsIndexRouteImport
+    '/aurona-console-9f2x7k/campaigns': {
+      id: '/aurona-console-9f2x7k/campaigns'
+      path: '/campaigns'
+      fullPath: '/aurona-console-9f2x7k/campaigns'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCampaignsRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/photos': {
-      id: '/aurona-console-9f2x7k/products/photos'
-      path: '/products/photos'
-      fullPath: '/aurona-console-9f2x7k/products/photos'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsPhotosRouteImport
+    '/aurona-console-9f2x7k/careers': {
+      id: '/aurona-console-9f2x7k/careers'
+      path: '/careers'
+      fullPath: '/aurona-console-9f2x7k/careers'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCareersRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/options': {
-      id: '/aurona-console-9f2x7k/products/options'
-      path: '/products/options'
-      fullPath: '/aurona-console-9f2x7k/products/options'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsOptionsRouteImport
+    '/aurona-console-9f2x7k/carts': {
+      id: '/aurona-console-9f2x7k/carts'
+      path: '/carts'
+      fullPath: '/aurona-console-9f2x7k/carts'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCartsRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/new': {
-      id: '/aurona-console-9f2x7k/products/new'
-      path: '/products/new'
-      fullPath: '/aurona-console-9f2x7k/products/new'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsNewRouteImport
+    '/aurona-console-9f2x7k/categories': {
+      id: '/aurona-console-9f2x7k/categories'
+      path: '/categories'
+      fullPath: '/aurona-console-9f2x7k/categories'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCategoriesRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/master': {
-      id: '/aurona-console-9f2x7k/products/master'
-      path: '/products/master'
-      fullPath: '/aurona-console-9f2x7k/products/master'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsMasterRouteImport
+    '/aurona-console-9f2x7k/content': {
+      id: '/aurona-console-9f2x7k/content'
+      path: '/content'
+      fullPath: '/aurona-console-9f2x7k/content'
+      preLoaderRoute: typeof AuronaConsole9f2x7kContentRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/bulk': {
-      id: '/aurona-console-9f2x7k/products/bulk'
-      path: '/products/bulk'
-      fullPath: '/aurona-console-9f2x7k/products/bulk'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsBulkRouteImport
+    '/aurona-console-9f2x7k/coupons': {
+      id: '/aurona-console-9f2x7k/coupons'
+      path: '/coupons'
+      fullPath: '/aurona-console-9f2x7k/coupons'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCouponsRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/products/$id': {
-      id: '/aurona-console-9f2x7k/products/$id'
-      path: '/products/$id'
-      fullPath: '/aurona-console-9f2x7k/products/$id'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsIdRouteImport
+    '/aurona-console-9f2x7k/customers': {
+      id: '/aurona-console-9f2x7k/customers'
+      path: '/customers'
+      fullPath: '/aurona-console-9f2x7k/customers'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCustomersRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/aurona-console-9f2x7k/orders/$id': {
-      id: '/aurona-console-9f2x7k/orders/$id'
-      path: '/$id'
-      fullPath: '/aurona-console-9f2x7k/orders/$id'
-      preLoaderRoute: typeof AuronaConsole9f2x7kOrdersIdRouteImport
-      parentRoute: typeof AuronaConsole9f2x7kOrdersRoute
+    '/aurona-console-9f2x7k/editorial': {
+      id: '/aurona-console-9f2x7k/editorial'
+      path: '/editorial'
+      fullPath: '/aurona-console-9f2x7k/editorial'
+      preLoaderRoute: typeof AuronaConsole9f2x7kEditorialRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/api/public/sync-shipments': {
-      id: '/api/public/sync-shipments'
-      path: '/api/public/sync-shipments'
-      fullPath: '/api/public/sync-shipments'
-      preLoaderRoute: typeof ApiPublicSyncShipmentsRouteImport
+    '/aurona-console-9f2x7k/integrations': {
+      id: '/aurona-console-9f2x7k/integrations'
+      path: '/integrations'
+      fullPath: '/aurona-console-9f2x7k/integrations'
+      preLoaderRoute: typeof AuronaConsole9f2x7kIntegrationsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/inventory': {
+      id: '/aurona-console-9f2x7k/inventory'
+      path: '/inventory'
+      fullPath: '/aurona-console-9f2x7k/inventory'
+      preLoaderRoute: typeof AuronaConsole9f2x7kInventoryRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/media': {
+      id: '/aurona-console-9f2x7k/media'
+      path: '/media'
+      fullPath: '/aurona-console-9f2x7k/media'
+      preLoaderRoute: typeof AuronaConsole9f2x7kMediaRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/orders': {
+      id: '/aurona-console-9f2x7k/orders'
+      path: '/orders'
+      fullPath: '/aurona-console-9f2x7k/orders'
+      preLoaderRoute: typeof AuronaConsole9f2x7kOrdersRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/payments': {
+      id: '/aurona-console-9f2x7k/payments'
+      path: '/payments'
+      fullPath: '/aurona-console-9f2x7k/payments'
+      preLoaderRoute: typeof AuronaConsole9f2x7kPaymentsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/reports': {
+      id: '/aurona-console-9f2x7k/reports'
+      path: '/reports'
+      fullPath: '/aurona-console-9f2x7k/reports'
+      preLoaderRoute: typeof AuronaConsole9f2x7kReportsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/returns': {
+      id: '/aurona-console-9f2x7k/returns'
+      path: '/returns'
+      fullPath: '/aurona-console-9f2x7k/returns'
+      preLoaderRoute: typeof AuronaConsole9f2x7kReturnsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/reviews': {
+      id: '/aurona-console-9f2x7k/reviews'
+      path: '/reviews'
+      fullPath: '/aurona-console-9f2x7k/reviews'
+      preLoaderRoute: typeof AuronaConsole9f2x7kReviewsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/roles': {
+      id: '/aurona-console-9f2x7k/roles'
+      path: '/roles'
+      fullPath: '/aurona-console-9f2x7k/roles'
+      preLoaderRoute: typeof AuronaConsole9f2x7kRolesRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/security': {
+      id: '/aurona-console-9f2x7k/security'
+      path: '/security'
+      fullPath: '/aurona-console-9f2x7k/security'
+      preLoaderRoute: typeof AuronaConsole9f2x7kSecurityRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/settings': {
+      id: '/aurona-console-9f2x7k/settings'
+      path: '/settings'
+      fullPath: '/aurona-console-9f2x7k/settings'
+      preLoaderRoute: typeof AuronaConsole9f2x7kSettingsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/shipping': {
+      id: '/aurona-console-9f2x7k/shipping'
+      path: '/shipping'
+      fullPath: '/aurona-console-9f2x7k/shipping'
+      preLoaderRoute: typeof AuronaConsole9f2x7kShippingRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/shipping-rules': {
+      id: '/aurona-console-9f2x7k/shipping-rules'
+      path: '/shipping-rules'
+      fullPath: '/aurona-console-9f2x7k/shipping-rules'
+      preLoaderRoute: typeof AuronaConsole9f2x7kShippingRulesRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/support': {
+      id: '/aurona-console-9f2x7k/support'
+      path: '/support'
+      fullPath: '/aurona-console-9f2x7k/support'
+      preLoaderRoute: typeof AuronaConsole9f2x7kSupportRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/blogs/': {
+      id: '/blogs/'
+      path: '/blogs'
+      fullPath: '/blogs/'
+      preLoaderRoute: typeof BlogsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/shiprocket-webhook': {
-      id: '/api/public/shiprocket-webhook'
-      path: '/api/public/shiprocket-webhook'
-      fullPath: '/api/public/shiprocket-webhook'
-      preLoaderRoute: typeof ApiPublicShiprocketWebhookRouteImport
+    '/blogs/$slug': {
+      id: '/blogs/$slug'
+      path: '/blogs/$slug'
+      fullPath: '/blogs/$slug'
+      preLoaderRoute: typeof BlogsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/razorpay-webhook': {
-      id: '/api/public/razorpay-webhook'
-      path: '/api/public/razorpay-webhook'
-      fullPath: '/api/public/razorpay-webhook'
-      preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
+    '/category/$slug': {
+      id: '/category/$slug'
+      path: '/category/$slug'
+      fullPath: '/category/$slug'
+      preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/phonepe-callback': {
-      id: '/api/public/phonepe-callback'
-      path: '/api/public/phonepe-callback'
-      fullPath: '/api/public/phonepe-callback'
-      preLoaderRoute: typeof ApiPublicPhonepeCallbackRouteImport
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner-program/$id': {
+      id: '/partner-program/$id'
+      path: '/partner-program/$id'
+      fullPath: '/partner-program/$id'
+      preLoaderRoute: typeof PartnerProgramIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner/': {
+      id: '/partner/'
+      path: '/'
+      fullPath: '/partner/'
+      preLoaderRoute: typeof PartnerIndexRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/$type': {
+      id: '/partner/$type'
+      path: '/$type'
+      fullPath: '/partner/$type'
+      preLoaderRoute: typeof PartnerTypeRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/policies/$slug': {
+      id: '/policies/$slug'
+      path: '/policies/$slug'
+      fullPath: '/policies/$slug'
+      preLoaderRoute: typeof PoliciesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products/': {
+      id: '/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof ProductsIndexRouteImport
+      parentRoute: typeof ProductsRoute
+    }
+    '/products/$slug': {
+      id: '/products/$slug'
+      path: '/$slug'
+      fullPath: '/products/$slug'
+      preLoaderRoute: typeof ProductsSlugRouteImport
+      parentRoute: typeof ProductsRoute
+    }
+    '/api/public/cart-reminders': {
+      id: '/api/public/cart-reminders'
+      path: '/api/public/cart-reminders'
+      fullPath: '/api/public/cart-reminders'
+      preLoaderRoute: typeof ApiPublicCartRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/delivery-status': {
@@ -1685,25 +1608,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDeliveryStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/cart-reminders': {
-      id: '/api/public/cart-reminders'
-      path: '/api/public/cart-reminders'
-      fullPath: '/api/public/cart-reminders'
-      preLoaderRoute: typeof ApiPublicCartRemindersRouteImport
+    '/api/public/phonepe-callback': {
+      id: '/api/public/phonepe-callback'
+      path: '/api/public/phonepe-callback'
+      fullPath: '/api/public/phonepe-callback'
+      preLoaderRoute: typeof ApiPublicPhonepeCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/aurona-console-9f2x7k/products/$id_/variations': {
-      id: '/aurona-console-9f2x7k/products/$id_/variations'
-      path: '/products/$id/variations'
-      fullPath: '/aurona-console-9f2x7k/products/$id/variations'
-      preLoaderRoute: typeof AuronaConsole9f2x7kProductsIdVariationsRouteImport
+    '/api/public/razorpay-webhook': {
+      id: '/api/public/razorpay-webhook'
+      path: '/api/public/razorpay-webhook'
+      fullPath: '/api/public/razorpay-webhook'
+      preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/shiprocket-webhook': {
+      id: '/api/public/shiprocket-webhook'
+      path: '/api/public/shiprocket-webhook'
+      fullPath: '/api/public/shiprocket-webhook'
+      preLoaderRoute: typeof ApiPublicShiprocketWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sync-shipments': {
+      id: '/api/public/sync-shipments'
+      path: '/api/public/sync-shipments'
+      fullPath: '/api/public/sync-shipments'
+      preLoaderRoute: typeof ApiPublicSyncShipmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aurona-console-9f2x7k/orders/$id': {
+      id: '/aurona-console-9f2x7k/orders/$id'
+      path: '/$id'
+      fullPath: '/aurona-console-9f2x7k/orders/$id'
+      preLoaderRoute: typeof AuronaConsole9f2x7kOrdersIdRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kOrdersRoute
+    }
+    '/aurona-console-9f2x7k/products/': {
+      id: '/aurona-console-9f2x7k/products/'
+      path: '/products'
+      fullPath: '/aurona-console-9f2x7k/products/'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsIndexRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
-    '/api/public/product-image/$': {
-      id: '/api/public/product-image/$'
-      path: '/api/public/product-image/$'
-      fullPath: '/api/public/product-image/$'
-      preLoaderRoute: typeof ApiPublicProductImageSplatRouteImport
+    '/aurona-console-9f2x7k/products/$id': {
+      id: '/aurona-console-9f2x7k/products/$id'
+      path: '/products/$id'
+      fullPath: '/aurona-console-9f2x7k/products/$id'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsIdRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/products/bulk': {
+      id: '/aurona-console-9f2x7k/products/bulk'
+      path: '/products/bulk'
+      fullPath: '/aurona-console-9f2x7k/products/bulk'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsBulkRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/products/master': {
+      id: '/aurona-console-9f2x7k/products/master'
+      path: '/products/master'
+      fullPath: '/aurona-console-9f2x7k/products/master'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsMasterRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/products/new': {
+      id: '/aurona-console-9f2x7k/products/new'
+      path: '/products/new'
+      fullPath: '/aurona-console-9f2x7k/products/new'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsNewRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/products/options': {
+      id: '/aurona-console-9f2x7k/products/options'
+      path: '/products/options'
+      fullPath: '/aurona-console-9f2x7k/products/options'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsOptionsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/products/photos': {
+      id: '/aurona-console-9f2x7k/products/photos'
+      path: '/products/photos'
+      fullPath: '/aurona-console-9f2x7k/products/photos'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsPhotosRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/api/public/fastrr/collections': {
+      id: '/api/public/fastrr/collections'
+      path: '/api/public/fastrr/collections'
+      fullPath: '/api/public/fastrr/collections'
+      preLoaderRoute: typeof ApiPublicFastrrCollectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/fastrr/products': {
@@ -1713,12 +1706,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFastrrProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/fastrr/collections': {
-      id: '/api/public/fastrr/collections'
-      path: '/api/public/fastrr/collections'
-      fullPath: '/api/public/fastrr/collections'
-      preLoaderRoute: typeof ApiPublicFastrrCollectionsRouteImport
+    '/api/public/product-image/$': {
+      id: '/api/public/product-image/$'
+      path: '/api/public/product-image/$'
+      fullPath: '/api/public/product-image/$'
+      preLoaderRoute: typeof ApiPublicProductImageSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/aurona-console-9f2x7k/products/$id_/variations': {
+      id: '/aurona-console-9f2x7k/products/$id_/variations'
+      path: '/products/$id/variations'
+      fullPath: '/aurona-console-9f2x7k/products/$id/variations'
+      preLoaderRoute: typeof AuronaConsole9f2x7kProductsIdVariationsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/api/public/fastrr/collections/$id/products': {
       id: '/api/public/fastrr/collections/$id/products'
