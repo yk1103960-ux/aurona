@@ -21,7 +21,7 @@ export const Route = createFileRoute("/categories")({
   component: CategoriesPage,
   errorComponent: ({ error }) => (
     <div className="container-x py-16" role="alert">
-      {error.message}
+      {error instanceof Error ? error.message : "Something went wrong"}
     </div>
   ),
   notFoundComponent: () => <div className="container-x py-16">No categories found.</div>,
