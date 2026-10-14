@@ -2067,7 +2067,10 @@ function VariantEditDialog({
                 </p>
               )}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {axes.map((axis) => (
+                {axes
+                  .filter((axis, index, all) =>
+                    all.findIndex((other) => other.axis_key === axis.axis_key || other.label.trim().toLowerCase() === axis.label.trim().toLowerCase()) === index)
+                  .map((axis) => (
                   <label key={axis.id} className="space-y-1 text-sm font-medium">
                     {axis.label}
                     <select
@@ -2234,7 +2237,12 @@ function VariantSpecifications({
 }) {
   const [key, setKey] = useState("");
   const extra = Object.entries(row.attributes).filter(
-    ([name]) => name !== "variant_label" && !axes.some((axis) => axis.axis_key === name),
+    ([name]) => {
+      if (name === "variant_label") return false;
+      // Older SKUs may store the same option under another key (e.g. wattage vs watts).
+      const stem = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 4);
+      return !axes.some((axis) => axis.axis_key === name || stem(axis.axis_key) === stem(name) || stem(axis.label) === stem(name));
+    },
   );
   return (
     <section className="space-y-3 rounded-xl border border-slate-200 p-4">
