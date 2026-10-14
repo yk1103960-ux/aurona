@@ -99,6 +99,13 @@
       "when": 1790698943912,
       "tag": "0013_variant_refresh_only_on_projected_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791967819266,
+      "tag": "0014_buyer_variation_setups_table",
+      "breakpoints": true
     }
   ]
 }
