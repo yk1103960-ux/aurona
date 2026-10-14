@@ -1176,7 +1176,11 @@ function QuickVariantsTab({
   editRow: (row: Variant) => void;
   optionsEditor: React.ReactNode;
 }) {
-  const currentRows = rows;
+  // Buyer screens archive per buyer (inactive); those rows live in the Archive box.
+  const currentRows = buyerScoped ? rows.filter((row) => row.is_active) : rows;
+  const boxRows = buyerScoped ? [...rows.filter((row) => !row.is_active), ...archivedRows] : archivedRows;
+  const restoreFromBox = (row: Variant) =>
+    buyerScoped && !row.archived_at ? updateRow(row.id, { is_active: true }) : restoreVariant(row);
 
   return (
     <div className="space-y-5">
@@ -1335,13 +1339,16 @@ function QuickVariantsTab({
         </div>
       )}
 
-      {archivedRows.length > 0 && (
-        <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      {(
+        <details open className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-            Archived variants · {archivedRows.length}
+            Archive box · {boxRows.length}
           </summary>
           <div className="mt-3 space-y-2">
-            {archivedRows.map((row) => (
+            {boxRows.length === 0 && (
+              <p className="text-xs text-slate-500">No archived variations. Use the archive button on a row to move it here.</p>
+            )}
+            {boxRows.map((row) => (
               <div
                 key={row.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
@@ -1356,7 +1363,7 @@ function QuickVariantsTab({
                     size="sm"
                     variant="outline"
                     disabled={busy}
-                    onClick={() => restoreVariant(row)}
+                    onClick={() => restoreFromBox(row)}
                   >
                     <RotateCcw className="mr-1 h-4 w-4" />
                     Restore
