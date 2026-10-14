@@ -2661,6 +2661,38 @@ export type Database = {
           },
         ]
       }
+      product_variant_buyer_setups: {
+        Row: {
+          axes: Json
+          buyer_type: string
+          family_id: string
+          updated_at: string
+          variant_skus: string[]
+        }
+        Insert: {
+          axes?: Json
+          buyer_type: string
+          family_id: string
+          updated_at?: string
+          variant_skus?: string[]
+        }
+        Update: {
+          axes?: Json
+          buyer_type?: string
+          family_id?: string
+          updated_at?: string
+          variant_skus?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_buyer_setups_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           archived_at: string | null
