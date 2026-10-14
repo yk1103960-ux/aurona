@@ -633,9 +633,9 @@ export function VariantEditor({
   const archiveVariant = async (row: Variant) => {
     if (busy) return;
     if (buyerWorkflow === "retailer" || buyerWorkflow === "distributor") {
-      if (!confirm(`Remove ${row.sku} from ${buyerWorkflow} variations? The SKU and other buyer setups will remain.`)) return;
-      dirty.current = true;
-      setRows((current) => current.filter((item) => item.id !== row.id));
+      if (!confirm(`Archive ${row.sku} for ${buyerWorkflow}s? It stays in the list as inactive and can be switched back on anytime.`)) return;
+      updateRow(row.id, { is_active: false });
+      toast.success(`${row.sku} archived for ${buyerWorkflow}s. Click Save to apply.`);
       return;
     }
     if (row.id.startsWith("new-")) {
@@ -1304,10 +1304,10 @@ function QuickVariantsTab({
                           type="button"
                           size="icon"
                           variant="ghost"
-                          disabled={busy}
+                          disabled={busy || (buyerScoped && !row.is_active)}
                           onClick={() => archiveVariant(row)}
-                          title={buyerScoped ? "Remove from this buyer setup" : "Archive variant (can be restored)"}
-                          aria-label={`${buyerScoped ? "Remove" : "Archive"} variant ${row.sku}`}
+                          title="Archive variant (can be restored)"
+                          aria-label={`Archive variant ${row.sku}`}
                           className="h-10 w-10 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         >
                           <Archive className="h-4 w-4" />
