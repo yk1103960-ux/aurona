@@ -4072,6 +4072,16 @@ export type Database = {
         Args: { _actor_user_id: string; _batch_id: string }
         Returns: number
       }
+      admin_save_buyer_variant_matrix_v1: {
+        Args: {
+          _actor_user_id: string
+          _axes: Json
+          _buyer_type: string
+          _family_id: string
+          _variants: Json
+        }
+        Returns: Json
+      }
       admin_save_variant_matrix: {
         Args: {
           _actor_user_id: string
