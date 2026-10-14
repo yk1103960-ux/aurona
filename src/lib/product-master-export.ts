@@ -15,6 +15,17 @@ const number = (value: unknown) => value == null || value === "" ? "" : Number(v
 const attribute = (variant: RecordData, axis: RecordData) =>
   variant.attributes?.[axis.axis_key] ?? variant.attributes?.[axis.label] ?? "";
 
+// Match the editor's derived segment discount without borrowing another buyer's MRP.
+const savedDiscount = (variant: RecordData, segment: "customer" | "retailer" | "distributor") => {
+  const field = segment === "customer" ? "discount_pct" : `${segment}_discount_pct`;
+  if (variant[field] != null && variant[field] !== "") return number(variant[field]);
+  const mrp = variant[segment === "customer" ? "mrp" : `${segment}_mrp`];
+  const price = variant[segment === "customer" ? "price" : `${segment}_price`];
+  if (mrp == null || mrp === "" || price == null || price === "") return "";
+  if (!Number.isFinite(Number(mrp)) || !Number.isFinite(Number(price)) || Number(mrp) <= 0 || Number(price) < 0 || Number(price) > Number(mrp)) return "";
+  return Number(((Number(mrp) - Number(price)) / Number(mrp) * 100).toFixed(2));
+};
+
 export function productMasterExportRows(data: ExportData) {
   const families = data.families;
   const columns = buildProductMasterColumns();
@@ -74,6 +85,9 @@ export function productMasterExportRows(data: ExportData) {
         distributor_pack_weight_g: "distributor_pack_weight_g", distributor_pack_l: "distributor_pack_l",
         distributor_pack_w: "distributor_pack_w", distributor_pack_h: "distributor_pack_h",
       })) set(key as ProductMasterColumnKey, number(variant[field]));
+      for (const segment of ["customer", "retailer", "distributor"] as const) {
+        set(`${segment}_discount`, savedDiscount(variant, segment));
+      }
       set("commission_program", commission ? (program?.name ?? "All Variants") : "");
       set("commission_type", commission?.commission_kind
         ? String(commission.commission_kind).replace(/^./, (letter) => letter.toUpperCase())

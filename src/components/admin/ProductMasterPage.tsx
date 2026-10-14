@@ -1127,7 +1127,7 @@ export function ProductMaster() {
             <tbody>{templateGrid.rows.map((values, rowIndex) => (
               <tr key={rowIndex} className="hover:bg-sky-50/40">{values.map((value, columnIndex) => (
                 <td key={templateGrid.columns[columnIndex].key} className="max-w-[260px] border-b border-r px-3 py-2 align-top" title={String(value ?? "")}>
-                  <span className="block max-w-[250px] truncate">{typeof value === "boolean" ? String(value) : value === "" ? "—" : String(value)}</span>
+                  <span className="block max-w-[250px] truncate">{typeof value === "boolean" ? String(value) : value === "" ? "Not set" : String(value)}</span>
                 </td>
               ))}</tr>
             ))}
