@@ -602,7 +602,12 @@ export function VariantEditor({
           available_distributor: buyerWorkflow ? buyerWorkflow === "distributor" : template?.available_distributor ?? true,
         } satisfies Variant;
       });
-      const nextRows = [...synchronized, ...added];
+      // One row per saved variant id: re-picking an existing SKU reactivates the
+      // row already in the list instead of adding a second copy that shares its id
+      // (shared ids made one edit change every copy and broke the buyer save).
+      const byId = new Map(synchronized.map((row) => [row.id, row] as const));
+      for (const row of added) byId.set(row.id, byId.has(row.id) ? { ...byId.get(row.id)!, is_active: true } : row);
+      const nextRows = [...byId.values()];
       rowsRef.current = nextRows;
       dirty.current = true;
       setRows(nextRows);
