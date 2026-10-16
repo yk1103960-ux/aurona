@@ -474,6 +474,82 @@ function BulkPhotos() {
           </div>
         </div>
       )}
+
+      <SavedPhotos
+        images={catalog.data?.images ?? []}
+        targets={targetOptions}
+        onDeleted={refreshEverything}
+      />
+    </div>
+  );
+}
+
+type SavedImage = { id: string; image_url: string; family_id: string | null; variant_sku: string | null; is_primary: boolean | null };
+
+function SavedPhotos({ images, targets, onDeleted }: { images: SavedImage[]; targets: Target[]; onDeleted: () => void }) {
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const familyName = useMemo(() => {
+    const m = new Map<string, Target>();
+    for (const t of targets) if (!t.variantSku) m.set(t.familyId, t);
+    for (const t of targets) if (!m.has(t.familyId)) m.set(t.familyId, t);
+    return m;
+  }, [targets]);
+  const label = (img: SavedImage) => {
+    const f = img.family_id ? familyName.get(img.family_id) : undefined;
+    return `${img.variant_sku ?? `${f?.familySku ?? ""} (all variations)`} — ${f?.familyName ?? "Unknown product"}`;
+  };
+  const filtered = images.filter((img) => !q || label(img).toLowerCase().includes(q.toLowerCase()));
+  const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
+  const toggle = (id: string) =>
+    setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () =>
+    setSelected((p) => { const n = new Set(p); filtered.forEach((i) => (allSel ? n.delete(i.id) : n.add(i.id))); return n; });
+
+  const del = async () => {
+    const ids = filtered.filter((i) => selected.has(i.id)).map((i) => i.id);
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} photo(s)? Products and variations will not be changed.`)) return;
+    setBusy(true);
+    const targetsDel = images.filter((i) => ids.includes(i.id));
+    const { error } = await supabase.from("product_images").delete().in("id", ids);
+    if (error) { setBusy(false); return toast.error(error.message); }
+    const prefix = "/api/public/product-image/";
+    const paths = targetsDel.map((i) => i.image_url).filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length));
+    if (paths.length) await supabase.storage.from("media").remove(paths);
+    setSelected(new Set());
+    setBusy(false);
+    toast.success(`Deleted ${ids.length} photo(s)`);
+    onDeleted();
+  };
+  const selCount = filtered.filter((i) => selected.has(i.id)).length;
+
+  return (
+    <div className="rounded-xl border bg-white p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="mr-auto text-lg font-semibold">Saved photos ({images.length})</h2>
+        <Input className="h-9 w-56" placeholder="Filter by SKU or product" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Button type="button" variant="outline" disabled={!filtered.length} onClick={toggleAll}>
+          {allSel ? "Unselect all" : `Select all${q ? " filtered" : ""} (${filtered.length})`}
+        </Button>
+        <Button type="button" variant="destructive" disabled={busy || !selCount} onClick={del}>
+          {busy ? "Deleting…" : `Delete selected (${selCount})`}
+        </Button>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="p-6 text-center text-sm text-slate-500">No saved photos match.</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+          {filtered.map((img) => (
+            <label key={img.id} className={`relative cursor-pointer overflow-hidden rounded-lg border ${selected.has(img.id) ? "ring-2 ring-rose-500" : ""}`}>
+              <input type="checkbox" className="absolute left-2 top-2 h-4 w-4" checked={selected.has(img.id)} onChange={() => toggle(img.id)} aria-label={`Select ${label(img)}`} />
+              <img src={img.image_url} alt={label(img)} className="aspect-square w-full bg-white object-contain" loading="lazy" />
+              <div className="truncate p-1.5 text-[11px] text-slate-600">{label(img)}</div>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
