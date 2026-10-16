@@ -4176,6 +4176,17 @@ export type Database = {
         Returns: undefined
       }
       current_pricing_role: { Args: never; Returns: string }
+      get_visible_inventory: {
+        Args: { _skus: string[] }
+        Returns: {
+          moq: number
+          pack_size: number
+          reserved_stock: number
+          role: string
+          sku: string
+          stock: number
+        }[]
+      }
       get_visible_prices: {
         Args: { _skus: string[] }
         Returns: {

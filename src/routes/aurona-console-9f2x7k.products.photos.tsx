@@ -55,8 +55,9 @@ function BulkPhotos() {
     queryKey: ["bulk-photo-targets"],
     staleTime: 60_000,
     queryFn: async () => {
-      const [families, variants, images] = await Promise.all([
-        supabase.from("product_families").select("id, name, main_sku"),
+      const [families, cats, variants, images] = await Promise.all([
+        supabase.from("product_families").select("id, name, main_sku, category_id"),
+        supabase.from("categories").select("id, name"),
         supabase
           .from("product_variants")
           .select("sku, family_id")
@@ -67,6 +68,9 @@ function BulkPhotos() {
       if (families.error) throw families.error;
       if (variants.error) throw variants.error;
       if (images.error) throw images.error;
+      const catName = new Map((cats.data ?? []).map((c) => [c.id as string, c.name as string]));
+      const familyCategory: Record<string, string> = {};
+      for (const f of families.data ?? []) familyCategory[f.id as string] = (f.category_id && catName.get(f.category_id as string)) || "Uncategorised";
 
       const familyById = new Map(
         (families.data ?? []).map((f) => [
@@ -102,7 +106,7 @@ function BulkPhotos() {
         bySku,
         byFamilySku,
         targets: [...byFamilySku.values(), ...bySku.values()],
-        images: images.data ?? [],
+        familyCategory, images: images.data ?? [],
       };
     },
   });
@@ -329,6 +333,12 @@ function BulkPhotos() {
 
   return (
     <div className="max-w-6xl space-y-5">
+      <SavedPhotos
+        categories={catalog.data?.familyCategory ?? {}}
+        images={catalog.data?.images ?? []}
+        targets={targetOptions}
+        onDeleted={refreshEverything}
+      />
       <Link
         to="/aurona-console-9f2x7k/products"
         className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
@@ -475,19 +485,17 @@ function BulkPhotos() {
         </div>
       )}
 
-      <SavedPhotos
-        images={catalog.data?.images ?? []}
-        targets={targetOptions}
-        onDeleted={refreshEverything}
-      />
     </div>
   );
 }
 
 type SavedImage = { id: string; image_url: string; family_id: string | null; variant_sku: string | null; is_primary: boolean | null };
 
-function SavedPhotos({ images, targets, onDeleted }: { images: SavedImage[]; targets: Target[]; onDeleted: () => void }) {
+function SavedPhotos({ images, targets, categories, onDeleted }: { images: SavedImage[]; targets: Target[]; categories: Record<string, string>; onDeleted: () => void }) {
   const [q, setQ] = useState("");
+  const [cat, setCat] = useState("");
+  const [fam, setFam] = useState("");
+  const [scope, setScope] = useState<"" | "variant" | "family">("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const familyName = useMemo(() => {
@@ -500,7 +508,14 @@ function SavedPhotos({ images, targets, onDeleted }: { images: SavedImage[]; tar
     const f = img.family_id ? familyName.get(img.family_id) : undefined;
     return `${img.variant_sku ?? `${f?.familySku ?? ""} (all variations)`} — ${f?.familyName ?? "Unknown product"}`;
   };
-  const filtered = images.filter((img) => !q || label(img).toLowerCase().includes(q.toLowerCase()));
+  const filtered = images.filter((img) =>
+    (!q || label(img).toLowerCase().includes(q.toLowerCase())) &&
+    (!cat || (img.family_id && categories[img.family_id]) === cat) &&
+    (!fam || img.family_id === fam) &&
+    (!scope || (scope === "variant" ? !!img.variant_sku : !img.variant_sku)));
+  const catList = [...new Set(Object.values(categories))].sort();
+  const famList = [...familyName.values()].filter((t) => !cat || categories[t.familyId] === cat).sort((a, b) => a.familyName.localeCompare(b.familyName));
+  const anyFilter = !!(q || cat || fam || scope);
   const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
   const toggle = (id: string) =>
     setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -510,7 +525,7 @@ function SavedPhotos({ images, targets, onDeleted }: { images: SavedImage[]; tar
   const del = async () => {
     const ids = filtered.filter((i) => selected.has(i.id)).map((i) => i.id);
     if (!ids.length) return;
-    if (!confirm(`Delete ${ids.length} photo(s)? Products and variations will not be changed.`)) return;
+    if (!confirm(`Permanently delete ${ids.length} photo(s)? This cannot be undone. Products and variations will not be changed.`)) return;
     setBusy(true);
     const targetsDel = images.filter((i) => ids.includes(i.id));
     const { error } = await supabase.from("product_images").delete().in("id", ids);
@@ -526,12 +541,25 @@ function SavedPhotos({ images, targets, onDeleted }: { images: SavedImage[]; tar
   const selCount = filtered.filter((i) => selected.has(i.id)).length;
 
   return (
-    <div className="rounded-xl border bg-white p-4 space-y-3">
+    <div className="rounded-xl border-2 border-rose-300 bg-white p-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="mr-auto text-lg font-semibold">Saved photos ({images.length})</h2>
-        <Input className="h-9 w-56" placeholder="Filter by SKU or product" value={q} onChange={(e) => setQ(e.target.value)} />
+        <h2 className="mr-auto text-lg font-semibold text-rose-700">Bulk Delete Photos ({images.length} saved)</h2>
+        <select className="h-9 rounded-md border px-2 text-sm" value={cat} onChange={(e) => { setCat(e.target.value); setFam(""); }} aria-label="Category">
+          <option value="">All categories</option>
+          {catList.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select className="h-9 max-w-48 rounded-md border px-2 text-sm" value={fam} onChange={(e) => setFam(e.target.value)} aria-label="Product">
+          <option value="">All products</option>
+          {famList.map((t) => <option key={t.familyId} value={t.familyId}>{t.familyName}</option>)}
+        </select>
+        <select className="h-9 rounded-md border px-2 text-sm" value={scope} onChange={(e) => setScope(e.target.value as typeof scope)} aria-label="Variant">
+          <option value="">Variant & product photos</option>
+          <option value="variant">Variant photos only</option>
+          <option value="family">Product (all variations) only</option>
+        </select>
+        <Input className="h-9 w-48" placeholder="Search SKU" value={q} onChange={(e) => setQ(e.target.value)} />
         <Button type="button" variant="outline" disabled={!filtered.length} onClick={toggleAll}>
-          {allSel ? "Unselect all" : `Select all${q ? " filtered" : ""} (${filtered.length})`}
+          {allSel ? "Unselect all" : `Select all${anyFilter ? " filtered" : ""} (${filtered.length})`}
         </Button>
         <Button type="button" variant="destructive" disabled={busy || !selCount} onClick={del}>
           {busy ? "Deleting…" : `Delete selected (${selCount})`}

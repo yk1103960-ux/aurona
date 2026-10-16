@@ -177,6 +177,10 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
   const maxPackQty = Math.floor(availableStock / packSize);
   const inStock = maxPackQty > 0;
   const effectiveMoq = Math.max(1, Number(inventory?.moq ?? variant.moq ?? 1));
+  const minPacks = Math.max(1, Math.ceil(effectiveMoq / packSize));
+  useEffect(() => {
+    if (qty < minPacks) setQty(minPacks);
+  }, [minPacks]); // eslint-disable-line react-hooks/exhaustive-deps
   const discountAmount = Math.max(0, effectiveMrp - effectivePrice);
   const pricePerPack = effectivePrice * packSize;
   const totalOrderValue = pricePerPack * qty;
@@ -408,7 +412,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
             <div className="flex items-center gap-3">
               <div className="flex items-center border border-border">
                 <button
-                  onClick={() => setQty(Math.max(1, qty - 1))}
+                  onClick={() => setQty(Math.max(minPacks, qty - 1))}
                   className="grid h-10 w-10 place-items-center hover:bg-surface"
                 >
                   <Minus className="h-4 w-4" />
@@ -447,7 +451,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
           </div>
 
           <div className="mt-8 grid gap-3 border border-border p-4 sm:grid-cols-2">
-            <Spec label="MOQ" value={String(effectiveMoq)} />
+            <Spec label="MOQ" value={`${effectiveMoq} PCs`} />
             <Spec label="Weight" value={weightText} />
             <Spec label="Pack size" value={String(packSize)} />
             <Spec label="Dimensions (LxWxH)" value={dimsText} />
@@ -531,7 +535,7 @@ function FamilyPDP({ family, initialSku }: { family: ProductFamily; initialSku?:
                   ["Selected SKU", variant.sku],
                   ["Watt Option", wattOption],
                   ["Output Colour Option", outputColourOption],
-                  ["MOQ", String(effectiveMoq)],
+                  ["MOQ", `${effectiveMoq} PCs`],
                   ["Item Weight", weightText],
                   ["Item Dimensions", dimsText],
                   ["Pack Size", String(packSize)],

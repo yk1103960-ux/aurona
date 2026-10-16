@@ -140,6 +140,18 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (!allowed) throw new Error(`${item.name} is not available for your account type.`);
     }
 
+    // Enforce the buyer type's own MOQ (in pieces = packs × pack size).
+    const { data: invRows, error: invError } = await (supabase as any).rpc("get_visible_inventory", { _skus: skus });
+    if (invError) throw new Error(invError.message || "Could not verify minimum order quantity.");
+    const invBySku = new Map(((invRows ?? []) as Array<{ sku: string; moq: number; pack_size: number }>).map((r) => [r.sku, r]));
+    for (const item of items) {
+      const inv = invBySku.get(item.sku);
+      if (!inv) continue;
+      const pcs = item.quantity * Math.max(1, Number(inv.pack_size) || 1);
+      const moq = Math.max(1, Number(inv.moq) || 1);
+      if (pcs < moq) throw new Error(`${item.name} needs a minimum order of ${moq} PCs for your account type.`);
+    }
+
     const { data: visiblePrices, error: priceError } = await supabase.rpc("get_visible_prices", {
       _skus: skus,
     });
