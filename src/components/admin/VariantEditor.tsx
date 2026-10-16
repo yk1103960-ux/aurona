@@ -654,6 +654,7 @@ export function VariantEditor({
       dirty.current = false;
       await q.refetch();
       await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
+      await qc.invalidateQueries({ queryKey: ["bulk-photo-targets"] });
       toast.success(`Variant ${row.sku} archived.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not archive variant");
@@ -670,6 +671,7 @@ export function VariantEditor({
       dirty.current = false;
       await q.refetch();
       await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
+      await qc.invalidateQueries({ queryKey: ["bulk-photo-targets"] });
       toast.success(`Variant ${row.sku} restored.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not restore variant");
@@ -712,6 +714,7 @@ export function VariantEditor({
       dirty.current = hadUnsavedChanges;
       await q.refetch();
       await qc.invalidateQueries({ queryKey: ["admin-product-master"] });
+      await qc.invalidateQueries({ queryKey: ["bulk-photo-targets"] });
       toast.success(`Variant ${row.sku} permanently deleted.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not permanently delete variant");
@@ -894,6 +897,7 @@ export function VariantEditor({
         "family-products",
         "browse-products",
         "search-suggest",
+        "bulk-photo-targets",
       ])
         void qc.invalidateQueries({
           queryKey: [key],
