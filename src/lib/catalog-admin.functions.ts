@@ -505,7 +505,9 @@ export const adminExportProductMasterRows = createServerFn({ method: "POST" })
       fetchByIds("product_variants", "family_id", familyIds),
       fetchByIds("product_variant_axes", "family_id", familyIds),
     ]);
-    const actualVariants = variants.filter((variant) => !variant.archived_at && variant.id && String(variant.sku ?? "").trim());
+    // Only current sellable variants: exclude archived, permanently deleted
+    // (absent entirely) and obsolete regenerated combinations (is_active = false).
+    const actualVariants = variants.filter((variant) => variant.is_active && !variant.archived_at && variant.id && String(variant.sku ?? "").trim());
     const legacy = await fetchByIds("products", "id", families.map((family) => family.legacy_product_id).filter(Boolean));
     const commissions = await fetchByIds("variant_program_commissions", "variant_id", actualVariants.map((row) => row.id));
     const programs = await fetchByIds("referral_programs", "id", [...new Set(commissions.map((row) => row.program_id).filter(Boolean))], "id,name");

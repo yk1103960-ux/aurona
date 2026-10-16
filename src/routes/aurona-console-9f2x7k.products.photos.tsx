@@ -57,7 +57,11 @@ function BulkPhotos() {
     queryFn: async () => {
       const [families, variants, images] = await Promise.all([
         supabase.from("product_families").select("id, name, main_sku"),
-        supabase.from("product_variants").select("sku, family_id"),
+        supabase
+          .from("product_variants")
+          .select("sku, family_id")
+          .is("archived_at", null)
+          .eq("is_active", true),
         supabase.from("product_images").select("id, image_url, family_id, variant_sku, is_primary"),
       ]);
       if (families.error) throw families.error;
