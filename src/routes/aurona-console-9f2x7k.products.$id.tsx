@@ -38,6 +38,7 @@ import {
 } from "@/lib/commission-grouping";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/$id")({
+  head: () => ({ meta: [{ title: "Edit Product — Aurona Console" }, { name: "description", content: "Edit Aurona product details, buyer pricing and commissions." }, { property: "og:title", content: "Edit Product — Aurona Console" }, { property: "og:description", content: "Edit Aurona product details, buyer pricing and commissions." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: ExistingProductEditor,
 });
 
@@ -1148,9 +1149,13 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
   const [rules, setRules] = useState<Record<string, CommissionRule>>({});
   const [savingCommissions, setSavingCommissions] = useState(false);
   const initialized = useRef(false);
+  const [buyerType, setBuyerType] = useState<"customer" | "retailer" | "distributor">("customer");
+  const [customerRole, setCustomerRole] = useState("customer");
+  const scopeKey = `${buyerType}:${buyerType === "customer" ? customerRole : buyerType}`;
+  useEffect(() => { initialized.current = false; setRules({}); }, [scopeKey]);
 
   const q = useQuery({
-    queryKey: ["variant-program-commissions", productId, productSku],
+    queryKey: ["variant-program-commissions", productId, productSku, scopeKey],
     enabled: Boolean(productId && productSku),
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -1162,6 +1167,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           familyId: null,
           productId,
           productSku,
+          buyerType,
         },
       });
 
@@ -1275,7 +1281,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
       if (variantIds.length > 0) {
         const existingResult = await (supabase as any)
           .from("variant_program_commissions")
-          .select("id,variant_id,program_id,commission_kind,commission_value,max_commission,is_active")
+          .select("id,variant_id,program_id,commission_kind,commission_value,max_commission,is_active,scoped_rules")
           .in("variant_id", variantIds);
 
         if (existingResult.error) {
@@ -1311,10 +1317,11 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
 
     for (const variant of q.data.variants) {
       for (const program of q.data.programs) {
-        const existing = q.data.existing.find(
+        const base = q.data.existing.find(
           (row: any) => row.variant_id === variant.id && row.program_id === program.id,
         );
 
+        const existing = scopeKey === "customer:customer" ? base : base?.scoped_rules?.[scopeKey];
         const key = `${variant.id}:${program.id}`;
 
         next[key] = {
@@ -1334,7 +1341,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
 
     setRules(next);
     initialized.current = true;
-  }, [q.data]);
+  }, [q.data, scopeKey]);
 
   const updateRule = (variantId: string, programId: string, patch: Partial<CommissionRule>) => {
     const key = `${variantId}:${programId}`;
@@ -1392,9 +1399,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
         is_active: row.is_active,
       }));
 
-      const { error } = await (supabase as any)
-        .from("variant_program_commissions")
-        .upsert(payload, { onConflict: "variant_id,program_id" });
+      const { error } = await (supabase as any).rpc("admin_save_scoped_commissions", { _buyer_type: buyerType, _customer_role: customerRole, _rows: payload });
 
       if (error) throw error;
 
@@ -1453,6 +1458,14 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
 
   return (
     <Section title="Commission">
+      <div className="flex flex-wrap gap-3 mb-4">
+        <select aria-label="Commission buyer segment" value={buyerType} onChange={event => setBuyerType(event.target.value as typeof buyerType)}>
+          <option value="customer">Customer</option><option value="retailer">Retailer</option><option value="distributor">Distributor</option>
+        </select>
+        {buyerType === "customer" && <select aria-label="Customer role" value={customerRole} onChange={event => setCustomerRole(event.target.value)}>
+          {["customer", "retailer", "distributor", "staff", "admin"].map(role => <option key={role} value={role}>{role}</option>)}
+        </select>}
+      </div>
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1951,7 +1964,7 @@ function RelatedProducts({ familyId }: { familyId: string }) {
     }
   }, [q.data]);
   const visibleIds = useMemo(() => (q.data?.products ?? []).map((item: any) => item.id as string), [q.data?.products]);
-  const selectVisible = () => setSelected((current) => [...new Set([...current, ...visibleIds])].slice(0, 24));
+  const selectVisible = () => setSelected([...new Set(visibleIds)].slice(0, 24));
   const save = async () => {
     setSaving(true);
     try {
@@ -1975,6 +1988,7 @@ function RelatedProducts({ familyId }: { familyId: string }) {
           value={categoryId}
           onChange={(event) => {
             setCategoryId(event.target.value);
+            setSelected([]);
           }}
         >
           <option value="">Product category</option>
