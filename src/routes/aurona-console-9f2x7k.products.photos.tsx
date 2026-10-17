@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ImageIcon, Upload } from "lucide-react";
 
 export const Route = createFileRoute("/aurona-console-9f2x7k/products/photos")({
+  head: () => ({ meta: [{ title: "Bulk Product Photos — Aurona Console" }, { name: "description", content: "Upload and manage Aurona product and variant photos." }, { property: "og:title", content: "Bulk Product Photos — Aurona Console" }, { property: "og:description", content: "Upload and manage Aurona product and variant photos." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: BulkPhotos,
 });
 
@@ -496,6 +497,7 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
   const [cat, setCat] = useState("");
   const [fam, setFam] = useState("");
   const [scope, setScope] = useState<"" | "variant" | "family">("");
+  const [variantSku, setVariantSku] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const familyName = useMemo(() => {
@@ -512,10 +514,12 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
     (!q || label(img).toLowerCase().includes(q.toLowerCase())) &&
     (!cat || (img.family_id && categories[img.family_id]) === cat) &&
     (!fam || img.family_id === fam) &&
+    (!variantSku || img.variant_sku === variantSku) &&
     (!scope || (scope === "variant" ? !!img.variant_sku : !img.variant_sku)));
   const catList = [...new Set(Object.values(categories))].sort();
   const famList = [...familyName.values()].filter((t) => !cat || categories[t.familyId] === cat).sort((a, b) => a.familyName.localeCompare(b.familyName));
-  const anyFilter = !!(q || cat || fam || scope);
+  const variantList = [...new Set(images.filter(img => (!fam || img.family_id === fam) && (!cat || (img.family_id && categories[img.family_id]) === cat)).map(img => img.variant_sku).filter((sku): sku is string => Boolean(sku)))].sort();
+  const anyFilter = !!(q || cat || fam || scope || variantSku);
   const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
   const toggle = (id: string) =>
     setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -532,10 +536,15 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
     if (error) { setBusy(false); return toast.error(error.message); }
     const prefix = "/api/public/product-image/";
     const paths = targetsDel.map((i) => i.image_url).filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length));
-    if (paths.length) await supabase.storage.from("media").remove(paths);
+    let cleanupFailed = false;
+    if (paths.length) {
+      const cleanup = await supabase.storage.from("media").remove(paths);
+      cleanupFailed = Boolean(cleanup.error);
+    }
     setSelected(new Set());
     setBusy(false);
     toast.success(`Deleted ${ids.length} photo(s)`);
+    if (cleanupFailed) toast.warning("Photos removed from products, but stored-file cleanup could not finish.");
     onDeleted();
   };
   const selCount = filtered.filter((i) => selected.has(i.id)).length;
@@ -544,11 +553,11 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
     <div className="rounded-xl border-2 border-rose-300 bg-white p-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="mr-auto text-lg font-semibold text-rose-700">Bulk Delete Photos ({images.length} saved)</h2>
-        <select className="h-9 rounded-md border px-2 text-sm" value={cat} onChange={(e) => { setCat(e.target.value); setFam(""); }} aria-label="Category">
+        <select className="h-9 rounded-md border px-2 text-sm" value={cat} onChange={(e) => { setCat(e.target.value); setFam(""); setVariantSku(""); }} aria-label="Category">
           <option value="">All categories</option>
           {catList.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select className="h-9 max-w-48 rounded-md border px-2 text-sm" value={fam} onChange={(e) => setFam(e.target.value)} aria-label="Product">
+        <select className="h-9 max-w-48 rounded-md border px-2 text-sm" value={fam} onChange={(e) => { setFam(e.target.value); setVariantSku(""); }} aria-label="Product">
           <option value="">All products</option>
           {famList.map((t) => <option key={t.familyId} value={t.familyId}>{t.familyName}</option>)}
         </select>
@@ -556,6 +565,10 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
           <option value="">Variant & product photos</option>
           <option value="variant">Variant photos only</option>
           <option value="family">Product (all variations) only</option>
+        </select>
+        <select className="h-9 max-w-48 rounded-md border px-2 text-sm" value={variantSku} onChange={e => setVariantSku(e.target.value)} aria-label="Specific variant SKU">
+          <option value="">All Variants</option>
+          {variantList.map(sku => <option key={sku} value={sku}>{sku}</option>)}
         </select>
         <Input className="h-9 w-48" placeholder="Search SKU" value={q} onChange={(e) => setQ(e.target.value)} />
         <Button type="button" variant="outline" disabled={!filtered.length} onClick={toggleAll}>

@@ -21,6 +21,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Aurona — Sculpted light, engineered in India" },
+      { property: "og:title", content: "Aurona — Sculpted light, engineered in India" },
+      { property: "og:description", content: "Aurona lighting, ceiling fans and home appliances, delivered across India." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         name: "description",
         content:

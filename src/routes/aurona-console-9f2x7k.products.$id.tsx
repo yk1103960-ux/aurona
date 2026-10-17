@@ -1963,8 +1963,8 @@ function RelatedProducts({ familyId }: { familyId: string }) {
       return;
     }
   }, [q.data]);
-  const visibleIds = useMemo(() => (q.data?.products ?? []).map((item: any) => item.id as string), [q.data?.products]);
-  const selectVisible = () => setSelected([...new Set(visibleIds)].slice(0, 24));
+  const visibleIds = useMemo<string[]>(() => (q.data?.products ?? []).map((item: any) => String(item.id)), [q.data?.products]);
+  const selectVisible = () => setSelected([...new Set<string>(visibleIds)].slice(0, 24));
   const save = async () => {
     setSaving(true);
     try {

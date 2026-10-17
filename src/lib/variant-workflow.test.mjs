@@ -68,7 +68,7 @@ test("shared option validation deduplicates values and protects existing SKU map
   const old = [
     { id: "axis", axis_key: "output", label: "Output", values: ["a", "b"], sort_order: 0 },
   ];
-  const row = { ...newVariation("family", "F", []), attributes: { output: "b" } };
+  const row = { ...newVariation("family", "F", []), is_active: true, attributes: { output: "b" } };
   assert.throws(
     () => prepareVariationAxes([{ ...old[0], values: ["a"] }], old, [row]),
     /inactive first/,
