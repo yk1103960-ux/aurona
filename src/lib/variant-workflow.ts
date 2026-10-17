@@ -100,6 +100,14 @@ export function newVariation(
     distributor_price: source?.distributor_price ?? null,
     retailer_mrp: source?.retailer_mrp ?? null,
     distributor_mrp: source?.distributor_mrp ?? null,
+    retailer_weight_g: source?.retailer_weight_g ?? null,
+    retailer_dim_l: source?.retailer_dim_l ?? null,
+    retailer_dim_w: source?.retailer_dim_w ?? null,
+    retailer_dim_h: source?.retailer_dim_h ?? null,
+    distributor_weight_g: source?.distributor_weight_g ?? null,
+    distributor_dim_l: source?.distributor_dim_l ?? null,
+    distributor_dim_w: source?.distributor_dim_w ?? null,
+    distributor_dim_h: source?.distributor_dim_h ?? null,
     moq: source?.moq ?? 1,
     retailer_moq: source?.retailer_moq ?? null,
     distributor_moq: source?.distributor_moq ?? null,
@@ -198,7 +206,7 @@ export function variationIssues(row: Variant, rows: Variant[], axes: Axis[]): st
     "distributor_pack_w",
     "distributor_pack_h",
   ] as const)
-    if (row[key] !== null && (!Number.isFinite(row[key]) || row[key]! < 0))
+    if (row[key] != null && (!Number.isFinite(row[key]) || Number(row[key]) < 0))
       issues.push(`${key.replaceAll("_", " ")} must be zero or more.`);
   for (const key of [
     "stock",

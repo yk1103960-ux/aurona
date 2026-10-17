@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
+import { replaceRelatedSelection, scopedCommissionRule } from "@/lib/product-workflow-selection";
 import {
   adminGetProductForEdit,
   adminLoadVariantMatrix,
@@ -1321,7 +1322,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           (row: any) => row.variant_id === variant.id && row.program_id === program.id,
         );
 
-        const existing = scopeKey === "customer:customer" ? base : base?.scoped_rules?.[scopeKey];
+        const existing = scopedCommissionRule(base, buyerType, customerRole) as any;
         const key = `${variant.id}:${program.id}`;
 
         next[key] = {
@@ -1946,11 +1947,19 @@ function RelatedProducts({ familyId }: { familyId: string }) {
       ]);
       if (products.error) throw products.error;
       if (related.error) throw related.error;
+      const relatedIds = (related.data ?? []).map((row: any) => String(row.related_family_id));
+      let savedCategoryId = activeCategoryId;
+      if (relatedIds.length && !loaded.current) {
+        const savedProducts = await (supabase as any).from("product_families").select("category_id").in("id", relatedIds);
+        if (savedProducts.error) throw savedProducts.error;
+        const savedCategories = [...new Set<string>((savedProducts.data ?? []).map((row: any) => String(row.category_id ?? "")).filter(Boolean))];
+        if (savedCategories.length === 1) savedCategoryId = savedCategories[0];
+      }
       return {
         products: products.data ?? [],
         categories: categories.data ?? [],
-        categoryId: activeCategoryId,
-        relatedIds: (related.data ?? []).map((row: any) => row.related_family_id as string),
+        categoryId: savedCategoryId,
+        relatedIds,
       };
     },
   });
@@ -1963,8 +1972,8 @@ function RelatedProducts({ familyId }: { familyId: string }) {
       return;
     }
   }, [q.data]);
-  const visibleIds = useMemo(() => (q.data?.products ?? []).map((item: any) => item.id as string), [q.data?.products]);
-  const selectVisible = () => setSelected([...new Set(visibleIds)].slice(0, 24));
+  const visibleIds = useMemo<string[]>(() => (q.data?.products ?? []).map((item: any) => String(item.id)), [q.data?.products]);
+  const selectVisible = () => setSelected(replaceRelatedSelection(visibleIds));
   const save = async () => {
     setSaving(true);
     try {
