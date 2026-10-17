@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
+import { replaceRelatedSelection, scopedCommissionRule } from "@/lib/product-workflow-selection";
 import {
   adminGetProductForEdit,
   adminLoadVariantMatrix,
@@ -1321,7 +1322,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           (row: any) => row.variant_id === variant.id && row.program_id === program.id,
         );
 
-        const existing = scopeKey === "customer:customer" ? base : base?.scoped_rules?.[scopeKey];
+        const existing = scopedCommissionRule(base, buyerType, customerRole) as any;
         const key = `${variant.id}:${program.id}`;
 
         next[key] = {
@@ -1972,7 +1973,7 @@ function RelatedProducts({ familyId }: { familyId: string }) {
     }
   }, [q.data]);
   const visibleIds = useMemo<string[]>(() => (q.data?.products ?? []).map((item: any) => String(item.id)), [q.data?.products]);
-  const selectVisible = () => setSelected([...new Set<string>(visibleIds)].slice(0, 24));
+  const selectVisible = () => setSelected(replaceRelatedSelection(visibleIds));
   const save = async () => {
     setSaving(true);
     try {
