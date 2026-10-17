@@ -1946,11 +1946,19 @@ function RelatedProducts({ familyId }: { familyId: string }) {
       ]);
       if (products.error) throw products.error;
       if (related.error) throw related.error;
+      const relatedIds = (related.data ?? []).map((row: any) => String(row.related_family_id));
+      let savedCategoryId = activeCategoryId;
+      if (relatedIds.length && !loaded.current) {
+        const savedProducts = await (supabase as any).from("product_families").select("category_id").in("id", relatedIds);
+        if (savedProducts.error) throw savedProducts.error;
+        const savedCategories = [...new Set<string>((savedProducts.data ?? []).map((row: any) => String(row.category_id ?? "")).filter(Boolean))];
+        if (savedCategories.length === 1) savedCategoryId = savedCategories[0];
+      }
       return {
         products: products.data ?? [],
         categories: categories.data ?? [],
-        categoryId: activeCategoryId,
-        relatedIds: (related.data ?? []).map((row: any) => row.related_family_id as string),
+        categoryId: savedCategoryId,
+        relatedIds,
       };
     },
   });
