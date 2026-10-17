@@ -12,6 +12,14 @@ export type Variant = {
   /** Optional MRP shown only to that account type; blank falls back to the shared MRP. */
   retailer_mrp: number | null;
   distributor_mrp: number | null;
+  retailer_weight_g?: number | null;
+  retailer_dim_l?: number | null;
+  retailer_dim_w?: number | null;
+  retailer_dim_h?: number | null;
+  distributor_weight_g?: number | null;
+  distributor_dim_l?: number | null;
+  distributor_dim_w?: number | null;
+  distributor_dim_h?: number | null;
   retailer_discount_pct?: number | null;
   distributor_discount_pct?: number | null;
   retailer_stock?: number | null;
