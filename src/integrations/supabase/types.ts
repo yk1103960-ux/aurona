@@ -2706,6 +2706,9 @@ export type Database = {
           dim_l: number | null
           dim_w: number | null
           discount_pct: number | null
+          distributor_dim_h: number | null
+          distributor_dim_l: number | null
+          distributor_dim_w: number | null
           distributor_discount_pct: number | null
           distributor_moq: number | null
           distributor_mrp: number | null
@@ -2717,6 +2720,7 @@ export type Database = {
           distributor_price: number | null
           distributor_reserved_stock: number
           distributor_stock: number
+          distributor_weight_g: number | null
           family_id: string
           id: string
           image_seed: string | null
@@ -2731,6 +2735,9 @@ export type Database = {
           pack_weight_g: number | null
           price: number
           reserved_stock: number
+          retailer_dim_h: number | null
+          retailer_dim_l: number | null
+          retailer_dim_w: number | null
           retailer_discount_pct: number | null
           retailer_moq: number | null
           retailer_mrp: number | null
@@ -2742,6 +2749,7 @@ export type Database = {
           retailer_price: number | null
           retailer_reserved_stock: number
           retailer_stock: number
+          retailer_weight_g: number | null
           sku: string
           sort_order: number
           stock: number
@@ -2760,6 +2768,9 @@ export type Database = {
           dim_l?: number | null
           dim_w?: number | null
           discount_pct?: number | null
+          distributor_dim_h?: number | null
+          distributor_dim_l?: number | null
+          distributor_dim_w?: number | null
           distributor_discount_pct?: number | null
           distributor_moq?: number | null
           distributor_mrp?: number | null
@@ -2771,6 +2782,7 @@ export type Database = {
           distributor_price?: number | null
           distributor_reserved_stock?: number
           distributor_stock?: number
+          distributor_weight_g?: number | null
           family_id: string
           id?: string
           image_seed?: string | null
@@ -2785,6 +2797,9 @@ export type Database = {
           pack_weight_g?: number | null
           price: number
           reserved_stock?: number
+          retailer_dim_h?: number | null
+          retailer_dim_l?: number | null
+          retailer_dim_w?: number | null
           retailer_discount_pct?: number | null
           retailer_moq?: number | null
           retailer_mrp?: number | null
@@ -2796,6 +2811,7 @@ export type Database = {
           retailer_price?: number | null
           retailer_reserved_stock?: number
           retailer_stock?: number
+          retailer_weight_g?: number | null
           sku: string
           sort_order?: number
           stock?: number
@@ -2814,6 +2830,9 @@ export type Database = {
           dim_l?: number | null
           dim_w?: number | null
           discount_pct?: number | null
+          distributor_dim_h?: number | null
+          distributor_dim_l?: number | null
+          distributor_dim_w?: number | null
           distributor_discount_pct?: number | null
           distributor_moq?: number | null
           distributor_mrp?: number | null
@@ -2825,6 +2844,7 @@ export type Database = {
           distributor_price?: number | null
           distributor_reserved_stock?: number
           distributor_stock?: number
+          distributor_weight_g?: number | null
           family_id?: string
           id?: string
           image_seed?: string | null
@@ -2839,6 +2859,9 @@ export type Database = {
           pack_weight_g?: number | null
           price?: number
           reserved_stock?: number
+          retailer_dim_h?: number | null
+          retailer_dim_l?: number | null
+          retailer_dim_w?: number | null
           retailer_discount_pct?: number | null
           retailer_moq?: number | null
           retailer_mrp?: number | null
@@ -2850,6 +2873,7 @@ export type Database = {
           retailer_price?: number | null
           retailer_reserved_stock?: number
           retailer_stock?: number
+          retailer_weight_g?: number | null
           sku?: string
           sort_order?: number
           stock?: number
@@ -3748,6 +3772,7 @@ export type Database = {
           is_active: boolean
           max_commission: number | null
           program_id: string
+          scoped_rules: Json
           updated_at: string
           variant_id: string
         }
@@ -3759,6 +3784,7 @@ export type Database = {
           is_active?: boolean
           max_commission?: number | null
           program_id: string
+          scoped_rules?: Json
           updated_at?: string
           variant_id: string
         }
@@ -3770,6 +3796,7 @@ export type Database = {
           is_active?: boolean
           max_commission?: number | null
           program_id?: string
+          scoped_rules?: Json
           updated_at?: string
           variant_id?: string
         }
@@ -4081,6 +4108,10 @@ export type Database = {
           _variants: Json
         }
         Returns: Json
+      }
+      admin_save_scoped_commissions: {
+        Args: { _buyer_type: string; _customer_role: string; _rows: Json }
+        Returns: undefined
       }
       admin_save_variant_matrix: {
         Args: {

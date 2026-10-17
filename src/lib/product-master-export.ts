@@ -27,14 +27,14 @@ const savedDiscount = (variant: RecordData, segment: "customer" | "retailer" | "
 };
 
 export function productMasterExportRows(data: ExportData) {
-  const families = data.families;
+  const families = data.families.filter((family) => !family.archived_at);
   const columns = buildProductMasterColumns();
   const indices = buildProductMasterColumnIndex(columns);
   const rows: Array<Array<string | number | boolean>> = [];
   for (const family of families) {
     const axes = [...family.axes].sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
     const legacy = family.legacy ?? {};
-    const variants = family.variants.filter((variant) => variant.id && String(variant.sku ?? "").trim());
+    const variants = family.variants.filter((variant) => variant.id && variant.is_active === true && !variant.archived_at && String(variant.sku ?? "").trim());
     for (const variant of variants) {
       const values: Array<string | number | boolean> = Array(columns.length).fill("");
       const set = (key: ProductMasterColumnKey, value: unknown) => {
@@ -157,5 +157,20 @@ export async function createProductMasterExport(data: ExportData): Promise<Uint8
       cell.style = structuredClone(templateStyles.columns[source].styles[3]) as Partial<ExcelJS.Style>;
     });
   });
+  const segmentSheet = workbook.addWorksheet("Segment Single PC Details");
+  segmentSheet.addRow(["variant_id", "Variant SKU", "Buyer Segment", "MRP", "Weight (g)", "Length (cm)", "Width (cm)", "Height (cm)"]);
+  segmentSinglePieceRows(data).forEach((row) => segmentSheet.addRow(row));
+  segmentSheet.columns.forEach((column) => { column.width = 22; });
   return new Uint8Array(await workbook.xlsx.writeBuffer());
+}
+
+export function segmentSinglePieceRows(data: ExportData) {
+  return data.families.filter((family) => !family.archived_at).flatMap((family) =>
+    family.variants.filter((variant) => variant.id && variant.is_active === true && !variant.archived_at && String(variant.sku ?? "").trim()).flatMap((variant) =>
+      (["customer", "retailer", "distributor"] as const).map((segment) => {
+        const prefix = segment === "customer" ? "" : `${segment}_`;
+        return [variant.id, variant.sku, segment, ...["mrp", "weight_g", "dim_l", "dim_w", "dim_h"].map((field) => number(variant[`${prefix}${field}`]))];
+      }),
+    ),
+  );
 }

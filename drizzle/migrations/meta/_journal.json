@@ -120,6 +120,13 @@
       "when": 1792172514893,
       "tag": "0016_segment_visible_inventory_moq",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792201271328,
+      "tag": "0017_independent_segment_measurements_and_commission_configurations",
+      "breakpoints": true
     }
   ]
 }

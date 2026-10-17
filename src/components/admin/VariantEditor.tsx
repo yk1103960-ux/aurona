@@ -2711,7 +2711,7 @@ function CustomerTab({
     </div>
   );
 }
-type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | PackageDimensionKey;
+type DimensionKey = "weight_g" | "dim_l" | "dim_w" | "dim_h" | "retailer_weight_g" | "retailer_dim_l" | "retailer_dim_w" | "retailer_dim_h" | "distributor_weight_g" | "distributor_dim_l" | "distributor_dim_w" | "distributor_dim_h" | PackageDimensionKey;
 
 type DimensionScope = "unit" | "customer" | "retailer" | "distributor";
 
@@ -2888,7 +2888,7 @@ function ShippingTab({
   updateRow: (id: string, patch: Partial<Variant>) => void;
   initialScope: DimensionScope;
 }) {
-  const scope = DIMENSION_SCOPES.find((entry) => entry.id === initialScope)!;
+  const scope = DIMENSION_SCOPES.find((entry) => entry.id === initialScope) ?? DIMENSION_SCOPES[0];
   const packageLabel = scope.label;
   const packSizeField: "pack_size" | "retailer_pack_size" | "distributor_pack_size" =
     initialScope === "retailer"
@@ -2896,11 +2896,12 @@ function ShippingTab({
       : initialScope === "distributor"
         ? "distributor_pack_size"
         : "pack_size";
+  const unitPrefix = initialScope === "retailer" || initialScope === "distributor" ? `${initialScope}_` : "";
   const unitFields: Array<{ key: DimensionKey; label: string; placeholder: string }> = [
-    { key: "weight_g", label: "Weight (g)", placeholder: "Weight" },
-    { key: "dim_l", label: "Length (cm)", placeholder: "Length" },
-    { key: "dim_w", label: "Width (cm)", placeholder: "Width" },
-    { key: "dim_h", label: "Height (cm)", placeholder: "Height" },
+    { key: `${unitPrefix}weight_g` as DimensionKey, label: "Weight (g)", placeholder: "Weight" },
+    { key: `${unitPrefix}dim_l` as DimensionKey, label: "Length (cm)", placeholder: "Length" },
+    { key: `${unitPrefix}dim_w` as DimensionKey, label: "Width (cm)", placeholder: "Width" },
+    { key: `${unitPrefix}dim_h` as DimensionKey, label: "Height (cm)", placeholder: "Height" },
   ];
   const fields: Array<{ key: DimensionKey; label: string; placeholder: string }> = [
     { key: scope.fields.weight, label: "Package Weight (g)", placeholder: "Weight" },
@@ -2963,7 +2964,7 @@ function ShippingTab({
 
   return (
     <div className="space-y-4">
-      <BulkDimensionsByOption rows={rows} updateRow={updateRow} initialScope="unit" />
+      <BulkDimensionsByOption rows={rows} updateRow={(id, patch) => updateRow(id, Object.fromEntries(Object.entries(patch).map(([key, value]) => [`${unitPrefix}${key}`, value])))} initialScope="unit" />
 
       <section className="rounded-xl border border-slate-200 bg-white">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-4">
