@@ -13,3 +13,4 @@
 - Store buyer single-piece measurements in the matching prefixed variant fields; export them in a separate segment worksheet so the existing 70-column bulk-import contract stays unchanged.
 - Store additional buyer/role commission configurations inside the existing variant/program row's scoped_rules; merge one scope transactionally so older commission imports and default Customer rules remain compatible.
 - Keep related-selection replacement and scoped-commission resolution in tested browser-safe helpers to prevent stale selections and cross-scope fallbacks.
+- Keep bulk photo status, filtered selection and shared-object cleanup in tested browser-safe helpers; photo deletion targets only product_images and unreferenced product photo objects, never catalog records.

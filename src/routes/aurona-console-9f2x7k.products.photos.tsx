@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { photoStatus, selectedFilteredPhotos, unusedPhotoPaths, type ManagedPhoto } from "@/lib/bulk-photo-delete";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, CheckCircle2, ImageIcon, Upload } from "lucide-react";
 
@@ -57,16 +58,15 @@ function BulkPhotos() {
     staleTime: 60_000,
     queryFn: async () => {
       const [families, cats, variants, images] = await Promise.all([
-        supabase.from("product_families").select("id, name, main_sku, category_id"),
+        supabase.from("product_families").select("id, name, main_sku, category_id, archived_at"),
         supabase.from("categories").select("id, name"),
         supabase
           .from("product_variants")
-          .select("sku, family_id")
-          .is("archived_at", null)
-          .eq("is_active", true),
+          .select("sku, family_id, archived_at, is_active"),
         supabase.from("product_images").select("id, image_url, family_id, variant_sku, is_primary"),
       ]);
       if (families.error) throw families.error;
+      if (cats.error) throw cats.error;
       if (variants.error) throw variants.error;
       if (images.error) throw images.error;
       const catName = new Map((cats.data ?? []).map((c) => [c.id as string, c.name as string]));
@@ -82,8 +82,9 @@ function BulkPhotos() {
 
       const bySku = new Map<string, Target>();
       for (const variant of variants.data ?? []) {
+        if (variant.archived_at || !variant.is_active) continue;
         const family = familyById.get(variant.family_id as string);
-        if (!family) continue;
+        if (!family || families.data?.find(f => f.id === family.id)?.archived_at) continue;
         bySku.set(normaliseSku(variant.sku as string), {
           variantSku: variant.sku as string,
           familyId: family.id,
@@ -94,6 +95,7 @@ function BulkPhotos() {
 
       const byFamilySku = new Map<string, Target>();
       for (const family of familyById.values()) {
+        if (families.data?.find(f => f.id === family.id)?.archived_at) continue;
         if (!family.main_sku) continue;
         byFamilySku.set(normaliseSku(family.main_sku), {
           variantSku: null,
@@ -103,11 +105,19 @@ function BulkPhotos() {
         });
       }
 
+      const variantByScope = new Map((variants.data ?? []).map(v => [`${v.family_id}::${v.sku}`, v]));
+      const familyStatus = new Map((families.data ?? []).map(f => [f.id, f]));
+      const managedImages = (images.data ?? []).map(image => ({
+        ...image,
+        status: photoStatus(familyStatus.get(image.family_id ?? ""), image.variant_sku,
+          variantByScope.get(`${image.family_id}::${image.variant_sku}`)),
+      }));
       return {
         bySku,
         byFamilySku,
         targets: [...byFamilySku.values(), ...bySku.values()],
-        familyCategory, images: images.data ?? [],
+        familyCategory, images: images.data ?? [], managedImages,
+        photoProducts: [...familyById.values()].map(f => ({ familyId: f.id, familyName: f.name, familySku: f.main_sku, variantSku: null })),
       };
     },
   });
@@ -207,7 +217,8 @@ function BulkPhotos() {
     let skipped = 0;
 
     for (const row of queue) {
-      const target = row.target!;
+      const target = row.target;
+      if (!target) continue;
       const scopeKey = `${target.familyId}::${target.variantSku ?? ""}`;
       const scopeImages = existing.filter(
         (image) =>
@@ -336,8 +347,8 @@ function BulkPhotos() {
     <div className="max-w-6xl space-y-5">
       <SavedPhotos
         categories={catalog.data?.familyCategory ?? {}}
-        images={catalog.data?.images ?? []}
-        targets={targetOptions}
+        images={catalog.data?.managedImages ?? []}
+        targets={catalog.data?.photoProducts ?? []}
         onDeleted={refreshEverything}
       />
       <Link
@@ -490,7 +501,7 @@ function BulkPhotos() {
   );
 }
 
-type SavedImage = { id: string; image_url: string; family_id: string | null; variant_sku: string | null; is_primary: boolean | null };
+type SavedImage = ManagedPhoto & { is_primary: boolean | null };
 
 function SavedPhotos({ images, targets, categories, onDeleted }: { images: SavedImage[]; targets: Target[]; categories: Record<string, string>; onDeleted: () => void }) {
   const [q, setQ] = useState("");
@@ -498,6 +509,7 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
   const [fam, setFam] = useState("");
   const [scope, setScope] = useState<"" | "variant" | "family">("");
   const [variantSku, setVariantSku] = useState("");
+  const [status, setStatus] = useState<"" | "active" | "archived">("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const familyName = useMemo(() => {
@@ -515,11 +527,12 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
     (!cat || (img.family_id && categories[img.family_id]) === cat) &&
     (!fam || img.family_id === fam) &&
     (!variantSku || img.variant_sku === variantSku) &&
+    (!status || img.status === status) &&
     (!scope || (scope === "variant" ? !!img.variant_sku : !img.variant_sku)));
   const catList = [...new Set(Object.values(categories))].sort();
   const famList = [...familyName.values()].filter((t) => !cat || categories[t.familyId] === cat).sort((a, b) => a.familyName.localeCompare(b.familyName));
   const variantList = [...new Set(images.filter(img => (!fam || img.family_id === fam) && (!cat || (img.family_id && categories[img.family_id]) === cat)).map(img => img.variant_sku).filter((sku): sku is string => Boolean(sku)))].sort();
-  const anyFilter = !!(q || cat || fam || scope || variantSku);
+  const anyFilter = !!(q || cat || fam || scope || variantSku || status);
   const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
   const toggle = (id: string) =>
     setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -527,32 +540,40 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
     setSelected((p) => { const n = new Set(p); filtered.forEach((i) => (allSel ? n.delete(i.id) : n.add(i.id))); return n; });
 
   const del = async () => {
-    const ids = filtered.filter((i) => selected.has(i.id)).map((i) => i.id);
+    const targetsDel = selectedFilteredPhotos(filtered, selected);
+    const ids = targetsDel.map(i => i.id);
     if (!ids.length) return;
     if (!confirm(`Permanently delete ${ids.length} photo(s)? This cannot be undone. Products and variations will not be changed.`)) return;
     setBusy(true);
-    const targetsDel = images.filter((i) => ids.includes(i.id));
-    const { error } = await supabase.from("product_images").delete().in("id", ids);
-    if (error) { setBusy(false); return toast.error(error.message); }
-    const prefix = "/api/public/product-image/";
-    const paths = targetsDel.map((i) => i.image_url).filter((u) => u.startsWith(prefix)).map((u) => u.slice(prefix.length));
-    let cleanupFailed = false;
-    if (paths.length) {
-      const cleanup = await supabase.storage.from("media").remove(paths);
-      cleanupFailed = Boolean(cleanup.error);
+    try {
+      const { data: deleted, error } = await supabase.from("product_images").delete().in("id", ids).select("id,image_url");
+      if (error) throw error;
+      if (!deleted?.length) throw new Error("No photos were deleted. Check your permission and try again.");
+      const deletedIds = new Set(deleted.map(i => i.id));
+      const { data: remaining, error: readError } = await supabase.from("product_images").select("image_url").in("image_url", [...new Set(deleted.map(i => i.image_url))]);
+      let cleanupFailed = Boolean(readError);
+      const paths = readError ? [] : unusedPhotoPaths(deleted, remaining ?? []);
+      if (paths.length) {
+        const cleanup = await supabase.storage.from("media").remove(paths);
+        cleanupFailed = Boolean(cleanup.error);
+      }
+      setSelected(previous => new Set([...previous].filter(id => !deletedIds.has(id))));
+      toast.success(`Deleted ${deleted.length} photo(s)`);
+      if (deleted.length !== ids.length) toast.warning("Some selected photos could not be deleted. Refresh and try again.");
+      if (cleanupFailed) toast.warning("Photos removed from products, but stored-file cleanup could not finish.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete photos. Please try again.");
+    } finally {
+      setBusy(false);
+      onDeleted();
     }
-    setSelected(new Set());
-    setBusy(false);
-    toast.success(`Deleted ${ids.length} photo(s)`);
-    if (cleanupFailed) toast.warning("Photos removed from products, but stored-file cleanup could not finish.");
-    onDeleted();
   };
   const selCount = filtered.filter((i) => selected.has(i.id)).length;
 
   return (
-    <div className="rounded-xl border-2 border-rose-300 bg-white p-4 space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="mr-auto text-lg font-semibold text-rose-700">Bulk Delete Photos ({images.length} saved)</h2>
+    <section aria-label="Bulk Delete Photos" className="border-y border-border bg-card py-4 space-y-3">
+      <h2 className="text-lg font-semibold text-destructive">Bulk Delete Photos ({images.length} saved)</h2>
+      <fieldset disabled={busy} className="flex min-w-0 flex-wrap items-center gap-2 [&_select]:max-w-full [&_select]:bg-background [&_select]:text-foreground">
         <select className="h-9 rounded-md border px-2 text-sm" value={cat} onChange={(e) => { setCat(e.target.value); setFam(""); setVariantSku(""); }} aria-label="Category">
           <option value="">All categories</option>
           {catList.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -571,27 +592,33 @@ function SavedPhotos({ images, targets, categories, onDeleted }: { images: Saved
           {variantList.map(sku => <option key={sku} value={sku}>{sku}</option>)}
         </select>
         <Input className="h-9 w-48" placeholder="Search SKU" value={q} onChange={(e) => setQ(e.target.value)} />
-        <Button type="button" variant="outline" disabled={!filtered.length} onClick={toggleAll}>
+        <select className="h-9 rounded-md border px-2 text-sm" value={status} onChange={e => setStatus(e.target.value as typeof status)} aria-label="Photo status">
+          <option value="">Active & archived</option>
+          <option value="active">Active</option>
+          <option value="archived">Archived / inactive</option>
+        </select>
+        <Button type="button" variant="outline" disabled={busy || !filtered.length} onClick={toggleAll}>
           {allSel ? "Unselect all" : `Select all${anyFilter ? " filtered" : ""} (${filtered.length})`}
         </Button>
         <Button type="button" variant="destructive" disabled={busy || !selCount} onClick={del}>
           {busy ? "Deleting…" : `Delete selected (${selCount})`}
         </Button>
-      </div>
+      </fieldset>
       {filtered.length === 0 ? (
-        <div className="p-6 text-center text-sm text-slate-500">No saved photos match.</div>
+        <div className="p-6 text-center text-sm text-muted-foreground">No saved photos match.</div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {filtered.map((img) => (
-            <label key={img.id} className={`relative cursor-pointer overflow-hidden rounded-lg border ${selected.has(img.id) ? "ring-2 ring-rose-500" : ""}`}>
-              <input type="checkbox" className="absolute left-2 top-2 h-4 w-4" checked={selected.has(img.id)} onChange={() => toggle(img.id)} aria-label={`Select ${label(img)}`} />
-              <img src={img.image_url} alt={label(img)} className="aspect-square w-full bg-white object-contain" loading="lazy" />
-              <div className="truncate p-1.5 text-[11px] text-slate-600">{label(img)}</div>
+            <label key={img.id} className={`relative cursor-pointer overflow-hidden rounded-lg border border-border ${selected.has(img.id) ? "ring-2 ring-destructive" : ""}`}>
+              <input type="checkbox" disabled={busy} className="absolute left-2 top-2 h-4 w-4" checked={selected.has(img.id)} onChange={() => toggle(img.id)} aria-label={`Select ${label(img)}`} />
+              <img src={img.image_url} alt={label(img)} className="aspect-square w-full bg-card object-contain" loading="lazy" />
+              <div className="truncate p-1.5 text-[11px] text-muted-foreground" title={label(img)}>{label(img)}</div>
+              <div className="px-1.5 pb-1.5 text-[11px] text-muted-foreground">{img.status === "active" ? "Active" : "Archived / inactive"}</div>
             </label>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
