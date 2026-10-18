@@ -3818,11 +3818,11 @@ function SegmentPriceTable({
               <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <Th className={FREEZE_1}>Variation</Th>
                 <Th className={FREEZE_2}>SKU</Th>
+                <Th>MOQ (PCs)</Th>
                 <Th>MRP</Th>
                 <Th>Discount %</Th>
                 <Th>Price</Th>
                 <Th>Stock</Th>
-                <Th>MOQ (PCs)</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
@@ -3841,6 +3841,16 @@ function SegmentPriceTable({
                       <div className="min-w-[180px] max-w-[250px] break-all font-mono text-xs font-medium text-slate-700">
                         {row.sku}
                       </div>
+                    </Td>
+                    <Td>
+                      <Input type="number" min="1" step="1" inputMode="numeric"
+                        aria-label={`${label} MOQ for ${row.sku}`}
+                        value={row[moqKey] ?? ""}
+                        className="h-9 w-24"
+                        onChange={event => {
+                          const patch = buyerMoqPatch(segment, event.target.value);
+                          if (patch) updateRow(row.id, patch);
+                        }} />
                     </Td>
                     <Td>
                       <div className="flex min-w-[105px] items-center gap-1">
@@ -3938,16 +3948,6 @@ function SegmentPriceTable({
                           onClick={() => copyDown(index, (source) => ({ [stockKey]: source[stockKey] }) as Partial<Variant>)}
                         />
                       </div>
-                    </Td>
-                    <Td>
-                      <Input type="number" min="1" step="1" inputMode="numeric"
-                        aria-label={`${label} MOQ for ${row.sku}`}
-                        value={row[moqKey] ?? ""}
-                        className="h-9 w-24"
-                        onChange={event => {
-                          const patch = buyerMoqPatch(segment, event.target.value);
-                          if (patch) updateRow(row.id, patch);
-                        }} />
                     </Td>
                     <Td>
                       <div className="flex min-w-[150px] items-center gap-2">
