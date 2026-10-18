@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
-import { adminSetPrimaryProductImage } from "@/lib/catalog-admin.functions";
+import { adminSetPrimaryProductImage, adminDeleteOpenedProductPhotos } from "@/lib/catalog-admin.functions";
 
 const MAX_PHOTOS_PER_SCOPE = 6;
 
@@ -54,6 +56,9 @@ export function ProductImageManager({
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
+  const [confirmPhotos, setConfirmPhotos] = useState<string[]>([]);
+  const [deletingPhotos, setDeletingPhotos] = useState(false);
   const [groupOptionKey, setGroupOptionKey] = useState(initialVariantSku ? "__sku" : "__family");
   const [groupValue, setGroupValue] = useState(initialVariantSku || "__all");
 
@@ -62,15 +67,22 @@ export function ProductImageManager({
     setGroupValue(initialVariantSku || "__all");
   }, [initialVariantSku]);
 
+  useEffect(() => {
+    setSelectedPhotos(new Set());
+    setConfirmPhotos([]);
+  }, [productId, productSku, initialVariantSku]);
+
   const q = useQuery({
     queryKey: ["admin-product-images", productSku, productId],
     queryFn: async () => {
       const { data: fam, error: familyError } = await supabase
         .from("product_families")
-        .select("id")
+        .select("id,category_id")
         .eq("main_sku", productSku)
         .maybeSingle();
       if (familyError) throw familyError;
+      const legacyProduct = !fam ? await supabase.from("products").select("category_id").eq("id", productId).single() : null;
+      if (legacyProduct?.error) throw legacyProduct.error;
 
       const { data: variants, error: variantsError } = fam
         ? await supabase
@@ -111,6 +123,7 @@ export function ProductImageManager({
 
       return {
         familyId: fam?.id ?? null,
+        categoryId: fam ? fam.category_id : legacyProduct?.data?.category_id ?? null,
         variants: (variants ?? []).map((variant) => ({
           sku: variant.sku,
           attributes: (variant.attributes ?? {}) as Record<string, string>,
@@ -351,6 +364,26 @@ export function ProductImageManager({
   const selectedScope = uploadTargets[0] ?? "";
   const selectedCount = (q.data?.images ?? []).filter((image) => (image.variant_sku ?? "") === selectedScope).length;
   const remainingCount = Math.max(0, MAX_PHOTOS_PER_SCOPE - selectedCount);
+  const selectedVisible = images.filter(image => selectedPhotos.has(image.id));
+
+  const deleteSelectedPhotos = async () => {
+    if (!q.data || !confirmPhotos.length) return;
+    setDeletingPhotos(true);
+    try {
+      const result = await adminDeleteOpenedProductPhotos({ data: {
+        productId, familyId: q.data.familyId, categoryId: q.data.categoryId, photoIds: confirmPhotos,
+      } });
+      setSelectedPhotos(new Set());
+      setConfirmPhotos([]);
+      toast.success(`${result.deleted} photos deleted`);
+      refresh();
+      await q.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete selected photos");
+    } finally {
+      setDeletingPhotos(false);
+    }
+  };
 
   return (
     <div
@@ -463,6 +496,35 @@ export function ProductImageManager({
         {uploadTargets.length} selected · first selected has {selectedCount}/{MAX_PHOTOS_PER_SCOPE} photos · {remainingCount} left
       </div>
 
+      {images.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 border-y border-border py-3">
+          <Button type="button" variant="outline" disabled={deletingPhotos || busy}
+            onClick={() => setSelectedPhotos(new Set(images.map(image => image.id)))}>
+            Select All
+          </Button>
+          <Button type="button" variant="destructive" disabled={!selectedVisible.length || deletingPhotos || busy}
+            onClick={() => setConfirmPhotos(selectedVisible.map(image => image.id))}>
+            <Trash2 className="mr-2 h-4 w-4" />Delete Selected Photos
+          </Button>
+          <span className="text-sm text-muted-foreground">{selectedVisible.length} selected</span>
+        </div>
+      )}
+      <AlertDialog open={confirmPhotos.length > 0} onOpenChange={open => { if (!open && !deletingPhotos) setConfirmPhotos([]); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {confirmPhotos.length} selected photos?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Only selected photos of this product will be removed. Products, variations and other categories stay unchanged. Shared stored files are retained for safety.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPhotos}>Cancel</AlertDialogCancel>
+            <Button type="button" variant="destructive" disabled={deletingPhotos} onClick={deleteSelectedPhotos}>
+              {deletingPhotos ? "Deleting…" : "Delete Photos"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {images.length === 0 ? (
         <div className="text-xs text-slate-500">
           No photos yet. Upload square images for best results.
@@ -471,6 +533,16 @@ export function ProductImageManager({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((row) => (
             <div key={row.id} className="rounded-lg border border-slate-200 p-2 space-y-2">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox checked={selectedPhotos.has(row.id)} disabled={deletingPhotos || busy}
+                  aria-label={`Select photo ${row.alt_text || row.variant_sku || row.id}`}
+                  onCheckedChange={checked => setSelectedPhotos(previous => {
+                    const next = new Set(previous);
+                    if (checked === true) next.add(row.id); else next.delete(row.id);
+                    return next;
+                  })} />
+                Select photo
+              </label>
               <img
                 src={row.image_url}
                 alt={row.alt_text ?? ""}

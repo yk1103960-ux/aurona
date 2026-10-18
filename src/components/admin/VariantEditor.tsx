@@ -56,6 +56,7 @@ import {
   type Axis,
 } from "@/lib/variant-workflow";
 import { createProductOptionToken } from "@/lib/sku-generation";
+import { BUYER_MOQ_FIELDS, buyerMoqPatch } from "@/lib/buyer-moq";
 import { persistVariationPhotos, validateVariationPhoto, type VariationPhotoDraft } from "@/lib/variant-photo-drafts";
 
 type Tab = "quick" | "options" | "customer" | "shipping";
@@ -3706,6 +3707,7 @@ function SegmentPriceTable({
   removeRow: (row: Variant) => void;
 }) {
   const { label, mrpKey, priceKey, stockKey } = SEGMENT_PRICE_FIELDS[segment];
+  const moqKey = BUYER_MOQ_FIELDS[segment];
 
   const effectiveMrp = (row: Variant) => Number((row[mrpKey] as number | null) ?? 0);
 
@@ -3820,6 +3822,7 @@ function SegmentPriceTable({
                 <Th>Discount %</Th>
                 <Th>Price</Th>
                 <Th>Stock</Th>
+                <Th>MOQ (PCs)</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
@@ -3935,6 +3938,16 @@ function SegmentPriceTable({
                           onClick={() => copyDown(index, (source) => ({ [stockKey]: source[stockKey] }) as Partial<Variant>)}
                         />
                       </div>
+                    </Td>
+                    <Td>
+                      <Input type="number" min="1" step="1" inputMode="numeric"
+                        aria-label={`${label} MOQ for ${row.sku}`}
+                        value={row[moqKey] ?? ""}
+                        className="h-9 w-24"
+                        onChange={event => {
+                          const patch = buyerMoqPatch(segment, event.target.value);
+                          if (patch) updateRow(row.id, patch);
+                        }} />
                     </Td>
                     <Td>
                       <div className="flex min-w-[150px] items-center gap-2">
