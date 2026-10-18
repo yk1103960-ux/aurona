@@ -1,4 +1,5 @@
 # Product workflow fixes
+- [ ] Restructure commissions into program → buyer → variant branches; preserve saved scope values and verify isolation.
 - [x] Repeat shared One-PC fields for all three buyer types in export without modifying saved values; tested shared values and no data mutation.
 - [x] Add per-row MOQ in each buyer price table; preserve existing segment-only save paths and test isolated field edits.
 - [x] Add confirmed photo multi-delete inside Edit Product with server-validated product/category scope; preserve existing upload and individual delete. Scope rejection tests passed.
