@@ -13,5 +13,6 @@
 - Retain stored buyer-prefixed measurements; export shared One-PC fields in the separate segment worksheet so the existing bulk-import contract stays unchanged.
 - Store additional buyer/role commission configurations inside the existing variant/program row's scoped_rules; merge one scope transactionally so older commission imports and default Customer rules remain compatible.
 - Keep related-selection replacement and scoped-commission resolution in tested browser-safe helpers to prevent stale selections and cross-scope fallbacks.
+- Key commission editor branches by product, program, buyer and customer role; restrict save payloads to the selected program/current variants to prevent draft reuse across branches.
 - Keep bulk photo status, filtered selection and shared-object cleanup in tested browser-safe helpers; photo deletion targets only product_images and unreferenced product photo objects, never catalog records.
 - Edit Product multi-photo deletion uses an authenticated server action with validated product/category ownership and scoped photo-only queries; retain shared files as individual deletion does.
