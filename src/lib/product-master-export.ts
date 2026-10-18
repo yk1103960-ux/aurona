@@ -168,8 +168,8 @@ export function segmentSinglePieceRows(data: ExportData) {
   return data.families.filter((family) => !family.archived_at).flatMap((family) =>
     family.variants.filter((variant) => variant.id && variant.is_active === true && !variant.archived_at && String(variant.sku ?? "").trim()).flatMap((variant) =>
       (["customer", "retailer", "distributor"] as const).map((segment) => {
-        const prefix = segment === "customer" ? "" : `${segment}_`;
-        return [variant.id, variant.sku, segment, ...["mrp", "weight_g", "dim_l", "dim_w", "dim_h"].map((field) => number(variant[`${prefix}${field}`]))];
+        // One-PC details are shared; buyer prices, MOQ and packaging stay independent.
+        return [variant.id, variant.sku, segment, ...["mrp", "weight_g", "dim_l", "dim_w", "dim_h"].map((field) => number(variant[field]))];
       }),
     ),
   );

@@ -36,9 +36,11 @@ test("Saved zeros are preserved and a zero selling price gives a full discount",
   assert.equal(values.distributor_discount, 0);
 });
 
-test("Each buyer exports its own saved MRP and single-piece measurements", () => {
+test("Each buyer exports the same saved common One-PC MRP and measurements without mutating buyer data", () => {
   const data = { families: [{ axes: [], variants: [{id: "A", sku: "A", is_active: true, mrp: 500, weight_g: 10, dim_l: 11, dim_w: 12, dim_h: 13, retailer_mrp: 450, retailer_weight_g: 20, retailer_dim_l: 21, retailer_dim_w: 22, retailer_dim_h: 23, distributor_mrp: 400, distributor_weight_g: 30, distributor_dim_l: 31, distributor_dim_w: 32, distributor_dim_h: 33}] }], commissions: [], programs: [] };
-  assert.deepEqual(segmentSinglePieceRows(data).map(row => row.slice(2)), [["customer",500,10,11,12,13],["retailer",450,20,21,22,23],["distributor",400,30,31,32,33]]);
+  const before = structuredClone(data);
+  assert.deepEqual(segmentSinglePieceRows(data).map(row => row.slice(2)), [["customer",500,10,11,12,13],["retailer",500,10,11,12,13],["distributor",500,10,11,12,13]]);
+  assert.deepEqual(data, before);
 });
 
 test("Inactive and archived variants and archived products never export", () => {
