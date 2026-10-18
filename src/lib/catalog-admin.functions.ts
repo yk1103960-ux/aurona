@@ -3,8 +3,67 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdminPermission, writeAudit } from "@/lib/admin.server";
 import { buildCombinations, combinationKey } from "@/lib/variant-options";
+import { assertProductPhotoCategory, assertProductPhotoSelection } from "@/lib/product-photo-scope";
 
 const nullableNumber = z.number().finite().nullable();
+
+export const adminDeleteOpenedProductPhotos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    productId: z.string().uuid(),
+    familyId: z.string().uuid().nullable(),
+    categoryId: z.string().uuid().nullable(),
+    photoIds: z.array(z.string().uuid()).min(1).max(2000),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const actor = await assertAdminPermission(context, "catalog.manage");
+    const db = context.supabase;
+    if (data.familyId) {
+      const family = await db.from("product_families")
+        .select("id,legacy_product_id,category_id").eq("id", data.familyId).single();
+      if (family.error || !family.data ||
+        (family.data.id !== data.productId && family.data.legacy_product_id !== data.productId))
+        throw new Error("The opened product could not be verified. Reload before deleting photos.");
+      assertProductPhotoCategory(family.data.category_id, data.categoryId);
+    } else {
+      const product = await db.from("products").select("id,category_id")
+        .eq("id", data.productId).single();
+      if (product.error || !product.data) throw new Error("The opened product could not be verified.");
+      assertProductPhotoCategory(product.data.category_id, data.categoryId);
+    }
+    const ids = [...new Set(data.photoIds)];
+    const scopedPhotos = () => {
+      const query = db.from("product_images");
+      return query;
+    };
+    let read = scopedPhotos().select("id,family_id,product_id,variant_sku,is_primary").in("id", ids);
+    read = data.familyId ? read.eq("family_id", data.familyId)
+      : read.is("family_id", null).eq("product_id", data.productId);
+    const photos = await read;
+    if (photos.error) throw new Error(photos.error.message);
+    assertProductPhotoSelection(ids, photos.data ?? [], data);
+    let deletion = db.from("product_images").delete().in("id", ids);
+    deletion = data.familyId ? deletion.eq("family_id", data.familyId)
+      : deletion.is("family_id", null).eq("product_id", data.productId);
+    const removed = await deletion.select("id");
+    if (removed.error) throw new Error(removed.error.message);
+    // Keep shared storage objects, matching the existing individual delete.
+    const scopes = [...new Set((photos.data ?? []).filter(photo => photo.is_primary).map(photo => photo.variant_sku))];
+    for (const sku of scopes) {
+      let remaining = db.from("product_images").select("id,is_primary").order("sort_order");
+      remaining = data.familyId ? remaining.eq("family_id", data.familyId)
+        : remaining.is("family_id", null).eq("product_id", data.productId);
+      remaining = sku === null ? remaining.is("variant_sku", null) : remaining.eq("variant_sku", sku);
+      const rest = await remaining;
+      if (!rest.error && rest.data?.length && !rest.data.some(photo => photo.is_primary)) {
+        await db.rpc("admin_set_primary_product_image", { _image_id: rest.data[0].id });
+      }
+    }
+    await writeAudit({ actorUserId: actor.userId, actorEmail: actor.email,
+      action: "catalog.product_photos_delete", entityType: "product_family",
+      entityId: data.familyId ?? data.productId, after: { categoryId: data.categoryId, photoIds: removed.data?.map(photo => photo.id) } });
+    return { deleted: removed.data?.length ?? 0 };
+  });
 
 const ProductFamilyInput = z.object({
   productId: z.string().uuid().optional(),
