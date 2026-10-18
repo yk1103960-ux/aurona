@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtime } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
@@ -26,7 +27,7 @@ import {
 } from "lucide-react";
 import { VariantEditor } from "@/components/admin/VariantEditor";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
-import { replaceRelatedSelection, scopedCommissionRule } from "@/lib/product-workflow-selection";
+import { replaceRelatedSelection, scopedCommissionRule, commissionBranchRows } from "@/lib/product-workflow-selection";
 import {
   adminGetProductForEdit,
   adminLoadVariantMatrix,
@@ -1145,18 +1146,76 @@ type CommissionRule = {
   is_active: boolean;
 };
 
+type CommissionBuyer = "customer" | "retailer" | "distributor";
+
 function VariantProgramCommissions({ productId, productSku }: { productId: string; productSku: string }) {
+  const [buyerType, setBuyerType] = useState<CommissionBuyer>("customer");
+  const [customerRole, setCustomerRole] = useState("customer");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
+  const programsQuery = useQuery({
+    queryKey: ["commission-programs"],
+    queryFn: async (): Promise<CommissionProgram[]> => {
+      const { data, error } = await supabase.from("referral_programs")
+        .select("id,name,is_active").order("sort_order").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const programs = programsQuery.data ?? [];
+  const program = programs.find(item => item.id === selectedProgramId)
+    ?? programs.find(item => /affiliate marketing/i.test(item.name)) ?? programs[0];
+  const buyerLabel = buyerType.charAt(0).toUpperCase() + buyerType.slice(1);
+
+  return (
+    <Section title="Commission">
+      <div className="space-y-4">
+        <label className="flex max-w-md flex-col gap-2 text-sm font-medium text-foreground">
+          Affiliate Marketing Program
+          <select aria-label="Affiliate Marketing Program" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            value={program?.id ?? ""} onChange={event => setSelectedProgramId(event.target.value)} disabled={!programs.length}>
+            {programs.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+        <Tabs value={buyerType} onValueChange={value => setBuyerType(value as CommissionBuyer)}>
+          <TabsList aria-label="Commission buyer segment" className="grid h-auto w-full max-w-lg grid-cols-3">
+            <TabsTrigger value="customer">Customer</TabsTrigger>
+            <TabsTrigger value="retailer">Retailer</TabsTrigger>
+            <TabsTrigger value="distributor">Distributor</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {buyerType === "customer" && (
+          <label className="flex max-w-xs flex-col gap-2 text-sm font-medium text-foreground">
+            Customer Role
+            <select aria-label="Customer role" className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={customerRole} onChange={event => setCustomerRole(event.target.value)}>
+              {["customer", "retailer", "distributor", "staff", "admin"].map(role =>
+                <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>)}
+            </select>
+          </label>
+        )}
+        {programsQuery.isError ? <div role="alert" className="text-sm text-destructive">Could not load affiliate programs.</div>
+          : programsQuery.isLoading ? <div className="text-sm text-muted-foreground">Loading programs…</div>
+          : !program ? <div className="text-sm text-muted-foreground">No affiliate programs.</div>
+          : <CommissionBranchEditor key={`${productId}:${program.id}:${buyerType}:${customerRole}`}
+              productId={productId} productSku={productSku} program={program} buyerType={buyerType}
+              customerRole={customerRole} buyerLabel={buyerLabel} />}
+      </div>
+    </Section>
+  );
+}
+
+function CommissionBranchEditor({ productId, productSku, program, buyerType, customerRole, buyerLabel }: {
+  productId: string; productSku: string; program: CommissionProgram;
+  buyerType: CommissionBuyer; customerRole: string; buyerLabel: string;
+}) {
   const qc = useQueryClient();
   const [rules, setRules] = useState<Record<string, CommissionRule>>({});
   const [savingCommissions, setSavingCommissions] = useState(false);
   const initialized = useRef(false);
-  const [buyerType, setBuyerType] = useState<"customer" | "retailer" | "distributor">("customer");
-  const [customerRole, setCustomerRole] = useState("customer");
   const scopeKey = `${buyerType}:${buyerType === "customer" ? customerRole : buyerType}`;
-  useEffect(() => { initialized.current = false; setRules({}); }, [scopeKey]);
 
   const q = useQuery({
-    queryKey: ["variant-program-commissions", productId, productSku, scopeKey],
+    queryKey: ["variant-program-commissions", productId, productSku, scopeKey, program.id],
     enabled: Boolean(productId && productSku),
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -1260,21 +1319,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           };
         });
 
-      const programsResult = await (supabase as any)
-        .from("referral_programs")
-        .select("id,name,is_active,is_published,sort_order")
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true });
-
-      if (programsResult.error) {
-        throw new Error(`Partner programs: ${programsResult.error.message}`);
-      }
-
-      const programs: CommissionProgram[] = (programsResult.data ?? []).map((program: any) => ({
-        id: String(program.id),
-        name: String(program.name ?? "Partner Program"),
-        is_active: program.is_active ?? true,
-      }));
+      const programs: CommissionProgram[] = [program];
 
       let existing: any[] = [];
       const variantIds = variants.map((variant) => variant.id);
@@ -1364,7 +1409,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
   };
 
   const saveAll = async () => {
-    const rows = Object.values(rules);
+    const rows = commissionBranchRows(Object.values(rules), program.id, q.data?.variants.map(variant => variant.id) ?? []);
 
     if (!rows.length) {
       toast.error("No commission rows to save");
@@ -1404,7 +1449,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
 
       if (error) throw error;
 
-      toast.success("Variation commissions saved");
+      toast.success(`${buyerLabel} commissions saved for ${program.name}`);
       initialized.current = false;
 
       await qc.invalidateQueries({
@@ -1458,35 +1503,19 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
   const programs = q.data?.programs ?? [];
 
   return (
-    <Section title="Commission">
-      <div className="flex flex-wrap gap-3 mb-4">
-        <select aria-label="Commission buyer segment" value={buyerType} onChange={event => setBuyerType(event.target.value as typeof buyerType)}>
-          <option value="customer">Customer</option><option value="retailer">Retailer</option><option value="distributor">Distributor</option>
-        </select>
-        {buyerType === "customer" && <select aria-label="Customer role" value={customerRole} onChange={event => setCustomerRole(event.target.value)}>
-          {["customer", "retailer", "distributor", "staff", "admin"].map(role => <option key={role} value={role}>{role}</option>)}
-        </select>}
-      </div>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="font-semibold text-slate-900">Variation × Partner Program Commission</div>
-            <p className="mt-1 max-w-3xl text-sm text-slate-500">
-              Every generated SKU can have a different commission for every partner program. Choose Percentage (%) or
-              Fixed (₹), set the value, optional cap and active status.
-            </p>
-          </div>
-
+    <div className="space-y-4" aria-label={`${buyerLabel} commission branch`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+          <h3 className="text-base font-semibold text-foreground">{program.name} → {buyerLabel} → Variants</h3>
           <Button type="button" onClick={saveAll} disabled={savingCommissions || !variants.length || !programs.length}>
             <Save className="mr-2 h-4 w-4" />
-            {savingCommissions ? "Saving…" : "Save Commissions"}
+            {savingCommissions ? "Saving…" : `Save ${buyerLabel} Commissions`}
           </Button>
         </div>
 
         {!variants.length ? (
           <Notice
             title="No generated variations"
-            text="Open Price & Stock for Customers and click Add Variation before setting commissions."
+            text={`No current ${buyerLabel.toLowerCase()} variations.`}
           />
         ) : !programs.length ? (
           <Notice
@@ -1578,6 +1607,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                         <td className="p-3">
                           <select
                             className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                            aria-label={`${variant.sku} commission type`}
                             value={rule.commission_kind}
                             onChange={(event) =>
                               updateRule(variant.id, program.id, {
@@ -1597,6 +1627,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                               min="0"
                               max={rule.commission_kind === "percentage" ? 100 : undefined}
                               step="0.01"
+                              aria-label={`${variant.sku} commission value`}
                               value={rule.commission_value}
                               onChange={(event) =>
                                 updateRule(variant.id, program.id, {
@@ -1616,6 +1647,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                             min="0"
                             step="0.01"
                             placeholder="No cap"
+                            aria-label={`${variant.sku} max commission`}
                             value={rule.max_commission ?? ""}
                             onChange={(event) =>
                               updateRule(variant.id, program.id, {
@@ -1629,6 +1661,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                           <input
                             type="checkbox"
                             className="mt-3 h-4 w-4"
+                            aria-label={`${variant.sku} commission active`}
                             checked={rule.is_active}
                             onChange={(event) =>
                               updateRule(variant.id, program.id, {
@@ -1641,7 +1674,9 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                         <td className="p-3 text-center">
                           <div className="flex flex-col gap-1">
                             {(["down", "all"] as const).map((mode) => (
-                              <button
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 key={mode}
                                 type="button"
                                 className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
@@ -1660,7 +1695,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
                                 }}
                               >
                                 {mode === "down" ? "Apply down ↓" : "Copy to all"}
-                              </button>
+                              </Button>
                             ))}
                           </div>
                         </td>
@@ -1673,8 +1708,7 @@ function VariantProgramCommissions({ productId, productSku }: { productId: strin
           </div>
           </>
         )}
-      </div>
-    </Section>
+    </div>
   );
 }
 
@@ -1726,9 +1760,9 @@ function GroupCommissionPanel({
     return [...configured, ...discovered];
   }, [productAxes, variants]);
 
-  const [programId, setProgramId] = useState(COMMISSION_ALL_VARIANTS_VALUE);
+  const programId = programs[0]?.id ?? "";
   const [axis, setAxis] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, { kind: CommissionKind; value: string; cap: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { kind: CommissionKind; value: string; cap: string; active: boolean }>>({});
 
   useEffect(() => {
     if (!axis) setAxis(COMMISSION_ALL_VARIANTS_VALUE);
@@ -1749,9 +1783,9 @@ function GroupCommissionPanel({
     return Array.from(map.entries()).map(([value, variantIds]) => ({ value, variantIds }));
   }, [axis, variants]);
 
-  const draftFor = (key: string) => drafts[key] ?? { kind: "percentage" as CommissionKind, value: "", cap: "" };
+  const draftFor = (key: string) => drafts[key] ?? { kind: "percentage" as CommissionKind, value: "", cap: "", active: true };
 
-  const setDraft = (key: string, patch: Partial<{ kind: CommissionKind; value: string; cap: string }>) =>
+  const setDraft = (key: string, patch: Partial<{ kind: CommissionKind; value: string; cap: string; active: boolean }>) =>
     setDrafts((prev) => ({ ...prev, [key]: { ...draftFor(key), ...patch } }));
 
   const applyGroup = (key: string, variantIds: string[]) => {
@@ -1774,7 +1808,7 @@ function GroupCommissionPanel({
       commission_kind: draft.kind,
       commission_value: amount,
       max_commission: capValue,
-      is_active: true,
+      is_active: draft.active,
     });
   };
 
@@ -1789,29 +1823,9 @@ function GroupCommissionPanel({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-base font-semibold text-slate-900">Set commission by {axisLabel || "option"}</div>
-          <p className="mt-1 max-w-3xl text-xs text-slate-500">
-            Apply one commission to every SKU sharing the same {axisLabel || "option"} value. If this product has no
-            Wattage, choose Size, Model, Colour, Pack Size or any other product option instead.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-xs text-slate-500">
-            Partner program
-            <select
-              className="h-10 min-w-[180px] rounded-md border border-slate-200 bg-white px-3 text-sm"
-              value={programId}
-              onChange={(event) => setProgramId(event.target.value)}
-            >
-              <option value={COMMISSION_ALL_VARIANTS_VALUE}>All programs</option>
-              {programs.map((program) => (
-                <option key={program.id} value={program.id}>
-                  {program.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
           <label className="flex flex-col gap-1 text-xs text-slate-500">
             Group commission by
             <select
@@ -1838,6 +1852,7 @@ function GroupCommissionPanel({
               <th className="p-3 font-semibold">Type</th>
               <th className="p-3 font-semibold">Value</th>
               <th className="p-3 font-semibold">Max commission</th>
+              <th className="p-3 font-semibold">Active</th>
               <th className="p-3 text-right font-semibold">Apply</th>
             </tr>
           </thead>
@@ -1882,6 +1897,10 @@ function GroupCommissionPanel({
                       value={draft.cap}
                       onChange={(event) => setDraft(key, { cap: event.target.value })}
                     />
+                  </td>
+                  <td className="p-3">
+                    <input type="checkbox" aria-label={`${group.value} commission active`} checked={draft.active}
+                      onChange={event => setDraft(key, { active: event.target.checked })} />
                   </td>
                   <td className="p-3 text-right">
                     <Button type="button" onClick={() => applyGroup(key, group.variantIds)}>
