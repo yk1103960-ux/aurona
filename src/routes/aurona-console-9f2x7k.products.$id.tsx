@@ -1357,7 +1357,7 @@ function CommissionBranchEditor({ productId, productSku, program, buyerType, cus
   });
 
   useEffect(() => {
-    if (!q.data || initialized.current) return;
+    if (!q.data || q.isFetching || initialized.current) return;
 
     const next: Record<string, CommissionRule> = {};
 
@@ -1387,7 +1387,7 @@ function CommissionBranchEditor({ productId, productSku, program, buyerType, cus
 
     setRules(next);
     initialized.current = true;
-  }, [q.data, scopeKey]);
+  }, [q.data, q.isFetching, scopeKey]);
 
   const updateRule = (variantId: string, programId: string, patch: Partial<CommissionRule>) => {
     const key = `${variantId}:${programId}`;
