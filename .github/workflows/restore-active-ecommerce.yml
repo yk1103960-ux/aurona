@@ -1,4 +1,4 @@
-name: Restore original Active eCommerce admin
+name: Locate original Active eCommerce source
 
 on:
   push:
@@ -12,116 +12,48 @@ permissions:
   contents: write
 
 jobs:
-  restore:
+  locate:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
-      - name: Checkout codex admin branch
+      - name: Checkout branch
         uses: actions/checkout@v4
         with:
           ref: codex/phase-2a-admin
           fetch-depth: 0
 
-      - name: Download original Aurona hosting backup
+      - name: Download newer Hostinger backup
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --quiet --disable-pip-version-check gdown
-          mkdir -p /tmp/aurona-original
-          cd /tmp/aurona-original
-          gdown '1UxfP4zg1ob6yvZz_sGC5sJvRkezVQyqX' -O aurona-hosting.tar.gz
-          test -s aurona-hosting.tar.gz
-          ls -lh aurona-hosting.tar.gz
+          mkdir -p /tmp/aurona-newer
+          cd /tmp/aurona-newer
+          gdown '1grQ5qPj0BGUa2Em8P3mqOKqe2sredXPV' -O aurona-2026.tar.gz
+          test -s aurona-2026.tar.gz
+          ls -lh aurona-2026.tar.gz
 
-      - name: Locate and extract Laravel Active eCommerce application
+      - name: Scan archive for Laravel roots
         shell: bash
         run: |
           set -euo pipefail
-          ARCHIVE=/tmp/aurona-original/aurona-hosting.tar.gz
-          ROOT_ENTRY="$(tar -tzf "$ARCHIVE" | awk '/\/artisan$/ {sub(/\/artisan$/,""); print; exit}')"
-          if [ -z "$ROOT_ENTRY" ]; then
-            echo 'No Laravel artisan file found in hosting backup.' >&2
-            tar -tzf "$ARCHIVE" | head -300
+          ARCHIVE=/tmp/aurona-newer/aurona-2026.tar.gz
+          mkdir -p active-ecommerce
+          set +o pipefail
+          tar -tzf "$ARCHIVE" | grep -E '(^|/)(artisan|composer\.json|routes/admin\.php|routes/wholesale\.php)$' | head -500 > active-ecommerce/NEWER_BACKUP_LARAVEL_PATHS.txt
+          set -o pipefail
+          cat active-ecommerce/NEWER_BACKUP_LARAVEL_PATHS.txt
+          if ! grep -E '(^|/)artisan$' active-ecommerce/NEWER_BACKUP_LARAVEL_PATHS.txt >/dev/null; then
+            echo 'No Laravel artisan file found in newer backup.' >&2
             exit 1
           fi
-          echo "Laravel root in archive: $ROOT_ENTRY"
-          mkdir -p /tmp/aurona-extracted
-          tar -xzf "$ARCHIVE" -C /tmp/aurona-extracted "$ROOT_ENTRY"
-          SRC="/tmp/aurona-extracted/$ROOT_ENTRY"
-          test -f "$SRC/artisan"
-          test -f "$SRC/composer.json"
-          rm -rf active-ecommerce/original
-          mkdir -p active-ecommerce/original
-          rsync -a "$SRC/" active-ecommerce/original/
 
-      - name: Remove secrets dependencies runtime files and user media
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT=active-ecommerce/original
-          find "$ROOT" -type f \( -name '.env' -o -name '.env.*' -o -name '*.sql' -o -name '*.sqlite' -o -name '*.log' \) -delete || true
-          rm -rf "$ROOT/.git" "$ROOT/vendor" "$ROOT/node_modules" "$ROOT/storage/logs" "$ROOT/storage/framework/cache" "$ROOT/storage/framework/sessions" "$ROOT/storage/framework/views" "$ROOT/bootstrap/cache" "$ROOT/public/uploads" "$ROOT/storage/app/public" || true
-          while IFS= read -r -d '' f; do
-            echo "Removing >95MB non-source artifact: $f"
-            rm -f "$f"
-          done < <(find "$ROOT" -type f -size +95M -print0)
-
-      - name: Validate recovered Active eCommerce admin
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT=active-ecommerce/original
-          test -f "$ROOT/artisan"
-          test -f "$ROOT/composer.json"
-          test -d "$ROOT/app"
-          test -d "$ROOT/routes"
-          test -d "$ROOT/resources"
-          test -d "$ROOT/config"
-          test -d "$ROOT/database"
-          ADMIN_ROUTE="$(find "$ROOT/routes" -maxdepth 2 -type f -iname 'admin.php' -print -quit)"
-          WHOLESALE_ROUTE="$(find "$ROOT/routes" -maxdepth 2 -type f -iname 'wholesale.php' -print -quit)"
-          test -n "$ADMIN_ROUTE"
-          test -n "$WHOLESALE_ROUTE"
-          echo "Admin route: $ADMIN_ROUTE"
-          echo "Wholesale route: $WHOLESALE_ROUTE"
-          echo "PHP files: $(find "$ROOT" -type f -name '*.php' | wc -l)"
-          echo "Blade files: $(find "$ROOT" -type f -name '*.blade.php' | wc -l)"
-          echo "Controllers: $(find "$ROOT/app" -type f -iname '*Controller.php' | wc -l)"
-          find "$ROOT/app" -type f \( -iname '*Retailer*' -o -iname '*Distributor*' -o -iname '*Wholesale*' -o -iname '*Affiliate*' -o -iname '*Product*' -o -iname '*Order*' \) -print | sort | head -300
-          find "$ROOT/app" "$ROOT/routes" -type f -name '*.php' -print0 | xargs -0 -n1 -P4 php -l >/tmp/php-lint.log
-          tail -20 /tmp/php-lint.log
-
-      - name: Write restoration manifest
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT=active-ecommerce/original
-          {
-            echo '# Aurona original Active eCommerce restoration'
-            echo
-            echo 'Recovered from the original hosting backup supplied by the user.'
-            echo
-            echo '- Branch: `codex/phase-2a-admin`'
-            echo '- Source path: `active-ecommerce/original`'
-            echo "- PHP files: $(find "$ROOT" -type f -name '*.php' | wc -l)"
-            echo "- Blade templates: $(find "$ROOT" -type f -name '*.blade.php' | wc -l)"
-            echo "- Controllers: $(find "$ROOT/app" -type f -iname '*Controller.php' | wc -l)"
-            echo "- Admin route: $(find "$ROOT/routes" -maxdepth 2 -type f -iname 'admin.php' | head -1)"
-            echo "- Wholesale route: $(find "$ROOT/routes" -maxdepth 2 -type f -iname 'wholesale.php' | head -1)"
-            echo
-            echo 'Production secrets, SQL dumps, logs, dependencies and runtime/user uploads are intentionally excluded.'
-          } > active-ecommerce/RESTORATION.md
-
-      - name: Commit restored Laravel source to codex branch
+      - name: Commit scan manifest
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add active-ecommerce/original active-ecommerce/RESTORATION.md
-          if git diff --cached --quiet; then
-            echo 'No recovered source changes to commit.'
-            exit 0
-          fi
-          git commit -m 'restore original Aurona Active eCommerce Laravel admin source'
+          git add active-ecommerce/NEWER_BACKUP_LARAVEL_PATHS.txt
+          git commit -m 'scan newer backup for original Laravel Active eCommerce source'
           git push origin HEAD:codex/phase-2a-admin
