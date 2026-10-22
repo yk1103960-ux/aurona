@@ -1,1 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"; import { LegacyModulePage } from "@/components/admin/ecommain/LegacyModulePage"; export const Route=createFileRoute('/aurona-console-9f2x7k/wholesale')({component:()=> <LegacyModulePage title="Wholesale Products" description="Retailer and distributor product pricing, stock and pack configuration." columns={["#","Product","Variant","SKU","MRP","Price","Pack Size","Stock","Options"]}/>});
+import { createFileRoute } from "@tanstack/react-router";
+import { WholesaleStockMatrix } from "@/components/admin/ecommain/WholesaleStockMatrix";
+
+export const Route = createFileRoute('/aurona-console-9f2x7k/wholesale')({
+  component: WholesaleStockMatrix,
+});
