@@ -1,0 +1,137 @@
+name: Import recovered Active eCommerce backup
+
+on:
+  push:
+    branches:
+      - active-ecommerce-laravel-restore
+    paths:
+      - .github/workflows/import-active-ecommerce-backup.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout restoration branch
+        uses: actions/checkout@v4
+        with:
+          ref: active-ecommerce-laravel-restore
+          fetch-depth: 0
+
+      - name: Download shared Aurona backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet --disable-pip-version-check gdown
+          mkdir -p /tmp/aurona-backup
+          cd /tmp/aurona-backup
+          gdown --folder --remaining-ok 'https://drive.google.com/drive/folders/1N6gyOzZDL96lvJ-PLp1CunYPDmMiDOae?usp=sharing' || true
+          ZIP_PATH="$(find /tmp/aurona-backup -type f -name 'ecommain2.zip' -print -quit)"
+          if [ -z "${ZIP_PATH}" ]; then
+            echo 'ecommain2.zip was not found in the shared backup folder.' >&2
+            find /tmp/aurona-backup -maxdepth 4 -type f -printf '%p\n' | head -200 || true
+            exit 1
+          fi
+          echo "ZIP_PATH=${ZIP_PATH}" >> "$GITHUB_ENV"
+          ls -lh "${ZIP_PATH}"
+
+      - name: Extract original Laravel application
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/ecommain-unpacked
+          mkdir -p /tmp/ecommain-unpacked
+          unzip -q "$ZIP_PATH" -d /tmp/ecommain-unpacked
+
+          ROOT="$(find /tmp/ecommain-unpacked -type f -name artisan -printf '%h\n' | head -1)"
+          if [ -z "${ROOT}" ]; then
+            echo 'Could not locate Laravel artisan after extraction.' >&2
+            find /tmp/ecommain-unpacked -maxdepth 4 -type f | head -200
+            exit 1
+          fi
+          echo "Recovered Laravel root: ${ROOT}"
+
+          rm -rf active-ecommerce/recovered
+          mkdir -p active-ecommerce/recovered
+          cp -a "${ROOT}/." active-ecommerce/recovered/
+
+      - name: Remove secrets, runtime data, dependencies and oversized artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='active-ecommerce/recovered'
+
+          find "$ROOT" -type f \( -name '.env' -o -name '.env.*' -o -name '*.sql' -o -name '*.sqlite' -o -name '*.log' \) -delete || true
+          rm -rf \
+            "$ROOT/.git" \
+            "$ROOT/vendor" \
+            "$ROOT/node_modules" \
+            "$ROOT/storage/logs" \
+            "$ROOT/storage/framework/cache" \
+            "$ROOT/storage/framework/sessions" \
+            "$ROOT/storage/framework/views" \
+            "$ROOT/bootstrap/cache" || true
+
+          # Keep source/config/templates/addons; remove user-uploaded media when clearly runtime data.
+          rm -rf "$ROOT/public/uploads" "$ROOT/storage/app/public" || true
+
+          # GitHub rejects individual blobs above 100 MiB. Source files should never need to be this large.
+          while IFS= read -r -d '' f; do
+            echo "Removing oversized non-source artifact: $f"
+            rm -f "$f"
+          done < <(find "$ROOT" -type f -size +95M -print0)
+
+      - name: Verify recovered Active eCommerce structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='active-ecommerce/recovered'
+          test -f "$ROOT/artisan"
+          test -f "$ROOT/composer.json"
+          test -d "$ROOT/app"
+          test -d "$ROOT/routes"
+          test -d "$ROOT/resources"
+          test -d "$ROOT/config"
+          test -d "$ROOT/database"
+
+          echo 'Recovered route files:'
+          find "$ROOT/routes" -maxdepth 2 -type f -print | sort | head -100
+          echo 'Recovered admin-related controllers/services:'
+          find "$ROOT/app" -type f \( -iname '*Admin*' -o -iname '*Product*' -o -iname '*Retailer*' -o -iname '*Distributor*' -o -iname '*Wholesale*' -o -iname '*Affiliate*' \) -print | sort | head -250
+
+      - name: Add restoration manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='active-ecommerce/recovered'
+          {
+            echo '# Recovered Active eCommerce source manifest'
+            echo
+            echo 'Imported automatically from the original Aurona backup `ecommain2.zip`.'
+            echo
+            echo "- Import time (UTC): $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "- PHP files: $(find "$ROOT" -type f -name '*.php' | wc -l)"
+            echo "- Blade templates: $(find "$ROOT" -type f -name '*.blade.php' | wc -l)"
+            echo "- Route files: $(find "$ROOT/routes" -type f | wc -l)"
+            echo "- Application files: $(find "$ROOT/app" -type f | wc -l)"
+            echo
+            echo 'Production `.env`, SQL dumps, logs, dependency directories and runtime uploads are intentionally excluded.'
+          } > active-ecommerce/RECOVERED_SOURCE.md
+
+      - name: Commit recovered Laravel source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add active-ecommerce/recovered active-ecommerce/RECOVERED_SOURCE.md
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git commit -m 'restore original Active eCommerce Laravel source from backup'
+          git push origin HEAD:active-ecommerce-laravel-restore
