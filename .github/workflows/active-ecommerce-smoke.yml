@@ -1,0 +1,60 @@
+name: Active eCommerce Laravel smoke checks
+
+on:
+  push:
+    branches:
+      - active-ecommerce-laravel-restore
+    paths:
+      - 'active-ecommerce/**'
+      - '.github/workflows/active-ecommerce-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  laravel-source-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: active-ecommerce
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify recovered Laravel structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(artisan composer.json composer.lock app routes resources config database bootstrap)
+          for item in "${required[@]}"; do
+            test -e "$item" || { echo "Missing $item"; exit 1; }
+          done
+          test -f routes/admin.php || { echo "Missing routes/admin.php"; exit 1; }
+          test -f routes/wholesale.php || { echo "Missing routes/wholesale.php"; exit 1; }
+
+      - name: Verify secrets are not committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f .env || { echo ".env must not be committed"; exit 1; }
+          if find . -type f \( -name '*.sql' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
+            echo "Sensitive/database artifact found in Git history"
+            exit 1
+          fi
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer files
+        run: composer validate --no-check-publish --no-interaction
+
+      - name: Install dependencies without scripts
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+
+      - name: PHP syntax check for restored custom areas
+        shell: bash
+        run: |
+          set -euo pipefail
+          find app routes -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/tmp/php-lint.txt
+          tail -n 20 /tmp/php-lint.txt
