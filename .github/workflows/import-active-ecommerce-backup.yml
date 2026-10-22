@@ -27,13 +27,14 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --quiet --disable-pip-version-check gdown
+          rm -rf /tmp/aurona-backup
           mkdir -p /tmp/aurona-backup
           cd /tmp/aurona-backup
-          gdown --folder --remaining-ok 'https://drive.google.com/drive/folders/1N6gyOzZDL96lvJ-PLp1CunYPDmMiDOae?usp=sharing' || true
+          gdown --folder 'https://drive.google.com/drive/folders/1N6gyOzZDL96lvJ-PLp1CunYPDmMiDOae?usp=sharing'
           ZIP_PATH="$(find /tmp/aurona-backup -type f -name 'ecommain2.zip' -print -quit)"
           if [ -z "${ZIP_PATH}" ]; then
             echo 'ecommain2.zip was not found in the shared backup folder.' >&2
-            find /tmp/aurona-backup -maxdepth 4 -type f -printf '%p\n' | head -200 || true
+            find /tmp/aurona-backup -maxdepth 5 -type f -printf '%p\n' | head -300 || true
             exit 1
           fi
           echo "ZIP_PATH=${ZIP_PATH}" >> "$GITHUB_ENV"
@@ -50,7 +51,7 @@ jobs:
           ROOT="$(find /tmp/ecommain-unpacked -type f -name artisan -printf '%h\n' | head -1)"
           if [ -z "${ROOT}" ]; then
             echo 'Could not locate Laravel artisan after extraction.' >&2
-            find /tmp/ecommain-unpacked -maxdepth 4 -type f | head -200
+            find /tmp/ecommain-unpacked -maxdepth 5 -type f | head -300
             exit 1
           fi
           echo "Recovered Laravel root: ${ROOT}"
@@ -76,10 +77,8 @@ jobs:
             "$ROOT/storage/framework/views" \
             "$ROOT/bootstrap/cache" || true
 
-          # Keep source/config/templates/addons; remove user-uploaded media when clearly runtime data.
           rm -rf "$ROOT/public/uploads" "$ROOT/storage/app/public" || true
 
-          # GitHub rejects individual blobs above 100 MiB. Source files should never need to be this large.
           while IFS= read -r -d '' f; do
             echo "Removing oversized non-source artifact: $f"
             rm -f "$f"
