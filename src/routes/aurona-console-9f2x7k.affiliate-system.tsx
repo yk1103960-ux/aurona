@@ -1,0 +1,5 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { LegacyModulePage } from "@/components/admin/ecommain/LegacyModulePage";
+const ROOT='/aurona-console-9f2x7k';
+export const Route=createFileRoute('/aurona-console-9f2x7k/affiliate-system')({component:AffiliateSystem});
+function AffiliateSystem(){return <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{['Affiliate Users','Withdraw Requests','Affiliate Payments','Commission Settings'].map(x=><div key={x} className="rounded border bg-white p-4 shadow-sm"><div className="font-semibold text-slate-800">{x}</div><div className="mt-1 text-xs text-slate-500">Recovered affiliate module</div></div>)}</div><LegacyModulePage title="Affiliate System" description="Affiliate users, verification, commissions, withdrawals and payment history." columns={["#","Affiliate","Type","Balance","Status","Joined","Options"]} actions={[]}/><Link to={`${ROOT}/affiliates`} className="text-sm font-medium text-[#25b990]">Open connected affiliate management →</Link></div>}
