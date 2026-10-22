@@ -1,1 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router"; import { LegacyModulePage } from "@/components/admin/ecommain/LegacyModulePage"; export const Route=createFileRoute('/aurona-console-9f2x7k/blog-system')({component:()=> <LegacyModulePage title="Blog System" description="Blog posts, categories and publishing controls." columns={["#","Title","Category","Status","Published","Options"]} actions={["Add New Blog"]}/>});
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+
+export const Route = createFileRoute('/aurona-console-9f2x7k/blog-system')({
+  component: BlogSystem,
+});
+
+function BlogSystem() {
+  return <Navigate to="/aurona-console-9f2x7k/editorial" replace />;
+}
