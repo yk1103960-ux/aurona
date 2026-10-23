@@ -40,31 +40,47 @@ import { Route as ProductsRouteImport } from './routes/products'
 import { Route as RetailerRouteImport } from './routes/retailer'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as AuronaConsole9f2x7kIndexRouteImport } from './routes/aurona-console-9f2x7k.index'
+import { Route as AuronaConsole9f2x7kAddonManagerRouteImport } from './routes/aurona-console-9f2x7k.addon-manager'
+import { Route as AuronaConsole9f2x7kAffiliateSystemRouteImport } from './routes/aurona-console-9f2x7k.affiliate-system'
 import { Route as AuronaConsole9f2x7kAffiliatesRouteImport } from './routes/aurona-console-9f2x7k.affiliates'
 import { Route as AuronaConsole9f2x7kApplicationsRouteImport } from './routes/aurona-console-9f2x7k.applications'
 import { Route as AuronaConsole9f2x7kAuditRouteImport } from './routes/aurona-console-9f2x7k.audit'
+import { Route as AuronaConsole9f2x7kBlogSystemRouteImport } from './routes/aurona-console-9f2x7k.blog-system'
 import { Route as AuronaConsole9f2x7kCampaignsRouteImport } from './routes/aurona-console-9f2x7k.campaigns'
 import { Route as AuronaConsole9f2x7kCareersRouteImport } from './routes/aurona-console-9f2x7k.careers'
 import { Route as AuronaConsole9f2x7kCartsRouteImport } from './routes/aurona-console-9f2x7k.carts'
 import { Route as AuronaConsole9f2x7kCategoriesRouteImport } from './routes/aurona-console-9f2x7k.categories'
+import { Route as AuronaConsole9f2x7kConfigurationsRouteImport } from './routes/aurona-console-9f2x7k.configurations'
 import { Route as AuronaConsole9f2x7kContentRouteImport } from './routes/aurona-console-9f2x7k.content'
 import { Route as AuronaConsole9f2x7kCouponsRouteImport } from './routes/aurona-console-9f2x7k.coupons'
 import { Route as AuronaConsole9f2x7kCustomersRouteImport } from './routes/aurona-console-9f2x7k.customers'
+import { Route as AuronaConsole9f2x7kCustomersLegacyRouteImport } from './routes/aurona-console-9f2x7k.customers-legacy'
 import { Route as AuronaConsole9f2x7kEditorialRouteImport } from './routes/aurona-console-9f2x7k.editorial'
 import { Route as AuronaConsole9f2x7kIntegrationsRouteImport } from './routes/aurona-console-9f2x7k.integrations'
 import { Route as AuronaConsole9f2x7kInventoryRouteImport } from './routes/aurona-console-9f2x7k.inventory'
+import { Route as AuronaConsole9f2x7kMarketingRouteImport } from './routes/aurona-console-9f2x7k.marketing'
 import { Route as AuronaConsole9f2x7kMediaRouteImport } from './routes/aurona-console-9f2x7k.media'
+import { Route as AuronaConsole9f2x7kNotesRouteImport } from './routes/aurona-console-9f2x7k.notes'
 import { Route as AuronaConsole9f2x7kOrdersRouteImport } from './routes/aurona-console-9f2x7k.orders'
+import { Route as AuronaConsole9f2x7kPaymentGatewaysRouteImport } from './routes/aurona-console-9f2x7k.payment-gateways'
 import { Route as AuronaConsole9f2x7kPaymentsRouteImport } from './routes/aurona-console-9f2x7k.payments'
+import { Route as AuronaConsole9f2x7kRefundsRouteImport } from './routes/aurona-console-9f2x7k.refunds'
 import { Route as AuronaConsole9f2x7kReportsRouteImport } from './routes/aurona-console-9f2x7k.reports'
+import { Route as AuronaConsole9f2x7kReportsLegacyRouteImport } from './routes/aurona-console-9f2x7k.reports-legacy'
 import { Route as AuronaConsole9f2x7kReturnsRouteImport } from './routes/aurona-console-9f2x7k.returns'
 import { Route as AuronaConsole9f2x7kReviewsRouteImport } from './routes/aurona-console-9f2x7k.reviews'
 import { Route as AuronaConsole9f2x7kRolesRouteImport } from './routes/aurona-console-9f2x7k.roles'
+import { Route as AuronaConsole9f2x7kSalesRouteImport } from './routes/aurona-console-9f2x7k.sales'
 import { Route as AuronaConsole9f2x7kSecurityRouteImport } from './routes/aurona-console-9f2x7k.security'
 import { Route as AuronaConsole9f2x7kSettingsRouteImport } from './routes/aurona-console-9f2x7k.settings'
 import { Route as AuronaConsole9f2x7kShippingRouteImport } from './routes/aurona-console-9f2x7k.shipping'
 import { Route as AuronaConsole9f2x7kShippingRulesRouteImport } from './routes/aurona-console-9f2x7k.shipping-rules'
 import { Route as AuronaConsole9f2x7kSupportRouteImport } from './routes/aurona-console-9f2x7k.support'
+import { Route as AuronaConsole9f2x7kSupportLegacyRouteImport } from './routes/aurona-console-9f2x7k.support-legacy'
+import { Route as AuronaConsole9f2x7kSystemRouteImport } from './routes/aurona-console-9f2x7k.system'
+import { Route as AuronaConsole9f2x7kUploadedFilesRouteImport } from './routes/aurona-console-9f2x7k.uploaded-files'
+import { Route as AuronaConsole9f2x7kWebsiteSetupRouteImport } from './routes/aurona-console-9f2x7k.website-setup'
+import { Route as AuronaConsole9f2x7kWholesaleRouteImport } from './routes/aurona-console-9f2x7k.wholesale'
 import { Route as BlogsIndexRouteImport } from './routes/blogs.index'
 import { Route as BlogsSlugRouteImport } from './routes/blogs.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -251,6 +267,18 @@ const AuronaConsole9f2x7kIndexRoute =
     path: '/',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kAddonManagerRoute =
+  AuronaConsole9f2x7kAddonManagerRouteImport.update({
+    id: '/addon-manager',
+    path: '/addon-manager',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kAffiliateSystemRoute =
+  AuronaConsole9f2x7kAffiliateSystemRouteImport.update({
+    id: '/affiliate-system',
+    path: '/affiliate-system',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kAffiliatesRoute =
   AuronaConsole9f2x7kAffiliatesRouteImport.update({
     id: '/affiliates',
@@ -267,6 +295,12 @@ const AuronaConsole9f2x7kAuditRoute =
   AuronaConsole9f2x7kAuditRouteImport.update({
     id: '/audit',
     path: '/audit',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kBlogSystemRoute =
+  AuronaConsole9f2x7kBlogSystemRouteImport.update({
+    id: '/blog-system',
+    path: '/blog-system',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const AuronaConsole9f2x7kCampaignsRoute =
@@ -293,6 +327,12 @@ const AuronaConsole9f2x7kCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kConfigurationsRoute =
+  AuronaConsole9f2x7kConfigurationsRouteImport.update({
+    id: '/configurations',
+    path: '/configurations',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kContentRoute =
   AuronaConsole9f2x7kContentRouteImport.update({
     id: '/content',
@@ -309,6 +349,12 @@ const AuronaConsole9f2x7kCustomersRoute =
   AuronaConsole9f2x7kCustomersRouteImport.update({
     id: '/customers',
     path: '/customers',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kCustomersLegacyRoute =
+  AuronaConsole9f2x7kCustomersLegacyRouteImport.update({
+    id: '/customers-legacy',
+    path: '/customers-legacy',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const AuronaConsole9f2x7kEditorialRoute =
@@ -329,10 +375,22 @@ const AuronaConsole9f2x7kInventoryRoute =
     path: '/inventory',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kMarketingRoute =
+  AuronaConsole9f2x7kMarketingRouteImport.update({
+    id: '/marketing',
+    path: '/marketing',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kMediaRoute =
   AuronaConsole9f2x7kMediaRouteImport.update({
     id: '/media',
     path: '/media',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kNotesRoute =
+  AuronaConsole9f2x7kNotesRouteImport.update({
+    id: '/notes',
+    path: '/notes',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const AuronaConsole9f2x7kOrdersRoute =
@@ -341,16 +399,34 @@ const AuronaConsole9f2x7kOrdersRoute =
     path: '/orders',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kPaymentGatewaysRoute =
+  AuronaConsole9f2x7kPaymentGatewaysRouteImport.update({
+    id: '/payment-gateways',
+    path: '/payment-gateways',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kPaymentsRoute =
   AuronaConsole9f2x7kPaymentsRouteImport.update({
     id: '/payments',
     path: '/payments',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
+const AuronaConsole9f2x7kRefundsRoute =
+  AuronaConsole9f2x7kRefundsRouteImport.update({
+    id: '/refunds',
+    path: '/refunds',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
 const AuronaConsole9f2x7kReportsRoute =
   AuronaConsole9f2x7kReportsRouteImport.update({
     id: '/reports',
     path: '/reports',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kReportsLegacyRoute =
+  AuronaConsole9f2x7kReportsLegacyRouteImport.update({
+    id: '/reports-legacy',
+    path: '/reports-legacy',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const AuronaConsole9f2x7kReturnsRoute =
@@ -369,6 +445,12 @@ const AuronaConsole9f2x7kRolesRoute =
   AuronaConsole9f2x7kRolesRouteImport.update({
     id: '/roles',
     path: '/roles',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kSalesRoute =
+  AuronaConsole9f2x7kSalesRouteImport.update({
+    id: '/sales',
+    path: '/sales',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const AuronaConsole9f2x7kSecurityRoute =
@@ -399,6 +481,36 @@ const AuronaConsole9f2x7kSupportRoute =
   AuronaConsole9f2x7kSupportRouteImport.update({
     id: '/support',
     path: '/support',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kSupportLegacyRoute =
+  AuronaConsole9f2x7kSupportLegacyRouteImport.update({
+    id: '/support-legacy',
+    path: '/support-legacy',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kSystemRoute =
+  AuronaConsole9f2x7kSystemRouteImport.update({
+    id: '/system',
+    path: '/system',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kUploadedFilesRoute =
+  AuronaConsole9f2x7kUploadedFilesRouteImport.update({
+    id: '/uploaded-files',
+    path: '/uploaded-files',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kWebsiteSetupRoute =
+  AuronaConsole9f2x7kWebsiteSetupRouteImport.update({
+    id: '/website-setup',
+    path: '/website-setup',
+    getParentRoute: () => AuronaConsole9f2x7kRoute,
+  } as any)
+const AuronaConsole9f2x7kWholesaleRoute =
+  AuronaConsole9f2x7kWholesaleRouteImport.update({
+    id: '/wholesale',
+    path: '/wholesale',
     getParentRoute: () => AuronaConsole9f2x7kRoute,
   } as any)
 const BlogsIndexRoute = BlogsIndexRouteImport.update({
@@ -593,31 +705,47 @@ export interface FileRoutesByFullPath {
   '/products': typeof ProductsRouteWithChildren
   '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
+  '/aurona-console-9f2x7k/addon-manager': typeof AuronaConsole9f2x7kAddonManagerRoute
+  '/aurona-console-9f2x7k/affiliate-system': typeof AuronaConsole9f2x7kAffiliateSystemRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
+  '/aurona-console-9f2x7k/blog-system': typeof AuronaConsole9f2x7kBlogSystemRoute
   '/aurona-console-9f2x7k/campaigns': typeof AuronaConsole9f2x7kCampaignsRoute
   '/aurona-console-9f2x7k/careers': typeof AuronaConsole9f2x7kCareersRoute
   '/aurona-console-9f2x7k/carts': typeof AuronaConsole9f2x7kCartsRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
+  '/aurona-console-9f2x7k/configurations': typeof AuronaConsole9f2x7kConfigurationsRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/customers-legacy': typeof AuronaConsole9f2x7kCustomersLegacyRoute
   '/aurona-console-9f2x7k/editorial': typeof AuronaConsole9f2x7kEditorialRoute
   '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/inventory': typeof AuronaConsole9f2x7kInventoryRoute
+  '/aurona-console-9f2x7k/marketing': typeof AuronaConsole9f2x7kMarketingRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
+  '/aurona-console-9f2x7k/notes': typeof AuronaConsole9f2x7kNotesRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
+  '/aurona-console-9f2x7k/payment-gateways': typeof AuronaConsole9f2x7kPaymentGatewaysRoute
   '/aurona-console-9f2x7k/payments': typeof AuronaConsole9f2x7kPaymentsRoute
+  '/aurona-console-9f2x7k/refunds': typeof AuronaConsole9f2x7kRefundsRoute
   '/aurona-console-9f2x7k/reports': typeof AuronaConsole9f2x7kReportsRoute
+  '/aurona-console-9f2x7k/reports-legacy': typeof AuronaConsole9f2x7kReportsLegacyRoute
   '/aurona-console-9f2x7k/returns': typeof AuronaConsole9f2x7kReturnsRoute
   '/aurona-console-9f2x7k/reviews': typeof AuronaConsole9f2x7kReviewsRoute
   '/aurona-console-9f2x7k/roles': typeof AuronaConsole9f2x7kRolesRoute
+  '/aurona-console-9f2x7k/sales': typeof AuronaConsole9f2x7kSalesRoute
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/aurona-console-9f2x7k/shipping-rules': typeof AuronaConsole9f2x7kShippingRulesRoute
   '/aurona-console-9f2x7k/support': typeof AuronaConsole9f2x7kSupportRoute
+  '/aurona-console-9f2x7k/support-legacy': typeof AuronaConsole9f2x7kSupportLegacyRoute
+  '/aurona-console-9f2x7k/system': typeof AuronaConsole9f2x7kSystemRoute
+  '/aurona-console-9f2x7k/uploaded-files': typeof AuronaConsole9f2x7kUploadedFilesRoute
+  '/aurona-console-9f2x7k/website-setup': typeof AuronaConsole9f2x7kWebsiteSetupRoute
+  '/aurona-console-9f2x7k/wholesale': typeof AuronaConsole9f2x7kWholesaleRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
@@ -677,31 +805,47 @@ export interface FileRoutesByTo {
   '/payment-status': typeof PaymentStatusRoute
   '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
+  '/aurona-console-9f2x7k/addon-manager': typeof AuronaConsole9f2x7kAddonManagerRoute
+  '/aurona-console-9f2x7k/affiliate-system': typeof AuronaConsole9f2x7kAffiliateSystemRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
+  '/aurona-console-9f2x7k/blog-system': typeof AuronaConsole9f2x7kBlogSystemRoute
   '/aurona-console-9f2x7k/campaigns': typeof AuronaConsole9f2x7kCampaignsRoute
   '/aurona-console-9f2x7k/careers': typeof AuronaConsole9f2x7kCareersRoute
   '/aurona-console-9f2x7k/carts': typeof AuronaConsole9f2x7kCartsRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
+  '/aurona-console-9f2x7k/configurations': typeof AuronaConsole9f2x7kConfigurationsRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/customers-legacy': typeof AuronaConsole9f2x7kCustomersLegacyRoute
   '/aurona-console-9f2x7k/editorial': typeof AuronaConsole9f2x7kEditorialRoute
   '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/inventory': typeof AuronaConsole9f2x7kInventoryRoute
+  '/aurona-console-9f2x7k/marketing': typeof AuronaConsole9f2x7kMarketingRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
+  '/aurona-console-9f2x7k/notes': typeof AuronaConsole9f2x7kNotesRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
+  '/aurona-console-9f2x7k/payment-gateways': typeof AuronaConsole9f2x7kPaymentGatewaysRoute
   '/aurona-console-9f2x7k/payments': typeof AuronaConsole9f2x7kPaymentsRoute
+  '/aurona-console-9f2x7k/refunds': typeof AuronaConsole9f2x7kRefundsRoute
   '/aurona-console-9f2x7k/reports': typeof AuronaConsole9f2x7kReportsRoute
+  '/aurona-console-9f2x7k/reports-legacy': typeof AuronaConsole9f2x7kReportsLegacyRoute
   '/aurona-console-9f2x7k/returns': typeof AuronaConsole9f2x7kReturnsRoute
   '/aurona-console-9f2x7k/reviews': typeof AuronaConsole9f2x7kReviewsRoute
   '/aurona-console-9f2x7k/roles': typeof AuronaConsole9f2x7kRolesRoute
+  '/aurona-console-9f2x7k/sales': typeof AuronaConsole9f2x7kSalesRoute
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/aurona-console-9f2x7k/shipping-rules': typeof AuronaConsole9f2x7kShippingRulesRoute
   '/aurona-console-9f2x7k/support': typeof AuronaConsole9f2x7kSupportRoute
+  '/aurona-console-9f2x7k/support-legacy': typeof AuronaConsole9f2x7kSupportLegacyRoute
+  '/aurona-console-9f2x7k/system': typeof AuronaConsole9f2x7kSystemRoute
+  '/aurona-console-9f2x7k/uploaded-files': typeof AuronaConsole9f2x7kUploadedFilesRoute
+  '/aurona-console-9f2x7k/website-setup': typeof AuronaConsole9f2x7kWebsiteSetupRoute
+  '/aurona-console-9f2x7k/wholesale': typeof AuronaConsole9f2x7kWholesaleRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
@@ -765,31 +909,47 @@ export interface FileRoutesById {
   '/products': typeof ProductsRouteWithChildren
   '/retailer': typeof RetailerRoute
   '/wishlist': typeof WishlistRoute
+  '/aurona-console-9f2x7k/addon-manager': typeof AuronaConsole9f2x7kAddonManagerRoute
+  '/aurona-console-9f2x7k/affiliate-system': typeof AuronaConsole9f2x7kAffiliateSystemRoute
   '/aurona-console-9f2x7k/affiliates': typeof AuronaConsole9f2x7kAffiliatesRoute
   '/aurona-console-9f2x7k/applications': typeof AuronaConsole9f2x7kApplicationsRoute
   '/aurona-console-9f2x7k/audit': typeof AuronaConsole9f2x7kAuditRoute
+  '/aurona-console-9f2x7k/blog-system': typeof AuronaConsole9f2x7kBlogSystemRoute
   '/aurona-console-9f2x7k/campaigns': typeof AuronaConsole9f2x7kCampaignsRoute
   '/aurona-console-9f2x7k/careers': typeof AuronaConsole9f2x7kCareersRoute
   '/aurona-console-9f2x7k/carts': typeof AuronaConsole9f2x7kCartsRoute
   '/aurona-console-9f2x7k/categories': typeof AuronaConsole9f2x7kCategoriesRoute
+  '/aurona-console-9f2x7k/configurations': typeof AuronaConsole9f2x7kConfigurationsRoute
   '/aurona-console-9f2x7k/content': typeof AuronaConsole9f2x7kContentRoute
   '/aurona-console-9f2x7k/coupons': typeof AuronaConsole9f2x7kCouponsRoute
   '/aurona-console-9f2x7k/customers': typeof AuronaConsole9f2x7kCustomersRoute
+  '/aurona-console-9f2x7k/customers-legacy': typeof AuronaConsole9f2x7kCustomersLegacyRoute
   '/aurona-console-9f2x7k/editorial': typeof AuronaConsole9f2x7kEditorialRoute
   '/aurona-console-9f2x7k/integrations': typeof AuronaConsole9f2x7kIntegrationsRoute
   '/aurona-console-9f2x7k/inventory': typeof AuronaConsole9f2x7kInventoryRoute
+  '/aurona-console-9f2x7k/marketing': typeof AuronaConsole9f2x7kMarketingRoute
   '/aurona-console-9f2x7k/media': typeof AuronaConsole9f2x7kMediaRoute
+  '/aurona-console-9f2x7k/notes': typeof AuronaConsole9f2x7kNotesRoute
   '/aurona-console-9f2x7k/orders': typeof AuronaConsole9f2x7kOrdersRouteWithChildren
+  '/aurona-console-9f2x7k/payment-gateways': typeof AuronaConsole9f2x7kPaymentGatewaysRoute
   '/aurona-console-9f2x7k/payments': typeof AuronaConsole9f2x7kPaymentsRoute
+  '/aurona-console-9f2x7k/refunds': typeof AuronaConsole9f2x7kRefundsRoute
   '/aurona-console-9f2x7k/reports': typeof AuronaConsole9f2x7kReportsRoute
+  '/aurona-console-9f2x7k/reports-legacy': typeof AuronaConsole9f2x7kReportsLegacyRoute
   '/aurona-console-9f2x7k/returns': typeof AuronaConsole9f2x7kReturnsRoute
   '/aurona-console-9f2x7k/reviews': typeof AuronaConsole9f2x7kReviewsRoute
   '/aurona-console-9f2x7k/roles': typeof AuronaConsole9f2x7kRolesRoute
+  '/aurona-console-9f2x7k/sales': typeof AuronaConsole9f2x7kSalesRoute
   '/aurona-console-9f2x7k/security': typeof AuronaConsole9f2x7kSecurityRoute
   '/aurona-console-9f2x7k/settings': typeof AuronaConsole9f2x7kSettingsRoute
   '/aurona-console-9f2x7k/shipping': typeof AuronaConsole9f2x7kShippingRoute
   '/aurona-console-9f2x7k/shipping-rules': typeof AuronaConsole9f2x7kShippingRulesRoute
   '/aurona-console-9f2x7k/support': typeof AuronaConsole9f2x7kSupportRoute
+  '/aurona-console-9f2x7k/support-legacy': typeof AuronaConsole9f2x7kSupportLegacyRoute
+  '/aurona-console-9f2x7k/system': typeof AuronaConsole9f2x7kSystemRoute
+  '/aurona-console-9f2x7k/uploaded-files': typeof AuronaConsole9f2x7kUploadedFilesRoute
+  '/aurona-console-9f2x7k/website-setup': typeof AuronaConsole9f2x7kWebsiteSetupRoute
+  '/aurona-console-9f2x7k/wholesale': typeof AuronaConsole9f2x7kWholesaleRoute
   '/blogs/$slug': typeof BlogsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
@@ -854,31 +1014,47 @@ export interface FileRouteTypes {
     | '/products'
     | '/retailer'
     | '/wishlist'
+    | '/aurona-console-9f2x7k/addon-manager'
+    | '/aurona-console-9f2x7k/affiliate-system'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
+    | '/aurona-console-9f2x7k/blog-system'
     | '/aurona-console-9f2x7k/campaigns'
     | '/aurona-console-9f2x7k/careers'
     | '/aurona-console-9f2x7k/carts'
     | '/aurona-console-9f2x7k/categories'
+    | '/aurona-console-9f2x7k/configurations'
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/customers-legacy'
     | '/aurona-console-9f2x7k/editorial'
     | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/inventory'
+    | '/aurona-console-9f2x7k/marketing'
     | '/aurona-console-9f2x7k/media'
+    | '/aurona-console-9f2x7k/notes'
     | '/aurona-console-9f2x7k/orders'
+    | '/aurona-console-9f2x7k/payment-gateways'
     | '/aurona-console-9f2x7k/payments'
+    | '/aurona-console-9f2x7k/refunds'
     | '/aurona-console-9f2x7k/reports'
+    | '/aurona-console-9f2x7k/reports-legacy'
     | '/aurona-console-9f2x7k/returns'
     | '/aurona-console-9f2x7k/reviews'
     | '/aurona-console-9f2x7k/roles'
+    | '/aurona-console-9f2x7k/sales'
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
     | '/aurona-console-9f2x7k/shipping-rules'
     | '/aurona-console-9f2x7k/support'
+    | '/aurona-console-9f2x7k/support-legacy'
+    | '/aurona-console-9f2x7k/system'
+    | '/aurona-console-9f2x7k/uploaded-files'
+    | '/aurona-console-9f2x7k/website-setup'
+    | '/aurona-console-9f2x7k/wholesale'
     | '/blogs/$slug'
     | '/category/$slug'
     | '/orders/$orderId'
@@ -938,31 +1114,47 @@ export interface FileRouteTypes {
     | '/payment-status'
     | '/retailer'
     | '/wishlist'
+    | '/aurona-console-9f2x7k/addon-manager'
+    | '/aurona-console-9f2x7k/affiliate-system'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
+    | '/aurona-console-9f2x7k/blog-system'
     | '/aurona-console-9f2x7k/campaigns'
     | '/aurona-console-9f2x7k/careers'
     | '/aurona-console-9f2x7k/carts'
     | '/aurona-console-9f2x7k/categories'
+    | '/aurona-console-9f2x7k/configurations'
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/customers-legacy'
     | '/aurona-console-9f2x7k/editorial'
     | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/inventory'
+    | '/aurona-console-9f2x7k/marketing'
     | '/aurona-console-9f2x7k/media'
+    | '/aurona-console-9f2x7k/notes'
     | '/aurona-console-9f2x7k/orders'
+    | '/aurona-console-9f2x7k/payment-gateways'
     | '/aurona-console-9f2x7k/payments'
+    | '/aurona-console-9f2x7k/refunds'
     | '/aurona-console-9f2x7k/reports'
+    | '/aurona-console-9f2x7k/reports-legacy'
     | '/aurona-console-9f2x7k/returns'
     | '/aurona-console-9f2x7k/reviews'
     | '/aurona-console-9f2x7k/roles'
+    | '/aurona-console-9f2x7k/sales'
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
     | '/aurona-console-9f2x7k/shipping-rules'
     | '/aurona-console-9f2x7k/support'
+    | '/aurona-console-9f2x7k/support-legacy'
+    | '/aurona-console-9f2x7k/system'
+    | '/aurona-console-9f2x7k/uploaded-files'
+    | '/aurona-console-9f2x7k/website-setup'
+    | '/aurona-console-9f2x7k/wholesale'
     | '/blogs/$slug'
     | '/category/$slug'
     | '/orders/$orderId'
@@ -1025,31 +1217,47 @@ export interface FileRouteTypes {
     | '/products'
     | '/retailer'
     | '/wishlist'
+    | '/aurona-console-9f2x7k/addon-manager'
+    | '/aurona-console-9f2x7k/affiliate-system'
     | '/aurona-console-9f2x7k/affiliates'
     | '/aurona-console-9f2x7k/applications'
     | '/aurona-console-9f2x7k/audit'
+    | '/aurona-console-9f2x7k/blog-system'
     | '/aurona-console-9f2x7k/campaigns'
     | '/aurona-console-9f2x7k/careers'
     | '/aurona-console-9f2x7k/carts'
     | '/aurona-console-9f2x7k/categories'
+    | '/aurona-console-9f2x7k/configurations'
     | '/aurona-console-9f2x7k/content'
     | '/aurona-console-9f2x7k/coupons'
     | '/aurona-console-9f2x7k/customers'
+    | '/aurona-console-9f2x7k/customers-legacy'
     | '/aurona-console-9f2x7k/editorial'
     | '/aurona-console-9f2x7k/integrations'
     | '/aurona-console-9f2x7k/inventory'
+    | '/aurona-console-9f2x7k/marketing'
     | '/aurona-console-9f2x7k/media'
+    | '/aurona-console-9f2x7k/notes'
     | '/aurona-console-9f2x7k/orders'
+    | '/aurona-console-9f2x7k/payment-gateways'
     | '/aurona-console-9f2x7k/payments'
+    | '/aurona-console-9f2x7k/refunds'
     | '/aurona-console-9f2x7k/reports'
+    | '/aurona-console-9f2x7k/reports-legacy'
     | '/aurona-console-9f2x7k/returns'
     | '/aurona-console-9f2x7k/reviews'
     | '/aurona-console-9f2x7k/roles'
+    | '/aurona-console-9f2x7k/sales'
     | '/aurona-console-9f2x7k/security'
     | '/aurona-console-9f2x7k/settings'
     | '/aurona-console-9f2x7k/shipping'
     | '/aurona-console-9f2x7k/shipping-rules'
     | '/aurona-console-9f2x7k/support'
+    | '/aurona-console-9f2x7k/support-legacy'
+    | '/aurona-console-9f2x7k/system'
+    | '/aurona-console-9f2x7k/uploaded-files'
+    | '/aurona-console-9f2x7k/website-setup'
+    | '/aurona-console-9f2x7k/wholesale'
     | '/blogs/$slug'
     | '/category/$slug'
     | '/orders/$orderId'
@@ -1349,6 +1557,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kIndexRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/addon-manager': {
+      id: '/aurona-console-9f2x7k/addon-manager'
+      path: '/addon-manager'
+      fullPath: '/aurona-console-9f2x7k/addon-manager'
+      preLoaderRoute: typeof AuronaConsole9f2x7kAddonManagerRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/affiliate-system': {
+      id: '/aurona-console-9f2x7k/affiliate-system'
+      path: '/affiliate-system'
+      fullPath: '/aurona-console-9f2x7k/affiliate-system'
+      preLoaderRoute: typeof AuronaConsole9f2x7kAffiliateSystemRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/affiliates': {
       id: '/aurona-console-9f2x7k/affiliates'
       path: '/affiliates'
@@ -1368,6 +1590,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/aurona-console-9f2x7k/audit'
       preLoaderRoute: typeof AuronaConsole9f2x7kAuditRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/blog-system': {
+      id: '/aurona-console-9f2x7k/blog-system'
+      path: '/blog-system'
+      fullPath: '/aurona-console-9f2x7k/blog-system'
+      preLoaderRoute: typeof AuronaConsole9f2x7kBlogSystemRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/aurona-console-9f2x7k/campaigns': {
@@ -1398,6 +1627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kCategoriesRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/configurations': {
+      id: '/aurona-console-9f2x7k/configurations'
+      path: '/configurations'
+      fullPath: '/aurona-console-9f2x7k/configurations'
+      preLoaderRoute: typeof AuronaConsole9f2x7kConfigurationsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/content': {
       id: '/aurona-console-9f2x7k/content'
       path: '/content'
@@ -1417,6 +1653,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/aurona-console-9f2x7k/customers'
       preLoaderRoute: typeof AuronaConsole9f2x7kCustomersRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/customers-legacy': {
+      id: '/aurona-console-9f2x7k/customers-legacy'
+      path: '/customers-legacy'
+      fullPath: '/aurona-console-9f2x7k/customers-legacy'
+      preLoaderRoute: typeof AuronaConsole9f2x7kCustomersLegacyRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/aurona-console-9f2x7k/editorial': {
@@ -1440,11 +1683,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kInventoryRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/marketing': {
+      id: '/aurona-console-9f2x7k/marketing'
+      path: '/marketing'
+      fullPath: '/aurona-console-9f2x7k/marketing'
+      preLoaderRoute: typeof AuronaConsole9f2x7kMarketingRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/media': {
       id: '/aurona-console-9f2x7k/media'
       path: '/media'
       fullPath: '/aurona-console-9f2x7k/media'
       preLoaderRoute: typeof AuronaConsole9f2x7kMediaRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/notes': {
+      id: '/aurona-console-9f2x7k/notes'
+      path: '/notes'
+      fullPath: '/aurona-console-9f2x7k/notes'
+      preLoaderRoute: typeof AuronaConsole9f2x7kNotesRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/aurona-console-9f2x7k/orders': {
@@ -1454,6 +1711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kOrdersRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/payment-gateways': {
+      id: '/aurona-console-9f2x7k/payment-gateways'
+      path: '/payment-gateways'
+      fullPath: '/aurona-console-9f2x7k/payment-gateways'
+      preLoaderRoute: typeof AuronaConsole9f2x7kPaymentGatewaysRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/payments': {
       id: '/aurona-console-9f2x7k/payments'
       path: '/payments'
@@ -1461,11 +1725,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuronaConsole9f2x7kPaymentsRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
+    '/aurona-console-9f2x7k/refunds': {
+      id: '/aurona-console-9f2x7k/refunds'
+      path: '/refunds'
+      fullPath: '/aurona-console-9f2x7k/refunds'
+      preLoaderRoute: typeof AuronaConsole9f2x7kRefundsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
     '/aurona-console-9f2x7k/reports': {
       id: '/aurona-console-9f2x7k/reports'
       path: '/reports'
       fullPath: '/aurona-console-9f2x7k/reports'
       preLoaderRoute: typeof AuronaConsole9f2x7kReportsRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/reports-legacy': {
+      id: '/aurona-console-9f2x7k/reports-legacy'
+      path: '/reports-legacy'
+      fullPath: '/aurona-console-9f2x7k/reports-legacy'
+      preLoaderRoute: typeof AuronaConsole9f2x7kReportsLegacyRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/aurona-console-9f2x7k/returns': {
@@ -1487,6 +1765,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/aurona-console-9f2x7k/roles'
       preLoaderRoute: typeof AuronaConsole9f2x7kRolesRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/sales': {
+      id: '/aurona-console-9f2x7k/sales'
+      path: '/sales'
+      fullPath: '/aurona-console-9f2x7k/sales'
+      preLoaderRoute: typeof AuronaConsole9f2x7kSalesRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/aurona-console-9f2x7k/security': {
@@ -1522,6 +1807,41 @@ declare module '@tanstack/react-router' {
       path: '/support'
       fullPath: '/aurona-console-9f2x7k/support'
       preLoaderRoute: typeof AuronaConsole9f2x7kSupportRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/support-legacy': {
+      id: '/aurona-console-9f2x7k/support-legacy'
+      path: '/support-legacy'
+      fullPath: '/aurona-console-9f2x7k/support-legacy'
+      preLoaderRoute: typeof AuronaConsole9f2x7kSupportLegacyRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/system': {
+      id: '/aurona-console-9f2x7k/system'
+      path: '/system'
+      fullPath: '/aurona-console-9f2x7k/system'
+      preLoaderRoute: typeof AuronaConsole9f2x7kSystemRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/uploaded-files': {
+      id: '/aurona-console-9f2x7k/uploaded-files'
+      path: '/uploaded-files'
+      fullPath: '/aurona-console-9f2x7k/uploaded-files'
+      preLoaderRoute: typeof AuronaConsole9f2x7kUploadedFilesRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/website-setup': {
+      id: '/aurona-console-9f2x7k/website-setup'
+      path: '/website-setup'
+      fullPath: '/aurona-console-9f2x7k/website-setup'
+      preLoaderRoute: typeof AuronaConsole9f2x7kWebsiteSetupRouteImport
+      parentRoute: typeof AuronaConsole9f2x7kRoute
+    }
+    '/aurona-console-9f2x7k/wholesale': {
+      id: '/aurona-console-9f2x7k/wholesale'
+      path: '/wholesale'
+      fullPath: '/aurona-console-9f2x7k/wholesale'
+      preLoaderRoute: typeof AuronaConsole9f2x7kWholesaleRouteImport
       parentRoute: typeof AuronaConsole9f2x7kRoute
     }
     '/blogs/': {
@@ -1745,31 +2065,47 @@ const AuronaConsole9f2x7kOrdersRouteWithChildren =
   )
 
 interface AuronaConsole9f2x7kRouteChildren {
+  AuronaConsole9f2x7kAddonManagerRoute: typeof AuronaConsole9f2x7kAddonManagerRoute
+  AuronaConsole9f2x7kAffiliateSystemRoute: typeof AuronaConsole9f2x7kAffiliateSystemRoute
   AuronaConsole9f2x7kAffiliatesRoute: typeof AuronaConsole9f2x7kAffiliatesRoute
   AuronaConsole9f2x7kApplicationsRoute: typeof AuronaConsole9f2x7kApplicationsRoute
   AuronaConsole9f2x7kAuditRoute: typeof AuronaConsole9f2x7kAuditRoute
+  AuronaConsole9f2x7kBlogSystemRoute: typeof AuronaConsole9f2x7kBlogSystemRoute
   AuronaConsole9f2x7kCampaignsRoute: typeof AuronaConsole9f2x7kCampaignsRoute
   AuronaConsole9f2x7kCareersRoute: typeof AuronaConsole9f2x7kCareersRoute
   AuronaConsole9f2x7kCartsRoute: typeof AuronaConsole9f2x7kCartsRoute
   AuronaConsole9f2x7kCategoriesRoute: typeof AuronaConsole9f2x7kCategoriesRoute
+  AuronaConsole9f2x7kConfigurationsRoute: typeof AuronaConsole9f2x7kConfigurationsRoute
   AuronaConsole9f2x7kContentRoute: typeof AuronaConsole9f2x7kContentRoute
   AuronaConsole9f2x7kCouponsRoute: typeof AuronaConsole9f2x7kCouponsRoute
   AuronaConsole9f2x7kCustomersRoute: typeof AuronaConsole9f2x7kCustomersRoute
+  AuronaConsole9f2x7kCustomersLegacyRoute: typeof AuronaConsole9f2x7kCustomersLegacyRoute
   AuronaConsole9f2x7kEditorialRoute: typeof AuronaConsole9f2x7kEditorialRoute
   AuronaConsole9f2x7kIntegrationsRoute: typeof AuronaConsole9f2x7kIntegrationsRoute
   AuronaConsole9f2x7kInventoryRoute: typeof AuronaConsole9f2x7kInventoryRoute
+  AuronaConsole9f2x7kMarketingRoute: typeof AuronaConsole9f2x7kMarketingRoute
   AuronaConsole9f2x7kMediaRoute: typeof AuronaConsole9f2x7kMediaRoute
+  AuronaConsole9f2x7kNotesRoute: typeof AuronaConsole9f2x7kNotesRoute
   AuronaConsole9f2x7kOrdersRoute: typeof AuronaConsole9f2x7kOrdersRouteWithChildren
+  AuronaConsole9f2x7kPaymentGatewaysRoute: typeof AuronaConsole9f2x7kPaymentGatewaysRoute
   AuronaConsole9f2x7kPaymentsRoute: typeof AuronaConsole9f2x7kPaymentsRoute
+  AuronaConsole9f2x7kRefundsRoute: typeof AuronaConsole9f2x7kRefundsRoute
   AuronaConsole9f2x7kReportsRoute: typeof AuronaConsole9f2x7kReportsRoute
+  AuronaConsole9f2x7kReportsLegacyRoute: typeof AuronaConsole9f2x7kReportsLegacyRoute
   AuronaConsole9f2x7kReturnsRoute: typeof AuronaConsole9f2x7kReturnsRoute
   AuronaConsole9f2x7kReviewsRoute: typeof AuronaConsole9f2x7kReviewsRoute
   AuronaConsole9f2x7kRolesRoute: typeof AuronaConsole9f2x7kRolesRoute
+  AuronaConsole9f2x7kSalesRoute: typeof AuronaConsole9f2x7kSalesRoute
   AuronaConsole9f2x7kSecurityRoute: typeof AuronaConsole9f2x7kSecurityRoute
   AuronaConsole9f2x7kSettingsRoute: typeof AuronaConsole9f2x7kSettingsRoute
   AuronaConsole9f2x7kShippingRoute: typeof AuronaConsole9f2x7kShippingRoute
   AuronaConsole9f2x7kShippingRulesRoute: typeof AuronaConsole9f2x7kShippingRulesRoute
   AuronaConsole9f2x7kSupportRoute: typeof AuronaConsole9f2x7kSupportRoute
+  AuronaConsole9f2x7kSupportLegacyRoute: typeof AuronaConsole9f2x7kSupportLegacyRoute
+  AuronaConsole9f2x7kSystemRoute: typeof AuronaConsole9f2x7kSystemRoute
+  AuronaConsole9f2x7kUploadedFilesRoute: typeof AuronaConsole9f2x7kUploadedFilesRoute
+  AuronaConsole9f2x7kWebsiteSetupRoute: typeof AuronaConsole9f2x7kWebsiteSetupRoute
+  AuronaConsole9f2x7kWholesaleRoute: typeof AuronaConsole9f2x7kWholesaleRoute
   AuronaConsole9f2x7kIndexRoute: typeof AuronaConsole9f2x7kIndexRoute
   AuronaConsole9f2x7kProductsIdRoute: typeof AuronaConsole9f2x7kProductsIdRoute
   AuronaConsole9f2x7kProductsBulkRoute: typeof AuronaConsole9f2x7kProductsBulkRoute
@@ -1782,31 +2118,51 @@ interface AuronaConsole9f2x7kRouteChildren {
 }
 
 const AuronaConsole9f2x7kRouteChildren: AuronaConsole9f2x7kRouteChildren = {
+  AuronaConsole9f2x7kAddonManagerRoute: AuronaConsole9f2x7kAddonManagerRoute,
+  AuronaConsole9f2x7kAffiliateSystemRoute:
+    AuronaConsole9f2x7kAffiliateSystemRoute,
   AuronaConsole9f2x7kAffiliatesRoute: AuronaConsole9f2x7kAffiliatesRoute,
   AuronaConsole9f2x7kApplicationsRoute: AuronaConsole9f2x7kApplicationsRoute,
   AuronaConsole9f2x7kAuditRoute: AuronaConsole9f2x7kAuditRoute,
+  AuronaConsole9f2x7kBlogSystemRoute: AuronaConsole9f2x7kBlogSystemRoute,
   AuronaConsole9f2x7kCampaignsRoute: AuronaConsole9f2x7kCampaignsRoute,
   AuronaConsole9f2x7kCareersRoute: AuronaConsole9f2x7kCareersRoute,
   AuronaConsole9f2x7kCartsRoute: AuronaConsole9f2x7kCartsRoute,
   AuronaConsole9f2x7kCategoriesRoute: AuronaConsole9f2x7kCategoriesRoute,
+  AuronaConsole9f2x7kConfigurationsRoute:
+    AuronaConsole9f2x7kConfigurationsRoute,
   AuronaConsole9f2x7kContentRoute: AuronaConsole9f2x7kContentRoute,
   AuronaConsole9f2x7kCouponsRoute: AuronaConsole9f2x7kCouponsRoute,
   AuronaConsole9f2x7kCustomersRoute: AuronaConsole9f2x7kCustomersRoute,
+  AuronaConsole9f2x7kCustomersLegacyRoute:
+    AuronaConsole9f2x7kCustomersLegacyRoute,
   AuronaConsole9f2x7kEditorialRoute: AuronaConsole9f2x7kEditorialRoute,
   AuronaConsole9f2x7kIntegrationsRoute: AuronaConsole9f2x7kIntegrationsRoute,
   AuronaConsole9f2x7kInventoryRoute: AuronaConsole9f2x7kInventoryRoute,
+  AuronaConsole9f2x7kMarketingRoute: AuronaConsole9f2x7kMarketingRoute,
   AuronaConsole9f2x7kMediaRoute: AuronaConsole9f2x7kMediaRoute,
+  AuronaConsole9f2x7kNotesRoute: AuronaConsole9f2x7kNotesRoute,
   AuronaConsole9f2x7kOrdersRoute: AuronaConsole9f2x7kOrdersRouteWithChildren,
+  AuronaConsole9f2x7kPaymentGatewaysRoute:
+    AuronaConsole9f2x7kPaymentGatewaysRoute,
   AuronaConsole9f2x7kPaymentsRoute: AuronaConsole9f2x7kPaymentsRoute,
+  AuronaConsole9f2x7kRefundsRoute: AuronaConsole9f2x7kRefundsRoute,
   AuronaConsole9f2x7kReportsRoute: AuronaConsole9f2x7kReportsRoute,
+  AuronaConsole9f2x7kReportsLegacyRoute: AuronaConsole9f2x7kReportsLegacyRoute,
   AuronaConsole9f2x7kReturnsRoute: AuronaConsole9f2x7kReturnsRoute,
   AuronaConsole9f2x7kReviewsRoute: AuronaConsole9f2x7kReviewsRoute,
   AuronaConsole9f2x7kRolesRoute: AuronaConsole9f2x7kRolesRoute,
+  AuronaConsole9f2x7kSalesRoute: AuronaConsole9f2x7kSalesRoute,
   AuronaConsole9f2x7kSecurityRoute: AuronaConsole9f2x7kSecurityRoute,
   AuronaConsole9f2x7kSettingsRoute: AuronaConsole9f2x7kSettingsRoute,
   AuronaConsole9f2x7kShippingRoute: AuronaConsole9f2x7kShippingRoute,
   AuronaConsole9f2x7kShippingRulesRoute: AuronaConsole9f2x7kShippingRulesRoute,
   AuronaConsole9f2x7kSupportRoute: AuronaConsole9f2x7kSupportRoute,
+  AuronaConsole9f2x7kSupportLegacyRoute: AuronaConsole9f2x7kSupportLegacyRoute,
+  AuronaConsole9f2x7kSystemRoute: AuronaConsole9f2x7kSystemRoute,
+  AuronaConsole9f2x7kUploadedFilesRoute: AuronaConsole9f2x7kUploadedFilesRoute,
+  AuronaConsole9f2x7kWebsiteSetupRoute: AuronaConsole9f2x7kWebsiteSetupRoute,
+  AuronaConsole9f2x7kWholesaleRoute: AuronaConsole9f2x7kWholesaleRoute,
   AuronaConsole9f2x7kIndexRoute: AuronaConsole9f2x7kIndexRoute,
   AuronaConsole9f2x7kProductsIdRoute: AuronaConsole9f2x7kProductsIdRoute,
   AuronaConsole9f2x7kProductsBulkRoute: AuronaConsole9f2x7kProductsBulkRoute,

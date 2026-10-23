@@ -1,43 +1,243 @@
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import { BarChart3, Boxes, ChevronDown, CreditCard, FileText, Headphones, LayoutDashboard, Megaphone, NotebookPen, Package, Plug, RotateCcw, Settings, Shield, ShoppingCart, Store, Upload, Users, WalletCards } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  ChevronDown,
+  CreditCard,
+  FileText,
+  Headphones,
+  LayoutDashboard,
+  Megaphone,
+  NotebookPen,
+  Package,
+  Plug,
+  RotateCcw,
+  Settings,
+  Shield,
+  ShoppingCart,
+  Store,
+  Upload,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 const ROOT = "/aurona-console-9f2x7k";
 type Item = { label: string; to: string };
-type Group = { label: string; icon: typeof Package; to?: string; items: Item[] };
+type Group = { label: string; icon: typeof Package; items: Item[] };
 
+const dashboard = { label: "Dashboard", to: ROOT };
 const groups: Group[] = [
- { label:"Products", icon:Package, items:[{label:"All Products",to:`${ROOT}/products`},{label:"Product Master",to:`${ROOT}/products/master`},{label:"Add New Product",to:`${ROOT}/products/new`},{label:"Categories",to:`${ROOT}/categories`},{label:"Bulk Import & Export",to:`${ROOT}/products/bulk`},{label:"Bulk Photo Upload",to:`${ROOT}/products/photos`},{label:"Product Reviews",to:`${ROOT}/reviews`}]},
- { label:"Notes", icon:NotebookPen, to:`${ROOT}/notes`, items:[{label:"All Notes",to:`${ROOT}/notes`}]},
- { label:"Wholesale Products", icon:Boxes, to:`${ROOT}/wholesale`, items:[{label:"Wholesale Products",to:`${ROOT}/wholesale`},{label:"SKU Inventory",to:`${ROOT}/inventory`},{label:"Partner Applications",to:`${ROOT}/applications`}]},
- { label:"Sales", icon:ShoppingCart, to:`${ROOT}/sales`, items:[{label:"All Orders",to:`${ROOT}/orders`},{label:"Payments",to:`${ROOT}/payments`},{label:"Abandoned Carts",to:`${ROOT}/carts`}]},
- { label:"Refunds", icon:RotateCcw, to:`${ROOT}/refunds`, items:[{label:"Refund Requests",to:`${ROOT}/returns`}]},
- { label:"Customers", icon:Users, to:`${ROOT}/customers-legacy`, items:[{label:"Customer List",to:`${ROOT}/customers`},{label:"Retailer / Distributor Applications",to:`${ROOT}/applications`}]},
- { label:"Uploaded Files", icon:Upload, to:`${ROOT}/uploaded-files`, items:[{label:"All Uploaded Files",to:`${ROOT}/uploaded-files`},{label:"Media / Uploads",to:`${ROOT}/media`},{label:"Product Photos",to:`${ROOT}/products/photos`}]},
- { label:"Reports", icon:BarChart3, to:`${ROOT}/reports-legacy`, items:[{label:"Business Reports",to:`${ROOT}/reports`},{label:"Audit Logs",to:`${ROOT}/audit`}]},
- { label:"Blog System", icon:FileText, to:`${ROOT}/blog-system`, items:[{label:"Blog System",to:`${ROOT}/blog-system`},{label:"Blogs & Editorial",to:`${ROOT}/editorial`}]},
- { label:"Marketing", icon:Megaphone, to:`${ROOT}/marketing`, items:[{label:"Marketing",to:`${ROOT}/marketing`},{label:"Coupons",to:`${ROOT}/coupons`},{label:"Campaigns",to:`${ROOT}/campaigns`},{label:"Homepage & Alerts",to:`${ROOT}/content`}]},
- { label:"Support", icon:Headphones, to:`${ROOT}/support-legacy`, items:[{label:"Support Inbox",to:`${ROOT}/support`}]},
- { label:"Affiliate System", icon:WalletCards, to:`${ROOT}/affiliate-system`, items:[{label:"Affiliate Dashboard",to:`${ROOT}/affiliate-system`},{label:"Affiliate Users & Commissions",to:`${ROOT}/affiliates`}]},
- { label:"Payment Gateways", icon:CreditCard, to:`${ROOT}/payment-gateways`, items:[{label:"Payment Gateways",to:`${ROOT}/payment-gateways`},{label:"Payments",to:`${ROOT}/payments`},{label:"Integrations",to:`${ROOT}/integrations`}]},
- { label:"Website Setup", icon:Store, to:`${ROOT}/website-setup`, items:[{label:"Website Setup",to:`${ROOT}/website-setup`},{label:"Homepage & Content",to:`${ROOT}/content`},{label:"Shipping",to:`${ROOT}/shipping`}]},
- { label:"Setup & Configurations", icon:Settings, to:`${ROOT}/configurations`, items:[{label:"Setup & Configurations",to:`${ROOT}/configurations`},{label:"Settings",to:`${ROOT}/settings`},{label:"Shipping & Tax Rules",to:`${ROOT}/shipping-rules`},{label:"Integrations",to:`${ROOT}/integrations`}]},
- { label:"System", icon:Shield, to:`${ROOT}/system`, items:[{label:"System",to:`${ROOT}/system`},{label:"Roles & Permissions",to:`${ROOT}/roles`},{label:"Security & 2FA",to:`${ROOT}/security`},{label:"Audit Logs",to:`${ROOT}/audit`}]},
- { label:"Addon Manager", icon:Plug, to:`${ROOT}/addon-manager`, items:[{label:"Addon Manager",to:`${ROOT}/addon-manager`},{label:"Integrations / Addons",to:`${ROOT}/integrations`}]},
+  {
+    label: "WooCommerce",
+    icon: ShoppingCart,
+    items: [
+      { label: "Orders", to: `${ROOT}/orders` },
+      { label: "Customers", to: `${ROOT}/customers` },
+      { label: "Coupons", to: `${ROOT}/coupons` },
+      { label: "Payments", to: `${ROOT}/payments` },
+      { label: "Returns & Refunds", to: `${ROOT}/returns` },
+      { label: "Shipping", to: `${ROOT}/shipping` },
+      { label: "Shipping & Tax Rules", to: `${ROOT}/shipping-rules` },
+      { label: "Analytics & Reports", to: `${ROOT}/reports` },
+      { label: "Abandoned Carts", to: `${ROOT}/carts` },
+    ],
+  },
+  {
+    label: "Products",
+    icon: Package,
+    items: [
+      { label: "All Products", to: `${ROOT}/products` },
+      { label: "Add New Product", to: `${ROOT}/products/new` },
+      { label: "Categories", to: `${ROOT}/categories` },
+      { label: "Attributes & Brands", to: `${ROOT}/products/options` },
+      { label: "Product Master", to: `${ROOT}/products/master` },
+      { label: "Inventory", to: `${ROOT}/inventory` },
+      { label: "Import & Export", to: `${ROOT}/products/bulk` },
+      { label: "Product Images", to: `${ROOT}/products/photos` },
+      { label: "Reviews", to: `${ROOT}/reviews` },
+    ],
+  },
+  {
+    label: "WholesaleX",
+    icon: Boxes,
+    items: [
+      { label: "Wholesale Products & Pricing", to: `${ROOT}/wholesale` },
+      { label: "Retailer / Distributor Applications", to: `${ROOT}/applications` },
+      { label: "Partner Programs", to: `${ROOT}/editorial` },
+      { label: "Roles & Permissions", to: `${ROOT}/roles` },
+    ],
+  },
+  {
+    label: "Marketing",
+    icon: Megaphone,
+    items: [
+      { label: "Campaigns", to: `${ROOT}/campaigns` },
+      { label: "Affiliate Program & Commissions", to: `${ROOT}/affiliates` },
+      { label: "Homepage & Alerts", to: `${ROOT}/content` },
+      { label: "Career Applications", to: `${ROOT}/careers` },
+    ],
+  },
+  {
+    label: "Appearance",
+    icon: Store,
+    items: [
+      { label: "Website Setup", to: `${ROOT}/website-setup` },
+      { label: "Media Library", to: `${ROOT}/media` },
+      { label: "Blogs & Editorial", to: `${ROOT}/editorial` },
+      { label: "Blog System", to: `${ROOT}/blog-system` },
+    ],
+  },
+  {
+    label: "Users",
+    icon: Users,
+    items: [
+      { label: "Customers & Accounts", to: `${ROOT}/customers` },
+      { label: "Partner Applications", to: `${ROOT}/applications` },
+      { label: "Security & Two-Factor Auth", to: `${ROOT}/security` },
+    ],
+  },
+  {
+    label: "Plugins & Integrations",
+    icon: Plug,
+    items: [
+      { label: "Payment Gateways", to: `${ROOT}/payment-gateways` },
+      { label: "Shipping & Shiprocket", to: `${ROOT}/shipping` },
+      { label: "Integrations", to: `${ROOT}/integrations` },
+      { label: "Integration Shortcuts", to: `${ROOT}/addon-manager` },
+    ],
+  },
+  {
+    label: "Tools",
+    icon: Upload,
+    items: [
+      { label: "Uploaded Files", to: `${ROOT}/uploaded-files` },
+      { label: "Support Inbox", to: `${ROOT}/support` },
+      { label: "Notes", to: `${ROOT}/notes` },
+      { label: "Audit Logs", to: `${ROOT}/audit` },
+    ],
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    items: [
+      { label: "General Settings", to: `${ROOT}/settings` },
+      { label: "Configuration", to: `${ROOT}/configurations` },
+      { label: "System", to: `${ROOT}/system` },
+    ],
+  },
 ];
 
-export function EcommainAdminShell(){
- const {user,isAdmin,loading}=useAdmin(); const location=useLocation(); const [open,setOpen]=useState<Set<string>>(()=>new Set(["Products"]));
- if(loading||!user||!isAdmin) return <AdminShell/>;
- return <div className="min-h-screen bg-[#f2f3f8] text-slate-800 lg:grid lg:grid-cols-[255px_1fr]">
-  <aside className="border-r border-[#273444] bg-[#1c2b36] text-white lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
-   <div className="border-b border-white/10 px-5 py-5"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded bg-[#25a36f] font-black">A</div><div><div className="font-bold tracking-wide">AURONA</div><div className="text-[10px] uppercase tracking-[.18em] text-white/45">Active eCommerce</div></div></div></div>
-   <nav className="space-y-1 p-3"><Link to={ROOT} className={`flex items-center gap-3 rounded px-3 py-2.5 text-sm ${location.pathname===ROOT||location.pathname===`${ROOT}/`?"bg-[#25a36f]":"text-white/75 hover:bg-white/5"}`}><LayoutDashboard className="h-4 w-4"/>Dashboard</Link>
-    {groups.map(g=>{const expanded=open.has(g.label),active=(g.to&&location.pathname===g.to)||g.items.some(i=>location.pathname.startsWith(i.to)),Icon=g.icon;return <div key={g.label}><div className="flex"><Link to={g.to ?? g.items[0].to} className={`flex flex-1 items-center gap-3 rounded-l px-3 py-2.5 text-sm ${active?"bg-white/10 text-white":"text-white/70 hover:bg-white/5 hover:text-white"}`}><Icon className="h-4 w-4"/><span className="flex-1 text-left">{g.label}</span></Link><button aria-label={`Toggle ${g.label}`} onClick={()=>setOpen(c=>{const n=new Set(c);n.has(g.label)?n.delete(g.label):n.add(g.label);return n})} className={`rounded-r px-2 ${active?"bg-white/10 text-white":"text-white/50 hover:bg-white/5 hover:text-white"}`}><ChevronDown className={`h-4 w-4 transition-transform ${expanded?"rotate-180":""}`}/></button></div>{expanded&&<div className="ml-5 border-l border-white/10 py-1 pl-3">{g.items.map(i=><Link key={`${g.label}-${i.label}`} to={i.to} className={`block rounded px-3 py-2 text-xs ${location.pathname===i.to?"bg-[#25a36f]/20 text-emerald-300":"text-white/50 hover:bg-white/5 hover:text-white"}`}>{i.label}</Link>)}</div>}</div>})}
-   </nav>
-  </aside>
-  <section className="min-w-0"><header className="flex min-h-16 items-center justify-between border-b bg-white px-5 shadow-sm"><div><div className="text-sm font-semibold">Aurona Administration</div><div className="text-xs text-slate-400">Active eCommerce administration</div></div><Link to="/" className="text-sm font-medium text-[#25a36f] hover:underline">Browse Website</Link></header><main className="p-4 sm:p-6"><Outlet/></main></section>
- </div>;
+function isItemActive(pathname: string, to: string) {
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
+export function EcommainAdminShell() {
+  const { user, isAdmin, loading } = useAdmin();
+  const location = useLocation();
+  const [open, setOpen] = useState<Set<string>>(() => new Set(["WooCommerce", "Products"]));
+
+  if (loading || !user || !isAdmin) return <AdminShell />;
+
+  const currentPage =
+    groups.flatMap((group) => group.items).find((item) => isItemActive(location.pathname, item.to))
+      ?.label ?? dashboard.label;
+
+  return (
+    <div className="min-h-screen bg-[#f1f1f1] text-[#1d2327] lg:grid lg:grid-cols-[240px_1fr]">
+      <aside className="border-r border-[#1d2327] bg-[#1d2327] text-white lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+        <div className="border-b border-white/10 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded bg-[#2271b1] font-bold">A</div>
+            <div>
+              <div className="font-semibold tracking-wide">AURONA</div>
+              <div className="text-[10px] uppercase tracking-wider text-white/55">
+                Store Administration
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav aria-label="Store administration" className="space-y-1 p-2">
+          <Link
+            to={ROOT}
+            aria-current={
+              location.pathname === ROOT || location.pathname === `${ROOT}/` ? "page" : undefined
+            }
+            className={`flex min-h-10 items-center gap-3 px-3 py-2 text-sm ${location.pathname === ROOT || location.pathname === `${ROOT}/` ? "bg-[#2271b1] text-white" : "text-white/80 hover:bg-black/20 hover:text-white"}`}
+          >
+            <LayoutDashboard className="h-4 w-4" /> Dashboard
+          </Link>
+          {groups.map((group) => {
+            const expanded = open.has(group.label);
+            const active = group.items.some((item) => isItemActive(location.pathname, item.to));
+            const Icon = group.icon;
+
+            return (
+              <section key={group.label}>
+                <div className="flex">
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() =>
+                      setOpen((current) => {
+                        const next = new Set(current);
+                        if (next.has(group.label)) next.delete(group.label);
+                        else next.add(group.label);
+                        return next;
+                      })
+                    }
+                    className={`flex min-h-10 flex-1 items-center gap-3 px-3 py-2 text-left text-sm ${active ? "text-white" : "text-white/75 hover:bg-black/20 hover:text-white"}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="flex-1">{group.label}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                </div>
+                {expanded && (
+                  <div className="ml-5 border-l border-white/15 py-1 pl-3">
+                    {group.items.map((item) => {
+                      const itemActive = isItemActive(location.pathname, item.to);
+                      return (
+                        <Link
+                          key={`${group.label}-${item.label}`}
+                          to={item.to}
+                          aria-current={itemActive ? "page" : undefined}
+                          className={`block px-3 py-2 text-xs ${itemActive ? "bg-white/10 text-white" : "text-white/60 hover:bg-black/20 hover:text-white"}`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </nav>
+        <div className="border-t border-white/10 px-5 py-4 text-xs text-white/55">
+          <div className="truncate">{user.email}</div>
+          <Link to="/" className="mt-2 inline-block text-white/75 hover:text-white">
+            Visit Store
+          </Link>
+        </div>
+      </aside>
+      <section className="min-w-0">
+        <header className="flex min-h-16 items-center justify-between border-b border-[#c3c4c7] bg-white px-5">
+          <div>
+            <div className="text-sm font-semibold">{currentPage}</div>
+            <div className="text-xs text-[#646970]">Aurona Store Administration</div>
+          </div>
+          <Link to="/" className="text-sm font-medium text-[#2271b1] hover:underline">
+            Visit Store
+          </Link>
+        </header>
+        <main className="min-w-0 p-4 sm:p-6">
+          <Outlet />
+        </main>
+      </section>
+    </div>
+  );
 }

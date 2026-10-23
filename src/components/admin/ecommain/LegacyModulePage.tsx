@@ -1,9 +1,0 @@
-import { Search, Plus, Download, Filter } from "lucide-react";
-
-type Props = { title: string; description: string; columns: string[]; actions?: string[] };
-export function LegacyModulePage({ title, description, columns, actions = ["Add New"] }: Props) {
-  return <div className="space-y-5">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold text-slate-800">{title}</h1><p className="mt-1 text-sm text-slate-500">{description}</p></div><div className="flex gap-2">{actions.map(a=><button key={a} className="rounded bg-[#25b990] px-4 py-2 text-sm font-medium text-white hover:bg-[#20a881]"><Plus className="mr-1 inline h-4 w-4"/>{a}</button>)}</div></div>
-    <div className="rounded border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><div className="relative w-full max-w-sm"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400"/><input className="w-full rounded border border-slate-200 py-2 pl-9 pr-3 text-sm" placeholder={`Search ${title.toLowerCase()}...`}/></div><div className="flex gap-2"><button className="rounded border px-3 py-2 text-sm"><Filter className="mr-1 inline h-4 w-4"/>Filter</button><button className="rounded border px-3 py-2 text-sm"><Download className="mr-1 inline h-4 w-4"/>Export</button></div></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{columns.map(c=><th key={c} className="whitespace-nowrap px-4 py-3 font-semibold">{c}</th>)}</tr></thead><tbody><tr className="border-t"><td colSpan={columns.length} className="px-4 py-12 text-center text-slate-400">Recovered Ecommain module — data connection is being mapped from the original database.</td></tr></tbody></table></div></div>
-  </div>;
-}
